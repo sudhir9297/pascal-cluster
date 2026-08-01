@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title desc">
+  <title id="title">Catenary suspended street light</title>
+  <desc id="desc">Two support poles joined by a sagging cable with a suspended linear roadway luminaire.</desc>
+  <defs>
+    <linearGradient id="catenaryBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e9eef2"/>
+      <stop offset="1" stop-color="#cdd6de"/>
+    </linearGradient>
+    <linearGradient id="catenaryMetal" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#12171c"/>
+      <stop offset=".48" stop-color="#56616a"/>
+      <stop offset="1" stop-color="#20262c"/>
+    </linearGradient>
+    <linearGradient id="catenaryHousing" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#56616a"/>
+      <stop offset="1" stop-color="#20262c"/>
+    </linearGradient>
+    <linearGradient id="catenaryDiffuser" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9e0e4"/>
+      <stop offset="1" stop-color="#8f9aa1"/>
+    </linearGradient>
+    <filter id="catenaryShadow" x="-30%" y="-40%" width="160%" height="190%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+  </defs>
+  <rect width="640" height="640" rx="44" fill="url(#catenaryBg)"/>
+  <ellipse cx="320" cy="566" rx="232" ry="28" fill="#4b5660" opacity=".2" filter="url(#catenaryShadow)"/>
+
+  <!-- twin grounded support poles -->
+  <path d="M113 555 132 151h33l20 404z" fill="url(#catenaryMetal)"/>
+  <path d="M475 555 494 151h33l20 404z" fill="url(#catenaryMetal)"/>
+  <path d="M124 157h48M485 157h50" stroke="#151a1f" stroke-width="16" stroke-linecap="round"/>
+  <path d="M114 554h76l-14-24h-50zM476 554h76l-14-24h-50z" fill="#20262c"/>
+  <ellipse cx="151" cy="530" rx="37" ry="10" fill="#4d5861"/>
+  <ellipse cx="513" cy="530" rx="37" ry="10" fill="#4d5861"/>
+
+  <!-- overhead catenary with a readable, smooth sag -->
+  <path d="M149 157 Q320 235 511 157" fill="none" stroke="#11161b" stroke-width="19" stroke-linecap="round"/>
+  <path d="M149 153 Q320 227 511 153" fill="none" stroke="#5b6670" stroke-width="5" stroke-linecap="round" opacity=".7"/>
+  <circle cx="149" cy="157" r="12" fill="#20262c"/>
+  <circle cx="511" cy="157" r="12" fill="#20262c"/>
+
+  <!-- hanger and suspended linear fixture -->
+  <path d="M320 226v65" stroke="#151a1f" stroke-width="13" stroke-linecap="round"/>
+  <circle cx="320" cy="224" r="13" fill="#11161b"/>
+  <rect x="291" y="282" width="58" height="15" rx="6" fill="#4e5962"/>
+  <rect x="209" y="292" width="222" height="88" rx="8" fill="url(#catenaryHousing)"/>
+  <path d="M209 305h222v17H209z" fill="#73808a" opacity=".48"/>
+  <path d="M209 366h222l-13 21H222z" fill="#171c21"/>
+  <rect x="229" y="367" width="182" height="15" rx="4" fill="url(#catenaryDiffuser)"/>
+  <path d="M218 305v67M422 305v67" stroke="#171c21" stroke-width="12"/>
+  <path d="M245 292h150" stroke="#9aa5ac" stroke-width="5" stroke-linecap="round" opacity=".55"/>
+
+  <!-- subtle ground contact cues -->
+  <circle cx="151" cy="555" r="7" fill="#11161b"/>
+  <circle cx="513" cy="555" r="7" fill="#11161b"/>
+</svg>

@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title desc">
+  <title id="title">Tunnel underpass luminaire</title>
+  <desc id="desc">A linear soffit-mounted tunnel light with a recessed reflector and diffuser.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e9eef2"/>
+      <stop offset="1" stop-color="#cfd8df"/>
+    </linearGradient>
+    <linearGradient id="soffit" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#77838c"/>
+      <stop offset="1" stop-color="#3d464d"/>
+    </linearGradient>
+    <linearGradient id="housing" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#20262b"/>
+      <stop offset=".5" stop-color="#56616a"/>
+      <stop offset="1" stop-color="#242b31"/>
+    </linearGradient>
+    <linearGradient id="reflector" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#aab4bb"/>
+      <stop offset="1" stop-color="#66727b"/>
+    </linearGradient>
+    <linearGradient id="diffuser" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f5f8fa"/>
+      <stop offset="1" stop-color="#a9b8c2"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-50%" width="160%" height="200%">
+      <feGaussianBlur stdDeviation="12"/>
+    </filter>
+  </defs>
+  <rect width="640" height="640" rx="44" fill="url(#bg)"/>
+  <ellipse cx="320" cy="558" rx="164" ry="27" fill="#4f5b64" opacity=".2" filter="url(#shadow)"/>
+  <path d="M116 558V151c0-16 13-29 29-29h352c16 0 29 13 29 29v407" fill="none" stroke="#283038" stroke-width="22" stroke-linecap="round"/>
+  <path d="M120 135h400l-22 46H142z" fill="url(#soffit)"/>
+  <path d="M145 175h350l-20 21H165z" fill="#303940" opacity=".85"/>
+  <path d="M225 215h190l-17 62H242z" fill="url(#housing)"/>
+  <path d="M237 271h166l-10 19H247z" fill="url(#reflector)"/>
+  <path d="M250 288h140v12H250z" fill="url(#diffuser)"/>
+  <path d="M227 213h186" stroke="#7b8790" stroke-width="7" opacity=".55"/>
+  <path d="M229 215v68M411 215v68" stroke="#1c2227" stroke-width="8" opacity=".9"/>
+  <path d="M294 196v18M346 196v18" stroke="#1e252a" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="294" cy="195" r="7" fill="#9aa6ae"/>
+  <circle cx="346" cy="195" r="7" fill="#9aa6ae"/>
+  <circle cx="116" cy="558" r="13" fill="#1f262c"/>
+  <circle cx="524" cy="558" r="13" fill="#1f262c"/>
+</svg>

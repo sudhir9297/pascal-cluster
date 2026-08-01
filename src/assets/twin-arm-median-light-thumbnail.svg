@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title desc">
+  <title id="title">Twin-arm median roadway light</title>
+  <desc id="desc">A central pole with opposing cobra-head roadway fixtures.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e9eef2"/>
+      <stop offset="1" stop-color="#d5dde3"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#1b2025"/>
+      <stop offset=".5" stop-color="#59636c"/>
+      <stop offset="1" stop-color="#252b31"/>
+    </linearGradient>
+    <linearGradient id="housing" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#58636c"/>
+      <stop offset="1" stop-color="#242b32"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-50%" width="160%" height="200%">
+      <feGaussianBlur stdDeviation="11"/>
+    </filter>
+  </defs>
+  <rect width="640" height="640" rx="44" fill="url(#bg)"/>
+  <ellipse cx="320" cy="560" rx="120" ry="27" fill="#59636d" opacity=".2" filter="url(#shadow)"/>
+  <path d="M252 555h136l-18-34h-100z" fill="#252b31"/>
+  <ellipse cx="320" cy="521" rx="48" ry="12" fill="#4b555e"/>
+  <path d="M296 522 307 150h26l11 372z" fill="url(#metal)"/>
+  <path d="M303 164h34l-6-34h-22z" fill="#343c44"/>
+  <rect x="304" y="414" width="32" height="57" rx="5" fill="#11161b" opacity=".85"/>
+  <path d="M320 150H100M320 150h220" stroke="#252b31" stroke-width="27" stroke-linecap="round"/>
+  <path d="M100 136h-46l-22 15 22 15h46zM540 136h46l22 15-22 15h-46z" fill="#232930"/>
+  <path d="M123 125 63 95 25 109l19 58 70 8zM517 125l60-30 38 14-19 58-70 8z" fill="url(#housing)"/>
+  <path d="M113 168H53l15 22h49zM527 168h60l-15 22h-49z" fill="#171c21"/>
+  <path d="M111 175H62l8 16h34zM529 175h49l-8 16h-34z" fill="#9ca4a9"/>
+  <ellipse cx="87" cy="190" rx="16" ry="6" fill="#707b83"/>
+  <ellipse cx="553" cy="190" rx="16" ry="6" fill="#707b83"/>
+  <circle cx="304" cy="536" r="7" fill="#11161b"/>
+  <circle cx="336" cy="536" r="7" fill="#11161b"/>
+</svg>

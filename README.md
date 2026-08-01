@@ -1,0 +1,103 @@
+# Pascal Environment plugin
+
+A first-party environment plugin for the Pascal editor. It contributes a
+procedural road system, configurable roadway and pedestrian lights, a wood utility pole, and a
+host-side Environment panel containing their placement controls.
+
+```bash
+git clone https://github.com/pascalorg/plugin-environment.git
+cd plugin-environment
+bun install
+bun run check-types
+bun test
+```
+
+The package uses only public `@pascal-app/*` APIs and is structurally identical
+to a third-party plugin.
+
+## What it contributes
+
+- **`environment:road-spline`** — a multi-point planar road strip drawn directly in
+  the scene, with procedural asphalt texture, lane count, center-line styles, edge
+  lines, adjustable width, and surface thickness. Use Straight / L mode for
+  axis-aligned roads with automatic mitered corners, or Smooth spline mode for
+  freeform roads. Double-click or press Enter to finish, and use Backspace to
+  remove the last point.
+- **`environment:road-sign`** — a reusable catalog-driven roadside sign with
+  procedural plate geometry, single- or double-post mounting, adjustable sign
+  scale and mounting height, editable display text, vector face graphics, a
+  placement preview, selection handles, and a 2D floorplan symbol. The starter
+  catalog includes stop, yield, speed-limit, no-entry, no-parking, pedestrian
+  crossing, warning, and directional signs; add a jurisdiction-specific pack by
+  extending the exported catalog table without changing the node or renderer.
+
+- **`environment:street-light`** — a procedural single-arm light pole with an
+  emissive fixture and operational scene light.
+- **`environment:pedestrian-post-light`** — a modern pedestrian-scale post-top
+  lamp with a circular downward-facing luminaire.
+- **`environment:heritage-crook-light`** — a heritage Bishop's Crook pole with
+  a suspended teardrop lantern and ornamental metalwork.
+- **`environment:cobra-head-light`** — a classic straight mast-arm roadway lamp
+  with a broad, older-style cobra-head housing.
+- **`environment:twin-arm-median-light`** — opposing cobra-head fixtures on a
+  single central pole for divided roads and medians.
+- **`environment:multi-head-area-light`** — a configurable three- or four-head
+  radial pole for junctions, plazas, and parking areas.
+- **`environment:truss-roadway-light`** — a cobra-head roadway lamp on a
+  visibly braced truss outreach.
+- **Large-area families** — `environment:high-mast-crown-light`,
+  `environment:shoebox-area-light`, and `environment:floodlight-pole` cover
+  high-mast crowns, parking-area shoeboxes, and tilted projector heads.
+- **Pedestrian and civic families** — `environment:traditional-post-top-lantern`,
+  `environment:globe-post-top-light`, `environment:decorative-candelabra-light`,
+  `environment:path-garden-light`, and `environment:bollard-light` cover
+  heritage streets, parks, paths, and plazas.
+- **Architectural and suspended families** — `environment:catenary-street-light`,
+  `environment:wall-arm-light`, `environment:wall-pack-light`,
+  `environment:tunnel-luminaire`, and `environment:canopy-soffit-light` cover
+  overhead, facade, soffit, and tunnel mounting conditions.
+- **`environment:solar-street-light`** — a roadway fixture with a visible
+  photovoltaic panel and off-by-default lamp state.
+- **`environment:utility-pole`** — a procedural three-phase distribution pole
+  with tangent, small-angle, junction, and dead-end assembly roles; primary and
+  lower neutral crossarms; braces; pin insulators; optional transformer; and
+  stable conductor attachment points. Its default is a standard 35 ft
+  residential pole with 29.5 ft (8.99 m) visible above grade. Connected poles
+  automatically orient their crossarms perpendicular to the main span.
+- Junction roles show a three-cutout tap rack, and dead-end roles use
+  strain-style primary insulators with guy/anchor cues.
+- **`environment:utility-wire-span`** — an automatically generated three-phase
+  primary span plus lower neutral with visible conductor sag. A newly placed
+  pole is inserted into a nearby through-span or connects to the nearest
+  same-level pole within the 45.72 m urban connection limit, allowing shared-pole
+  T-junctions.
+- **Categorized placement panel** — separate Lighting, Roads, and Utilities
+  catalogs, with dedicated multi-click road and reusable road-sign placement
+  tools.
+- **Placement settings** — light height/arm/lamp state and utility-pole
+  height/crossarm/transformer state.
+- **Shared lamp height** — every lamp archetype starts at the same 6 m height
+  and exposes the same 0.5–30 m height range. Related catalog families reuse
+  one visual model and expose a side-menu style switch (roadway head, civic
+  post-top, path-scale, or structure-mounted).
+- **Shared roadway implementation** — street, cobra-head, twin-arm, multi-head,
+  and truss lamps reuse one roadway head/base/mast primitive set; each keeps
+  its own arm arrangement and thumbnail, so adding a new roadway variant does
+  not duplicate the fixture geometry or lighting logic.
+- **Inspector settings** — geometry, equipment state, colours, light intensity,
+  and position.
+- **Rendering support** — procedural geometry, placement preview, operational
+  spotlight, selection, and 2D floorplan symbols.
+- **Structural supports** — catenary, wall-arm, wall-pack, tunnel, and canopy
+  styles all include a reusable vertical pole and base.
+
+## Manifest
+
+```ts
+import { environmentPlugin } from '@pascal-app/plugin-environment'
+
+setPluginDiscovery(async () => [environmentPlugin])
+```
+
+The editor app separately imports `environmentHostPanel` to surface the
+Environment placement panel. Panels are not part of the v1 core plugin manifest.
