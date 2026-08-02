@@ -151,6 +151,187 @@ describe('structural catalog lamp rendering', () => {
     expect(markup).not.toContain('spotLight')
   })
 
+  test('builds the area pole as a square tapered support with a multi-cell LED head', () => {
+    const node = parseCatalogLamp('environment:shoebox-area-light', {
+      height: 6,
+      lightOn: false,
+      visualStyle: 'shoebox',
+    })
+    const previousConsoleError = console.error
+    console.error = () => {}
+    let markup = ''
+    try {
+      markup = renderToStaticMarkup(createElement(CatalogLampModel, { layer: 1, node }))
+    } finally {
+      console.error = previousConsoleError
+    }
+
+    expect(markup).toContain('name="catalog-shoebox-area-light"')
+    expect(markup).toContain('name="catalog-shoebox-square-pole"')
+    expect(markup).toContain('name="catalog-shoebox-base-plate"')
+    expect(markup).toContain('name="catalog-shoebox-access-door"')
+    expect((markup.match(/name="catalog-shoebox-anchor-nut"/g) ?? []).length).toBe(4)
+    expect((markup.match(/name="catalog-shoebox-area-side"/g) ?? []).length).toBe(1)
+    expect((markup.match(/name="catalog-shoebox-integrated-arm"/g) ?? []).length).toBe(1)
+    expect((markup.match(/name="catalog-shoebox-tapered-arm"/g) ?? []).length).toBe(1)
+    expect((markup.match(/name="catalog-shoebox-arm-lower-brace"/g) ?? []).length).toBe(1)
+    expect((markup.match(/name="catalog-shoebox-area-housing"/g) ?? []).length).toBe(1)
+    expect((markup.match(/name="catalog-shoebox-service-door"/g) ?? []).length).toBe(1)
+    expect((markup.match(/name="catalog-shoebox-optic-window"/g) ?? []).length).toBe(1)
+    expect((markup.match(/name="catalog-shoebox-optic-module"/g) ?? []).length).toBe(3)
+    expect((markup.match(/name="catalog-shoebox-optic-cell"/g) ?? []).length).toBe(18)
+    expect((markup.match(/name="catalog-shoebox-heat-sink-fin"/g) ?? []).length).toBe(7)
+    expect((markup.match(/name="catalog-shoebox-driver-cover"/g) ?? []).length).toBe(1)
+    expect((markup.match(/name="catalog-shoebox-photocell"/g) ?? []).length).toBe(1)
+    expect(markup).not.toContain('spotLight')
+  })
+
+  test('gives the active single-sided area pole one roadway beam', () => {
+    const node = parseCatalogLamp('environment:shoebox-area-light', {
+      lightOn: true,
+      visualStyle: 'shoebox',
+    })
+    const previousConsoleError = console.error
+    console.error = () => {}
+    let markup = ''
+    try {
+      markup = renderToStaticMarkup(createElement(CatalogLampModel, { layer: 1, node }))
+    } finally {
+      console.error = previousConsoleError
+    }
+
+    expect((markup.match(/<spotLight/g) ?? []).length).toBe(1)
+  })
+
+  test('builds the solar street light as a serviceable all-in-one PV luminaire', () => {
+    const node = parseCatalogLamp('environment:solar-street-light', {
+      armLength: 1.3,
+      height: 6,
+      lightOn: false,
+      visualStyle: 'solar',
+    })
+    const previousConsoleError = console.error
+    console.error = () => {}
+    let markup = ''
+    try {
+      markup = renderToStaticMarkup(createElement(CatalogLampModel, { layer: 1, node }))
+    } finally {
+      console.error = previousConsoleError
+    }
+
+    expect(markup).toContain('name="catalog-solar-street-light"')
+    expect(markup).toContain('name="catalog-solar-pole"')
+    expect(markup).toContain('name="catalog-solar-base-plate"')
+    expect((markup.match(/name="catalog-solar-anchor-nut"/g) ?? []).length).toBe(4)
+    expect(markup).toContain('name="catalog-solar-service-door"')
+    expect((markup.match(/name="catalog-solar-side"/g) ?? []).length).toBe(1)
+    expect((markup.match(/name="catalog-solar-upswept-arm"/g) ?? []).length).toBe(1)
+    expect((markup.match(/name="catalog-solar-spigot-adapter"/g) ?? []).length).toBe(1)
+    expect((markup.match(/name="catalog-solar-integrated-head"/g) ?? []).length).toBe(1)
+    expect((markup.match(/name="catalog-solar-die-cast-housing"/g) ?? []).length).toBe(1)
+    expect((markup.match(/name="catalog-solar-panel"/g) ?? []).length).toBe(1)
+    expect((markup.match(/name="catalog-solar-panel-surface"/g) ?? []).length).toBe(1)
+    expect(markup).not.toContain('name="catalog-solar-photovoltaic-cell"')
+    expect((markup.match(/name="catalog-solar-battery-door"/g) ?? []).length).toBe(1)
+    expect((markup.match(/name="catalog-solar-optic-window"/g) ?? []).length).toBe(1)
+    expect((markup.match(/name="catalog-solar-optic-cell"/g) ?? []).length).toBe(20)
+    expect((markup.match(/name="catalog-solar-motion-sensor"/g) ?? []).length).toBe(1)
+    expect(markup).not.toContain('spotLight')
+  })
+
+  test('gives the active single-sided solar light one roadway beam', () => {
+    const node = parseCatalogLamp('environment:solar-street-light', {
+      lightOn: true,
+      visualStyle: 'solar',
+    })
+    const previousConsoleError = console.error
+    console.error = () => {}
+    let markup = ''
+    try {
+      markup = renderToStaticMarkup(createElement(CatalogLampModel, { layer: 1, node }))
+    } finally {
+      console.error = previousConsoleError
+    }
+
+    expect((markup.match(/<spotLight/g) ?? []).length).toBe(1)
+  })
+
+  test('builds the high mast as a lowering ring with six serviceable LED luminaires', () => {
+    const node = parseCatalogLamp('environment:high-mast-crown-light', {
+      lightOn: false,
+      visualStyle: 'high-mast',
+    })
+    const previousConsoleError = console.error
+    console.error = () => {}
+    let markup = ''
+    try {
+      markup = renderToStaticMarkup(createElement(CatalogLampModel, { layer: 1, node }))
+    } finally {
+      console.error = previousConsoleError
+    }
+
+    expect(markup).toContain('name="catalog-high-mast-crown-light-assembly"')
+    expect(markup).toContain('name="high-mast-crown-carrier-ring"')
+    expect(markup).toContain('name="high-mast-crown-head-frame"')
+    expect((markup.match(/name="high-mast-crown-latching-barrel"/g) ?? []).length).toBe(3)
+    expect((markup.match(/name="high-mast-crown-hoisting-cable"/g) ?? []).length).toBe(3)
+    expect((markup.match(/name="high-mast-crown-radial-arm"/g) ?? []).length).toBe(6)
+    expect((markup.match(/name="high-mast-crown-luminaire-housing"/g) ?? []).length).toBe(6)
+    expect((markup.match(/name="high-mast-crown-optic-cell"/g) ?? []).length).toBe(36)
+    expect((markup.match(/name="high-mast-crown-heat-sink-fin"/g) ?? []).length).toBe(24)
+    expect(markup).not.toContain('spotLight')
+  })
+
+  test('gives each active high-mast luminaire its own outward roadway beam', () => {
+    const node = parseCatalogLamp('environment:high-mast-crown-light', {
+      lightOn: true,
+      visualStyle: 'high-mast',
+    })
+    const previousConsoleError = console.error
+    console.error = () => {}
+    let markup = ''
+    try {
+      markup = renderToStaticMarkup(createElement(CatalogLampModel, { layer: 1, node }))
+    } finally {
+      console.error = previousConsoleError
+    }
+
+    expect((markup.match(/<spotLight/g) ?? []).length).toBe(6)
+  })
+
+  test('builds the floodlight as a braced yoke-mounted multi-cell projector', () => {
+    const node = parseCatalogLamp('environment:floodlight-pole', {
+      armLength: 0.9,
+      height: 6,
+      lightOn: false,
+      visualStyle: 'floodlight',
+    })
+    const previousConsoleError = console.error
+    console.error = () => {}
+    let markup = ''
+    try {
+      markup = renderToStaticMarkup(createElement(CatalogLampModel, { layer: 1, node }))
+    } finally {
+      console.error = previousConsoleError
+    }
+
+    expect(markup).toContain('name="catalog-floodlight-pole"')
+    expect(markup).toContain('name="catalog-floodlight-base-plate"')
+    expect((markup.match(/name="catalog-floodlight-anchor-bolt"/g) ?? []).length).toBe(4)
+    expect(markup).toContain('name="catalog-floodlight-pole-shaft"')
+    expect(markup).toContain('name="catalog-floodlight-access-door"')
+    expect(markup).toContain('name="catalog-floodlight-arm-brace"')
+    expect(markup).toContain('name="catalog-floodlight-yoke"')
+    expect((markup.match(/name="catalog-floodlight-yoke-arm"/g) ?? []).length).toBe(2)
+    expect(markup).toContain('name="catalog-floodlight-housing"')
+    expect(markup).toContain('name="catalog-floodlight-driver-box"')
+    expect(markup).toContain('name="catalog-floodlight-optic-window"')
+    expect((markup.match(/name="catalog-floodlight-optic-cell"/g) ?? []).length).toBe(12)
+    expect((markup.match(/name="catalog-floodlight-heat-sink-fin"/g) ?? []).length).toBe(5)
+    expect(markup).toContain('name="catalog-floodlight-glare-visor"')
+    expect(markup).not.toContain('spotLight')
+  })
+
   test('builds the wall-pack style as a compact grounded bulkhead', () => {
     const node = parseCatalogLamp('environment:wall-pack-light', {
       armLength: 0.35,

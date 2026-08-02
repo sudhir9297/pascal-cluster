@@ -25,23 +25,24 @@ to a third-party plugin.
   crossing, warning, and directional signs; add a jurisdiction-specific pack by
   extending the exported catalog table without changing the node or renderer.
 
-- **`environment:street-light`** — a procedural single-arm light pole with an
-  emissive fixture and operational scene light.
+- **`environment:street-light`** — a swept-arm roadway pole with an integrated
+  low-profile, full-cutoff LED luminaire and operational scene light.
 - **`environment:pedestrian-post-light`** — a modern pedestrian-scale post-top
   lamp with a circular downward-facing luminaire.
 - **`environment:heritage-crook-light`** — a heritage Bishop's Crook pole with
   a suspended teardrop lantern and ornamental metalwork.
-- **`environment:cobra-head-light`** — a classic straight mast-arm roadway lamp
-  with a broad, older-style cobra-head housing.
-- **`environment:twin-arm-median-light`** — opposing cobra-head fixtures on a
-  single central pole for divided roads and medians.
+- **`environment:cobra-head-light`** — a classic swept-arm roadway lamp with a
+  broad die-cast housing, photocell, and dropped prismatic cobra-head optic.
+- **`environment:twin-arm-median-light`** — a balanced wishbone crown with
+  opposing slim LED heads for divided roads and medians.
 - **`environment:multi-head-area-light`** — a configurable three- or four-head
   radial pole for junctions, plazas, and parking areas.
-- **`environment:truss-roadway-light`** — a cobra-head roadway lamp on a
-  visibly braced truss outreach.
+- **`environment:truss-roadway-light`** — a fitted pipe-truss roadway pole with
+  separate structural brackets and a full-cutoff LED luminaire.
 - **Large-area families** — `environment:high-mast-crown-light`,
   `environment:shoebox-area-light`, and `environment:floodlight-pole` cover
-  high-mast crowns, parking-area shoeboxes, and tilted projector heads.
+  serviceable high-mast lowering crowns, low-profile LED parking-area poles,
+  and tilted projector heads.
 - **Pedestrian and civic families** — `environment:traditional-post-top-lantern`,
   `environment:globe-post-top-light`, `environment:decorative-candelabra-light`,
   `environment:path-garden-light`, and `environment:bollard-light` cover
@@ -50,8 +51,8 @@ to a third-party plugin.
   `environment:wall-arm-light`, `environment:wall-pack-light`,
   `environment:tunnel-luminaire`, and `environment:canopy-soffit-light` cover
   overhead, facade, soffit, and tunnel mounting conditions.
-- **`environment:solar-street-light`** — a roadway fixture with a visible
-  photovoltaic panel and off-by-default lamp state.
+- **`environment:solar-street-light`** — a single-sided roadway pole with one
+  integrated photovoltaic luminaire and an off-by-default lamp state.
 - **`environment:utility-pole`** — a procedural three-phase distribution pole
   with tangent, small-angle, junction, and dead-end assembly roles; primary and
   lower neutral crossarms; braces; pin insulators; optional transformer; and
@@ -69,10 +70,10 @@ to a third-party plugin.
   catalogs, including reusable road-sign placement tools.
 - **Placement settings** — light height/arm/lamp state and utility-pole
   height/crossarm/transformer state.
-- **Shared lamp height** — every lamp archetype starts at the same 6 m height
-  and exposes the same 0.5–30 m height range. Related catalog families reuse
-  one visual model and expose a side-menu style switch (roadway head, civic
-  post-top, path-scale, or structure-mounted).
+- **Lamp height** — standard lamp archetypes start at 6 m; the high-mast crown
+  starts at a realistic 18 m. All expose the same 0.5–30 m editing range.
+  Related catalog families expose a side-menu style switch (roadway head,
+  civic post-top, path-scale, or structure-mounted).
 - **Shared roadway implementation** — street, cobra-head, twin-arm, multi-head,
   and truss lamps reuse one roadway head/base/mast primitive set; each keeps
   its own arm arrangement and thumbnail, so adding a new roadway variant does

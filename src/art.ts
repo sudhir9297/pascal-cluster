@@ -1,14 +1,18 @@
 import environmentIcon from './assets/environment-icon.webp'
 import catenarySuspendedLightThumbnail from './assets/catenary-suspended-light-thumbnail.webp'
 import wallPackBulkheadThumbnail from './assets/wall-pack-bulkhead-thumbnail.png'
-import cobraHeadLightThumbnail from './assets/cobra-head-light-thumbnail.svg'
-import heritageCrookLightThumbnail from './assets/heritage-crook-light-thumbnail.svg'
-import multiHeadAreaLightThumbnail from './assets/multi-head-area-light-thumbnail.svg'
-import postTopLightThumbnail from './assets/post-top-light-thumbnail.svg'
+import cobraHeadLightThumbnail from './assets/cobra-head-light-thumbnail-v2.png'
+import floodlightPoleThumbnail from './assets/floodlight-pole-thumbnail-v2.png'
+import highMastCrownLightThumbnail from './assets/high-mast-crown-light-thumbnail-v2.png'
+import heritageCrookLightThumbnail from './assets/heritage-crook-light-thumbnail-v2.png'
+import multiHeadAreaLightThumbnail from './assets/multi-head-area-light-thumbnail-v2.png'
+import postTopLightThumbnail from './assets/post-top-light-thumbnail-v2.png'
+import shoeboxAreaLightThumbnail from './assets/shoebox-area-light-thumbnail-v2.png'
+import solarStreetLightThumbnail from './assets/solar-street-light-thumbnail-v2.png'
 import streetLightThumbnail from './assets/street-light-thumbnail-v2.png'
 import wallArmLightThumbnail from './assets/wall-arm-light-thumbnail.png'
-import twinArmMedianLightThumbnail from './assets/twin-arm-median-light-thumbnail.svg'
-import trussRoadwayLightThumbnail from './assets/truss-roadway-light-thumbnail.svg'
+import twinArmMedianLightThumbnail from './assets/twin-arm-median-light-thumbnail-v2.png'
+import trussRoadwayLightThumbnail from './assets/truss-roadway-light-thumbnail-v2.png'
 import tunnelLuminaireThumbnail from './assets/tunnel-luminaire-thumbnail.png'
 import utilityPoleThumbnail from './assets/utility-pole-thumbnail.webp'
 import type { CatalogLampProjection } from './catalog-lamp-config'
@@ -33,6 +37,13 @@ import yieldRoadSignThumbnail from './assets/yield-road-sign-thumbnail.svg'
  */
 const url = (asset: { src: string }): string => asset.src
 
+const catalogLampThumbnailOverrides: Partial<Record<CatalogLampProjection, string>> = {
+  floodlight: url(floodlightPoleThumbnail),
+  'high-mast': url(highMastCrownLightThumbnail),
+  shoebox: url(shoeboxAreaLightThumbnail),
+  solar: url(solarStreetLightThumbnail),
+}
+
 /** The Environment panel / section icon. */
 export const ENVIRONMENT_ICON = url(environmentIcon)
 
@@ -52,7 +63,8 @@ export const TUNNEL_LUMINAIRE_THUMBNAIL = url(tunnelLuminaireThumbnail)
 export const CATALOG_LAMP_THUMBNAILS = Object.fromEntries(
   Object.entries(CATALOG_LAMP_THUMBNAIL_SVGS).map(([projection]) => [
     projection,
-    getCatalogLampThumbnail(projection as keyof typeof CATALOG_LAMP_THUMBNAIL_SVGS),
+    catalogLampThumbnailOverrides[projection as CatalogLampProjection] ??
+      getCatalogLampThumbnail(projection as keyof typeof CATALOG_LAMP_THUMBNAIL_SVGS),
   ]),
 ) as Record<CatalogLampProjection, string>
 

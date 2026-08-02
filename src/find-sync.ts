@@ -86,8 +86,8 @@ findNodeEmitter.on('selection:find-node', (node) => {
     store.setPanelCategory('lighting')
     const trussLight = node as unknown as TrussRoadwayLightNode
     store.setTrussRoadwayHeight(trussLight.height ?? STANDARD_LAMP_HEIGHT_M)
-    store.setTrussRoadwayArmLength(trussLight.armLength ?? 1.6)
-    store.setTrussRoadwayBraceDepth(trussLight.braceDepth ?? 0.7)
+    store.setTrussRoadwayArmLength(trussLight.armLength ?? 2)
+    store.setTrussRoadwayBraceDepth(trussLight.braceDepth ?? 0.75)
     store.setTrussRoadwayLightOn(trussLight.lightOn ?? false)
   }
   if ((node.type as string) === 'environment:utility-pole') {

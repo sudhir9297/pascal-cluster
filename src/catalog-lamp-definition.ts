@@ -1,6 +1,14 @@
 import { buildCatalogLampFloorplan } from './catalog-lamp-floorplan'
-import { getCatalogLampConfig, type CatalogLampVariant } from './catalog-lamp-config'
+import {
+  getCatalogLampConfig,
+  resolveCatalogLampProjection,
+  type CatalogLampVariant,
+} from './catalog-lamp-config'
 import { catalogLampParametrics } from './catalog-lamp-parametrics'
+import { FLOODLIGHT_POLE_DIMENSIONS } from './floodlight-pole-geometry'
+import { SHOEBOX_AREA_LIGHT_DIMENSIONS } from './shoebox-area-light-geometry'
+import { resolveHighMastCrownLightLayout } from './high-mast-crown-light-geometry'
+import { SOLAR_STREET_LIGHT_DIMENSIONS } from './solar-street-light-geometry'
 
 type GenericDefinition = Record<string, any>
 
@@ -63,10 +71,45 @@ export function makeCatalogLampDefinition(variant: CatalogLampVariant): GenericD
       groupable: true,
       snappable: {},
       floorPlaced: {
-        footprint: (node: any) => ({
-          dimensions: [Math.max(0.4, node.armLength ?? 1), Math.max(0.1, node.height ?? 1), Math.max(0.4, node.armLength ?? 1)],
-          rotation: node.rotation,
-        }),
+        footprint: (node: any) => {
+          const isShoebox = node.type === 'environment:shoebox-area-light' && (node.visualStyle ?? 'shoebox') === 'shoebox'
+          const isFloodlight = resolveCatalogLampProjection(node.type, node.visualStyle) === 'floodlight'
+          const isHighMast = resolveCatalogLampProjection(node.type, node.visualStyle) === 'high-mast'
+          const isSolar = resolveCatalogLampProjection(node.type, node.visualStyle) === 'solar'
+          const highMastLayout = isHighMast ? resolveHighMastCrownLightLayout(node) : undefined
+          const highMastDiameter = highMastLayout
+            ? (highMastLayout.fixtureCenterRadius + highMastLayout.fixtureLength / 2) * 2
+            : 0
+          const genericDimensions = [
+            Math.max(0.4, node.armLength ?? 1),
+            Math.max(0.1, node.height ?? 1),
+            Math.max(0.4, node.armLength ?? 1),
+          ]
+          return {
+            dimensions: isHighMast
+              ? [highMastDiameter, Math.max(0.1, node.height ?? 18), highMastDiameter]
+              : isShoebox
+              ? [
+                  (node.armLength ?? SHOEBOX_AREA_LIGHT_DIMENSIONS.defaultArmLength) + SHOEBOX_AREA_LIGHT_DIMENSIONS.housingEndX,
+                  Math.max(0.1, node.height ?? 1),
+                  Math.max(SHOEBOX_AREA_LIGHT_DIMENSIONS.housingWidth, SHOEBOX_AREA_LIGHT_DIMENSIONS.basePlateWidth),
+                ]
+              : isFloodlight
+                ? [
+                    (node.armLength ?? 0.9) + FLOODLIGHT_POLE_DIMENSIONS.headCenterOffsetX + FLOODLIGHT_POLE_DIMENSIONS.housingLength / 2,
+                    Math.max(0.1, node.height ?? 1),
+                    Math.max(FLOODLIGHT_POLE_DIMENSIONS.basePlateSize, FLOODLIGHT_POLE_DIMENSIONS.housingWidth),
+                  ]
+                : isSolar
+                  ? [
+                      (node.armLength ?? 1.3) + SOLAR_STREET_LIGHT_DIMENSIONS.housingEndX,
+                      Math.max(0.1, (node.height ?? 6) + SOLAR_STREET_LIGHT_DIMENSIONS.housingHeight),
+                      Math.max(SOLAR_STREET_LIGHT_DIMENSIONS.basePlateSize, SOLAR_STREET_LIGHT_DIMENSIONS.housingWidth),
+                    ]
+                : genericDimensions,
+            rotation: node.rotation,
+          }
+        },
         collides: false,
       },
     },

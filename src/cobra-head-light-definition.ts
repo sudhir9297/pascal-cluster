@@ -109,7 +109,7 @@ export const cobraHeadLightDefinition: CobraHeadLightDefinition = {
 
   presentation: {
     label: 'Cobra-head',
-    description: 'A classic straight mast-arm roadway light with a broad housing.',
+    description: 'A classic roadway light with a swept mast arm and prismatic cobra-head optic.',
     icon: { kind: 'iconify', name: 'lucide:lightbulb' },
     paletteSection: 'furnish',
     hidden: true,
@@ -117,6 +117,6 @@ export const cobraHeadLightDefinition: CobraHeadLightDefinition = {
 
   mcp: {
     description:
-      'A classic cobra-head roadway light with adjustable height, arm length, pole color, lamp color, intensity, orientation, and on/off state.',
+      'A classic swept-arm cobra-head roadway light with a die-cast housing, prismatic optic, and adjustable height, arm length, finish, lamp color, intensity, orientation, and on/off state.',
   },
 }

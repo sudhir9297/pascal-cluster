@@ -49,6 +49,13 @@ const boxHead = (x: number, y: number, width = 110, height = 44) => `
   <path d="M${x - width * 0.43} ${y - height * 0.28}h${width * 0.86}" stroke="#87939b" stroke-width="6" opacity=".5"/>
   <path d="M${x - width * 0.5} ${y - height / 2}v${height}M${x + width * 0.5} ${y - height / 2}v${height}" stroke="#1b2126" stroke-width="7" opacity=".7"/>`
 
+const areaHead = (x: number, y: number) => `
+  <path d="M${x - 92} ${y - 10}  ${x - 66} ${y - 18}  ${x + 78} ${y - 14}  ${x + 94} ${y - 3}  ${x + 82} ${y + 15}  ${x - 74} ${y + 17}z" fill="url(#housing)" stroke="#20272d" stroke-width="5"/>
+  <path d="M${x - 53} ${y + 12}h126l-11 17h-106z" fill="#cfd6d9" stroke="#394147" stroke-width="4"/>
+  ${[x - 35, x - 4, x + 27, x + 58].flatMap((cellX) => [y + 17, y + 25].map((cellY) => `<circle cx="${cellX}" cy="${cellY}" r="7" fill="url(#lens)" stroke="#f8f2d4" stroke-width="2"/>`)).join('')}
+  ${[x - 42, x - 20, x + 2, x + 24, x + 46].map((finX) => `<path d="M${finX} ${y - 15}v-12" stroke="#3e474e" stroke-width="7" stroke-linecap="round"/>`).join('')}
+  <circle cx="${x - 66}" cy="${y - 20}" r="8" fill="#2a3136"/>`
+
 const lantern = (x: number, y: number, scale = 1) => `
   <path d="M${x - 30 * scale} ${y - 8 * scale}h${60 * scale}l${-10 * scale} ${15 * scale}h${-40 * scale}z" fill="#20262b"/>
   <path d="M${x - 24 * scale} ${y + 8 * scale}q0 ${48 * scale} ${24 * scale} ${60 * scale}q${24 * scale} ${-12 * scale} ${24 * scale} ${-60 * scale}z" fill="url(#globe)" stroke="#252b30" stroke-width="6"/>
@@ -57,30 +64,56 @@ const lantern = (x: number, y: number, scale = 1) => `
 
 const bodies: Record<CatalogLampProjection, string> = {
   'high-mast': `
-    ${pole(320, 130, 535, 40)}
-    <circle cx="320" cy="143" r="27" fill="#20272d"/>
+    ${pole(320, 150, 535, 34)}
+    <ellipse cx="320" cy="168" rx="104" ry="34" fill="none" stroke="#3c464d" stroke-width="13"/>
+    <path d="M320 108v58M302 123l-70 43M338 123l70 43" fill="none" stroke="#252d33" stroke-width="6"/>
+    <path d="M288 118h64l-10-17h-44z" fill="#5e6970" stroke="#242b30" stroke-width="5"/>
+    <circle cx="320" cy="164" r="23" fill="#4b555c" stroke="#20272d" stroke-width="6"/>
     ${[0, 60, 120, 180, 240, 300].map((angle) => {
       const radians = (angle * Math.PI) / 180
-      const x = 320 + Math.cos(radians) * 84
-      const y = 143 + Math.sin(radians) * 84
-      return `<path d="M320 143 ${x} ${y}" stroke="#252c32" stroke-width="18" stroke-linecap="round"/>${boxHead(x, y, 78, 32)}`
+      const armX = 320 + Math.cos(radians) * 102
+      const armY = 168 + Math.sin(radians) * 34
+      const x = 320 + Math.cos(radians) * 155
+      const y = 168 + Math.sin(radians) * 45
+      return `<path d="M${armX} ${armY} ${x} ${y}" stroke="#465159" stroke-width="10" stroke-linecap="round"/>
+        <g transform="rotate(${angle} ${x} ${y})">
+          <path d="M${x - 38} ${y - 12}h61l15 8-7 19h-65l-12-9z" fill="url(#housing)" stroke="#20272d" stroke-width="4"/>
+          <path d="M${x - 18} ${y + 10}h45l-5 8h-37z" fill="url(#lens)" stroke="#e8dcc0" stroke-width="2"/>
+          <path d="M${x - 17} ${y - 13}v-8M${x - 3} ${y - 13}v-8M${x + 11} ${y - 12}v-8" stroke="#414a50" stroke-width="5"/>
+        </g>`
     }).join('')}`,
   shoebox: `
-    ${pole(240, 153, 535, 30)}
-    <path d="M240 160h165" stroke="#252c32" stroke-width="21" stroke-linecap="round"/>
-    ${boxHead(454, 170, 128, 51)}`,
+    ${pole(320, 153, 535, 30)}
+    <path d="M320 160h58" stroke="#252c32" stroke-width="18" stroke-linecap="square"/>
+    <path d="M320 160v44" stroke="#252c32" stroke-width="23"/>
+    <path d="M350 152h28v31h-28z" fill="#252c32"/>
+    ${areaHead(455, 166)}`,
   floodlight: `
     ${pole(250, 153, 535, 30)}
-    <path d="M250 165h160" stroke="#252c32" stroke-width="20" stroke-linecap="round"/>
-    <path d="M397 170 464 130l64 16-18 75-72 11z" fill="url(#housing)"/>
-    <path d="m414 173 81-20 15 13-13 39-78 13z" fill="url(#lens)"/>
-    <path d="M402 222h73" stroke="#171c21" stroke-width="9"/>`,
+    <path d="M250 171h174" stroke="#252c32" stroke-width="18" stroke-linecap="round"/>
+    <path d="M250 214 372 171" stroke="#414a51" stroke-width="10" stroke-linecap="round"/>
+    <ellipse cx="421" cy="171" rx="17" ry="22" fill="#1b2126"/>
+    <path d="M405 170 432 133 528 151 542 199 514 238 414 218z" fill="none" stroke="#1a2025" stroke-width="11" stroke-linejoin="round"/>
+    <path d="M428 140 520 157 532 198 508 228 419 211z" fill="url(#housing)" stroke="#20272d" stroke-width="5"/>
+    <path d="M443 158 505 169 513 196 497 214 436 202z" fill="#c7cfd2" stroke="#69747b" stroke-width="5"/>
+    ${[0, 1, 2, 3].flatMap((column) => [0, 1, 2].map((row) => {
+      const x = 451 + column * 15 + row * 1.4
+      const y = 169 + row * 13 + column * 2.7
+      return `<circle cx="${x}" cy="${y}" r="5" fill="url(#lens)" stroke="#fff6d2" stroke-width="1.5"/>`
+    })).join('')}
+    ${[449, 465, 481, 497, 513].map((x) => `<path d="M${x} 148l7 52" stroke="#1d2429" stroke-width="5" stroke-linecap="round" opacity=".72"/>`).join('')}
+    <circle cx="423" cy="179" r="10" fill="#151a1e" stroke="#7c878e" stroke-width="4"/>
+    <path d="M421 218h76" stroke="#171c21" stroke-width="8" stroke-linecap="round"/>`,
   solar: `
-    ${pole(270, 153, 535, 30)}
-    <path d="M270 165h176" stroke="#252c32" stroke-width="20" stroke-linecap="round"/>
-    ${boxHead(485, 177, 115, 44)}
-    <path d="M172 201 275 158l18 82-105 38z" fill="#183b60" stroke="#222c35" stroke-width="9"/>
-    <path d="m186 208 89-37m-79 68 96-39m-74 68 84-35M212 185l17 68m15-80 17 71" stroke="#83a6c5" stroke-width="4" opacity=".8"/>`,
+    ${pole(320, 165, 535, 30)}
+    <g>
+      <path d="M320 176Q365 111 410 145" fill="none" stroke="#252c32" stroke-width="18" stroke-linecap="round"/>
+      <path d="M378 124 493 130 525 150 510 185 397 181 373 157z" fill="url(#housing)" stroke="#20272d" stroke-width="7" stroke-linejoin="round"/>
+      <path d="M390 128 489 133 509 147 397 143z" fill="#101d38" stroke="#8b949d" stroke-width="5" stroke-linejoin="round"/>
+      <path d="m410 129-1 15m20-14-1 15m20-14-1 15m20-14-1 15M394 135l108 6" stroke="#aeb9ca" stroke-width="2.5" opacity=".9"/>
+      <path d="m445 158 57 3-7 19-54-2z" fill="#dce3e5" stroke="#7c878d" stroke-width="4"/>
+      <circle cx="410" cy="166" r="7" fill="#20272b" stroke="#748087" stroke-width="3"/>
+    </g>`,
   lantern: `
     ${pole(320, 164, 535, 30)}
     <path d="M320 170v35" stroke="#252c32" stroke-width="17" stroke-linecap="round"/>
@@ -150,10 +183,10 @@ const bodies: Record<CatalogLampProjection, string> = {
 }
 
 const descriptions: Record<CatalogLampProjection, [string, string]> = {
-  'high-mast': ['High-mast crown lamp', 'A tall pole with a radial crown of roadway floodlights.'],
-  shoebox: ['Shoebox area lamp', 'A parking-area pole with a broad rectangular luminaire.'],
-  floodlight: ['Floodlight pole', 'A pole-mounted tilted projector head.'],
-  solar: ['Solar street lamp', 'A roadway lamp with a photovoltaic panel.'],
+  'high-mast': ['High-mast lowering crown', 'A tapered mast with a serviceable carrier ring and six LED luminaires.'],
+  shoebox: ['LED area pole', 'A square parking-area pole with one low-profile multi-cell LED luminaire.'],
+  floodlight: ['Floodlight pole', 'A braced pole with an adjustable yoke-mounted LED projector.'],
+  solar: ['Solar street lamp', 'A single-sided roadway pole with one photovoltaic all-in-one luminaire.'],
   lantern: ['Traditional lantern', 'A pitched-roof post-top lantern.'],
   globe: ['Globe post-top lamp', 'A civic post with a spherical illuminated globe.'],
   candelabra: ['Decorative candelabra lamp', 'A three-arm ornamental lantern pole.'],

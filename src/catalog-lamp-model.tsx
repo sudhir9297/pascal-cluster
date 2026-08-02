@@ -14,6 +14,180 @@ import {
 } from './cobra-head-light-geometry'
 import { LampLensMaterial as LensMaterial, LampMetalMaterial as MetalMaterial, NO_RAYCAST } from './roadway-lamp-primitives'
 import { RoadwayHead } from './roadway-lamp-primitives'
+import {
+  buildShoeboxAreaLightArmGeometry,
+  buildShoeboxAreaLightHousingGeometry,
+  buildShoeboxAreaLightLensGeometry,
+  SHOEBOX_AREA_LIGHT_HEAT_SINK_Z,
+  SHOEBOX_AREA_LIGHT_OPTIC_CELL_X_OFFSETS,
+  SHOEBOX_AREA_LIGHT_OPTIC_CELL_Z_OFFSETS,
+  SHOEBOX_AREA_LIGHT_OPTIC_MODULE_CENTERS,
+} from './shoebox-area-light-geometry'
+import { FloodlightPoleModel } from './floodlight-pole-model'
+import { HighMastCrownLightModel } from './high-mast-crown-light-model'
+import { SolarStreetLightModel } from './solar-street-light-model'
+import type { HighMastCrownLightNode } from './schema'
+
+function ShoeboxFixtureHead({
+  bodyColor,
+  color,
+  ghost,
+  layer,
+  lightColor,
+  lightOn,
+}: {
+  bodyColor: string
+  color: string
+  ghost: boolean
+  layer: number
+  lightColor: string
+  lightOn: boolean
+}) {
+  const housingGeometry = useMemo(() => buildShoeboxAreaLightHousingGeometry(), [])
+  const lensGeometry = useMemo(() => buildShoeboxAreaLightLensGeometry(), [])
+
+  useEffect(
+    () => () => {
+      housingGeometry.dispose()
+      lensGeometry.dispose()
+    },
+    [housingGeometry, lensGeometry],
+  )
+
+  return (
+    <>
+      <mesh
+        castShadow={!ghost}
+        geometry={housingGeometry}
+        layers={layer}
+        name="catalog-shoebox-area-housing"
+        raycast={ghost ? NO_RAYCAST : undefined}
+        receiveShadow
+      >
+        <MetalMaterial color={bodyColor || color} ghost={ghost} metalness={0.76} roughness={0.34} />
+      </mesh>
+      <mesh
+        castShadow={!ghost}
+        layers={layer}
+        name="catalog-shoebox-service-door"
+        position={[-0.005, -0.048, 0]}
+        raycast={ghost ? NO_RAYCAST : undefined}
+      >
+        <boxGeometry args={[0.19, 0.014, 0.18]} />
+        <MetalMaterial color="#343b40" ghost={ghost} metalness={0.78} roughness={0.35} />
+      </mesh>
+      <mesh
+        castShadow={!ghost}
+        layers={layer}
+        name="catalog-shoebox-service-latch"
+        position={[0.045, -0.059, 0]}
+        raycast={ghost ? NO_RAYCAST : undefined}
+      >
+        <cylinderGeometry args={[0.013, 0.013, 0.009, 10]} />
+        <MetalMaterial color="#15191c" ghost={ghost} metalness={0.88} roughness={0.24} />
+      </mesh>
+      <mesh
+        geometry={lensGeometry}
+        layers={layer}
+        name="catalog-shoebox-optic-window"
+        raycast={ghost ? NO_RAYCAST : undefined}
+      >
+        <LensMaterial color={lightColor} ghost={ghost} lightOn={lightOn} />
+      </mesh>
+      {SHOEBOX_AREA_LIGHT_OPTIC_MODULE_CENTERS.map((x) => (
+        <mesh
+          key={`module:${x}`}
+          castShadow={!ghost}
+          layers={layer}
+          name="catalog-shoebox-optic-module"
+          position={[x, -0.072, 0]}
+          raycast={ghost ? NO_RAYCAST : undefined}
+        >
+          <boxGeometry args={[0.166, 0.014, 0.258]} />
+          <meshStandardMaterial
+            color={lightOn ? '#eef4f5' : '#aeb9bf'}
+            depthWrite={!ghost}
+            emissive={lightOn ? lightColor : '#000000'}
+            emissiveIntensity={ghost ? 0.12 : lightOn ? 0.5 : 0}
+            metalness={0.05}
+            opacity={ghost ? 0.5 : 0.96}
+            roughness={0.18}
+            transparent={ghost}
+          />
+        </mesh>
+      ))}
+      {SHOEBOX_AREA_LIGHT_OPTIC_MODULE_CENTERS.flatMap((moduleX) =>
+        SHOEBOX_AREA_LIGHT_OPTIC_CELL_X_OFFSETS.flatMap((offsetX) =>
+          SHOEBOX_AREA_LIGHT_OPTIC_CELL_Z_OFFSETS.map((z) => (
+          <mesh
+            key={`${moduleX}:${offsetX}:${z}`}
+            layers={layer}
+            name="catalog-shoebox-optic-cell"
+            position={[moduleX + offsetX, -0.087, z]}
+            raycast={ghost ? NO_RAYCAST : undefined}
+          >
+            <cylinderGeometry args={[0.021, 0.026, 0.012, 16]} />
+            <meshStandardMaterial
+              color={lightOn ? lightColor : '#e6ebed'}
+              depthWrite={!ghost}
+              emissive={lightOn ? lightColor : '#000000'}
+              emissiveIntensity={ghost ? 0.24 : lightOn ? 3 : 0}
+              metalness={0.02}
+              opacity={ghost ? 0.56 : 0.98}
+              roughness={0.1}
+              transparent={ghost}
+            />
+          </mesh>
+          )),
+        ),
+      )}
+      {SHOEBOX_AREA_LIGHT_HEAT_SINK_Z.map((z) => (
+        <mesh
+          key={z}
+          castShadow={!ghost}
+          layers={layer}
+          name="catalog-shoebox-heat-sink-fin"
+          position={[0.42, 0.06, z]}
+          raycast={ghost ? NO_RAYCAST : undefined}
+        >
+          <boxGeometry args={[0.49, 0.024, 0.012]} />
+          <MetalMaterial color="#2f363b" ghost={ghost} metalness={0.82} roughness={0.34} />
+        </mesh>
+      ))}
+      <mesh
+        castShadow={!ghost}
+        layers={layer}
+        name="catalog-shoebox-driver-cover"
+        position={[0.015, 0.052, 0]}
+        raycast={ghost ? NO_RAYCAST : undefined}
+      >
+        <boxGeometry args={[0.18, 0.026, 0.19]} />
+        <MetalMaterial color="#41494f" ghost={ghost} metalness={0.8} roughness={0.34} />
+      </mesh>
+      <mesh
+        castShadow={!ghost}
+        layers={layer}
+        name="catalog-shoebox-photocell"
+        position={[0.015, 0.09, 0]}
+        raycast={ghost ? NO_RAYCAST : undefined}
+      >
+        <cylinderGeometry args={[0.027, 0.031, 0.05, 16]} />
+        <MetalMaterial color="#20262a" ghost={ghost} metalness={0.48} roughness={0.42} />
+      </mesh>
+      <mesh
+        castShadow={!ghost}
+        layers={layer}
+        name="catalog-shoebox-photocell-gasket"
+        position={[0.015, 0.069, 0]}
+        raycast={ghost ? NO_RAYCAST : undefined}
+        rotation={[Math.PI / 2, 0, 0]}
+      >
+        <torusGeometry args={[0.032, 0.006, 8, 18]} />
+        <MetalMaterial color="#101315" ghost={ghost} metalness={0.3} roughness={0.55} />
+      </mesh>
+    </>
+  )
+}
 
 function Fixture({
   projection,
@@ -120,6 +294,15 @@ function Fixture({
             <LensMaterial color={lightColor} ghost={ghost} lightOn={lightOn} />
           </mesh>
         </>
+      ) : projection === 'shoebox' ? (
+        <ShoeboxFixtureHead
+          bodyColor={fixtureBodyColor}
+          color={color}
+          ghost={ghost}
+          layer={layer}
+          lightColor={lightColor}
+          lightOn={lightOn}
+        />
       ) : projection === 'wall-pack' ? (
         <>
           {/* Compact bulkhead housing: a shallow shell, raised lid, and a
@@ -466,7 +649,7 @@ function Fixture({
       )}
       {!ghost && lightOn && intensity > 0 && !isGlobe && projection !== 'wall-pack' && (
         <>
-          <primitive layers={layer} object={lightTarget} position={[0, -0.8, 0]} />
+          <primitive layers={layer} object={lightTarget} position={[projection === 'shoebox' ? 0.4 : 0, -0.8, 0]} />
           <spotLight
             angle={isFlood ? Math.PI * 0.28 : Math.PI * 0.34}
             color={lightColor}
@@ -475,7 +658,7 @@ function Fixture({
             intensity={intensity}
             layers={layer}
             penumbra={0.55}
-            position={[0, -0.22, 0]}
+            position={[projection === 'shoebox' ? 0.4 : 0, -0.16, 0]}
             target={lightTarget}
           />
         </>
@@ -511,6 +694,163 @@ function Pole({
       <mesh castShadow={!ghost} layers={layer} position={[0, 0.04, 0]} raycast={ghost ? NO_RAYCAST : undefined} receiveShadow>
         <cylinderGeometry args={[radius * 1.9, radius * 2.1, 0.08, 20]} />
         <MetalMaterial color={color} ghost={ghost} />
+      </mesh>
+    </group>
+  )
+}
+
+function AreaPole({ height, color, ghost, layer }: { height: number; color: string; ghost: boolean; layer: number }) {
+  const boltOffsets = [-0.16, 0.16] as const
+  return (
+    <group layers={layer} name="catalog-shoebox-square-pole">
+      <mesh
+        castShadow={!ghost}
+        layers={layer}
+        position={[0, height / 2, 0]}
+        raycast={ghost ? NO_RAYCAST : undefined}
+        receiveShadow
+        rotation={[0, Math.PI / 4, 0]}
+      >
+        <cylinderGeometry args={[0.105, 0.155, height, 4]} />
+        <MetalMaterial color={color} ghost={ghost} metalness={0.8} roughness={0.36} />
+      </mesh>
+      <mesh
+        castShadow={!ghost}
+        layers={layer}
+        name="catalog-shoebox-base-plate"
+        position={[0, 0.045, 0]}
+        raycast={ghost ? NO_RAYCAST : undefined}
+        receiveShadow
+      >
+        <boxGeometry args={[0.46, 0.09, 0.46]} />
+        <MetalMaterial color="#30373c" ghost={ghost} metalness={0.84} roughness={0.34} />
+      </mesh>
+      {boltOffsets.flatMap((x) =>
+        boltOffsets.map((z) => (
+          <group key={`${x}:${z}`} layers={layer} position={[x, 0.105, z]}>
+            <mesh
+              castShadow={!ghost}
+              layers={layer}
+              name="catalog-shoebox-anchor-washer"
+              raycast={ghost ? NO_RAYCAST : undefined}
+            >
+              <cylinderGeometry args={[0.043, 0.043, 0.012, 16]} />
+              <MetalMaterial color="#6d757b" ghost={ghost} metalness={0.9} roughness={0.24} />
+            </mesh>
+            <mesh
+              castShadow={!ghost}
+              layers={layer}
+              name="catalog-shoebox-anchor-nut"
+              position={[0, 0.026, 0]}
+              raycast={ghost ? NO_RAYCAST : undefined}
+            >
+              <cylinderGeometry args={[0.031, 0.031, 0.04, 6]} />
+              <MetalMaterial color="#22282c" ghost={ghost} metalness={0.88} roughness={0.27} />
+            </mesh>
+          </group>
+        )),
+      )}
+      <mesh
+        castShadow={!ghost}
+        layers={layer}
+        name="catalog-shoebox-access-door"
+        position={[0, Math.min(1.05, height * 0.23), 0.137]}
+        raycast={ghost ? NO_RAYCAST : undefined}
+      >
+        <boxGeometry args={[0.14, 0.42, 0.018]} />
+        <MetalMaterial color="#3b4348" ghost={ghost} metalness={0.78} roughness={0.38} />
+      </mesh>
+      <mesh
+        castShadow={!ghost}
+        layers={layer}
+        name="catalog-shoebox-access-door-lock"
+        position={[0.035, Math.min(1.05, height * 0.23), 0.151]}
+        raycast={ghost ? NO_RAYCAST : undefined}
+        rotation={[Math.PI / 2, 0, 0]}
+      >
+        <cylinderGeometry args={[0.013, 0.013, 0.012, 10]} />
+        <MetalMaterial color="#171b1e" ghost={ghost} metalness={0.9} roughness={0.22} />
+      </mesh>
+      <mesh
+        castShadow={!ghost}
+        layers={layer}
+        name="catalog-shoebox-pole-top-collar"
+        position={[0, height - 0.02, 0]}
+        raycast={ghost ? NO_RAYCAST : undefined}
+      >
+        <boxGeometry args={[0.23, 0.2, 0.23]} />
+        <MetalMaterial color={color} ghost={ghost} metalness={0.82} roughness={0.32} />
+      </mesh>
+    </group>
+  )
+}
+
+function AreaPoleArm({
+  color,
+  ghost,
+  layer,
+  length,
+  y,
+}: {
+  color: string
+  ghost: boolean
+  layer: number
+  length: number
+  y: number
+}) {
+  const span = Math.max(0.35, length)
+  const armGeometry = useMemo(() => buildShoeboxAreaLightArmGeometry(span), [span])
+  const braceEndX = Math.min(span * 0.68, 0.46)
+  const braceStart: [number, number] = [0.07, y - 0.15]
+  const braceEnd: [number, number] = [braceEndX, y - 0.045]
+  const braceLength = Math.hypot(braceEnd[0] - braceStart[0], braceEnd[1] - braceStart[1])
+  const braceAngle = Math.atan2(braceEnd[1] - braceStart[1], braceEnd[0] - braceStart[0])
+
+  useEffect(() => () => armGeometry.dispose(), [armGeometry])
+
+  return (
+    <group layers={layer} name="catalog-shoebox-integrated-arm">
+      <mesh
+        castShadow={!ghost}
+        geometry={armGeometry}
+        layers={layer}
+        name="catalog-shoebox-tapered-arm"
+        position={[0, y, 0]}
+        raycast={ghost ? NO_RAYCAST : undefined}
+        receiveShadow
+      >
+        <MetalMaterial color={color} ghost={ghost} metalness={0.8} roughness={0.32} />
+      </mesh>
+      <mesh
+        castShadow={!ghost}
+        layers={layer}
+        name="catalog-shoebox-arm-mount"
+        position={[0.07, y - 0.055, 0]}
+        raycast={ghost ? NO_RAYCAST : undefined}
+      >
+        <boxGeometry args={[0.15, 0.22, 0.245]} />
+        <MetalMaterial color={color} ghost={ghost} metalness={0.8} roughness={0.32} />
+      </mesh>
+      <mesh
+        castShadow={!ghost}
+        layers={layer}
+        name="catalog-shoebox-arm-lower-brace"
+        position={[(braceStart[0] + braceEnd[0]) / 2, (braceStart[1] + braceEnd[1]) / 2, 0]}
+        raycast={ghost ? NO_RAYCAST : undefined}
+        rotation={[0, 0, braceAngle]}
+      >
+        <boxGeometry args={[braceLength, 0.05, 0.075]} />
+        <MetalMaterial color={color} ghost={ghost} metalness={0.8} roughness={0.34} />
+      </mesh>
+      <mesh
+        castShadow={!ghost}
+        layers={layer}
+        name="catalog-shoebox-head-adapter"
+        position={[span, y, 0]}
+        raycast={ghost ? NO_RAYCAST : undefined}
+      >
+        <boxGeometry args={[0.18, 0.13, 0.19]} />
+        <MetalMaterial color={color} ghost={ghost} metalness={0.82} roughness={0.3} />
       </mesh>
     </group>
   )
@@ -982,6 +1322,56 @@ export function CatalogLampModel({ node, ghost = false, layer = 0 }: { node: Cat
     )
   }
 
+  if (projection === 'shoebox') {
+    const headY = height + 0.02
+    return (
+      <group layers={layer} name="catalog-shoebox-area-light">
+        <AreaPole color={poleColor} ghost={ghost} height={height} layer={layer} />
+        <group layers={layer} name="catalog-shoebox-area-side">
+          <AreaPoleArm color={poleColor} ghost={ghost} layer={layer} length={armLength} y={headY} />
+          <Fixture
+            bodyColor={poleColor}
+            color={poleColor}
+            distance={distance}
+            ghost={ghost}
+            intensity={node.intensity ?? 2200}
+            layer={layer}
+            lightColor={lightColor}
+            lightOn={lightOn}
+            position={[armLength, headY, 0]}
+            projection="shoebox"
+          />
+        </group>
+      </group>
+    )
+  }
+
+  if (projection === 'floodlight') {
+    return (
+      <FloodlightPoleModel
+        armLength={armLength}
+        distance={distance}
+        ghost={ghost}
+        height={height}
+        intensity={node.intensity ?? 2800}
+        layer={layer}
+        lightColor={lightColor}
+        lightOn={lightOn}
+        poleColor={poleColor}
+      />
+    )
+  }
+
+  if (projection === 'high-mast') {
+    return (
+      <HighMastCrownLightModel
+        ghost={ghost}
+        layer={layer}
+        node={node as HighMastCrownLightNode}
+      />
+    )
+  }
+
   if (isOverhead) {
     if (projection === 'tunnel') {
       const soffitSpan = Math.max(2, armLength + 0.5)
@@ -1078,17 +1468,17 @@ export function CatalogLampModel({ node, ghost = false, layer = 0 }: { node: Cat
     )
   }
 
-  if (projection === 'high-mast' || projection === 'candelabra') {
-    const count = projection === 'high-mast' ? 6 : 3
+  if (projection === 'candelabra') {
+    const count = 3
     return (
       <group layers={layer}>
-        <Pole color={poleColor} ghost={ghost} height={height} layer={layer} radius={projection === 'high-mast' ? 0.18 : 0.12} />
+        <Pole color={poleColor} ghost={ghost} height={height} layer={layer} radius={0.12} />
         {Array.from({ length: count }, (_, index) => {
           const angle = (index * Math.PI * 2) / count
           return (
             <group key={angle} rotation={[0, angle, 0]}>
               <Arm color={poleColor} ghost={ghost} layer={layer} length={armLength} y={fixtureY} />
-              <Fixture projection={projection === 'candelabra' ? 'lantern' : 'shoebox'} position={[armLength, fixtureY, 0]} color={poleColor} lightColor={lightColor} lightOn={lightOn} ghost={ghost} layer={layer} intensity={node.intensity ?? 1800} distance={distance} />
+              <Fixture projection="lantern" position={[armLength, fixtureY, 0]} color={poleColor} lightColor={lightColor} lightOn={lightOn} ghost={ghost} layer={layer} intensity={node.intensity ?? 1800} distance={distance} />
             </group>
           )
         })}
@@ -1098,19 +1488,17 @@ export function CatalogLampModel({ node, ghost = false, layer = 0 }: { node: Cat
 
   if (projection === 'solar') {
     return (
-      <group layers={layer}>
-        <Pole color={poleColor} ghost={ghost} height={height} layer={layer} />
-        <Arm color={poleColor} ghost={ghost} layer={layer} length={armLength} y={fixtureY} />
-        <Fixture projection="shoebox" position={[armLength, fixtureY, 0]} color={poleColor} lightColor={lightColor} lightOn={lightOn} ghost={ghost} layer={layer} intensity={node.intensity ?? 1000} distance={distance} />
-        <mesh castShadow={!ghost} layers={layer} position={[-0.22, height - 0.18, 0]} rotation={[0, 0, -0.42]} raycast={ghost ? NO_RAYCAST : undefined}>
-          <boxGeometry args={[1.35, 0.06, 0.85]} />
-          <meshStandardMaterial color="#1d3c62" depthWrite={!ghost} metalness={0.3} opacity={ghost ? 0.5 : 0.95} roughness={0.3} transparent={ghost} />
-        </mesh>
-        <mesh layers={layer} position={[-0.22, height - 0.18, 0.04]} rotation={[0, 0, -0.42]} raycast={ghost ? NO_RAYCAST : undefined}>
-          <boxGeometry args={[1.12, 0.012, 0.62]} />
-          <meshStandardMaterial color="#6e9ac7" depthWrite={!ghost} emissive="#152b42" emissiveIntensity={0.2} opacity={ghost ? 0.45 : 0.82} roughness={0.26} transparent={ghost} />
-        </mesh>
-      </group>
+      <SolarStreetLightModel
+        armLength={armLength}
+        distance={distance}
+        ghost={ghost}
+        height={height}
+        intensity={node.intensity ?? 1000}
+        layer={layer}
+        lightColor={lightColor}
+        lightOn={lightOn}
+        poleColor={poleColor}
+      />
     )
   }
 
@@ -1119,7 +1507,7 @@ export function CatalogLampModel({ node, ghost = false, layer = 0 }: { node: Cat
     <group layers={layer}>
       <Pole color={poleColor} ghost={ghost} height={height} layer={layer} radius={0.11} />
       <Arm color={poleColor} ghost={ghost} layer={layer} length={armLength} y={fixtureY} />
-      <Fixture projection={projection === 'floodlight' ? 'floodlight' : projection} position={[armLength, fixtureY, 0]} color={poleColor} lightColor={lightColor} lightOn={lightOn} ghost={ghost} layer={layer} intensity={node.intensity ?? 1200} distance={distance} />
+      <Fixture projection={projection} position={[armLength, fixtureY, 0]} color={poleColor} lightColor={lightColor} lightOn={lightOn} ghost={ghost} layer={layer} intensity={node.intensity ?? 1200} distance={distance} />
     </group>
   )
 }

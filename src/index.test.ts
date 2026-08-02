@@ -8,6 +8,7 @@ import { multiHeadAreaLightDefinition } from './multi-head-area-light-definition
 import { areaHeadAngles, resolveMultiHeadAreaLightLayout } from './multi-head-area-light-geometry'
 import { trussRoadwayLightDefinition } from './truss-roadway-light-definition'
 import { resolveTrussRoadwayLightLayout } from './truss-roadway-light-geometry'
+import { resolveHighMastCrownLightLayout } from './high-mast-crown-light-geometry'
 import { twinArmMedianLightDefinition } from './twin-arm-median-light-definition'
 import { resolveTwinArmMedianLightLayout } from './twin-arm-median-light-geometry'
 import { heritageCrookLightDefinition } from './heritage-crook-light-definition'
@@ -21,6 +22,7 @@ import { resolvePostTopLightLayout } from './post-top-light-geometry'
 import {
   CobraHeadLightNode,
   HeritageCrookLightNode,
+  HighMastCrownLightNode,
   MultiHeadAreaLightNode,
   PedestrianPostLightNode,
   StreetLightNode,
@@ -185,7 +187,7 @@ describe('Environment plugin manifest', () => {
     expect(() => CobraHeadLightNode.parse({ height: 31 })).toThrow()
   })
 
-  test('registers the cobra-head model with a straight mast arm below the housing', () => {
+  test('registers the cobra-head model with a swept mast arm below the housing', () => {
     expect(cobraHeadLightDefinition.tool).toBeDefined()
     expect(cobraHeadLightDefinition.preview).toBeDefined()
     expect(cobraHeadLightDefinition.renderer).toBeDefined()
@@ -194,7 +196,8 @@ describe('Environment plugin manifest', () => {
     const layout = resolveCobraHeadLightLayout(CobraHeadLightNode.parse({}))
     expect(layout.armY).toBeGreaterThan(layout.poleTopY)
     expect(layout.fixtureTopY).toBeGreaterThan(layout.armY)
-    expect(layout.fixtureLength).toBeGreaterThan(0.8)
+    expect(layout.fixtureLength).toBeGreaterThan(1)
+    expect(layout.fixtureWidth).toBeGreaterThan(0.5)
   })
 
   test('creates an off twin-arm median lamp with stable defaults', () => {
@@ -217,6 +220,8 @@ describe('Environment plugin manifest', () => {
     const layout = resolveTwinArmMedianLightLayout(TwinArmMedianLightNode.parse({}))
     expect(layout.armLength).toBe(1.35)
     expect(layout.fixtureStartX + layout.fixtureLength).toBeGreaterThan(layout.armLength)
+    expect(layout.armY).toBeGreaterThan(layout.poleTopY)
+    expect(layout.fixtureWidth).toBeLessThan(0.5)
   })
 
   test('creates an off four-head area pole with stable defaults', () => {
@@ -246,8 +251,8 @@ describe('Environment plugin manifest', () => {
     const trussLight = TrussRoadwayLightNode.parse({})
     expect(trussLight.type).toBe('environment:truss-roadway-light')
     expect(trussLight.height).toBe(6)
-    expect(trussLight.armLength).toBe(1.6)
-    expect(trussLight.braceDepth).toBe(0.7)
+    expect(trussLight.armLength).toBe(2)
+    expect(trussLight.braceDepth).toBe(0.75)
     expect(trussLight.lightOn).toBe(false)
     expect(() => TrussRoadwayLightNode.parse({ braceDepth: 0.2 })).toThrow()
     expect(() => TrussRoadwayLightNode.parse({ armLength: 3.6 })).toThrow()
@@ -260,7 +265,7 @@ describe('Environment plugin manifest', () => {
     expect(trussRoadwayLightDefinition.floorplan).toBeDefined()
     expect(trussRoadwayLightDefinition.handles).toHaveLength(3)
     const layout = resolveTrussRoadwayLightLayout(TrussRoadwayLightNode.parse({}))
-    expect(layout.braceDepth).toBe(0.7)
+    expect(layout.braceDepth).toBe(0.75)
     expect(layout.fixtureStartX + layout.fixtureLength).toBeGreaterThan(layout.armLength)
   })
 
@@ -277,7 +282,7 @@ describe('Environment plugin manifest', () => {
     }
   })
 
-  test('keeps every lamp archetype on the shared six-metre height contract', () => {
+  test('keeps standard lamps at six metres and gives the high mast a true high-mast default', () => {
     const nodes = [
       StreetLightNode.parse({}),
       PedestrianPostLightNode.parse({}),
@@ -286,13 +291,18 @@ describe('Environment plugin manifest', () => {
       TwinArmMedianLightNode.parse({}),
       MultiHeadAreaLightNode.parse({}),
       TrussRoadwayLightNode.parse({}),
-      ...CATALOG_LAMP_VARIANTS.map((variant) => variant.schema.parse({})),
+      ...CATALOG_LAMP_VARIANTS
+        .filter((variant) => variant.kind !== 'environment:high-mast-crown-light')
+        .map((variant) => variant.schema.parse({})),
     ]
     for (const node of nodes) {
       expect(node.height).toBe(6)
     }
     expect(() => StreetLightNode.parse({ height: 0.49 })).toThrow()
     expect(() => CATALOG_LAMP_VARIANTS[0].schema.parse({ height: 30.1 })).toThrow()
+    const highMast = HighMastCrownLightNode.parse({})
+    expect(highMast.height).toBe(18)
+    expect(resolveHighMastCrownLightLayout(highMast).fixtureCenterRadius).toBe(1.8)
   })
 
   test('groups similar silhouettes behind shared side-menu style families', () => {

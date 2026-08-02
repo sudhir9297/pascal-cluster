@@ -75,9 +75,9 @@ export const trussRoadwayLightDefinition: TrussRoadwayLightDefinition = {
     position: [0, 0, 0],
     rotation: [0, 0, 0],
     height: 6,
-    armLength: 1.6,
-    braceDepth: 0.7,
-    poleColor: '#363b40',
+    armLength: 2,
+    braceDepth: 0.75,
+    poleColor: '#596166',
     lightOn: false,
     lightColor: '#ffd39a',
     intensity: 1400,
@@ -109,8 +109,8 @@ export const trussRoadwayLightDefinition: TrussRoadwayLightDefinition = {
   ],
 
   presentation: {
-    label: 'Truss roadway',
-    description: 'A cobra-head roadway lamp with a visible braced outreach.',
+    label: 'Truss Roadway Light',
+    description: 'A fitted pipe-truss roadway pole with a full-cutoff LED luminaire.',
     icon: { kind: 'iconify', name: 'lucide:construction' },
     paletteSection: 'furnish',
     hidden: true,
@@ -118,6 +118,6 @@ export const trussRoadwayLightDefinition: TrussRoadwayLightDefinition = {
 
   mcp: {
     description:
-      'A truss-bracket roadway light reusing a cobra-head luminaire with adjustable height, arm length, brace depth, colors, intensity, orientation, and on/off state.',
+      'A fitted pipe-truss roadway light with separate pole brackets, rising upper arm, diagonal lower chord, vertical web, full-cutoff LED optics, and adjustable dimensions, finish, intensity, orientation, and on/off state.',
   },
 }

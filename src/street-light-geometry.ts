@@ -1,4 +1,4 @@
-import { BufferGeometry, Float32BufferAttribute, Vector3 } from 'three'
+import { BufferGeometry, Float32BufferAttribute } from 'three'
 import type { StreetLightNode } from './schema'
 
 export type StreetLightLayout = {
@@ -16,132 +16,116 @@ export type StreetLightLayout = {
   fixtureTopY: number
 }
 
-/** Shared dimensional layout for the procedural street-light model and tests. */
-export function resolveStreetLightLayout(node: StreetLightNode): StreetLightLayout {
-  const height = Math.max(3, node.height ?? 6)
-  const armLength = Math.max(0.3, node.armLength ?? 1.2)
-  const poleRadius = Math.min(0.115, 0.072 + height * 0.004)
-  const armRadius = Math.max(0.045, poleRadius * 0.6)
-  const armEndY = height - 0.2
-  const socketLength = 0.24
-  const fixtureLength = 0.86
-  return {
-    height,
-    armLength,
-    poleRadius,
-    armRadius,
-    poleTop: height - 0.58,
-    armEndY,
-    socketLength,
-    socketRadius: armRadius * 1.28,
-    fixtureStartX: armLength + socketLength - 0.05,
-    fixtureLength,
-    fixtureWidth: 0.36,
-    fixtureTopY: armEndY + 0.11,
-  }
-}
-
-type Section = {
+export type StreetLightHousingSection = {
   x: number
   top: number
   bottom: number
   halfWidth: number
 }
 
-function point(x: number, y: number, z: number): Vector3 {
-  return new Vector3(x, y, z)
+/** Shared dimensional layout for the procedural street-light model and tests. */
+export function resolveStreetLightLayout(node: StreetLightNode): StreetLightLayout {
+  const height = Math.max(3, node.height ?? 6)
+  const armLength = Math.max(0.3, node.armLength ?? 1.2)
+  const poleRadius = Math.min(0.125, 0.078 + height * 0.0045)
+  const armRadius = Math.max(0.052, poleRadius * 0.62)
+  const armEndY = height - 0.2
+  const fixtureLength = 1.08
+  return {
+    height,
+    armLength,
+    poleRadius,
+    armRadius,
+    poleTop: height - 0.68,
+    armEndY,
+    socketLength: 0.28,
+    socketRadius: armRadius * 1.35,
+    fixtureStartX: armLength + 0.04,
+    fixtureLength,
+    fixtureWidth: 0.56,
+    fixtureTopY: armEndY + 0.165,
+  }
 }
 
-function pushTriangle(positions: number[], a: Vector3, b: Vector3, c: Vector3): void {
-  positions.push(a.x, a.y, a.z, b.x, b.y, b.z, c.x, c.y, c.z)
+export function getStreetLightHousingSections(layout: StreetLightLayout): StreetLightHousingSection[] {
+  const length = layout.fixtureLength
+  const width = layout.fixtureWidth
+  return [
+    { x: -0.12, top: 0.075, bottom: -0.045, halfWidth: width * 0.23 },
+    { x: 0.07, top: 0.165, bottom: -0.12, halfWidth: width * 0.42 },
+    { x: length * 0.3, top: 0.13, bottom: -0.1, halfWidth: width * 0.5 },
+    { x: length * 0.86, top: 0.07, bottom: -0.075, halfWidth: width * 0.48 },
+    { x: length, top: 0.025, bottom: -0.055, halfWidth: width * 0.36 },
+  ]
 }
 
-function pushQuad(
-  positions: number[],
-  a: Vector3,
-  b: Vector3,
-  c: Vector3,
-  d: Vector3,
-): void {
-  pushTriangle(positions, a, b, c)
-  pushTriangle(positions, a, c, d)
-}
+function buildChamferedLoft(sections: readonly StreetLightHousingSection[], bevel: number): BufferGeometry {
+  const positions: number[] = []
+  const indices: number[] = []
+  const ringSize = 8
 
-function finishGeometry(positions: number[]): BufferGeometry {
+  for (const section of sections) {
+    const b = Math.min(bevel, section.halfWidth * 0.35, (section.top - section.bottom) * 0.35)
+    const ring = [
+      [section.top - b, -section.halfWidth],
+      [section.top, -section.halfWidth + b],
+      [section.top, section.halfWidth - b],
+      [section.top - b, section.halfWidth],
+      [section.bottom + b, section.halfWidth],
+      [section.bottom, section.halfWidth - b],
+      [section.bottom, -section.halfWidth + b],
+      [section.bottom + b, -section.halfWidth],
+    ]
+    for (const [y, z] of ring) positions.push(section.x, y ?? 0, z ?? 0)
+  }
+
+  for (let sectionIndex = 0; sectionIndex < sections.length - 1; sectionIndex += 1) {
+    const current = sectionIndex * ringSize
+    const next = current + ringSize
+    for (let ringIndex = 0; ringIndex < ringSize; ringIndex += 1) {
+      const following = (ringIndex + 1) % ringSize
+      indices.push(
+        current + ringIndex,
+        next + ringIndex,
+        next + following,
+        current + ringIndex,
+        next + following,
+        current + following,
+      )
+    }
+  }
+
+  for (let index = 1; index < ringSize - 1; index += 1) {
+    indices.push(0, index + 1, index)
+    const end = (sections.length - 1) * ringSize
+    indices.push(end, end + index, end + index + 1)
+  }
+
   const geometry = new BufferGeometry()
   geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
+  geometry.setIndex(indices)
   geometry.computeVertexNormals()
   geometry.computeBoundingBox()
   geometry.computeBoundingSphere()
   return geometry
 }
 
-/** A faceted, tapered LED housing authored with its socket at local x=0. */
+/** A chamfered die-cast shell with a substantial service pod and thin optic nose. */
 export function buildLampHousingGeometry(layout: StreetLightLayout): BufferGeometry {
-  const length = layout.fixtureLength
-  const width = layout.fixtureWidth
-  const sections: Section[] = [
-    { x: 0, top: 0.075, bottom: -0.075, halfWidth: width * 0.34 },
-    { x: length * 0.18, top: 0.11, bottom: -0.1, halfWidth: width * 0.5 },
-    { x: length, top: 0.015, bottom: -0.145, halfWidth: width * 0.34 },
-  ]
-  const positions: number[] = []
-
-  for (let i = 0; i < sections.length - 1; i += 1) {
-    const a = sections[i]!
-    const b = sections[i + 1]!
-    const atp = point(a.x, a.top, a.halfWidth)
-    const atn = point(a.x, a.top, -a.halfWidth)
-    const abp = point(a.x, a.bottom, a.halfWidth)
-    const abn = point(a.x, a.bottom, -a.halfWidth)
-    const btp = point(b.x, b.top, b.halfWidth)
-    const btn = point(b.x, b.top, -b.halfWidth)
-    const bbp = point(b.x, b.bottom, b.halfWidth)
-    const bbn = point(b.x, b.bottom, -b.halfWidth)
-
-    pushQuad(positions, atp, btp, btn, atn)
-    pushQuad(positions, abp, abn, bbn, bbp)
-    pushQuad(positions, abp, bbp, btp, atp)
-    pushQuad(positions, abn, atn, btn, bbn)
-  }
-
-  const rear = sections[0]!
-  pushQuad(
-    positions,
-    point(rear.x, rear.top, rear.halfWidth),
-    point(rear.x, rear.top, -rear.halfWidth),
-    point(rear.x, rear.bottom, -rear.halfWidth),
-    point(rear.x, rear.bottom, rear.halfWidth),
-  )
-  const front = sections[sections.length - 1]!
-  pushQuad(
-    positions,
-    point(front.x, front.top, front.halfWidth),
-    point(front.x, front.bottom, front.halfWidth),
-    point(front.x, front.bottom, -front.halfWidth),
-    point(front.x, front.top, -front.halfWidth),
-  )
-
-  return finishGeometry(positions)
+  return buildChamferedLoft(getStreetLightHousingSections(layout), 0.025)
 }
 
-/** Recessed luminous panel following the tapered underside of the housing. */
+/** A shallow full-cutoff optic window recessed below the die-cast perimeter. */
 export function buildLampLensGeometry(layout: StreetLightLayout): BufferGeometry {
   const length = layout.fixtureLength
   const width = layout.fixtureWidth
-  const rearX = length * 0.24
-  const frontX = length * 0.84
-  const rearY = -0.112
-  const frontY = -0.142
-  const rearHalfWidth = width * 0.38
-  const frontHalfWidth = width * 0.28
-  const positions: number[] = []
-  pushQuad(
-    positions,
-    point(rearX, rearY, rearHalfWidth),
-    point(rearX, rearY, -rearHalfWidth),
-    point(frontX, frontY, -frontHalfWidth),
-    point(frontX, frontY, frontHalfWidth),
+  return buildChamferedLoft(
+    [
+      { x: length * 0.34, top: -0.106, bottom: -0.132, halfWidth: width * 0.34 },
+      { x: length * 0.4, top: -0.108, bottom: -0.137, halfWidth: width * 0.38 },
+      { x: length * 0.86, top: -0.078, bottom: -0.108, halfWidth: width * 0.34 },
+      { x: length * 0.92, top: -0.072, bottom: -0.098, halfWidth: width * 0.28 },
+    ],
+    0.01,
   )
-  return finishGeometry(positions)
 }

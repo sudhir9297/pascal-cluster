@@ -61,7 +61,7 @@ export function createRoadSignPreviewNode(input: RoadSignNodeInput): RoadSignNod
   return RoadSignNode.parse({ ...draft, id: ROAD_SIGN_PREVIEW_ID })
 }
 
-/** A freestanding, single-arm street light with a downward-facing luminaire. */
+/** A swept-arm roadway pole with a low-profile full-cutoff LED luminaire. */
 export const StreetLightNode = BaseNode.extend({
   id: objectId('street-light'),
   type: nodeType('environment:street-light'),
@@ -69,7 +69,7 @@ export const StreetLightNode = BaseNode.extend({
   rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
   height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
   armLength: z.number().min(0.3).max(3).default(1.2),
-  poleColor: z.string().default('#30343b'),
+  poleColor: z.string().default('#48535b'),
   lightOn: z.boolean().default(false),
   lightColor: z.string().default('#ffd9a3'),
   intensity: z.number().min(0).max(5000).default(1200),
@@ -108,7 +108,7 @@ export const HeritageCrookLightNode = BaseNode.extend({
 
 export type HeritageCrookLightNode = z.infer<typeof HeritageCrookLightNode>
 
-/** A classic straight mast-arm roadway pole with a broad cobra-head luminaire. */
+/** A classic swept mast-arm roadway pole with a broad cobra-head luminaire. */
 export const CobraHeadLightNode = BaseNode.extend({
   id: objectId('cobra-head-light'),
   type: nodeType('environment:cobra-head-light'),
@@ -124,7 +124,7 @@ export const CobraHeadLightNode = BaseNode.extend({
 
 export type CobraHeadLightNode = z.infer<typeof CobraHeadLightNode>
 
-/** A median pole carrying opposing cobra-head roadway fixtures. */
+/** A median pole carrying opposing full-cutoff LED roadway fixtures. */
 export const TwinArmMedianLightNode = BaseNode.extend({
   id: objectId('twin-arm-median-light'),
   type: nodeType('environment:twin-arm-median-light'),
@@ -157,16 +157,16 @@ export const MultiHeadAreaLightNode = BaseNode.extend({
 
 export type MultiHeadAreaLightNode = z.infer<typeof MultiHeadAreaLightNode>
 
-/** A cobra-head roadway lamp carried on a visibly braced truss outreach. */
+/** A fitted pipe-truss roadway pole carrying a full-cutoff LED luminaire. */
 export const TrussRoadwayLightNode = BaseNode.extend({
   id: objectId('truss-roadway-light'),
   type: nodeType('environment:truss-roadway-light'),
   position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
   rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
   height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  armLength: z.number().min(0.8).max(3.5).default(1.6),
-  braceDepth: z.number().min(0.35).max(1.2).default(0.7),
-  poleColor: z.string().default('#363b40'),
+  armLength: z.number().min(0.8).max(3.5).default(2),
+  braceDepth: z.number().min(0.35).max(1.2).default(0.75),
+  poleColor: z.string().default('#596166'),
   lightOn: z.boolean().default(false),
   lightColor: z.string().default('#ffd39a'),
   intensity: z.number().min(0).max(5000).default(1400),
@@ -174,33 +174,33 @@ export const TrussRoadwayLightNode = BaseNode.extend({
 
 export type TrussRoadwayLightNode = z.infer<typeof TrussRoadwayLightNode>
 
-/** High-mast crown lighting for large roads, yards, and interchange areas. */
+/** A tapered high mast with a lowering ring and six outward-aimed LED luminaires. */
 export const HighMastCrownLightNode = BaseNode.extend({
   id: objectId('high-mast-crown-light'),
   type: nodeType('environment:high-mast-crown-light'),
   position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
   rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  armLength: z.number().min(0.6).max(3).default(1.4),
+  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(18),
+  armLength: z.number().min(0.9).max(3).default(1.8),
   visualStyle: z.string().default('high-mast'),
-  poleColor: z.string().default('#343a40'),
+  poleColor: z.string().default('#667178'),
   lightOn: z.boolean().default(false),
-  lightColor: z.string().default('#ffd39a'),
-  intensity: z.number().min(0).max(10000).default(3800),
+  lightColor: z.string().default('#f4f0dc'),
+  intensity: z.number().min(0).max(10000).default(7200),
 })
 
 export type HighMastCrownLightNode = z.infer<typeof HighMastCrownLightNode>
 
-/** Parking-area pole carrying broad rectangular shoebox luminaires. */
+/** Square parking-area pole carrying one low-profile LED luminaire. */
 export const ShoeboxAreaLightNode = BaseNode.extend({
   id: objectId('shoebox-area-light'),
   type: nodeType('environment:shoebox-area-light'),
   position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
   rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
   height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  armLength: z.number().min(0.6).max(3.5).default(1.5),
+  armLength: z.number().min(0.35).max(2.5).default(0.65),
   visualStyle: z.string().default('shoebox'),
-  poleColor: z.string().default('#363b40'),
+  poleColor: z.string().default('#4a535a'),
   lightOn: z.boolean().default(false),
   lightColor: z.string().default('#ffd39a'),
   intensity: z.number().min(0).max(10000).default(2200),
@@ -395,7 +395,7 @@ export const CanopySoffitLightNode = BaseNode.extend({
 
 export type CanopySoffitLightNode = z.infer<typeof CanopySoffitLightNode>
 
-/** Solar street lamp combining a photovoltaic panel and a cobra-head fixture. */
+/** Single-sided solar street light with integrated PV, battery and roadway optics. */
 export const SolarStreetLightNode = BaseNode.extend({
   id: objectId('solar-street-light'),
   type: nodeType('environment:solar-street-light'),

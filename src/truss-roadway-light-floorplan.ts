@@ -60,7 +60,7 @@ export function buildTrussRoadwayLightFloorplan(
       cx: pole[0],
       cy: pole[1],
       r: 0.22,
-      fill: node.poleColor ?? '#363b40',
+      fill: node.poleColor ?? '#596166',
       stroke,
       strokeWidth: 0.035,
     },

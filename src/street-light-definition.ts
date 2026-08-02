@@ -73,7 +73,7 @@ export const streetLightDefinition: StreetLightDefinition = {
     rotation: [0, 0, 0],
     height: 6,
     armLength: 1.2,
-    poleColor: '#30343b',
+    poleColor: '#48535b',
     lightOn: false,
     lightColor: '#ffd9a3',
     intensity: 1200,
@@ -100,13 +100,13 @@ export const streetLightDefinition: StreetLightDefinition = {
   preview: () => import('./street-light-preview'),
   tool: () => import('./street-light-tool'),
   toolHints: [
-    { key: 'Left click', label: 'Place street light' },
+    { key: 'Left click', label: 'Place roadway light' },
     { key: 'Esc', label: 'Stop' },
   ],
 
   presentation: {
-    label: 'Street Light',
-    description: 'A configurable single-arm street light with an operational lamp.',
+    label: 'Roadway Light',
+    description: 'A swept-arm roadway pole with a low-profile full-cutoff LED luminaire.',
     icon: { kind: 'iconify', name: 'lucide:lightbulb' },
     paletteSection: 'furnish',
     hidden: true,
@@ -114,6 +114,6 @@ export const streetLightDefinition: StreetLightDefinition = {
 
   mcp: {
     description:
-      'A freestanding street-light pole with adjustable height, arm length, pole color, lamp color, intensity, orientation, and on/off state.',
+      'A swept-arm roadway light with an integrated spigot, die-cast service housing, multi-cell full-cutoff optic, adjustable finish, intensity, orientation, and on/off state.',
   },
 }

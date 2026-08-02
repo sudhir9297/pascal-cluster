@@ -112,7 +112,7 @@ export const twinArmMedianLightDefinition: TwinArmMedianLightDefinition = {
 
   presentation: {
     label: 'Twin-arm median',
-    description: 'Opposing cobra-head fixtures for divided roads and medians.',
+    description: 'A balanced wishbone median pole with opposing full-cutoff LED heads.',
     icon: { kind: 'iconify', name: 'lucide:git-branch' },
     paletteSection: 'furnish',
     hidden: true,
@@ -120,6 +120,6 @@ export const twinArmMedianLightDefinition: TwinArmMedianLightDefinition = {
 
   mcp: {
     description:
-      'A twin-arm median roadway light with opposing cobra-head fixtures and adjustable height, arm length, colors, intensity, orientation, and on/off state.',
+      'A twin-arm median roadway light with a tapered mast, balanced wishbone crown, opposing full-cutoff LED heads, and adjustable height, arm length, finish, lamp color, intensity, orientation, and on/off state.',
   },
 }

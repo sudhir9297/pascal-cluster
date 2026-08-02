@@ -162,8 +162,8 @@ export const useEnvironmentStore = create<EnvironmentStore>((set) => ({
   setMultiHeadAreaLightOn: (multiHeadAreaLightOn) =>
     set({ multiHeadAreaLightOn }),
   trussRoadwayHeight: STANDARD_LAMP_HEIGHT_M,
-  trussRoadwayArmLength: 1.6,
-  trussRoadwayBraceDepth: 0.7,
+  trussRoadwayArmLength: 2,
+  trussRoadwayBraceDepth: 0.75,
   trussRoadwayLightOn: false,
   setTrussRoadwayHeight: (trussRoadwayHeight) => set({ trussRoadwayHeight }),
   setTrussRoadwayArmLength: (trussRoadwayArmLength) =>
