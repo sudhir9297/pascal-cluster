@@ -101,23 +101,8 @@ findNodeEmitter.on('selection:find-node', (node) => {
     )
     store.setUtilityPoleTransformerMounted(utilityPole.transformerMounted ?? true)
   }
-  if ((node.type as string) === 'environment:road-spline') {
-    store.setPanelCategory('roads')
-    const road = node as unknown as {
-      pathMode?: 'spline' | 'orthogonal'
-      width?: number
-      laneCount?: number
-      centerLineStyle?: 'none' | 'single' | 'double' | 'dashed'
-      edgeLines?: boolean
-    }
-    store.setRoadPathMode(road.pathMode ?? 'spline')
-    store.setRoadWidth(road.width ?? 7)
-    store.setRoadLaneCount(road.laneCount ?? 2)
-    store.setRoadCenterLineStyle(road.centerLineStyle ?? 'double')
-    store.setRoadEdgeLines(road.edgeLines ?? true)
-  }
   if ((node.type as string) === 'environment:road-sign') {
-    store.setPanelCategory('roads')
+    store.setPanelCategory('signs')
     const sign = node as unknown as {
       signId?: RoadSignId
       postHeight?: number

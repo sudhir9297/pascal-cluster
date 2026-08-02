@@ -5,13 +5,17 @@ import cobraHeadLightThumbnail from './assets/cobra-head-light-thumbnail.svg'
 import heritageCrookLightThumbnail from './assets/heritage-crook-light-thumbnail.svg'
 import multiHeadAreaLightThumbnail from './assets/multi-head-area-light-thumbnail.svg'
 import postTopLightThumbnail from './assets/post-top-light-thumbnail.svg'
-import streetLightThumbnail from './assets/street-light-thumbnail.webp'
+import streetLightThumbnail from './assets/street-light-thumbnail-v2.png'
 import wallArmLightThumbnail from './assets/wall-arm-light-thumbnail.png'
 import twinArmMedianLightThumbnail from './assets/twin-arm-median-light-thumbnail.svg'
 import trussRoadwayLightThumbnail from './assets/truss-roadway-light-thumbnail.svg'
 import tunnelLuminaireThumbnail from './assets/tunnel-luminaire-thumbnail.png'
-import catalogLampThumbnail from './assets/catalog-lamp-thumbnail.svg'
 import utilityPoleThumbnail from './assets/utility-pole-thumbnail.webp'
+import type { CatalogLampProjection } from './catalog-lamp-config'
+import {
+  CATALOG_LAMP_THUMBNAILS as CATALOG_LAMP_THUMBNAIL_SVGS,
+  getCatalogLampThumbnail,
+} from './catalog-lamp-thumbnails'
 import directionalRoadSignThumbnail from './assets/directional-road-sign-thumbnail.svg'
 import noEntryRoadSignThumbnail from './assets/no-entry-road-sign-thumbnail.svg'
 import noParkingRoadSignThumbnail from './assets/no-parking-road-sign-thumbnail.svg'
@@ -22,7 +26,7 @@ import warningRoadSignThumbnail from './assets/warning-road-sign-thumbnail.svg'
 import yieldRoadSignThumbnail from './assets/yield-road-sign-thumbnail.svg'
 
 /**
- * Bundled preset artwork. The webp live in `./assets` and travel with the
+ * Bundled preset artwork. Raster assets live in `./assets` and travel with the
  * package — no CDN, no per-app `public/` mirroring. Both consumers are Next, so
  * `transpilePackages` runs these imports through the image pipeline and `.src`
  * is the hashed, cached URL. The panel renders each as an `<img src>`.
@@ -44,7 +48,16 @@ export const TWIN_ARM_MEDIAN_LIGHT_THUMBNAIL = url(twinArmMedianLightThumbnail)
 export const MULTI_HEAD_AREA_LIGHT_THUMBNAIL = url(multiHeadAreaLightThumbnail)
 export const TRUSS_ROADWAY_LIGHT_THUMBNAIL = url(trussRoadwayLightThumbnail)
 export const TUNNEL_LUMINAIRE_THUMBNAIL = url(tunnelLuminaireThumbnail)
-export const CATALOG_LAMP_THUMBNAIL = url(catalogLampThumbnail)
+/** Standard 640px catalog art for every configurable lamp projection. */
+export const CATALOG_LAMP_THUMBNAILS = Object.fromEntries(
+  Object.entries(CATALOG_LAMP_THUMBNAIL_SVGS).map(([projection]) => [
+    projection,
+    getCatalogLampThumbnail(projection as keyof typeof CATALOG_LAMP_THUMBNAIL_SVGS),
+  ]),
+) as Record<CatalogLampProjection, string>
+
+/** Backwards-compatible default artwork for consumers that do not pick a projection. */
+export const CATALOG_LAMP_THUMBNAIL = CATALOG_LAMP_THUMBNAILS.shoebox
 export const UTILITY_POLE_THUMBNAIL = url(utilityPoleThumbnail)
 export const ROAD_SIGN_THUMBNAILS = {
   directional: url(directionalRoadSignThumbnail),

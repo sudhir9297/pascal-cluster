@@ -8,8 +8,7 @@ import type { UtilityPoleAssembly } from './schema'
 import type { RoadSignId } from './road-sign-config'
 
 export type EnvironmentPlacementMode = 'single' | 'continuous'
-export type RoadDrawingMode = 'spline' | 'orthogonal'
-export type EnvironmentPanelCategory = 'lighting' | 'roads' | 'utilities'
+export type EnvironmentPanelCategory = 'lighting' | 'signs' | 'utilities'
 
 /**
  * The plugin's own module-level state — the example of "plugins self-manage
@@ -103,21 +102,6 @@ type EnvironmentStore = {
   setUtilityPoleCrossarmLength: (value: number) => void
   setUtilityPoleTransformerMounted: (value: boolean) => void
   setUtilityPoleAssembly: (value: UtilityPoleAssembly) => void
-  /** Drawing mode for the next road. */
-  roadPathMode: RoadDrawingMode
-  setRoadPathMode: (value: RoadDrawingMode) => void
-  /** Width (m) of the next drawn road. */
-  roadWidth: number
-  setRoadWidth: (value: number) => void
-  /** Number of traffic lanes on the next road spline. */
-  roadLaneCount: number
-  setRoadLaneCount: (value: number) => void
-  /** Center-line treatment for the next road spline. */
-  roadCenterLineStyle: 'none' | 'single' | 'double' | 'dashed'
-  setRoadCenterLineStyle: (value: 'none' | 'single' | 'double' | 'dashed') => void
-  /** Whether the next road spline receives continuous edge lines. */
-  roadEdgeLines: boolean
-  setRoadEdgeLines: (value: boolean) => void
   /** Brush settings for the roadside sign catalog. */
   roadSignId: RoadSignId
   roadSignPostHeight: number
@@ -205,16 +189,6 @@ export const useEnvironmentStore = create<EnvironmentStore>((set) => ({
   setUtilityPoleTransformerMounted: (utilityPoleTransformerMounted) =>
     set({ utilityPoleTransformerMounted }),
   setUtilityPoleAssembly: (utilityPoleAssembly) => set({ utilityPoleAssembly }),
-  roadPathMode: 'orthogonal',
-  setRoadPathMode: (roadPathMode) => set({ roadPathMode }),
-  roadWidth: 7,
-  setRoadWidth: (roadWidth) => set({ roadWidth }),
-  roadLaneCount: 2,
-  setRoadLaneCount: (roadLaneCount) => set({ roadLaneCount }),
-  roadCenterLineStyle: 'double',
-  setRoadCenterLineStyle: (roadCenterLineStyle) => set({ roadCenterLineStyle }),
-  roadEdgeLines: true,
-  setRoadEdgeLines: (roadEdgeLines) => set({ roadEdgeLines }),
   roadSignId: 'stop',
   roadSignPostHeight: 2.1,
   roadSignScale: 1,

@@ -8,6 +8,7 @@ import {
   parseCatalogLamp,
   resolveCatalogLampProjection,
 } from './catalog-lamp-config'
+import { CATALOG_LAMP_THUMBNAILS, getCatalogLampThumbnail } from './catalog-lamp-thumbnails'
 
 describe('structural catalog lamp rendering', () => {
   test('normalizes stale visual styles back to the active structural variant', () => {
@@ -47,6 +48,50 @@ describe('structural catalog lamp rendering', () => {
       }
     } finally {
       console.error = previousConsoleError
+    }
+  })
+
+  test('renders every catalog projection across every family style', () => {
+    const previousConsoleError = console.error
+    console.error = () => {}
+
+    try {
+      for (const variant of CATALOG_LAMP_VARIANTS) {
+        for (const option of getCatalogLampStyleOptions(variant.kind)) {
+          const node = parseCatalogLamp(variant.kind, {
+            armLength: variant.arm[2],
+            height: 6,
+            lightOn: true,
+            visualStyle: option.value,
+          })
+          const ghostMarkup = renderToStaticMarkup(
+            createElement(CatalogLampModel, { ghost: true, layer: 1, node }),
+          )
+          const committedMarkup = renderToStaticMarkup(
+            createElement(CatalogLampModel, { ghost: false, layer: 1, node }),
+          )
+
+          expect(ghostMarkup).not.toContain('spotLight')
+          expect(ghostMarkup).not.toContain('pointLight')
+          expect(committedMarkup).toContain('catalog-')
+          expect(committedMarkup.length).toBeGreaterThan(0)
+        }
+      }
+    } finally {
+      console.error = previousConsoleError
+    }
+  })
+
+  test('provides unique square thumbnails for every catalog projection', () => {
+    const projections = CATALOG_LAMP_VARIANTS.map((variant) => variant.projection)
+    const thumbnails = projections.map((projection) => getCatalogLampThumbnail(projection))
+
+    expect(new Set(thumbnails).size).toBe(new Set(projections).size)
+    expect(Object.keys(CATALOG_LAMP_THUMBNAILS)).toHaveLength(new Set(projections).size)
+    for (const thumbnail of thumbnails) {
+      const svg = decodeURIComponent(thumbnail.split(',')[1] ?? '')
+      expect(svg).toContain('viewBox="0 0 640 640"')
+      expect(svg).toContain('<title')
     }
   })
 

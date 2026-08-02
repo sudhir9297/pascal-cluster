@@ -29,7 +29,6 @@ import {
 } from './catalog-lamp-definition'
 import { utilityPoleDefinition } from './utility-pole-definition'
 import { utilityWireDefinition } from './utility-wire-definition'
-import { roadSplineDefinition } from './road-spline-definition'
 import { roadSignDefinition } from './road-sign-definition'
 
 type PluginHostPanel = {
@@ -81,7 +80,6 @@ export const environmentPlugin: Plugin = {
     solarStreetLightDefinition as unknown as AnyNodeDefinition,
     utilityPoleDefinition as unknown as AnyNodeDefinition,
     utilityWireDefinition as unknown as AnyNodeDefinition,
-    roadSplineDefinition as unknown as AnyNodeDefinition,
     roadSignDefinition as unknown as AnyNodeDefinition,
   ],
 }
@@ -126,7 +124,6 @@ export {
   UtilityPoleNode,
   UtilityPoleAssembly,
   UtilityWireSpanNode,
-  RoadSplineNode,
   RoadSignNode,
   createRoadSignNode,
   createRoadSignPreviewNode,
@@ -157,7 +154,6 @@ export {
 } from './catalog-lamp-definition'
 export { utilityPoleDefinition } from './utility-pole-definition'
 export { utilityWireDefinition } from './utility-wire-definition'
-export { roadSplineDefinition } from './road-spline-definition'
 export { roadSignDefinition } from './road-sign-definition'
 export {
   ROAD_SIGN_CATALOG,

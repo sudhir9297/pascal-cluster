@@ -248,12 +248,12 @@ function Fixture({
               transparent
             />
           </mesh>
-          {[
+          {([
             [0, -0.215, -0.255, tunnelLength - 0.28, 0.045, 0.045],
             [0, -0.215, 0.255, tunnelLength - 0.28, 0.045, 0.045],
             [-(tunnelLength / 2 - 0.17), -0.215, 0, 0.045, 0.045, 0.48],
             [tunnelLength / 2 - 0.17, -0.215, 0, 0.045, 0.045, 0.48],
-          ].map(([x, y, z, sx, sy, sz], index) => (
+          ] as Array<[number, number, number, number, number, number]>).map(([x, y, z, sx, sy, sz], index) => (
             <mesh
               key={index}
               castShadow={!ghost}
@@ -332,12 +332,12 @@ function Fixture({
               transparent
             />
           </mesh>
-          {[
+          {([
             [0, -0.205, -0.39, Math.max(0.72, (length ?? 1) * 0.84), 0.055, 0.055],
             [0, -0.205, 0.39, Math.max(0.72, (length ?? 1) * 0.84), 0.055, 0.055],
             [-(Math.max(0.72, (length ?? 1) * 0.84) / 2), -0.205, 0, 0.055, 0.055, 0.84],
             [Math.max(0.72, (length ?? 1) * 0.84) / 2, -0.205, 0, 0.055, 0.055, 0.84],
-          ].map(([x, y, z, sx, sy, sz], index) => (
+          ] as Array<[number, number, number, number, number, number]>).map(([x, y, z, sx, sy, sz], index) => (
             <mesh
               key={index}
               castShadow={!ghost}
@@ -903,6 +903,85 @@ export function CatalogLampModel({ node, ghost = false, layer = 0 }: { node: Cat
     )
   }
 
+  // Civic and path-scale heads are post-top fixtures. Keeping them on the
+  // shared roadway arm path makes globes and lanterns float off to the side,
+  // while bollards become implausibly tall. Give each profile a grounded
+  // support and let the existing fixture geometry own the head details.
+  if (projection === 'globe' || projection === 'lantern' || projection === 'path') {
+    const isPath = projection === 'path'
+    const supportHeight = isPath
+      ? Math.max(0.65, Math.min(3, height * 0.25))
+      : height
+    const headOffset = isPath ? 0.08 : projection === 'globe' ? 0.3 : 0.41
+    return (
+      <group layers={layer} name={`catalog-${projection}-post-top`}>
+        <Pole
+          color={poleColor}
+          ghost={ghost}
+          height={supportHeight}
+          layer={layer}
+          radius={isPath ? 0.065 : 0.1}
+        />
+        <Fixture
+          projection={projection}
+          position={[0, supportHeight + headOffset, 0]}
+          color={poleColor}
+          lightColor={lightColor}
+          lightOn={lightOn}
+          ghost={ghost}
+          layer={layer}
+          intensity={node.intensity ?? 1200}
+          distance={distance}
+        />
+      </group>
+    )
+  }
+
+  if (projection === 'bollard') {
+    const supportHeight = Math.max(0.45, Math.min(2.1, height * 0.15))
+    return (
+      <group layers={layer} name="catalog-bollard-light">
+        <mesh
+          castShadow={!ghost}
+          layers={layer}
+          position={[0, supportHeight / 2, 0]}
+          raycast={ghost ? NO_RAYCAST : undefined}
+          receiveShadow
+        >
+          <cylinderGeometry args={[0.19, 0.23, supportHeight, 20]} />
+          <MetalMaterial color={poleColor} ghost={ghost} />
+        </mesh>
+        <mesh
+          castShadow={!ghost}
+          layers={layer}
+          position={[0, supportHeight + 0.04, 0]}
+          raycast={ghost ? NO_RAYCAST : undefined}
+        >
+          <cylinderGeometry args={[0.2, 0.2, 0.08, 20]} />
+          <MetalMaterial color={poleColor} ghost={ghost} />
+        </mesh>
+        <mesh
+          layers={layer}
+          position={[0, supportHeight + 0.11, 0]}
+          raycast={ghost ? NO_RAYCAST : undefined}
+        >
+          <cylinderGeometry args={[0.16, 0.16, 0.12, 20]} />
+          <LensMaterial color={lightColor} ghost={ghost} lightOn={lightOn} />
+        </mesh>
+        {!ghost && lightOn && (node.intensity ?? 180) > 0 && (
+          <pointLight
+            color={lightColor}
+            decay={2}
+            distance={Math.max(4, supportHeight * 5)}
+            intensity={(node.intensity ?? 180) * 0.5}
+            layers={layer}
+            position={[0, supportHeight + 0.11, 0]}
+          />
+        )}
+      </group>
+    )
+  }
+
   if (isOverhead) {
     if (projection === 'tunnel') {
       const soffitSpan = Math.max(2, armLength + 0.5)
@@ -1006,12 +1085,10 @@ export function CatalogLampModel({ node, ghost = false, layer = 0 }: { node: Cat
         <Pole color={poleColor} ghost={ghost} height={height} layer={layer} radius={projection === 'high-mast' ? 0.18 : 0.12} />
         {Array.from({ length: count }, (_, index) => {
           const angle = (index * Math.PI * 2) / count
-          const x = Math.cos(angle) * armLength
-          const z = Math.sin(angle) * armLength
           return (
             <group key={angle} rotation={[0, angle, 0]}>
-              <Arm angle={angle} color={poleColor} ghost={ghost} layer={layer} length={armLength} y={fixtureY} />
-              <Fixture projection={projection === 'candelabra' ? 'lantern' : 'shoebox'} position={[x, fixtureY, z]} color={poleColor} lightColor={lightColor} lightOn={lightOn} ghost={ghost} layer={layer} intensity={node.intensity ?? 1800} distance={distance} />
+              <Arm color={poleColor} ghost={ghost} layer={layer} length={armLength} y={fixtureY} />
+              <Fixture projection={projection === 'candelabra' ? 'lantern' : 'shoebox'} position={[armLength, fixtureY, 0]} color={poleColor} lightColor={lightColor} lightOn={lightOn} ghost={ghost} layer={layer} intensity={node.intensity ?? 1800} distance={distance} />
             </group>
           )
         })}
@@ -1037,11 +1114,10 @@ export function CatalogLampModel({ node, ghost = false, layer = 0 }: { node: Cat
     )
   }
 
-  // Default single-arm fixture covers shoeboxes, floodlights, paths, and lantern-like roadway heads.
-  const isShort = projection === 'path' || projection === 'bollard' || projection === 'globe' || projection === 'lantern'
+  // Default single-arm fixture covers the remaining roadway-style heads.
   return (
     <group layers={layer}>
-      <Pole color={poleColor} ghost={ghost} height={height} layer={layer} radius={isShort ? 0.075 : 0.11} />
+      <Pole color={poleColor} ghost={ghost} height={height} layer={layer} radius={0.11} />
       <Arm color={poleColor} ghost={ghost} layer={layer} length={armLength} y={fixtureY} />
       <Fixture projection={projection === 'floodlight' ? 'floodlight' : projection} position={[armLength, fixtureY, 0]} color={poleColor} lightColor={lightColor} lightOn={lightOn} ghost={ghost} layer={layer} intensity={node.intensity ?? 1200} distance={distance} />
     </group>

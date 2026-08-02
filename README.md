@@ -1,7 +1,7 @@
 # Pascal Environment plugin
 
-A first-party environment plugin for the Pascal editor. It contributes a
-procedural road system, configurable roadway and pedestrian lights, a wood utility pole, and a
+A first-party environment plugin for the Pascal editor. It contributes
+configurable roadway and pedestrian lights, a wood utility pole, and a
 host-side Environment panel containing their placement controls.
 
 ```bash
@@ -17,12 +17,6 @@ to a third-party plugin.
 
 ## What it contributes
 
-- **`environment:road-spline`** — a multi-point planar road strip drawn directly in
-  the scene, with procedural asphalt texture, lane count, center-line styles, edge
-  lines, adjustable width, and surface thickness. Use Straight / L mode for
-  axis-aligned roads with automatic mitered corners, or Smooth spline mode for
-  freeform roads. Double-click or press Enter to finish, and use Backspace to
-  remove the last point.
 - **`environment:road-sign`** — a reusable catalog-driven roadside sign with
   procedural plate geometry, single- or double-post mounting, adjustable sign
   scale and mounting height, editable display text, vector face graphics, a
@@ -71,9 +65,8 @@ to a third-party plugin.
   pole is inserted into a nearby through-span or connects to the nearest
   same-level pole within the 45.72 m urban connection limit, allowing shared-pole
   T-junctions.
-- **Categorized placement panel** — separate Lighting, Roads, and Utilities
-  catalogs, with dedicated multi-click road and reusable road-sign placement
-  tools.
+- **Categorized placement panel** — separate Lighting, Signs, and Utilities
+  catalogs, including reusable road-sign placement tools.
 - **Placement settings** — light height/arm/lamp state and utility-pole
   height/crossarm/transformer state.
 - **Shared lamp height** — every lamp archetype starts at the same 6 m height

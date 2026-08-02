@@ -11,37 +11,6 @@ import {
 } from './lamp-constants'
 import { ROAD_SIGN_IDS } from './road-sign-config'
 
-/** A planar road centerline point stored in the road node's local X/Z frame. */
-export const RoadSplinePoint = z.tuple([z.number(), z.number()])
-export const RoadPathMode = z.enum(['spline', 'orthogonal'])
-
-/** A procedural road generated from a smooth planar centerline. */
-export const RoadSplineNode = BaseNode.extend({
-  id: objectId('road-spline'),
-  type: nodeType('environment:road-spline'),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  pathMode: RoadPathMode.default('spline'),
-  points: z.array(RoadSplinePoint).min(2).default([
-    [0, 0],
-    [12, 0],
-  ]),
-  junctions: z.array(RoadSplinePoint).default([]),
-  width: z.number().min(1).max(40).default(7),
-  laneCount: z.number().int().min(1).max(6).default(2),
-  centerLineStyle: z.enum(['none', 'single', 'double', 'dashed']).default('double'),
-  edgeLines: z.boolean().default(true),
-  thickness: z.number().min(0.03).max(0.5).default(0.12),
-  surfaceColor: z.string().default('#35383d'),
-  centerLineColor: z.string().default('#e6c84f'),
-  laneLineColor: z.string().default('#e8e5d7'),
-  textureScale: z.number().min(0.5).max(20).default(4),
-})
-
-export type RoadSplinePoint = z.infer<typeof RoadSplinePoint>
-export type RoadPathMode = z.infer<typeof RoadPathMode>
-export type RoadSplineNode = z.infer<typeof RoadSplineNode>
-
 /** A catalog-driven roadside sign with a reusable plate, graphic, and post. */
 export const RoadSignNode = BaseNode.extend({
   id: objectId('road-sign'),
