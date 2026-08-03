@@ -1,10 +1,26 @@
 'use client'
 
-import { emitter, type GridEvent, sceneRegistry, snapPointToGrid } from '@pascal-app/core'
-import { useEditor } from '@pascal-app/editor'
+import {
+  emitter,
+  type AnyNodeId,
+  type GridEvent,
+  sceneRegistry,
+  snapPointToGrid,
+  useScene,
+  type WallEvent,
+} from '@pascal-app/core'
+import { getSideFromNormal, isValidWallSideFace, useEditor } from '@pascal-app/editor'
 import { useEffect, useRef, useState } from 'react'
 import { type Group, Vector3 } from 'three'
+import { findCeilingPlacementTarget } from './ceiling-placement'
 import type { EnvironmentPlacementMode } from './store'
+import {
+  resolveWallArmAttachment,
+  resolveWallArmPlanAttachment,
+  type WallArmAttachment,
+  type WallMountBounds,
+} from './wall-arm-light-placement'
+import { resolvePlacementPosition } from './placement-position'
 
 const worldVec = new Vector3()
 
@@ -36,13 +52,14 @@ export function snapXZ(x: number, z: number): readonly [number, number] {
 export function toLevelLocal(
   levelId: string,
   world: [number, number, number],
+  preserveY = false,
 ): [number, number, number] {
   const levelObject = sceneRegistry.nodes.get(levelId)
-  if (!levelObject) return [world[0], 0, world[2]]
+  if (!levelObject) return resolvePlacementPosition(world, preserveY)
   worldVec.set(world[0], world[1], world[2])
   levelObject.updateWorldMatrix(true, false)
   levelObject.worldToLocal(worldVec)
-  return [worldVec.x, 0, worldVec.z]
+  return resolvePlacementPosition([worldVec.x, worldVec.y, worldVec.z], preserveY)
 }
 
 /**
@@ -55,6 +72,7 @@ export function toLevelLocal(
 export function usePlacement(
   activeLevelId: string | null,
   onCommit: (levelLocalPosition: [number, number, number]) => void,
+  { preserveY = false }: { preserveY?: boolean } = {},
 ) {
   const cursorRef = useRef<Group>(null)
   const [cursorVisible, setCursorVisible] = useState(false)
@@ -68,17 +86,81 @@ export function usePlacement(
 
     const onMove = (event: GridEvent) => {
       setCursorVisible(true)
-      const [lx, , lz] = event.localPosition
-      const [sx, sz] = snapXZ(lx, lz)
-      cursorRef.current?.position.set(sx, 0, sz)
+      const local = preserveY
+        ? toLevelLocal(activeLevelId, event.position, true)
+        : event.localPosition
+      const [snappedX, snappedZ] = snapXZ(local[0], local[2])
+      const [sx, sy, sz] = resolvePlacementPosition([snappedX, local[1], snappedZ], preserveY)
+      cursorRef.current?.position.set(sx, sy, sz)
       lastWorld = event.position
     }
 
     const onClick = (event: GridEvent) => {
       const world = lastWorld ?? event.position
-      const [lx, , lz] = toLevelLocal(activeLevelId, world)
-      const [sx, sz] = snapXZ(lx, lz)
-      commitRef.current([sx, 0, sz])
+      const local = toLevelLocal(activeLevelId, world, preserveY)
+      const [snappedX, snappedZ] = snapXZ(local[0], local[2])
+      commitRef.current(resolvePlacementPosition([snappedX, local[1], snappedZ], preserveY))
+    }
+
+    emitter.on('grid:move', onMove)
+    emitter.on('grid:click', onClick)
+    return () => {
+      emitter.off('grid:move', onMove)
+      emitter.off('grid:click', onClick)
+    }
+  }, [activeLevelId, preserveY])
+
+  return { cursorRef, cursorVisible }
+}
+
+/**
+ * Ceiling-hosted placement for parametric Environment nodes.
+ *
+ * Pascal's generic `attachTo: 'ceiling'` coordinator is item-specific. This
+ * companion applies the same host rule to ceiling-mounted environment lights:
+ * the preview is valid only within a ceiling polygon and commits in its frame.
+ */
+export function useCeilingPlacement(
+  activeLevelId: string | null,
+  onCommit: (placement: {
+    ceilingId: AnyNodeId
+    position: [number, number, number]
+  }) => void,
+) {
+  const cursorRef = useRef<Group>(null)
+  const [cursorVisible, setCursorVisible] = useState(false)
+  const [ceilingId, setCeilingId] = useState<AnyNodeId | null>(null)
+  const commitRef = useRef(onCommit)
+  commitRef.current = onCommit
+
+  useEffect(() => {
+    if (!activeLevelId) return
+    setCursorVisible(false)
+    setCeilingId(null)
+
+    const resolve = (event: GridEvent) => {
+      const [localX, , localZ] = event.localPosition
+      const [x, z] = snapXZ(localX, localZ)
+      const target = findCeilingPlacementTarget(
+        activeLevelId,
+        useScene.getState().nodes,
+        x,
+        z,
+      )
+      return { target, x, z }
+    }
+
+    const onMove = (event: GridEvent) => {
+      const { target, x, z } = resolve(event)
+      setCeilingId(target?.id ?? null)
+      setCursorVisible(Boolean(target))
+      if (target) cursorRef.current?.position.set(x, target.height, z)
+    }
+
+    const onClick = (event: GridEvent) => {
+      const { target, x, z } = resolve(event)
+      if (!target) return
+      commitRef.current({ ceilingId: target.id, position: [x, 0, z] })
     }
 
     emitter.on('grid:move', onMove)
@@ -88,6 +170,138 @@ export function usePlacement(
       emitter.off('grid:click', onClick)
     }
   }, [activeLevelId])
+
+  return { ceilingId, cursorRef, cursorVisible }
+}
+
+/**
+ * Pascal-native placement for architectural wall-mounted lights.
+ *
+ * Unlike the ordinary environment point brush, this listens to wall surface
+ * events, previews in the wall face frame, and commits the node as a wall
+ * child with the same wallId / wallT / side contract used by attached items.
+ * Grid events provide the equivalent nearest-wall path in the 2D floor plan.
+ */
+export function useWallPlacement(
+  activeLevelId: string | null,
+  mountHeight: number,
+  onCommit: (attachment: WallArmAttachment) => void,
+  {
+    modelOriginAtMount = false,
+    mountBounds,
+    snapAlongWall = true,
+  }: {
+    modelOriginAtMount?: boolean
+    mountBounds?: WallMountBounds
+    snapAlongWall?: boolean
+  } = {},
+) {
+  const cursorRef = useRef<Group>(null)
+  const [cursorVisible, setCursorVisible] = useState(false)
+  const commitRef = useRef(onCommit)
+  commitRef.current = onCommit
+
+  useEffect(() => {
+    if (!activeLevelId) return
+    setCursorVisible(false)
+    let wallHoverActive = false
+
+    const showAttachment = (attachment: WallArmAttachment) => {
+      const cursor = cursorRef.current
+      if (cursor) {
+        // The preview node is built at the brush height. Offset its frame by
+        // the difference so the rendered plate follows the wall pointer's
+        // exact vertical hit without rebuilding the preview every mousemove.
+        cursor.position.set(
+          attachment.cursorPosition[0],
+          attachment.cursorPosition[1]
+            + attachment.mountHeight
+            - (modelOriginAtMount ? 0 : mountHeight),
+          attachment.cursorPosition[2],
+        )
+        cursor.rotation.set(0, attachment.cursorRotationY, 0)
+      }
+      setCursorVisible(true)
+    }
+
+    const attachmentFromWallEvent = (event: WallEvent): WallArmAttachment | null => {
+      if (!isValidWallSideFace(event.normal)) return null
+      const [snappedLocalX] = snapAlongWall
+        ? snapXZ(event.localPosition[0], 0)
+        : [event.localPosition[0], 0] as const
+      return resolveWallArmAttachment(
+        event.node,
+        snappedLocalX,
+        event.localPosition[1],
+        getSideFromNormal(event.normal),
+        mountBounds,
+      )
+    }
+
+    const onWallMove = (event: WallEvent) => {
+      const attachment = attachmentFromWallEvent(event)
+      if (!attachment) return
+      wallHoverActive = true
+      showAttachment(attachment)
+      event.stopPropagation()
+    }
+
+    const onWallClick = (event: WallEvent) => {
+      const attachment = attachmentFromWallEvent(event)
+      if (!attachment) return
+      wallHoverActive = true
+      showAttachment(attachment)
+      commitRef.current(attachment)
+      event.stopPropagation()
+    }
+
+    const onWallLeave = () => {
+      wallHoverActive = false
+      setCursorVisible(false)
+    }
+
+    const attachmentFromGridEvent = (event: GridEvent) =>
+      resolveWallArmPlanAttachment(
+        useScene.getState().nodes,
+        activeLevelId as AnyNodeId,
+        [event.localPosition[0], event.localPosition[2]],
+        mountHeight,
+        mountBounds,
+      )
+
+    const onGridMove = (event: GridEvent) => {
+      if (wallHoverActive) return
+      const attachment = attachmentFromGridEvent(event)
+      if (!attachment) {
+        setCursorVisible(false)
+        return
+      }
+      showAttachment(attachment)
+    }
+
+    const onGridClick = (event: GridEvent) => {
+      if (wallHoverActive) return
+      const attachment = attachmentFromGridEvent(event)
+      if (!attachment) return
+      showAttachment(attachment)
+      commitRef.current(attachment)
+    }
+
+    emitter.on('wall:enter', onWallMove)
+    emitter.on('wall:move', onWallMove)
+    emitter.on('wall:click', onWallClick)
+    emitter.on('wall:leave', onWallLeave)
+    emitter.on('grid:move', onGridMove)
+    emitter.on('grid:click', onGridClick)
+    return () => {
+      emitter.off('wall:enter', onWallMove)
+      emitter.off('wall:move', onWallMove)
+      emitter.off('wall:click', onWallClick)
+      emitter.off('wall:leave', onWallLeave)
+      emitter.off('grid:move', onGridMove)
+      emitter.off('grid:click', onGridClick)
+    }
+  }, [activeLevelId, modelOriginAtMount, mountBounds, mountHeight, snapAlongWall])
 
   return { cursorRef, cursorVisible }
 }

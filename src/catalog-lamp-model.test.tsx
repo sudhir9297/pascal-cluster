@@ -27,7 +27,7 @@ describe('structural catalog lamp rendering', () => {
         for (const option of getCatalogLampStyleOptions(variant.kind)) {
           const node = parseCatalogLamp(variant.kind, {
             armLength: variant.arm[2],
-            height: 6,
+            height: variant.height[2],
             lightOn: true,
             visualStyle: option.value,
           })
@@ -41,8 +41,8 @@ describe('structural catalog lamp rendering', () => {
           expect(ghostMarkup).not.toContain('spotLight')
           expect(ghostMarkup).not.toContain('pointLight')
           expect(ghostMarkup).not.toContain('castShadow="true"')
-          expect(ghostMarkup).toContain('name="catalog-lamp-pole"')
-          expect(committedMarkup).toContain('name="catalog-lamp-pole"')
+          expect(ghostMarkup).toContain('catalog-')
+          expect(committedMarkup).toContain('catalog-')
           expect(committedMarkup.length).toBeGreaterThan(0)
         }
       }
@@ -60,7 +60,7 @@ describe('structural catalog lamp rendering', () => {
         for (const option of getCatalogLampStyleOptions(variant.kind)) {
           const node = parseCatalogLamp(variant.kind, {
             armLength: variant.arm[2],
-            height: 6,
+            height: variant.height[2],
             lightOn: true,
             visualStyle: option.value,
           })
@@ -95,7 +95,7 @@ describe('structural catalog lamp rendering', () => {
     }
   })
 
-  test('builds the catenary style as a two-pole sagging suspension', () => {
+  test('builds the catenary style as a two-pole twin-optic suspension', () => {
     const variant = CATALOG_LAMP_VARIANTS.find((candidate) => candidate.projection === 'catenary')!
     const node = parseCatalogLamp(variant.kind, {
       armLength: 6,
@@ -113,18 +113,18 @@ describe('structural catalog lamp rendering', () => {
 
     expect(markup).toContain('name="catalog-catenary-lamp"')
     expect(markup).toContain('name="catalog-catenary-span"')
-    expect(markup).toContain('name="catalog-suspended-housing"')
-    expect((markup.match(/name="catalog-suspended-end-cap"/g) ?? []).length).toBe(2)
-    expect(markup).toContain('name="catalog-suspended-reflector"')
-    expect(markup).toContain('name="catalog-suspended-diffuser"')
-    expect(markup).toContain('name="catalog-suspended-trim"')
-    expect(markup).toContain('name="catalog-catenary-cable-clamp"')
+    expect(markup).toContain('name="catalog-catenary-aero-housing"')
+    expect(markup).toContain('name="catalog-catenary-service-cover"')
+    expect(markup).toContain('name="catalog-catenary-protector"')
+    expect((markup.match(/name="catalog-catenary-optic-module"/g) ?? []).length).toBe(2)
+    expect((markup.match(/name="catalog-catenary-optic-cell"/g) ?? []).length).toBe(18)
+    expect((markup.match(/name="catalog-catenary-cable-clamp"/g) ?? []).length).toBe(2)
     expect(markup).toContain('torusGeometry')
-    expect((markup.match(/name="catalog-lamp-pole"/g) ?? []).length).toBe(2)
+    expect((markup.match(/name="catalog-catenary-support-pole"/g) ?? []).length).toBe(2)
     expect(markup).toContain('tubeGeometry')
   })
 
-  test('builds the wall-arm style as an attached bracket and cobra head', () => {
+  test('builds the wall-arm style as an architectural bracket and LED head', () => {
     const node = parseCatalogLamp('environment:wall-arm-light', {
       armLength: 1.4,
       height: 6,
@@ -143,10 +143,16 @@ describe('structural catalog lamp rendering', () => {
     expect(markup).toContain('name="catalog-wall-arm-lamp"')
     expect(markup).toContain('name="catalog-wall-arm-mount-plate"')
     expect((markup.match(/name="catalog-wall-arm-mount-bolt"/g) ?? []).length).toBe(4)
-    expect(markup).toContain('name="catalog-wall-arm-curved-bracket"')
-    expect(markup).toContain('name="catalog-wall-arm-support-brace"')
+    expect(markup).toContain('name="catalog-wall-arm-tapered-spar"')
+    expect(markup).toContain('name="catalog-wall-arm-curved-tie"')
     expect(markup).toContain('name="catalog-wall-arm-head"')
-    expect(markup).toContain('#59636b')
+    expect(markup).toContain('name="catalog-wall-arm-optic-window"')
+    expect((markup.match(/name="catalog-wall-arm-optic-bezel"/g) ?? []).length).toBe(4)
+    expect((markup.match(/name="catalog-wall-arm-optic-module"/g) ?? []).length).toBe(3)
+    expect((markup.match(/name="catalog-wall-arm-optic-cell"/g) ?? []).length).toBe(12)
+    expect(markup).not.toContain('name="catalog-wall-arm-heat-sink-fin"')
+    expect(markup).not.toContain('name="catalog-wall-arm-driver-cover"')
+    expect(markup).not.toContain('name="catalog-wall-arm-photocell"')
     expect(markup).toContain('tubeGeometry')
     expect(markup).not.toContain('spotLight')
   })
@@ -332,7 +338,7 @@ describe('structural catalog lamp rendering', () => {
     expect(markup).not.toContain('spotLight')
   })
 
-  test('builds the wall-pack style as a compact grounded bulkhead', () => {
+  test('builds the wall-pack style as a facade-mounted full-cutoff fixture', () => {
     const node = parseCatalogLamp('environment:wall-pack-light', {
       armLength: 0.35,
       height: 6,
@@ -348,17 +354,19 @@ describe('structural catalog lamp rendering', () => {
       console.error = previousConsoleError
     }
 
-    expect(markup).toContain('name="catalog-wall-pack-lamp"')
-    expect(markup).toContain('name="catalog-wall-pack-mount-plate"')
+    expect(markup).toContain('name="catalog-wall-pack-light"')
+    expect(markup).toContain('name="catalog-wall-pack-backplate"')
+    expect((markup.match(/name="catalog-wall-pack-mounting-bolt"/g) ?? []).length).toBe(4)
     expect(markup).toContain('name="catalog-wall-pack-housing"')
-    expect(markup).toContain('name="catalog-wall-pack-top-lid"')
-    expect(markup).toContain('name="catalog-wall-pack-diffuser"')
-    expect(markup).toContain('name="catalog-wall-pack-neck"')
-    expect((markup.match(/name="catalog-lamp-pole"/g) ?? []).length).toBe(1)
+    expect(markup).toContain('name="catalog-wall-pack-optic-window"')
+    expect((markup.match(/name="catalog-wall-pack-optic-cell"/g) ?? []).length).toBe(10)
+    expect((markup.match(/name="catalog-wall-pack-heat-sink-fin"/g) ?? []).length).toBe(5)
+    expect(markup).toContain('name="catalog-wall-pack-photocell"')
+    expect(markup).not.toContain('name="catalog-lamp-pole"')
     expect(markup).not.toContain('spotLight')
   })
 
-  test('builds the tunnel luminaire flush to a grounded soffit', () => {
+  test('builds the tunnel luminaire as a sealed clip-mounted optical line', () => {
     const node = parseCatalogLamp('environment:tunnel-luminaire', {
       armLength: 2.2,
       height: 6,
@@ -374,18 +382,24 @@ describe('structural catalog lamp rendering', () => {
     }
 
     expect(markup).toContain('name="catalog-tunnel-luminaire"')
-    expect(markup).toContain('name="catalog-tunnel-soffit"')
-    expect(markup).toContain('name="catalog-tunnel-soffit-recess"')
     expect(markup).toContain('name="catalog-tunnel-housing"')
-    expect(markup).toContain('name="catalog-tunnel-reflector"')
-    expect(markup).toContain('name="catalog-tunnel-diffuser"')
-    expect(markup).toContain('name="catalog-tunnel-trim"')
+    expect(markup).toContain('name="catalog-tunnel-end-cap"')
+    expect(markup).toContain('name="catalog-tunnel-centre-rail"')
+    expect((markup.match(/name="catalog-tunnel-optic-window"/g) ?? []).length).toBe(2)
+    expect((markup.match(/name="catalog-tunnel-optic-cell"/g) ?? []).length).toBe(24)
+    expect((markup.match(/name="catalog-tunnel-heat-sink-fin"/g) ?? []).length).toBe(5)
+    expect((markup.match(/name="catalog-tunnel-mounting-clip"/g) ?? []).length).toBe(2)
+    expect(markup).toContain('name="catalog-tunnel-ceiling-plate"')
+    expect(markup).toContain('name="catalog-tunnel-cable-gland"')
+    expect(markup).toContain('name="catalog-tunnel-connector-ring"')
+    expect(markup).not.toContain('name="catalog-lamp-pole"')
     expect(markup).not.toContain('spotLight')
   })
 
-  test('builds the canopy style as a grounded recessed broad-beam fixture', () => {
+  test('builds the canopy style as a compact ceiling-hosted recessed fixture', () => {
     const node = parseCatalogLamp('environment:canopy-soffit-light', {
-      armLength: 1,
+      armLength: 0.42,
+      ceilingId: 'ceiling:test',
       height: 6,
       lightOn: false,
       visualStyle: 'canopy',
@@ -400,13 +414,17 @@ describe('structural catalog lamp rendering', () => {
     }
 
     expect(markup).toContain('name="catalog-canopy-soffit-light"')
-    expect(markup).toContain('name="catalog-canopy-support-plate"')
-    expect(markup).toContain('name="catalog-canopy-housing"')
-    expect(markup).toContain('name="catalog-canopy-recess"')
-    expect(markup).toContain('name="catalog-canopy-diffuser"')
-    expect(markup).toContain('name="catalog-canopy-trim"')
-    expect(markup).toContain('name="catalog-canopy-mount"')
-    expect((markup.match(/name="catalog-lamp-pole"/g) ?? []).length).toBe(1)
+    expect(markup).toContain('name="catalog-canopy-recessed-housing"')
+    expect(markup).toContain('name="catalog-canopy-die-cast-trim"')
+    expect(markup).toContain('name="catalog-canopy-weather-gasket"')
+    expect(markup).toContain('name="catalog-canopy-optical-faceplate"')
+    expect((markup.match(/name="catalog-canopy-optic-cover"/g) ?? [])).toHaveLength(2)
+    expect((markup.match(/name="catalog-canopy-optic-cell"/g) ?? [])).toHaveLength(24)
+    expect(markup).toContain('name="catalog-canopy-control-sensor"')
+    expect(markup).not.toContain('name="catalog-canopy-slab"')
+    expect(markup).not.toContain('name="catalog-canopy-column"')
+    expect((markup.match(/name="catalog-canopy-trim-fastener"/g) ?? [])).toHaveLength(4)
+    expect(markup).not.toContain('name="catalog-lamp-pole"')
     expect(markup).not.toContain('spotLight')
   })
 })

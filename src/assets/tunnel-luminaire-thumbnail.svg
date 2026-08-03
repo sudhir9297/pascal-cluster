@@ -1,45 +1,62 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title desc">
-  <title id="title">Tunnel underpass luminaire</title>
-  <desc id="desc">A linear soffit-mounted tunnel light with a recessed reflector and diffuser.</desc>
+  <title id="title">Tunnel and underpass LED luminaire</title>
+  <desc id="desc">A slim sealed aluminium luminaire with twin optical channels, heat-sink rails, clip mounts, and a quick connector.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#e9eef2"/>
-      <stop offset="1" stop-color="#cfd8df"/>
+      <stop offset="0" stop-color="#eef3f5"/>
+      <stop offset=".55" stop-color="#dce5e9"/>
+      <stop offset="1" stop-color="#c8d2d8"/>
     </linearGradient>
-    <linearGradient id="soffit" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#77838c"/>
-      <stop offset="1" stop-color="#3d464d"/>
+    <linearGradient id="concrete" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#aab3b8"/>
+      <stop offset="1" stop-color="#707b81"/>
     </linearGradient>
-    <linearGradient id="housing" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#20262b"/>
-      <stop offset=".5" stop-color="#56616a"/>
-      <stop offset="1" stop-color="#242b31"/>
+    <linearGradient id="body" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#aeb8bd"/>
+      <stop offset=".3" stop-color="#657077"/>
+      <stop offset=".65" stop-color="#879299"/>
+      <stop offset="1" stop-color="#465159"/>
     </linearGradient>
-    <linearGradient id="reflector" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#aab4bb"/>
-      <stop offset="1" stop-color="#66727b"/>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f9fdff"/>
+      <stop offset=".5" stop-color="#dfeaf0"/>
+      <stop offset="1" stop-color="#9faeb6"/>
     </linearGradient>
-    <linearGradient id="diffuser" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#f5f8fa"/>
-      <stop offset="1" stop-color="#a9b8c2"/>
-    </linearGradient>
-    <filter id="shadow" x="-30%" y="-50%" width="160%" height="200%">
-      <feGaussianBlur stdDeviation="12"/>
+    <filter id="shadow" x="-25%" y="-80%" width="150%" height="260%">
+      <feGaussianBlur stdDeviation="13"/>
+    </filter>
+    <filter id="glow" x="-40%" y="-120%" width="180%" height="340%">
+      <feGaussianBlur stdDeviation="9"/>
     </filter>
   </defs>
   <rect width="640" height="640" rx="44" fill="url(#bg)"/>
-  <ellipse cx="320" cy="558" rx="164" ry="27" fill="#4f5b64" opacity=".2" filter="url(#shadow)"/>
-  <path d="M116 558V151c0-16 13-29 29-29h352c16 0 29 13 29 29v407" fill="none" stroke="#283038" stroke-width="22" stroke-linecap="round"/>
-  <path d="M120 135h400l-22 46H142z" fill="url(#soffit)"/>
-  <path d="M145 175h350l-20 21H165z" fill="#303940" opacity=".85"/>
-  <path d="M225 215h190l-17 62H242z" fill="url(#housing)"/>
-  <path d="M237 271h166l-10 19H247z" fill="url(#reflector)"/>
-  <path d="M250 288h140v12H250z" fill="url(#diffuser)"/>
-  <path d="M227 213h186" stroke="#7b8790" stroke-width="7" opacity=".55"/>
-  <path d="M229 215v68M411 215v68" stroke="#1c2227" stroke-width="8" opacity=".9"/>
-  <path d="M294 196v18M346 196v18" stroke="#1e252a" stroke-width="8" stroke-linecap="round"/>
-  <circle cx="294" cy="195" r="7" fill="#9aa6ae"/>
-  <circle cx="346" cy="195" r="7" fill="#9aa6ae"/>
-  <circle cx="116" cy="558" r="13" fill="#1f262c"/>
-  <circle cx="524" cy="558" r="13" fill="#1f262c"/>
+  <ellipse cx="325" cy="487" rx="205" ry="30" fill="#263138" opacity=".18" filter="url(#shadow)"/>
+
+  <!-- A narrow ceiling datum and two real clip mounts establish the product's use. -->
+  <path d="M76 124h488v62H76z" fill="url(#concrete)"/>
+  <path d="M76 184h488" fill="none" stroke="#515c62" stroke-width="8"/>
+  <path d="M194 184v67M446 184v67" fill="none" stroke="#343d42" stroke-width="13"/>
+  <path d="M169 244h52v21h-52zM419 244h52v21h-52z" fill="#5e696f" stroke="#343c41" stroke-width="5"/>
+
+  <!-- Extruded aluminium body in a shallow three-quarter view. -->
+  <path d="M139 267 485 241l30 39-21 134-347 25-31-39z" fill="url(#body)" stroke="#293238" stroke-width="8" stroke-linejoin="round"/>
+  <path d="m486 241 30 39-7 15-30-39zM147 424l347-25v15l-347 25z" fill="#313a40"/>
+  <path d="M130 286 488 259M126 307 493 280M122 329l374-27M119 350l380-27" fill="none" stroke="#c0c9cd" stroke-width="7" stroke-linecap="round" opacity=".55"/>
+  <path d="M121 367 498 340" fill="none" stroke="#4a555b" stroke-width="9"/>
+
+  <!-- Twin sealed optical channels with discrete LED modules. -->
+  <path d="m135 364 362-26-4 30-363 26zM130 398l363-26-4 31-364 26z" fill="#e9f3f7" opacity=".42" filter="url(#glow)"/>
+  <path d="m135 356 362-26-4 28-363 26zM130 390l363-26-4 29-364 26z" fill="url(#glass)" stroke="#465159" stroke-width="5"/>
+  <path d="m131 381 362-26-3 14-362 26z" fill="#333d42"/>
+  <g fill="#fff" stroke="#7f8e96" stroke-width="3">
+    <circle cx="160" cy="365" r="6"/><circle cx="204" cy="362" r="6"/><circle cx="248" cy="359" r="6"/><circle cx="292" cy="356" r="6"/><circle cx="336" cy="353" r="6"/><circle cx="380" cy="350" r="6"/><circle cx="424" cy="347" r="6"/><circle cx="468" cy="343" r="6"/>
+    <circle cx="155" cy="399" r="6"/><circle cx="199" cy="396" r="6"/><circle cx="243" cy="393" r="6"/><circle cx="287" cy="390" r="6"/><circle cx="331" cy="387" r="6"/><circle cx="375" cy="384" r="6"/><circle cx="419" cy="381" r="6"/><circle cx="463" cy="377" r="6"/>
+  </g>
+
+  <!-- End gland and blue quick-connect ring. -->
+  <path d="M117 382 91 384" fill="none" stroke="#11171b" stroke-width="18" stroke-linecap="round"/>
+  <ellipse cx="83" cy="385" rx="14" ry="17" fill="#1b252a" stroke="#11171b" stroke-width="5"/>
+  <path d="M70 375v20" stroke="#287fa7" stroke-width="9" stroke-linecap="round"/>
+
+  <circle cx="202" cy="254" r="7" fill="#161c20"/><circle cx="447" cy="254" r="7" fill="#161c20"/>
 </svg>

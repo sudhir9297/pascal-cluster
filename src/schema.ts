@@ -1,5 +1,7 @@
 import { BaseNode, generateId, nodeType, objectId } from '@pascal-app/core'
 import { z } from 'zod'
+import { BOLLARD_LIGHT_DIMENSIONS } from './bollard-light-geometry'
+import { WALL_ARM_LIGHT_DIMENSIONS } from './wall-arm-light-geometry'
 import {
   STANDARD_UTILITY_POLE_CROSSARM_LENGTH_M,
   STANDARD_UTILITY_POLE_EXPOSED_HEIGHT_M,
@@ -242,7 +244,7 @@ export const TraditionalPostTopLanternNode = BaseNode.extend({
 
 export type TraditionalPostTopLanternNode = z.infer<typeof TraditionalPostTopLanternNode>
 
-/** Globe/acorn post-top lamp for parks and civic streets. */
+/** Prismatic acorn post-top lamp with a decorative civic pole. */
 export const GlobePostTopLightNode = BaseNode.extend({
   id: objectId('globe-post-top-light'),
   type: nodeType('environment:globe-post-top-light'),
@@ -259,7 +261,7 @@ export const GlobePostTopLightNode = BaseNode.extend({
 
 export type GlobePostTopLightNode = z.infer<typeof GlobePostTopLightNode>
 
-/** Decorative three-arm candelabra with matching pendant lanterns. */
+/** Decorative three-light candelabra with a raised centre and scroll arms. */
 export const DecorativeCandelabraLightNode = BaseNode.extend({
   id: objectId('decorative-candelabra-light'),
   type: nodeType('environment:decorative-candelabra-light'),
@@ -276,16 +278,17 @@ export const DecorativeCandelabraLightNode = BaseNode.extend({
 
 export type DecorativeCandelabraLightNode = z.infer<typeof DecorativeCandelabraLightNode>
 
-/** Short path/garden light with a compact downward-facing hood. */
+/** Professional twin-head low-voltage light for paths and planting beds. */
 export const PathGardenLightNode = BaseNode.extend({
   id: objectId('path-garden-light'),
   type: nodeType('environment:path-garden-light'),
   position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
   rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  armLength: z.number().min(0.2).max(0.8).default(0.35),
+  height: z.number().min(0.55).max(STANDARD_LAMP_HEIGHT_MAX_M).default(0.78),
+  /** The shared reach parameter controls the opposed head span. */
+  armLength: z.number().min(0.2).max(0.8).default(0.46),
   visualStyle: z.string().default('path'),
-  poleColor: z.string().default('#3e4644'),
+  poleColor: z.string().default('#343b37'),
   lightOn: z.boolean().default(false),
   lightColor: z.string().default('#ffe0b2'),
   intensity: z.number().min(0).max(1200).default(240),
@@ -299,10 +302,16 @@ export const BollardLightNode = BaseNode.extend({
   type: nodeType('environment:bollard-light'),
   position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
   rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
+  height: z.number()
+    .min(BOLLARD_LIGHT_DIMENSIONS.minHeight)
+    // Values above the current product range remain readable so saved scenes
+    // from the former shared six-metre catalog contract can be migrated by
+    // resolveBollardLightLayout. Placement and handles use the tighter range.
+    .max(STANDARD_LAMP_HEIGHT_MAX_M)
+    .default(BOLLARD_LIGHT_DIMENSIONS.defaultHeight),
   armLength: z.number().min(0.15).max(0.5).default(0.25),
   visualStyle: z.string().default('bollard'),
-  poleColor: z.string().default('#343a40'),
+  poleColor: z.string().default('#30363a'),
   lightOn: z.boolean().default(false),
   lightColor: z.string().default('#ffe2b8'),
   intensity: z.number().min(0).max(1000).default(180),
@@ -310,7 +319,7 @@ export const BollardLightNode = BaseNode.extend({
 
 export type BollardLightNode = z.infer<typeof BollardLightNode>
 
-/** Suspended/catenary street lamp hung between two overhead anchor points. */
+/** Twin-optic roadway luminaire suspended from a catenary between tapered poles. */
 export const CatenaryStreetLightNode = BaseNode.extend({
   id: objectId('catenary-street-light'),
   type: nodeType('environment:catenary-street-light'),
@@ -327,14 +336,18 @@ export const CatenaryStreetLightNode = BaseNode.extend({
 
 export type CatenaryStreetLightNode = z.infer<typeof CatenaryStreetLightNode>
 
-/** Wall-mounted outreach arm with a roadway luminaire. */
+/** Architectural wall bracket with an integrated low-profile LED roadway head. */
 export const WallArmLightNode = BaseNode.extend({
   id: objectId('wall-arm-light'),
   type: nodeType('environment:wall-arm-light'),
   position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
   rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+  /** Pascal wall-host metadata. Position is wall-local; `height` owns elevation. */
+  wallId: z.string().optional(),
+  wallT: z.number().min(0).max(1).optional(),
+  side: z.enum(['front', 'back']).optional(),
   height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  armLength: z.number().min(0.5).max(3).default(1.4),
+  armLength: z.number().min(0.5).max(3).default(WALL_ARM_LIGHT_DIMENSIONS.defaultArmLength),
   visualStyle: z.string().default('wall-arm'),
   poleColor: z.string().default('#363b40'),
   lightOn: z.boolean().default(false),
@@ -344,16 +357,21 @@ export const WallArmLightNode = BaseNode.extend({
 
 export type WallArmLightNode = z.infer<typeof WallArmLightNode>
 
-/** Compact wall-pack/bulkhead luminaire mounted directly to a facade. */
+/** Full-cutoff architectural LED wall pack mounted directly to a facade. */
 export const WallPackLightNode = BaseNode.extend({
   id: objectId('wall-pack-light'),
   type: nodeType('environment:wall-pack-light'),
+  /** Pascal wall-host metadata. Position is the exact wall-local cursor anchor. */
+  wallId: z.string().optional(),
+  wallT: z.number().min(0).max(1).optional(),
+  side: z.enum(['front', 'back']).optional(),
   position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
   rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  armLength: z.number().min(0.2).max(0.8).default(0.35),
+  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(2.7),
+  /** Housing projection from the wall; legacy values are clamped by the model. */
+  armLength: z.number().min(0.2).max(0.8).default(0.3),
   visualStyle: z.string().default('wall-pack'),
-  poleColor: z.string().default('#454b50'),
+  poleColor: z.string().default('#443a32'),
   lightOn: z.boolean().default(false),
   lightColor: z.string().default('#fff0c2'),
   intensity: z.number().min(0).max(3000).default(700),
@@ -361,16 +379,20 @@ export const WallPackLightNode = BaseNode.extend({
 
 export type WallPackLightNode = z.infer<typeof WallPackLightNode>
 
-/** Linear tunnel/underpass luminaire mounted to an overhead soffit. */
+/** Sealed continuous-line LED luminaire for tunnel and underpass ceilings. */
 export const TunnelLuminaireNode = BaseNode.extend({
   id: objectId('tunnel-luminaire'),
   type: nodeType('environment:tunnel-luminaire'),
+  /** Pascal host contract: this fixture mounts to the underside of a ceiling. */
+  attachTo: z.literal('ceiling').default('ceiling'),
+  /** The selected ceiling host; null keeps legacy level-hosted scenes readable. */
+  ceilingId: z.string().nullable().default(null),
   position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
   rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
   height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
   armLength: z.number().min(0.8).max(4).default(2.2),
   visualStyle: z.string().default('tunnel'),
-  poleColor: z.string().default('#4a5156'),
+  poleColor: z.string().default('#7a8388'),
   lightOn: z.boolean().default(false),
   lightColor: z.string().default('#e9f2ff'),
   intensity: z.number().min(0).max(7000).default(1800),
@@ -378,16 +400,20 @@ export const TunnelLuminaireNode = BaseNode.extend({
 
 export type TunnelLuminaireNode = z.infer<typeof TunnelLuminaireNode>
 
-/** Recessed canopy/soffit fixture with a broad downward lens. */
+/** Recessed canopy/soffit fixture; armLength stores the square face width. */
 export const CanopySoffitLightNode = BaseNode.extend({
   id: objectId('canopy-soffit-light'),
   type: nodeType('environment:canopy-soffit-light'),
+  attachTo: z.literal('ceiling').default('ceiling'),
+  ceilingId: z.string().nullable().default(null),
   position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
   rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
   height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  armLength: z.number().min(0.4).max(2.5).default(1),
+  // Keep the legacy upper bound so scenes authored with the former span-based
+  // control still parse; the layout resolver scales those values on render.
+  armLength: z.number().min(0.34).max(2.5).default(0.42),
   visualStyle: z.string().default('canopy'),
-  poleColor: z.string().default('#596168'),
+  poleColor: z.string().default('#d5d9d8'),
   lightOn: z.boolean().default(false),
   lightColor: z.string().default('#fff3d2'),
   intensity: z.number().min(0).max(5000).default(1200),

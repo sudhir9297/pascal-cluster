@@ -1,6 +1,6 @@
 'use client'
 
-import type { BufferGeometry, Object3D } from 'three'
+import type { BufferGeometry, Object3D, Side } from 'three'
 import type { CobraHeadLightLayout } from './cobra-head-light-geometry'
 
 export const NO_RAYCAST = () => {}
@@ -22,11 +22,13 @@ export function LampMetalMaterial({
   ghost,
   metalness = 0.72,
   roughness = 0.36,
+  side,
 }: {
   color: string
   ghost: boolean
   metalness?: number
   roughness?: number
+  side?: Side
 }) {
   return (
     <meshStandardMaterial
@@ -35,6 +37,7 @@ export function LampMetalMaterial({
       metalness={metalness}
       opacity={ghost ? 0.5 : 1}
       roughness={roughness}
+      side={side}
       transparent={ghost}
     />
   )
@@ -45,11 +48,13 @@ export function LampLensMaterial({
   ghost,
   lightOn,
   emissiveIntensity = 2.4,
+  side,
 }: {
   color: string
   ghost: boolean
   lightOn: boolean
   emissiveIntensity?: number
+  side?: Side
 }) {
   return (
     <meshStandardMaterial
@@ -59,6 +64,7 @@ export function LampLensMaterial({
       emissiveIntensity={ghost ? 0.3 : lightOn ? emissiveIntensity : 0}
       opacity={ghost ? 0.55 : 0.92}
       roughness={0.19}
+      side={side}
       transparent
     />
   )

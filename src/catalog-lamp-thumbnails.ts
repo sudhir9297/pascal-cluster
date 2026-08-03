@@ -27,6 +27,12 @@ const frame = (title: string, description: string, body: string) => `
       <stop offset=".72" stop-color="#d8dfe0"/>
       <stop offset="1" stop-color="#7c878b"/>
     </radialGradient>
+    <linearGradient id="acornGlass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fffbed"/>
+      <stop offset=".42" stop-color="#f2dfaf"/>
+      <stop offset=".72" stop-color="#c3ccca"/>
+      <stop offset="1" stop-color="#778287"/>
+    </linearGradient>
     <filter id="shadow" x="-30%" y="-50%" width="160%" height="210%">
       <feGaussianBlur stdDeviation="11"/>
     </filter>
@@ -56,11 +62,16 @@ const areaHead = (x: number, y: number) => `
   ${[x - 42, x - 20, x + 2, x + 24, x + 46].map((finX) => `<path d="M${finX} ${y - 15}v-12" stroke="#3e474e" stroke-width="7" stroke-linecap="round"/>`).join('')}
   <circle cx="${x - 66}" cy="${y - 20}" r="8" fill="#2a3136"/>`
 
-const lantern = (x: number, y: number, scale = 1) => `
-  <path d="M${x - 30 * scale} ${y - 8 * scale}h${60 * scale}l${-10 * scale} ${15 * scale}h${-40 * scale}z" fill="#20262b"/>
-  <path d="M${x - 24 * scale} ${y + 8 * scale}q0 ${48 * scale} ${24 * scale} ${60 * scale}q${24 * scale} ${-12 * scale} ${24 * scale} ${-60 * scale}z" fill="url(#globe)" stroke="#252b30" stroke-width="6"/>
-  <path d="M${x - 17 * scale} ${y + 16 * scale}h${34 * scale}M${x - 17 * scale} ${y + 48 * scale}h${34 * scale}M${x - 8 * scale} ${y + 10 * scale}v${54 * scale}M${x + 8 * scale} ${y + 10 * scale}v${54 * scale}" stroke="#31383d" stroke-width="5"/>
-  <path d="M${x - 13 * scale} ${y + 69 * scale}h${26 * scale}l-${7 * scale} ${14 * scale}h-${12 * scale}z" fill="#20262b"/>`
+const lantern = (x: number, baseY: number, scale = 1) => `
+  <path d="M${x - 11 * scale} ${baseY - 158 * scale}h${22 * scale}l${-4 * scale} ${15 * scale}h${-14 * scale}z" fill="#171c20"/>
+  <circle cx="${x}" cy="${baseY - 137 * scale}" r="${9 * scale}" fill="#30383e" stroke="#151a1e" stroke-width="${3 * scale}"/>
+  <path d="M${x - 50 * scale} ${baseY - 106 * scale}  ${x} ${baseY - 132 * scale}  ${x + 50 * scale} ${baseY - 106 * scale}z" fill="url(#housing)" stroke="#171c20" stroke-width="${5 * scale}" stroke-linejoin="round"/>
+  <path d="M${x - 57 * scale} ${baseY - 108 * scale}h${114 * scale}v${10 * scale}h${-114 * scale}z" fill="#20262b" stroke="#11161a" stroke-width="${3 * scale}"/>
+  <path d="M${x - 40 * scale} ${baseY - 98 * scale}  ${x + 40 * scale} ${baseY - 98 * scale}  ${x + 48 * scale} ${baseY - 21 * scale}  ${x - 48 * scale} ${baseY - 21 * scale}z" fill="url(#lens)" opacity=".76" stroke="#242b30" stroke-width="${5 * scale}"/>
+  <ellipse cx="${x}" cy="${baseY - 58 * scale}" rx="${16 * scale}" ry="${24 * scale}" fill="#fff8d8" opacity=".88"/>
+  <path d="M${x - 40 * scale} ${baseY - 98 * scale}  ${x - 48 * scale} ${baseY - 21 * scale}M${x + 40 * scale} ${baseY - 98 * scale}  ${x + 48 * scale} ${baseY - 21 * scale}M${x} ${baseY - 98 * scale}v${77 * scale}" fill="none" stroke="#232a2f" stroke-width="${6 * scale}"/>
+  <path d="M${x - 52 * scale} ${baseY - 21 * scale}h${104 * scale}l${-9 * scale} ${15 * scale}h${-86 * scale}z" fill="#20262b" stroke="#11161a" stroke-width="${3 * scale}"/>
+  <path d="M${x - 20 * scale} ${baseY - 5 * scale}h${40 * scale}l${-6 * scale} ${14 * scale}h${-28 * scale}z" fill="#2f383e"/>`
 
 const bodies: Record<CatalogLampProjection, string> = {
   'high-mast': `
@@ -115,71 +126,159 @@ const bodies: Record<CatalogLampProjection, string> = {
       <circle cx="410" cy="166" r="7" fill="#20272b" stroke="#748087" stroke-width="3"/>
     </g>`,
   lantern: `
-    ${pole(320, 164, 535, 30)}
-    <path d="M320 170v35" stroke="#252c32" stroke-width="17" stroke-linecap="round"/>
-    ${lantern(320, 199, 1.25)}`,
+    ${pole(320, 270, 535, 30)}
+    <path d="M282 535h76l-8-32h-60z" fill="#20262b"/>
+    <path d="M292 511h56l-9-26h-38z" fill="#3f4950" stroke="#20262b" stroke-width="5"/>
+    <path d="M296 455h48M299 441h42M302 281h36" stroke="#1d2328" stroke-width="11" stroke-linecap="round"/>
+    ${lantern(320, 281, 1.2)}`,
   globe: `
-    ${pole(320, 164, 535, 30)}
-    <path d="M320 173v24" stroke="#252c32" stroke-width="17" stroke-linecap="round"/>
-    <ellipse cx="320" cy="205" rx="64" ry="18" fill="#1f252a"/>
-    <circle cx="320" cy="187" r="52" fill="url(#globe)" stroke="#252b30" stroke-width="8"/>
-    <path d="M276 187h88M320 136v102" stroke="#454e55" stroke-width="5" opacity=".75"/>
-    <path d="M300 239h40l-7 17h-26z" fill="#22282d"/>`,
+    <path d="M270 538h100l-10-28h-80z" fill="#20262b" stroke="#11161a" stroke-width="5"/>
+    <path d="M280 510 290 430h60l10 80z" fill="url(#metal)" stroke="#20262b" stroke-width="6"/>
+    ${[298, 309, 320, 331, 342].map((x) => `<path d="M${x} 438v62" stroke="#6a747b" stroke-width="5" stroke-linecap="round" opacity=".62"/>`).join('')}
+    <ellipse cx="320" cy="431" rx="35" ry="12" fill="#20262b" stroke="#566069" stroke-width="5"/>
+    <path d="M306 430 311 306h18l5 124z" fill="url(#metal)" stroke="#20262b" stroke-width="5"/>
+    <path d="M290 318h60l-8 22h-44z" fill="#252c32" stroke="#151a1e" stroke-width="5"/>
+    <ellipse cx="320" cy="314" rx="39" ry="13" fill="#58636b" stroke="#20262b" stroke-width="6"/>
+    <path d="M286 308h68l-13-30h-42z" fill="url(#housing)" stroke="#1d2328" stroke-width="6"/>
+    <ellipse cx="320" cy="278" rx="27" ry="10" fill="#22282d" stroke="#5d6870" stroke-width="5"/>
+    <path d="M300 278 292 254h56l-8 24z" fill="#252c32" stroke="#171c20" stroke-width="5"/>
+    <path d="M303 258
+             C278 244 263 221 262 194
+             C260 153 282 116 312 94
+             Q320 86 328 94
+             C358 116 380 153 378 194
+             C377 221 362 244 337 258
+             Z" fill="url(#acornGlass)" stroke="#30383d" stroke-width="7"/>
+    <path d="M306 242h28v-78q0-18-14-18t-14 18z" fill="#fff0c2" opacity=".58" stroke="#7b817d" stroke-width="4"/>
+    <path d="M320 96v160
+             M298 112q-16 50-8 105q3 21 17 37
+             M342 112q16 50 8 105q-3 21-17 37
+             M280 143q-12 49 8 91
+             M360 143q12 49-8 91" fill="none" stroke="#f4f0df" stroke-width="3.5" opacity=".72"/>
+    <path d="M270 172q50 17 100 0M265 199q55 18 110 0M275 226q45 17 90 0" fill="none" stroke="#69747a" stroke-width="3" opacity=".58"/>
+    <ellipse cx="320" cy="258" rx="19" ry="7" fill="#252c32"/>
+    <circle cx="320" cy="86" r="8" fill="#252c32" stroke="#5c666d" stroke-width="4"/>
+    <circle cx="296" cy="488" r="4" fill="#151a1e"/>
+    <circle cx="344" cy="488" r="4" fill="#151a1e"/>`,
   candelabra: `
-    ${pole(320, 166, 535, 30)}
-    <circle cx="320" cy="183" r="17" fill="#252c32"/>
-    ${[210, 330, 90].map((angle) => {
-      const radians = (angle * Math.PI) / 180
-      const x = 320 + Math.cos(radians) * 96
-      const y = 183 + Math.sin(radians) * 48
-      return `<path d="M320 183 ${x} ${y}" stroke="#252c32" stroke-width="14" stroke-linecap="round"/>${lantern(x, y - 8, .58)}`
-    }).join('')}`,
+    ${pole(320, 292, 535, 30)}
+    <path d="M276 535h88l-10-37h-68z" fill="#20262b" stroke="#11161a" stroke-width="5"/>
+    <path d="M286 500 295 430h50l9 70z" fill="url(#metal)" stroke="#20262b" stroke-width="5"/>
+    ${[300, 310, 320, 330, 340].map((x) => `<path d="M${x} 442v47" stroke="#69747b" stroke-width="4" stroke-linecap="round" opacity=".7"/>`).join('')}
+    <path d="M292 430h56M300 414h40M303 366h34" stroke="#20262b" stroke-width="11" stroke-linecap="round"/>
+    <circle cx="320" cy="306" r="18" fill="#293138" stroke="#171c20" stroke-width="5"/>
+    <path d="M319 306C270 281 233 280 190 312" fill="none" stroke="#252c32" stroke-width="15" stroke-linecap="round"/>
+    <path d="M321 306C370 281 407 280 450 312" fill="none" stroke="#252c32" stroke-width="15" stroke-linecap="round"/>
+    <path d="M310 331C274 358 239 350 222 318" fill="none" stroke="#30383e" stroke-width="8" stroke-linecap="round"/>
+    <path d="M330 331C366 358 401 350 418 318" fill="none" stroke="#30383e" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="222" cy="318" r="12" fill="none" stroke="#30383e" stroke-width="7"/>
+    <circle cx="418" cy="318" r="12" fill="none" stroke="#30383e" stroke-width="7"/>
+    <path d="M320 306V252" stroke="#252c32" stroke-width="16" stroke-linecap="round"/>
+    ${lantern(190, 307, .68)}
+    ${lantern(450, 307, .68)}
+    ${lantern(320, 252, .78)}`,
   path: `
-    ${pole(320, 342, 535, 22)}
-    <path d="M320 345v30" stroke="#252c32" stroke-width="12"/>
-    <path d="M284 376h72l-12 18h-48z" fill="#293138"/>
-    <ellipse cx="320" cy="396" rx="34" ry="10" fill="url(#lens)" stroke="#30383e" stroke-width="6"/>`,
+    <path d="M271 536h98l-10-27h-78z" fill="#202723" stroke="#111714" stroke-width="5"/>
+    <ellipse cx="320" cy="509" rx="42" ry="11" fill="#4b554f" stroke="#222925" stroke-width="5"/>
+    <path d="M296 509 304 239h32l8 270z" fill="url(#metal)" stroke="#202723" stroke-width="6"/>
+    <rect x="326" y="361" width="20" height="70" rx="5" fill="#414a44" stroke="#202723" stroke-width="4"/>
+    <path d="M300 260h40l13-42h-66z" fill="#303833" stroke="#202723" stroke-width="6"/>
+    <path d="M305 238 238 197M335 238l67-41" fill="none" stroke="#3a433d" stroke-width="11" stroke-linecap="round"/>
+    <rect x="118" y="163" width="190" height="70" rx="10" fill="url(#housing)" stroke="#1c2320" stroke-width="7"/>
+    <rect x="332" y="163" width="190" height="70" rx="10" fill="url(#housing)" stroke="#1c2320" stroke-width="7"/>
+    <rect x="137" y="214" width="153" height="15" rx="4" fill="url(#lens)" stroke="#b9aa89" stroke-width="4"/>
+    <rect x="350" y="214" width="153" height="15" rx="4" fill="url(#lens)" stroke="#b9aa89" stroke-width="4"/>
+    <path d="M120 176h-13v45h13M520 176h13v45h-13" fill="none" stroke="#161c19" stroke-width="9"/>
+    <circle cx="320" cy="221" r="24" fill="#303833" stroke="#171d1a" stroke-width="6"/>
+    <path d="M155 240 92 354M485 240l63 114" stroke="#ffd88d" stroke-width="32" opacity=".2" stroke-linecap="round"/>`,
   bollard: `
-    <path d="M272 535 286 360h68l14 175z" fill="url(#metal)"/>
-    <path d="M260 538h120l-16-25h-88z" fill="#232a30"/>
-    <ellipse cx="320" cy="360" rx="36" ry="11" fill="#293137"/>
-    <rect x="286" y="346" width="68" height="28" rx="8" fill="url(#lens)"/>
-    <path d="M294 354h52" stroke="#fff7d5" stroke-width="5" opacity=".8"/>`,
+    <ellipse cx="320" cy="536" rx="79" ry="18" fill="#171c20" opacity=".35"/>
+    <path d="M264 535h112l-8-25h-96z" fill="#20262a" stroke="#11161a" stroke-width="5"/>
+    <ellipse cx="320" cy="510" rx="48" ry="12" fill="#6d777d" stroke="#20262b" stroke-width="5"/>
+    <path d="M278 510 289 247h62l11 263z" fill="url(#metal)" stroke="#20272b" stroke-width="6"/>
+    <path d="M348 412h-20v-92h23" fill="#252c30" stroke="#171c20" stroke-width="5"/>
+    <circle cx="344" cy="340" r="4" fill="#aeb6ba"/><circle cx="344" cy="395" r="4" fill="#aeb6ba"/>
+    <rect x="286" y="166" width="68" height="90" rx="8" fill="url(#lens)" stroke="#30383d" stroke-width="5"/>
+    <rect x="312" y="177" width="16" height="69" rx="7" fill="#fff4d2" opacity=".86"/>
+    ${[184, 207, 230].map((y) => `<ellipse cx="320" cy="${y}" rx="46" ry="10" fill="#31393e" stroke="#1a2024" stroke-width="5"/>`).join('')}
+    <path d="M272 162h96l-7 27h-82z" fill="url(#housing)" stroke="#1b2125" stroke-width="6"/>
+    <ellipse cx="320" cy="162" rx="43" ry="11" fill="#59636a" stroke="#20272b" stroke-width="5"/>
+    <path d="M283 256h74" stroke="#171c20" stroke-width="8"/>
+    <circle cx="289" cy="519" r="5" fill="#11161a"/><circle cx="351" cy="519" r="5" fill="#11161a"/>`,
   catenary: `
-    ${pole(150, 145, 535, 27)}
-    ${pole(490, 145, 535, 27)}
-    <path d="M150 145Q320 240 490 145" fill="none" stroke="#1b2126" stroke-width="15" stroke-linecap="round"/>
-    <path d="M320 220v70" stroke="#252c32" stroke-width="12"/>
-    <circle cx="320" cy="221" r="12" fill="#11161b"/>
-    ${boxHead(320, 325, 180, 62)}`,
+    <path d="M91 535h88l-8-26h-72zM461 535h88l-8-26h-72z" fill="#20272c" stroke="#11161a" stroke-width="5"/>
+    <path d="M107 509 119 147h32l12 362zM477 509l12-362h32l12 362z" fill="url(#metal)" stroke="#20272b" stroke-width="6"/>
+    <circle cx="112" cy="519" r="5" fill="#90999e"/><circle cx="158" cy="519" r="5" fill="#90999e"/>
+    <circle cx="482" cy="519" r="5" fill="#90999e"/><circle cx="528" cy="519" r="5" fill="#90999e"/>
+    <path d="M104 164h60v-45h-60zM476 164h60v-45h-60z" fill="#3c464c" stroke="#1b2125" stroke-width="5"/>
+    <circle cx="134" cy="141" r="9" fill="#90999e" stroke="#20272b" stroke-width="4"/>
+    <circle cx="506" cy="141" r="9" fill="#90999e" stroke="#20272b" stroke-width="4"/>
+    <path d="M134 141Q320 244 506 141" fill="none" stroke="#1b2126" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="274" cy="211" r="12" fill="none" stroke="#8d969b" stroke-width="7"/>
+    <circle cx="366" cy="211" r="12" fill="none" stroke="#8d969b" stroke-width="7"/>
+    <path d="M274 220 296 267M366 220l-22 47M296 267h48" fill="none" stroke="#5d6870" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M291 267h58l-9 22h-40z" fill="#606b72" stroke="#242b30" stroke-width="5"/>
+    <path d="M217 315Q222 291 253 278h134q31 13 36 37l-12 47H229z" fill="url(#housing)" stroke="#20272b" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M239 348h162l-8 21H247z" fill="#c3cacc" stroke="#4c565d" stroke-width="5"/>
+    <rect x="258" y="349" width="52" height="20" rx="8" fill="url(#lens)" stroke="#6c767b" stroke-width="4"/>
+    <rect x="330" y="349" width="52" height="20" rx="8" fill="url(#lens)" stroke="#6c767b" stroke-width="4"/>
+    ${[268, 280, 292, 340, 352, 364].map((cx) => `<circle cx="${cx}" cy="359" r="3.5" fill="#fff5d6"/>`).join('')}
+    <path d="M273 296h94" stroke="#7c878e" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="247" cy="321" r="5" fill="#a2aaae"/><circle cx="393" cy="321" r="5" fill="#a2aaae"/>`,
   'wall-arm': `
-    <rect x="112" y="120" width="42" height="380" rx="10" fill="#252c32"/>
-    <circle cx="132" cy="158" r="9" fill="#11161b"/><circle cx="132" cy="462" r="9" fill="#11161b"/>
-    <path d="M152 230Q260 180 465 178" fill="none" stroke="#252c32" stroke-width="25" stroke-linecap="round"/>
-    <path d="M157 398Q205 260 260 216" fill="none" stroke="#4f5b64" stroke-width="13" stroke-linecap="round"/>
-    ${boxHead(495, 183, 120, 46)}`,
+    <path d="M72 108h54v423H72z" fill="#7d898f" opacity=".55"/>
+    <path d="M91 108h35v423H91z" fill="#aab3b7" opacity=".35"/>
+    <rect x="120" y="209" width="38" height="205" rx="9" fill="url(#housing)" stroke="#161c20" stroke-width="6"/>
+    <rect x="154" y="241" width="21" height="142" rx="5" fill="#4a555c" stroke="#20272c" stroke-width="4"/>
+    ${[258, 364].flatMap((y) => [132, 148].map((x) => `<circle cx="${x}" cy="${y}" r="6" fill="#151a1e" stroke="#738087" stroke-width="2"/>`)).join('')}
+    <path d="M170 255L419 222 428 252 170 288Z" fill="url(#metal)" stroke="#20272c" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M170 358Q286 361 420 246" fill="none" stroke="#3f4a51" stroke-width="15" stroke-linecap="round"/>
+    <circle cx="419" cy="244" r="18" fill="#252d32" stroke="#11161a" stroke-width="6"/>
+    <path d="M394 217Q436 194 524 201L572 222 554 258Q472 274 398 255Z" fill="url(#housing)" stroke="#171d21" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M425 251Q482 264 546 247L532 270Q479 283 430 270Z" fill="url(#lens)" stroke="#343d42" stroke-width="4"/>
+    ${[445, 479, 513].map((x) => `<rect x="${x}" y="255" width="23" height="10" rx="4" fill="#fff2c8" opacity=".92"/>`).join('')}
+    ${[420, 444, 468, 492, 516].map((x) => `<path d="M${x} 211l6 39" stroke="#252d32" stroke-width="5" stroke-linecap="round"/>`).join('')}
+    <circle cx="415" cy="216" r="7" fill="#162127"/>
+    <path d="M403 284Q484 309 554 274" fill="none" stroke="#ffd88d" stroke-width="14" opacity=".24"/>`,
   'wall-pack': `
-    <rect x="154" y="122" width="34" height="382" rx="8" fill="#252c32"/>
-    <circle cx="171" cy="159" r="8" fill="#11161b"/><circle cx="171" cy="467" r="8" fill="#11161b"/>
-    <rect x="175" y="214" width="290" height="126" rx="14" fill="url(#housing)"/>
-    <rect x="201" y="302" width="238" height="22" rx="6" fill="url(#lens)"/>
-    <path d="M195 231h250" stroke="#89959d" stroke-width="8" opacity=".5"/>
-    <path d="M182 350h276" stroke="#171c21" stroke-width="13"/>`,
+    <path d="M92 96h116v448H92z" fill="#7e8a90" opacity=".64"/>
+    <path d="M121 96h87v448h-87z" fill="#aab4b8" opacity=".34"/>
+    <rect x="192" y="207" width="46" height="211" rx="8" fill="#252b2f" stroke="#14191c" stroke-width="6"/>
+    ${[227, 399].flatMap((y) => [207, 224].map((x) => `<circle cx="${x}" cy="${y}" r="5" fill="#111518" stroke="#69747a" stroke-width="2"/>`)).join('')}
+    <path d="M219 216H441L526 276 486 381H219Z" fill="url(#housing)" stroke="#171d21" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M236 231H435L491 273" fill="none" stroke="#7b878d" stroke-width="7" opacity=".55"/>
+    ${[268, 309, 350, 391, 432].map((x) => `<path d="M${x} 225l58 50" stroke="#2a3135" stroke-width="7" stroke-linecap="round"/>`).join('')}
+    <circle cx="420" cy="223" r="12" fill="#182329" stroke="#758087" stroke-width="4"/>
+    <path d="M245 358 478 353 459 394 262 396Z" fill="#141a1d" stroke="#2d3539" stroke-width="5"/>
+    <path d="M268 365 455 362 445 385 277 387Z" fill="url(#lens)" stroke="#c7b98f" stroke-width="4"/>
+    ${[298, 335, 372, 409, 440].flatMap((x) => [371, 382].map((y) => `<circle cx="${x}" cy="${y}" r="5" fill="#fff7d8" opacity=".94"/>`)).join('')}
+    <circle cx="494" cy="318" r="8" fill="#121719" stroke="#7b878d" stroke-width="3"/>
+    <path d="M275 406Q373 440 466 401" fill="none" stroke="#ffd88d" stroke-width="22" opacity=".22"/>`,
   tunnel: `
-    <path d="M92 160h456v46H92z" fill="#8c979d"/>
-    <rect x="105" y="205" width="430" height="90" rx="10" fill="url(#housing)"/>
-    <path d="M132 285h376l-20 25H152z" fill="#171c21"/>
-    <rect x="154" y="287" width="332" height="18" rx="5" fill="url(#lens)"/>
-    <path d="M124 210v77M516 210v77" stroke="#1a2025" stroke-width="12"/>
-    <path d="M265 157v48M375 157v48" stroke="#252c32" stroke-width="15"/>
-    ${pole(320, 310, 535, 28)}`,
+    <path d="M86 178h468v44H86z" fill="#7c878d"/>
+    <path d="M112 215h416" stroke="#363e43" stroke-width="9" opacity=".55"/>
+    <path d="M191 216v56M449 216v56" stroke="#3b4449" stroke-width="13"/>
+    <path d="M169 270h302l21 25-22 88H170l-22-88z" fill="url(#housing)" stroke="#22292e" stroke-width="7"/>
+    <path d="M176 282h288M171 298h298M169 315h302" stroke="#8d989e" stroke-width="7" stroke-linecap="round" opacity=".72"/>
+    <rect x="176" y="322" width="288" height="22" rx="5" fill="url(#lens)" stroke="#343d42" stroke-width="5"/>
+    <rect x="176" y="353" width="288" height="22" rx="5" fill="url(#lens)" stroke="#343d42" stroke-width="5"/>
+    <path d="M174 348h292" stroke="#333b40" stroke-width="9"/>
+    ${[200, 248, 296, 344, 392, 440].flatMap((x) => [333, 364].map((y) => `<circle cx="${x}" cy="${y}" r="6" fill="#f7fbff" stroke="#7d8b93" stroke-width="3"/>`)).join('')}
+    <path d="M148 316h-34" stroke="#11171b" stroke-width="17" stroke-linecap="round"/>
+    <circle cx="109" cy="316" r="13" fill="#257ca3" stroke="#172026" stroke-width="6"/>
+    <path d="M163 374h314" stroke="#20272b" stroke-width="9"/>
+    <ellipse cx="320" cy="444" rx="177" ry="20" fill="#252c31" opacity=".16"/>`,
   canopy: `
-    <path d="M82 165h476v110H82z" fill="#8b969c"/>
-    <rect x="120" y="242" width="400" height="94" rx="10" fill="url(#housing)"/>
-    <rect x="170" y="320" width="300" height="18" rx="5" fill="url(#lens)"/>
-    <path d="M154 333h332" stroke="#171c21" stroke-width="13"/>
-    <path d="M220 166v75M420 166v75" stroke="#252c32" stroke-width="15"/>
-    ${pole(320, 338, 535, 28)}`,
+    <path d="M80 130h480v78H80z" fill="#b2b9bb" stroke="#69747a" stroke-width="7"/>
+    <path d="M96 202h448" stroke="#747f84" stroke-width="13"/>
+    <path d="M205 193h230l22 19-19 150H202l-19-19z" fill="#d9dcdb" stroke="#4d585e" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M227 226h186l14 12-12 112H225l-12-12z" fill="#171c1f" stroke="#6e797f" stroke-width="5"/>
+    <path d="M242 244h70v88h-70zM328 244h70v88h-70z" fill="url(#lens)" stroke="#acb6b9" stroke-width="5"/>
+    <path d="M320 241v94" stroke="#283035" stroke-width="10"/>
+    ${[258, 277, 296, 344, 363, 382].flatMap((x) => [261, 286, 313].map((y) => `<circle cx="${x}" cy="${y}" r="6" fill="#fff9e4" opacity=".97"/>`)).join('')}
+    <circle cx="320" cy="329" r="10" fill="#17303b" stroke="#5d8998" stroke-width="4"/>
+    <path d="M224 386Q320 434 416 386" fill="none" stroke="#ffd88d" stroke-width="38" opacity=".2"/>
+    <ellipse cx="320" cy="457" rx="174" ry="22" fill="#252c31" opacity=".13"/>`,
 }
 
 const descriptions: Record<CatalogLampProjection, [string, string]> = {
@@ -188,15 +287,15 @@ const descriptions: Record<CatalogLampProjection, [string, string]> = {
   floodlight: ['Floodlight pole', 'A braced pole with an adjustable yoke-mounted LED projector.'],
   solar: ['Solar street lamp', 'A single-sided roadway pole with one photovoltaic all-in-one luminaire.'],
   lantern: ['Traditional lantern', 'A pitched-roof post-top lantern.'],
-  globe: ['Globe post-top lamp', 'A civic post with a spherical illuminated globe.'],
-  candelabra: ['Decorative candelabra lamp', 'A three-arm ornamental lantern pole.'],
-  path: ['Path and garden lamp', 'A compact hooded light for paths and planting beds.'],
-  bollard: ['Bollard lamp', 'A low cylindrical marker light for paths and plazas.'],
-  catenary: ['Catenary street lamp', 'A suspended linear lamp between two support poles.'],
-  'wall-arm': ['Wall-arm lamp', 'A facade-mounted outreach arm with a roadway head.'],
-  'wall-pack': ['Wall-pack lamp', 'A compact direct-mount exterior bulkhead.'],
-  tunnel: ['Tunnel luminaire', 'A linear fixture mounted below an underpass soffit.'],
-  canopy: ['Canopy soffit lamp', 'A recessed broad-beam fixture under a canopy.'],
+  globe: ['Globe / acorn post-top lamp', 'A fluted civic post with a prismatic acorn refractor and cast fitter.'],
+  candelabra: ['Decorative candelabra lamp', 'A raised centre lantern with twin cast scroll arms.'],
+  path: ['Twin-head path and garden lamp', 'A substantial architectural path light with two opposed warm pools.'],
+  bollard: ['Shielded bollard lamp', 'A louvered architectural marker light with glare-controlled 360° illumination.'],
+  catenary: ['Catenary street lamp', 'A twin-optic roadway luminaire on an adjustable wire suspension.'],
+  'wall-arm': ['Architectural wall-arm', 'A tapered lateral bracket with a low-profile LED roadway head.'],
+  'wall-pack': ['Full-cutoff wall pack', 'A slim, facade-mounted LED bulkhead with a shielded downward optic.'],
+  tunnel: ['Tunnel / underpass LED', 'A sealed dual-optic line with quick-fit ceiling clips.'],
+  canopy: ['Recessed canopy light', 'A compact sealed twin-module fixture mounted directly under a ceiling.'],
 }
 
 export const CATALOG_LAMP_THUMBNAILS = Object.fromEntries(

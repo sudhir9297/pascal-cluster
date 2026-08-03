@@ -20,16 +20,22 @@ import { environmentHostPanel, environmentPlugin } from './index'
 import { postTopLightDefinition } from './post-top-light-definition'
 import { resolvePostTopLightLayout } from './post-top-light-geometry'
 import {
+  BollardLightNode,
+  CanopySoffitLightNode,
   CobraHeadLightNode,
   HeritageCrookLightNode,
   HighMastCrownLightNode,
   MultiHeadAreaLightNode,
+  PathGardenLightNode,
   PedestrianPostLightNode,
   StreetLightNode,
   TrussRoadwayLightNode,
+  TunnelLuminaireNode,
   TwinArmMedianLightNode,
   UtilityPoleNode,
   UtilityWireSpanNode,
+  WallPackLightNode,
+  WallArmLightNode,
   RoadSignNode,
   createRoadSignNode,
   createRoadSignPreviewNode,
@@ -282,7 +288,83 @@ describe('Environment plugin manifest', () => {
     }
   })
 
-  test('keeps standard lamps at six metres and gives the high mast a true high-mast default', () => {
+  test('registers the architectural wall arm as a Pascal wall-hosted node', () => {
+    const definition = environmentPlugin.nodes?.find(
+      (candidate) => candidate.kind === 'environment:wall-arm-light',
+    ) as any
+
+    expect(definition?.capabilities.hostable).toEqual({ parents: ['wall'], align: 'face' })
+    expect(definition?.capabilities.hostRefFields).toEqual(['wallId', 'wallT'])
+    expect(definition?.capabilities.floorPlaced.applies(
+      WallArmLightNode.parse({ wallId: 'wall:test', wallT: 0.5 }),
+    )).toBe(false)
+  })
+
+  test('registers the wall pack as a cursor-positioned Pascal wall-hosted node', () => {
+    const definition = environmentPlugin.nodes?.find(
+      (candidate) => candidate.kind === 'environment:wall-pack-light',
+    ) as any
+    const attached = WallPackLightNode.parse({
+      position: [1.4, 1.85, 0.1],
+      wallId: 'wall:test',
+      wallT: 0.35,
+      side: 'front',
+    })
+
+    expect(attached.wallId).toBe('wall:test')
+    expect(attached.wallT).toBeCloseTo(0.35)
+    expect(attached.side).toBe('front')
+    expect(attached.position[1]).toBeCloseTo(1.85)
+    expect(definition?.capabilities.hostable).toEqual({ parents: ['wall'], align: 'face' })
+    expect(definition?.capabilities.hostRefFields).toEqual(['wallId', 'wallT'])
+    expect(definition?.capabilities.floorPlaced.applies(attached)).toBe(false)
+  })
+
+  test('registers the tunnel luminaire as a Pascal ceiling-hosted node', () => {
+    const definition = environmentPlugin.nodes?.find(
+      (candidate) => candidate.kind === 'environment:tunnel-luminaire',
+    ) as any
+    const attached = TunnelLuminaireNode.parse({ ceilingId: 'ceiling_test' })
+    const legacy = TunnelLuminaireNode.parse({})
+
+    expect(attached.attachTo).toBe('ceiling')
+    expect(definition?.capabilities.hostable).toEqual({
+      parents: ['ceiling'],
+      align: 'bottom',
+    })
+    expect(definition?.capabilities.hostRefFields).toEqual(['ceilingId'])
+    expect(definition?.capabilities.floorPlaced.applies(attached)).toBe(false)
+    expect(definition?.capabilities.floorPlaced.applies(legacy)).toBe(true)
+    expect(definition?.handles).toHaveLength(2)
+    const heightField = definition?.parametrics.groups
+      .flatMap((group: any) => group.fields)
+      .find((field: any) => field.key === 'height')
+    expect(heightField?.visibleIf(attached)).toBe(false)
+  })
+
+  test('registers the canopy light as a compact Pascal ceiling-hosted node', () => {
+    const definition = environmentPlugin.nodes?.find(
+      (candidate) => candidate.kind === 'environment:canopy-soffit-light',
+    ) as any
+    const attached = CanopySoffitLightNode.parse({ ceilingId: 'ceiling_test' })
+    const legacy = CanopySoffitLightNode.parse({})
+
+    expect(attached.attachTo).toBe('ceiling')
+    expect(definition?.capabilities.hostable).toEqual({
+      parents: ['ceiling'],
+      align: 'bottom',
+    })
+    expect(definition?.capabilities.hostRefFields).toEqual(['ceilingId'])
+    expect(definition?.capabilities.floorPlaced.applies(attached)).toBe(false)
+    expect(definition?.capabilities.floorPlaced.applies(legacy)).toBe(true)
+    expect(definition?.handles).toHaveLength(2)
+    const heightField = definition?.parametrics.groups
+      .flatMap((group: any) => group.fields)
+      .find((field: any) => field.key === 'height')
+    expect(heightField?.visibleIf(attached)).toBe(false)
+  })
+
+  test('keeps roadway lamps at six metres and gives purpose-scaled lamps true defaults', () => {
     const nodes = [
       StreetLightNode.parse({}),
       PedestrianPostLightNode.parse({}),
@@ -292,12 +374,18 @@ describe('Environment plugin manifest', () => {
       MultiHeadAreaLightNode.parse({}),
       TrussRoadwayLightNode.parse({}),
       ...CATALOG_LAMP_VARIANTS
-        .filter((variant) => variant.kind !== 'environment:high-mast-crown-light')
+        .filter((variant) => variant.kind !== 'environment:high-mast-crown-light'
+          && variant.kind !== 'environment:path-garden-light'
+          && variant.kind !== 'environment:bollard-light'
+          && variant.kind !== 'environment:wall-pack-light')
         .map((variant) => variant.schema.parse({})),
     ]
     for (const node of nodes) {
       expect(node.height).toBe(6)
     }
+    expect(PathGardenLightNode.parse({}).height).toBe(0.78)
+    expect(BollardLightNode.parse({}).height).toBe(0.72)
+    expect(WallPackLightNode.parse({}).height).toBe(2.7)
     expect(() => StreetLightNode.parse({ height: 0.49 })).toThrow()
     expect(() => CATALOG_LAMP_VARIANTS[0].schema.parse({ height: 30.1 })).toThrow()
     const highMast = HighMastCrownLightNode.parse({})

@@ -44,7 +44,16 @@ const ROAD_SIGN_KIND = 'environment:road-sign'
 const activateCatalogLampTool = (kind: string) => {
   const setTool = useEditor.getState().setTool as (value: string) => void
   const config = getCatalogLampConfig(kind)
-  useEnvironmentStore.getState().setCatalogLampVisualStyle(config?.projection ?? 'shoebox')
+  const store = useEnvironmentStore.getState()
+  store.setCatalogLampVisualStyle(config?.projection ?? 'shoebox')
+  if (
+    config?.projection === 'path'
+    || config?.projection === 'wall-pack'
+    || config?.projection === 'catenary'
+  ) {
+    store.setCatalogLampHeight(config.height[2])
+    store.setCatalogLampArmLength(config.arm[2])
+  }
   setTool(kind)
   useEditor.getState().setMode('build')
 }
@@ -901,25 +910,39 @@ export default function EnvironmentPanel() {
             }))}
             value={catalogLampVisualStyle}
           />
+          {activeCatalogVariant?.projection !== 'wall-pack'
+            && activeCatalogVariant?.projection !== 'tunnel'
+            && activeCatalogVariant?.projection !== 'canopy' && (
+            <SliderControl
+              label="Height"
+              max={activeCatalogVariant?.height[1] ?? STANDARD_LAMP_HEIGHT_MAX_M}
+              min={activeCatalogVariant?.height[0] ?? STANDARD_LAMP_HEIGHT_MIN_M}
+              onChange={useEnvironmentStore.getState().setCatalogLampHeight}
+              precision={2}
+              restoreOnCommit={false}
+              step={activeCatalogVariant?.projection === 'path' ? 0.01 : 0.1}
+              unit="m"
+              value={catalogLampHeight}
+            />
+          )}
           <SliderControl
-            label="Height"
-            max={STANDARD_LAMP_HEIGHT_MAX_M}
-            min={STANDARD_LAMP_HEIGHT_MIN_M}
-            onChange={useEnvironmentStore.getState().setCatalogLampHeight}
-            precision={2}
-            restoreOnCommit={false}
-            step={0.1}
-            unit="m"
-            value={catalogLampHeight}
-          />
-          <SliderControl
-            label="Reach / span"
-            max={12}
-            min={0.15}
+            label={activeCatalogVariant?.projection === 'path'
+              ? 'Twin head span'
+              : activeCatalogVariant?.projection === 'canopy'
+                ? 'Fixture width'
+                : activeCatalogVariant?.projection === 'wall-pack'
+                  ? 'Fixture depth'
+                  : 'Reach / span'}
+            max={activeCatalogVariant?.arm[1] ?? 12}
+            min={activeCatalogVariant?.arm[0] ?? 0.15}
             onChange={useEnvironmentStore.getState().setCatalogLampArmLength}
             precision={2}
             restoreOnCommit={false}
-            step={0.1}
+            step={activeCatalogVariant?.projection === 'path'
+              || activeCatalogVariant?.projection === 'canopy'
+              || activeCatalogVariant?.projection === 'wall-pack'
+              ? 0.01
+              : 0.1}
             unit="m"
             value={catalogLampArmLength}
           />

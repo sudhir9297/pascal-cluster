@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title desc">
   <title id="title">Catenary suspended street light</title>
-  <desc id="desc">Two support poles joined by a sagging cable with a suspended linear roadway luminaire.</desc>
+  <desc id="desc">Two tapered support poles joined by a catenary cable carrying an aerodynamic twin-optic roadway luminaire.</desc>
   <defs>
     <linearGradient id="catenaryBg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#e9eef2"/>
@@ -35,21 +35,26 @@
   <ellipse cx="513" cy="530" rx="37" ry="10" fill="#4d5861"/>
 
   <!-- overhead catenary with a readable, smooth sag -->
-  <path d="M149 157 Q320 235 511 157" fill="none" stroke="#11161b" stroke-width="19" stroke-linecap="round"/>
-  <path d="M149 153 Q320 227 511 153" fill="none" stroke="#5b6670" stroke-width="5" stroke-linecap="round" opacity=".7"/>
+  <path d="M149 157 Q320 235 511 157" fill="none" stroke="#11161b" stroke-width="11" stroke-linecap="round"/>
+  <path d="M149 154 Q320 229 511 154" fill="none" stroke="#6e7981" stroke-width="3" stroke-linecap="round" opacity=".7"/>
   <circle cx="149" cy="157" r="12" fill="#20262c"/>
   <circle cx="511" cy="157" r="12" fill="#20262c"/>
 
-  <!-- hanger and suspended linear fixture -->
-  <path d="M320 226v65" stroke="#151a1f" stroke-width="13" stroke-linecap="round"/>
-  <circle cx="320" cy="224" r="13" fill="#11161b"/>
-  <rect x="291" y="282" width="58" height="15" rx="6" fill="#4e5962"/>
-  <rect x="209" y="292" width="222" height="88" rx="8" fill="url(#catenaryHousing)"/>
-  <path d="M209 305h222v17H209z" fill="#73808a" opacity=".48"/>
-  <path d="M209 366h222l-13 21H222z" fill="#171c21"/>
-  <rect x="229" y="367" width="182" height="15" rx="4" fill="url(#catenaryDiffuser)"/>
-  <path d="M218 305v67M422 305v67" stroke="#171c21" stroke-width="12"/>
-  <path d="M245 292h150" stroke="#9aa5ac" stroke-width="5" stroke-linecap="round" opacity=".55"/>
+  <!-- adjustable twin-clamp yoke and aerodynamic roadway fixture -->
+  <circle cx="278" cy="216" r="13" fill="none" stroke="#8e989e" stroke-width="8"/>
+  <circle cx="362" cy="216" r="13" fill="none" stroke="#8e989e" stroke-width="8"/>
+  <path d="M278 226 299 282M362 226l-21 56M299 282h42" fill="none" stroke="#4f5a62" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M288 281h64l-10 25h-44z" fill="#606b73" stroke="#252c31" stroke-width="5"/>
+  <path d="M207 337Q214 304 252 291h136q38 13 45 46l-15 58H222z" fill="url(#catenaryHousing)" stroke="#1d2328" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M237 377h166l-9 24H246z" fill="#c9d0d3" stroke="#59636a" stroke-width="5"/>
+  <rect x="258" y="378" width="54" height="23" rx="7" fill="url(#catenaryDiffuser)" stroke="#707a80" stroke-width="4"/>
+  <rect x="328" y="378" width="54" height="23" rx="7" fill="url(#catenaryDiffuser)" stroke="#707a80" stroke-width="4"/>
+  <g fill="#fff5d9">
+    <circle cx="269" cy="389" r="4"/><circle cx="285" cy="389" r="4"/><circle cx="301" cy="389" r="4"/>
+    <circle cx="339" cy="389" r="4"/><circle cx="355" cy="389" r="4"/><circle cx="371" cy="389" r="4"/>
+  </g>
+  <path d="M270 313h100" stroke="#8d979d" stroke-width="5" stroke-linecap="round" opacity=".7"/>
+  <circle cx="236" cy="344" r="6" fill="#a1aaaf"/><circle cx="404" cy="344" r="6" fill="#a1aaaf"/>
 
   <!-- subtle ground contact cues -->
   <circle cx="151" cy="555" r="7" fill="#11161b"/>
