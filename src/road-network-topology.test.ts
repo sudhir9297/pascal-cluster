@@ -113,7 +113,7 @@ describe('road network topology', () => {
     expect(result.status).toBe('inserted')
     expect(Object.keys(result.graph.graphNodes)).toHaveLength(2)
     expect(Object.keys(result.graph.edges)).toHaveLength(1)
-    expect(roadStyleWidth(result.graph.stylePresets['local-street']!)).toBe(8.5)
+    expect(roadStyleWidth(result.graph.stylePresets['local-street']!)).toBe(10.4)
     expect(classifyRoadJunction(result.graph, result.createdNodeIds[0]!)).toBe('dead-end')
   })
 

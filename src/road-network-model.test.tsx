@@ -36,7 +36,9 @@ describe('road network corner rendering', () => {
 
     const markup = renderRoad(RoadNetworkNode.parse(second.graph))
 
-    expect(markup.match(/name="road-segment-surface"/g)).toHaveLength(3)
+    expect(markup.match(/name="road-segment-surface"/g)).toHaveLength(1)
+    expect(markup.match(/name="road-side-left-sidewalk"/g)).toHaveLength(1)
+    expect(markup.match(/name="road-side-right-sidewalk"/g)).toHaveLength(1)
     expect(markup).toContain('name="road-marking-centerline"')
     expect(markup).not.toContain('name="road-junction-surface"')
   })
@@ -49,6 +51,50 @@ describe('road network corner rendering', () => {
 
     expect(markup).toContain('name="road-junction-surface"')
     expect(markup).toContain('name="road-junction-sidewalk"')
+  })
+
+  test('renders independently configured components on each road side', () => {
+    const result = insertRoadSegment(createEmptyRoadGraph(), [0, 0, 0], [20, 0, 0])
+    result.graph.stylePresets['local-street'] = {
+      ...result.graph.stylePresets['local-street']!,
+      leftSide: {
+        parkingLaneWidth: 2.4,
+        bikeLaneWidth: 1.5,
+        gutterWidth: 0.3,
+        curbWidth: 0.15,
+        vergeWidth: 0.8,
+        sidewalkWidth: 1.8,
+      },
+      rightSide: {
+        parkingLaneWidth: 0,
+        bikeLaneWidth: 0,
+        gutterWidth: 0.25,
+        curbWidth: 0.12,
+        vergeWidth: 0,
+        sidewalkWidth: 1.2,
+      },
+    }
+
+    const node = RoadNetworkNode.parse(result.graph)
+    const markup = renderRoad(node)
+    const floorplan = buildRoadNetworkFloorplan(node, {
+      viewState: {
+        selected: false,
+        palette: { selectedStroke: '#2563eb' },
+      },
+    } as unknown as GeometryContext)
+
+    expect(markup).toContain('name="road-side-left-parking-lane"')
+    expect(markup).toContain('name="road-side-left-bike-lane"')
+    expect(markup).not.toContain('name="road-side-right-parking-lane"')
+    expect(markup).not.toContain('name="road-side-right-bike-lane"')
+    expect(markup).toContain('name="road-side-right-gutter"')
+    expect(floorplan.kind).toBe('group')
+    if (floorplan.kind !== 'group') return
+    const polygons = floorplan.children.filter((child) => child.kind === 'polygon')
+    expect(polygons.some((polygon) => polygon.fill === '#44484c')).toBe(true)
+    expect(polygons.some((polygon) => polygon.fill === '#517665')).toBe(true)
+    expect(polygons.some((polygon) => polygon.fill === '#85888a')).toBe(true)
   })
 
   test('renders topology-driven centerlines, arrows, stop lines, and crosswalks', () => {

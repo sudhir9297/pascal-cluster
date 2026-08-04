@@ -31,6 +31,7 @@ import {
 import { STANDARD_UTILITY_POLE_CROSSARM_LENGTH_M } from './utility-pole-geometry'
 import { STANDARD_UTILITY_POLE_AUTO_CONNECT_DISTANCE_M } from './utility-wire-auto-connect'
 import type { UtilityPoleAssembly } from './schema'
+import type { RoadSideComponentWidthKey } from './road-cross-section'
 
 const STREET_LIGHT_KIND = 'environment:street-light'
 const POST_TOP_LIGHT_KIND = 'environment:pedestrian-post-light'
@@ -42,6 +43,20 @@ const TRUSS_ROADWAY_LIGHT_KIND = 'environment:truss-roadway-light'
 const UTILITY_POLE_KIND = 'environment:utility-pole'
 const ROAD_SIGN_KIND = 'environment:road-sign'
 const ROAD_NETWORK_KIND = 'environment:road-network'
+
+const ROAD_SIDE_COMPONENT_CONTROLS: Array<{
+  key: RoadSideComponentWidthKey
+  label: string
+  max: number
+  step: number
+}> = [
+  { key: 'parkingLaneWidth', label: 'Parking lane', max: 4, step: 0.1 },
+  { key: 'bikeLaneWidth', label: 'Bike lane', max: 3, step: 0.1 },
+  { key: 'gutterWidth', label: 'Gutter', max: 2, step: 0.05 },
+  { key: 'curbWidth', label: 'Curb', max: 1, step: 0.05 },
+  { key: 'vergeWidth', label: 'Verge', max: 8, step: 0.1 },
+  { key: 'sidewalkWidth', label: 'Sidewalk', max: 6, step: 0.1 },
+]
 
 const activateRoadNetworkTool = () => {
   const editor = useEditor.getState()
@@ -294,6 +309,8 @@ export default function EnvironmentPanel() {
   const roadAlignmentMode = useEnvironmentStore((s) => s.roadAlignmentMode)
   const roadBendRadius = useEnvironmentStore((s) => s.roadBendRadius)
   const roadElevationMode = useEnvironmentStore((s) => s.roadElevationMode)
+  const roadSideEditorSide = useEnvironmentStore((s) => s.roadSideEditorSide)
+  const roadSideComponents = useEnvironmentStore((s) => s.roadSideComponents)
   const roadJoinMode = useEnvironmentStore((s) => s.roadJoinMode)
   const activeTool = useEditor((s) => s.tool)
   const streetLightCount = useScene(
@@ -546,6 +563,41 @@ export default function EnvironmentPanel() {
               ]}
               value={roadJoinMode}
             />
+          </div>
+
+          <div className="flex flex-col gap-3 rounded-lg border border-sidebar-border p-3">
+            <div className="flex flex-col gap-1.5">
+              <span className="font-medium text-sidebar-foreground/65 text-xs">Road side</span>
+              <SegmentedControl
+                onChange={useEnvironmentStore.getState().setRoadSideEditorSide}
+                options={[
+                  { label: 'Left', value: 'left' },
+                  { label: 'Right', value: 'right' },
+                ]}
+                value={roadSideEditorSide}
+              />
+              <span className="text-[11px] text-sidebar-foreground/45">
+                Set a width to zero to remove that component from this side.
+              </span>
+            </div>
+            {ROAD_SIDE_COMPONENT_CONTROLS.map((control) => (
+              <SliderControl
+                key={control.key}
+                label={control.label}
+                max={control.max}
+                min={0}
+                onChange={(value) =>
+                  useEnvironmentStore
+                    .getState()
+                    .setRoadSideComponentWidth(roadSideEditorSide, control.key, value)
+                }
+                precision={2}
+                restoreOnCommit={false}
+                step={control.step}
+                unit="m"
+                value={roadSideComponents[roadSideEditorSide][control.key]}
+              />
+            ))}
           </div>
         </>
       )}

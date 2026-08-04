@@ -6,10 +6,7 @@ import { BufferGeometry, DoubleSide, Float32BufferAttribute } from 'three'
 import {
   buildJunctionBoundaryGeometry,
   buildJunctionBoundarySidewalkGeometry,
-  buildRoadRenderPaths,
   sampleRoadEdgePoints,
-  smoothRoadRenderPath,
-  trimRoadRenderPath,
   type JunctionBoundaryGeometryData,
 } from './road-network-geometry'
 import { roadCurbCornerKey } from './road-network-corner-editing'
@@ -17,6 +14,17 @@ import {
   buildRoadNetworkMarkings,
   type RoadMarkingPolygon,
 } from './road-network-markings'
+import {
+  buildRoadCrossSection,
+  buildRoadJunctionBands,
+  ROAD_SIDE_COMPONENT_SPECS,
+  type RoadJunctionBand,
+} from './road-cross-section'
+import {
+  buildRoadTransitionProfiles,
+  trimRoadTransitionProfile,
+  type RoadTransitionSample,
+} from './road-transition-profile'
 import type { RoadGraphEdge, RoadNetworkNode, RoadStylePreset } from './schema'
 import { DEFAULT_ROAD_STYLE_PRESETS } from './road-style-presets'
 import type { RoadElementSelection } from './store'
@@ -95,7 +103,29 @@ export function RoadSegmentSurface({
   start: readonly [number, number, number]
   style: RoadStylePreset
 }) {
-  return <RoadRibbonSurface color={color} ghost={ghost} points={[start, end]} style={style} />
+  const crossSection = buildRoadCrossSection(style)
+  const points = [start, end]
+  return (
+    <>
+      <RoadRibbonSurface color={color} ghost={ghost} points={points} style={style} />
+      {(['left', 'right'] as const).flatMap((side) =>
+        crossSection.sides[side].components.map((component) => (
+          <RoadRibbonSurface
+            color={component.color}
+            elevationOffset={component.elevationOffset}
+            ghost={ghost}
+            key={`${side}:${component.kind}`}
+            lateralOffset={component.lateralOffset}
+            name={`road-side-${side}-${component.kind}-preview`}
+            nonInteractive
+            points={points}
+            style={style}
+            width={component.width}
+          />
+        )),
+      )}
+    </>
+  )
 }
 
 /** Build one continuous top surface so sampled curves have no box-to-box gaps. */
@@ -187,6 +217,94 @@ export function RoadRibbonSurface({
   )
 }
 
+type RoadVariableRibbonSample = Pick<
+  RoadTransitionSample,
+  'point' | 'surfaceThickness'
+> & {
+  leftOffset: number
+  rightOffset: number
+}
+
+/** Render a ribbon whose left and right offsets can change along its centerline. */
+function RoadVariableRibbonSurface({
+  color,
+  elevationOffset = 0,
+  ghost = false,
+  name,
+  nonInteractive = false,
+  samples,
+}: {
+  color: string
+  elevationOffset?: number
+  ghost?: boolean
+  name: string
+  nonInteractive?: boolean
+  samples: RoadVariableRibbonSample[]
+}) {
+  const geometry = useMemo(() => {
+    const result = new BufferGeometry()
+    if (samples.length < 2) return result
+    const positions: number[] = []
+    for (let index = 0; index < samples.length; index++) {
+      const sample = samples[index]!
+      const previous = samples[Math.max(0, index - 1)]!
+      const next = samples[Math.min(samples.length - 1, index + 1)]!
+      const dx = next.point[0] - previous.point[0]
+      const dz = next.point[2] - previous.point[2]
+      const length = Math.max(Math.hypot(dx, dz), 1e-6)
+      const normalX = -dz / length
+      const normalZ = dx / length
+      const y = sample.point[1] + sample.surfaceThickness + elevationOffset
+      positions.push(
+        sample.point[0] + normalX * sample.leftOffset,
+        y,
+        sample.point[2] + normalZ * sample.leftOffset,
+        sample.point[0] + normalX * sample.rightOffset,
+        y,
+        sample.point[2] + normalZ * sample.rightOffset,
+      )
+    }
+    const indices: number[] = []
+    for (let index = 0; index < samples.length - 1; index++) {
+      const left = index * 2
+      const right = left + 1
+      const nextLeft = left + 2
+      const nextRight = left + 3
+      indices.push(left, nextLeft, right, nextLeft, nextRight, right)
+    }
+    result.setAttribute('position', new Float32BufferAttribute(positions, 3))
+    result.setIndex(indices)
+    result.computeVertexNormals()
+    result.computeBoundingBox()
+    result.computeBoundingSphere()
+    return result
+  }, [elevationOffset, samples])
+  useEffect(() => () => geometry.dispose(), [geometry])
+  if (samples.length < 2) return null
+  const shadowPolicy = roadRibbonShadowPolicy(ghost)
+  return (
+    <mesh
+      castShadow={shadowPolicy.castShadow}
+      geometry={geometry}
+      name={name}
+      raycast={ghost || nonInteractive ? NO_RAYCAST : undefined}
+      receiveShadow={shadowPolicy.receiveShadow}
+    >
+      <meshStandardMaterial
+        color={color}
+        depthWrite={!ghost}
+        metalness={0.02}
+        opacity={ghost ? 0.48 : 1}
+        polygonOffset
+        polygonOffsetFactor={-1}
+        roughness={0.94}
+        side={DoubleSide}
+        transparent={ghost}
+      />
+    </mesh>
+  )
+}
+
 function RoadJunctionSurface({
   color,
   center,
@@ -241,42 +359,42 @@ function RoadJunctionSurface({
   )
 }
 
-function RoadJunctionSidewalk({
+function RoadJunctionSideBand({
+  band,
   center,
   solution,
   surfaceY,
-  width,
 }: {
+  band: RoadJunctionBand
   center: readonly [number, number, number]
   solution: JunctionBoundaryGeometryData
   surfaceY: number
-  width: number
 }) {
-  const sidewalk = useMemo(
-    () => buildJunctionBoundarySidewalkGeometry(solution, width),
-    [solution, width],
+  const surface = useMemo(
+    () => buildJunctionBoundarySidewalkGeometry(solution, band.outerWidth),
+    [band.outerWidth, solution],
   )
   const geometry = useMemo(() => {
     const result = new BufferGeometry()
-    result.setAttribute('position', new Float32BufferAttribute(sidewalk.positions, 3))
-    result.setIndex(sidewalk.indices)
+    result.setAttribute('position', new Float32BufferAttribute(surface.positions, 3))
+    result.setIndex(surface.indices)
     result.computeVertexNormals()
     result.computeBoundingBox()
     result.computeBoundingSphere()
     return result
-  }, [sidewalk])
+  }, [surface])
   useEffect(() => () => geometry.dispose(), [geometry])
   if ((geometry.getAttribute('position')?.count ?? 0) === 0) return null
   return (
     <mesh
       geometry={geometry}
-      name="road-junction-sidewalk"
+      name={`road-junction-${band.kind}`}
       position={[center[0], center[1] + surfaceY, center[2]]}
       raycast={NO_RAYCAST}
       receiveShadow
     >
       <meshStandardMaterial
-        color="#b9b7b0"
+        color={band.color}
         polygonOffset
         polygonOffsetFactor={-3}
         roughness={0.94}
@@ -378,14 +496,14 @@ export function RoadNetworkModel({
             halfWidth: carriagewayWidth(edgeStyle) / 2,
           }]
         })
-        const sidewalkWidth = Math.max(...styles.map((candidate) => candidate.sidewalkWidth), 0)
+        const sideBands = buildRoadJunctionBands(styles)
         const treatment = junction?.treatment ?? 'auto'
         const solution = buildJunctionBoundaryGeometry(
           approaches,
           junction?.cornerRadii ?? {},
         )
         return style && radius > 0
-          ? [{ graphNode, junction, radius, sidewalkWidth, solution, style, treatment }]
+          ? [{ graphNode, junction, radius, sideBands, solution, style, treatment }]
           : []
       }),
     [node],
@@ -404,35 +522,15 @@ export function RoadNetworkModel({
   )
   const edgeSurfaces = useMemo(
     () =>
-      buildRoadRenderPaths(
-        node,
-        (left, right) => resolveStyle(node, left)?.id === resolveStyle(node, right)?.id,
-      ).flatMap((path) => {
-        const edge = node.edges[path.edgeIds[0]!]
-        if (!edge) return []
-        const style = resolveStyle(node, edge)
-        if (!style) return []
-        const points = smoothRoadRenderPath(
-          path.points,
-          path.cornerPointIndices,
-          path.cornerNodeIds.map(
-            (nodeId) => node.graphNodes[nodeId]?.curveRadius ?? carriagewayWidth(style) * 0.65,
-          ),
-          10,
-        )
-        const decorativePoints = trimRoadRenderPath(
-          points,
-          junctionTrimByApproach[`${path.startNodeId}:${path.edgeIds[0]}`] ?? 0,
+      buildRoadTransitionProfiles(node).map((profile) => {
+        const decorativeProfile = trimRoadTransitionProfile(
+          profile,
+          junctionTrimByApproach[`${profile.startNodeId}:${profile.edgeIds[0]}`] ?? 0,
           junctionTrimByApproach[
-            `${path.endNodeId}:${path.edgeIds[path.edgeIds.length - 1]}`
+            `${profile.endNodeId}:${profile.edgeIds[profile.edgeIds.length - 1]}`
           ] ?? 0,
         )
-        return [{
-          decorativePoints,
-          key: path.edgeIds.join(':'),
-          points,
-          style,
-        }]
+        return { decorativeProfile, profile }
       }),
     [junctionTrimByApproach, node],
   )
@@ -460,44 +558,55 @@ export function RoadNetworkModel({
 
   return (
     <group name="road-network-model">
-      {edgeSurfaces.map((segment) => (
-        <group key={segment.key}>
-          <RoadRibbonSurface
+      {edgeSurfaces.map(({ decorativeProfile, profile }) => (
+        <group key={profile.key}>
+          <RoadVariableRibbonSurface
+            color={profile.style.surfaceColor}
             ghost={ghost}
+            name={ghost ? 'road-segment-preview' : 'road-segment-surface'}
             nonInteractive={nonInteractive}
-            points={segment.points}
-            style={segment.style}
+            samples={profile.samples.map((sample) => ({
+              ...sample,
+              leftOffset: sample.carriagewayHalfWidth,
+              rightOffset: -sample.carriagewayHalfWidth,
+            }))}
           />
-          {!ghost && segment.style.sidewalkWidth > 0 ? (
-            <>
-              <RoadRibbonSurface
-                color="#b9b7b0"
-                elevationOffset={0.055}
-                lateralOffset={carriagewayWidth(segment.style) / 2 + segment.style.sidewalkWidth / 2}
-                nonInteractive
-                points={segment.decorativePoints}
-                style={segment.style}
-                width={segment.style.sidewalkWidth}
-              />
-              <RoadRibbonSurface
-                color="#b9b7b0"
-                elevationOffset={0.055}
-                lateralOffset={-(carriagewayWidth(segment.style) / 2 + segment.style.sidewalkWidth / 2)}
-                nonInteractive
-                points={segment.decorativePoints}
-                style={segment.style}
-                width={segment.style.sidewalkWidth}
-              />
-            </>
-          ) : null}
-          {!ghost && segment.style.medianWidth > 0 ? (
-            <RoadRibbonSurface
+          {(['left', 'right'] as const).flatMap((side) =>
+            ROAD_SIDE_COMPONENT_SPECS.map((spec) => {
+              if (!decorativeProfile.samples.some(
+                (sample) => sample.components[side][spec.kind].width > 1e-4,
+              )) return null
+              return (
+                <RoadVariableRibbonSurface
+                  color={spec.color}
+                  elevationOffset={spec.elevationOffset}
+                  ghost={ghost}
+                  key={`${side}:${spec.kind}`}
+                  name={`road-side-${side}-${spec.kind}`}
+                  nonInteractive
+                  samples={decorativeProfile.samples.map((sample) => {
+                    const bounds = sample.components[side][spec.kind]
+                    return {
+                      ...sample,
+                      leftOffset: side === 'left' ? bounds.outerOffset : -bounds.innerOffset,
+                      rightOffset: side === 'left' ? bounds.innerOffset : -bounds.outerOffset,
+                    }
+                  })}
+                />
+              )
+            }),
+          )}
+          {!ghost && decorativeProfile.samples.some((sample) => sample.medianWidth > 1e-4) ? (
+            <RoadVariableRibbonSurface
               color="#777d70"
               elevationOffset={0.07}
+              name="road-median"
               nonInteractive
-              points={segment.decorativePoints}
-              style={segment.style}
-              width={segment.style.medianWidth * 0.72}
+              samples={decorativeProfile.samples.map((sample) => ({
+                ...sample,
+                leftOffset: sample.medianWidth * 0.36,
+                rightOffset: -sample.medianWidth * 0.36,
+              }))}
             />
           ) : null}
         </group>
@@ -556,7 +665,7 @@ export function RoadNetworkModel({
             </group>
           ))
         : null}
-      {junctionSurfaces.map(({ graphNode, junction, radius, sidewalkWidth, solution, style, treatment }) => (
+      {junctionSurfaces.map(({ graphNode, junction, radius, sideBands, solution, style, treatment }) => (
         <group key={graphNode.id}>
           <RoadJunctionSurface
             center={graphNode.position}
@@ -576,14 +685,17 @@ export function RoadNetworkModel({
             solution={solution}
             surfaceY={style.surfaceThickness + 0.002}
           />
-          {!ghost && sidewalkWidth > 0 ? (
-            <RoadJunctionSidewalk
-              center={graphNode.position}
-              solution={solution}
-              surfaceY={style.surfaceThickness + 0.06}
-              width={sidewalkWidth}
-            />
-          ) : null}
+          {!ghost
+            ? [...sideBands].reverse().map((band) => (
+                <RoadJunctionSideBand
+                  band={band}
+                  center={graphNode.position}
+                  key={band.kind}
+                  solution={solution}
+                  surfaceY={style.surfaceThickness + band.elevationOffset}
+                />
+              ))
+            : null}
           {!ghost && treatment === 'roundabout' ? (
             <>
               <mesh

@@ -23,7 +23,7 @@ type RoadNetworkDefinition = NodeDefinition<typeof RoadNetworkNode> & Record<str
 
 export const roadNetworkDefinition: RoadNetworkDefinition = {
   kind: 'environment:road-network',
-  schemaVersion: 7,
+  schemaVersion: 8,
   schema: RoadNetworkNode,
   category: 'structure',
   snapProfile: 'structural',
@@ -116,6 +116,29 @@ export const roadNetworkDefinition: RoadNetworkDefinition = {
             : {},
       }
     },
+    7: (old: unknown) => {
+      if (!(old && typeof old === 'object')) return old
+      const previous = old as Record<string, unknown>
+      const previousStyles =
+        previous.stylePresets && typeof previous.stylePresets === 'object'
+          ? (previous.stylePresets as Record<string, unknown>)
+          : {}
+      const stylePresets = { ...previousStyles }
+      for (const [id, nextDefault] of Object.entries(DEFAULT_ROAD_STYLE_PRESETS)) {
+        const current = previousStyles[id]
+        if (!(current && typeof current === 'object')) {
+          stylePresets[id] = { ...nextDefault }
+          continue
+        }
+        const style = current as Record<string, unknown>
+        stylePresets[id] = {
+          ...style,
+          leftSide: style.leftSide ?? { ...nextDefault.leftSide },
+          rightSide: style.rightSide ?? { ...nextDefault.rightSide },
+        }
+      }
+      return { ...previous, stylePresets }
+    },
   },
   defaults: () => ({
     object: 'node',
@@ -150,10 +173,13 @@ export const roadNetworkDefinition: RoadNetworkDefinition = {
   quickActions: ({ node }: { node: RoadNetworkNode }) => {
     const junctions = node.junctions ?? {}
     const selected = useEnvironmentStore.getState().roadElementSelection
+    const hasSplineAlignment = Object.values(node.edges).some(
+      (edge) => edge.alignment.length > 0,
+    )
     const splineEditing =
       selected?.networkId === node.id &&
       (selected.kind === 'spline' || selected.kind === 'control')
-    const splineAction = {
+    const splineAction = hasSplineAlignment ? {
       id: 'road:edit-spline',
       label: splineEditing ? 'Finish spline edit' : 'Edit spline',
       title: splineEditing
@@ -168,7 +194,7 @@ export const roadNetworkDefinition: RoadNetworkDefinition = {
         )
         return { selectedIds: [node.id as AnyNodeId] }
       },
-    }
+    } : null
     const selectedJunctionId =
       selected?.networkId === node.id &&
       (selected.kind === 'junction' || selected.kind === 'corner') &&
@@ -190,7 +216,7 @@ export const roadNetworkDefinition: RoadNetworkDefinition = {
       .filter((candidate) => candidate.degree >= 3 && junctions[candidate.graphNode.id])
       .sort((left, right) => right.degree - left.degree)[0]
     const junctionId = selectedJunctionId ?? junctionNode?.graphNode.id
-    if (!junctionId) return [splineAction]
+    if (!junctionId) return splineAction ? [splineAction] : []
     const junctionRecord = junctions[junctionId]!
     const roundabout = junctionRecord?.treatment === 'roundabout'
     const primaryCandidates = roadJunctionPrimaryCandidates(node, junctionId)
@@ -212,7 +238,7 @@ export const roadNetworkDefinition: RoadNetworkDefinition = {
       return { selectedIds: [node.id as AnyNodeId] }
     }
     return [
-      splineAction,
+      ...(splineAction ? [splineAction] : []),
       {
         id: 'road:toggle-roundabout',
         label: roundabout ? 'Standard junction' : 'Roundabout',

@@ -487,6 +487,18 @@ export const RoadGraphNode = z.object({
 
 export type RoadGraphNode = z.infer<typeof RoadGraphNode>
 
+/** Optional authored widths for one side of a road, ordered from carriageway outward. */
+export const RoadSideComponents = z.object({
+  parkingLaneWidth: z.number().min(0).max(4).default(0),
+  bikeLaneWidth: z.number().min(0).max(3).default(0),
+  gutterWidth: z.number().min(0).max(2).default(0),
+  curbWidth: z.number().min(0).max(1).default(0),
+  vergeWidth: z.number().min(0).max(8).default(0),
+  sidewalkWidth: z.number().min(0).max(6).default(0),
+})
+
+export type RoadSideComponents = z.infer<typeof RoadSideComponents>
+
 /** A reusable cross-section and visual treatment shared by road edges. */
 export const RoadStylePreset = z.object({
   id: z.string().min(1),
@@ -500,6 +512,8 @@ export const RoadStylePreset = z.object({
   surfaceColor: z.string().default('#3f4246'),
   markingColor: z.string().default('#f3f1df'),
   markings: z.boolean().default(true),
+  leftSide: RoadSideComponents.optional(),
+  rightSide: RoadSideComponents.optional(),
 })
 
 export type RoadStylePreset = z.infer<typeof RoadStylePreset>

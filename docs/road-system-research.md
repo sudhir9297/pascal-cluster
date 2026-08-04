@@ -872,8 +872,8 @@ behavior.
 - [x] Support unequal-width approaches without non-finite or open junction geometry.
 - [x] Select and edit one curb-return corner independently in the canvas.
 - [x] Add dashed marking patterns, stop lines, arrows, and crosswalks.
-- [ ] Add per-side curb, gutter, verge, bike-lane, and parking-lane components.
-- [ ] Add lane-width and lane-count transition tapers.
+- [x] Add independently configurable per-side curb, gutter, verge, bike-lane, parking-lane, and sidewalk components.
+- [x] Add automatic lane-width and lane-count transition tapers across compatible two-road continuations.
 - [ ] Add terrain following and elevation-profile editing.
 - [ ] Add bridge piers, abutments, decks, barriers, and clearance checks.
 - [ ] Add tunnel portals, lining, cut/fill, and terrain booleans.
@@ -931,6 +931,8 @@ behavior.
 - [x] Unit-test that road drafting uses the shared wall-style cursor instead of the old low cylinder.
 - [x] Unit-test curved dash spacing, junction-boundary clipping, inbound arrows, stop/signal controls, crosswalks, and one-way suppression.
 - [x] Unit-test continuous sidewalk coverage between T-junction curb returns and trimmed approaches.
+- [x] Unit-test legacy and asymmetric per-side cross-sections, ordered component offsets, junction bands, and matching 2D/3D output.
+- [x] Unit-test automatic lane-count/width taper detection, bounded lengths, side-strip interpolation, trimming, floorplan output, and converging markings.
 - [x] Unit-test open-end detection, continuation-arrow direction, and 2D/3D arrow rendering.
 - [x] Unit-test centerline/node snap priority, curved-road projection, and grade/join suppression.
 - [x] Unit-test straight and curved attachment-station remapping across split edges.

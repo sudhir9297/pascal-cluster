@@ -8,6 +8,7 @@ import type {
 } from './schema'
 import { sampleRoadAlignmentPoints, sampleRoadEdgePoints } from './road-network-geometry'
 import { DEFAULT_ROAD_STYLE_ID, DEFAULT_ROAD_STYLE_PRESETS } from './road-style-presets'
+import { buildRoadCrossSection } from './road-cross-section'
 
 export type RoadPoint = readonly [number, number, number]
 export type RoadJunctionKind =
@@ -288,12 +289,7 @@ export function createEmptyRoadGraph(): RoadNetworkGraph {
 }
 
 export function roadStyleWidth(style: RoadStylePreset): number {
-  return (
-    style.laneCount * style.laneWidth +
-    style.shoulderWidth * 2 +
-    style.sidewalkWidth * 2 +
-    style.medianWidth
-  )
+  return buildRoadCrossSection(style).totalWidth
 }
 
 export function incidentRoadEdges(

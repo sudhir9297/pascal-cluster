@@ -115,6 +115,8 @@ describe('Environment plugin manifest', () => {
     expect(road.activeStyleId).toBe('local-street')
     expect(road.stylePresets['local-street']?.laneCount).toBe(2)
     expect(road.stylePresets['local-street']?.sidewalkWidth).toBe(0.5)
+    expect(road.stylePresets['local-street']?.leftSide?.curbWidth).toBe(0.15)
+    expect(road.stylePresets['local-street']?.rightSide?.vergeWidth).toBe(0.45)
     expect(road.stylePresets.arterial?.laneCount).toBe(4)
     expect(road.attachments).toEqual({})
     expect(road.applyStyleToAll).toBe(true)
@@ -148,6 +150,23 @@ describe('Environment plugin manifest', () => {
     expect(attachmentMigration({ edges: {} })).toMatchObject({ attachments: {} })
     expect(attachmentMigration({ attachments: { existing: { id: 'existing' } } }))
       .toMatchObject({ attachments: { existing: { id: 'existing' } } })
+    const sideComponentMigration = (roadNetworkDefinition as unknown as {
+      migrate: Record<number, (value: unknown) => unknown>
+    }).migrate[7]!
+    expect(sideComponentMigration({
+      stylePresets: {
+        'local-street': { id: 'local-street', name: 'Legacy local' },
+        custom: { id: 'custom', name: 'Custom' },
+      },
+    })).toMatchObject({
+      stylePresets: {
+        'local-street': {
+          leftSide: { curbWidth: 0.15, gutterWidth: 0.35 },
+          rightSide: { sidewalkWidth: 0.5 },
+        },
+        custom: { id: 'custom', name: 'Custom' },
+      },
+    })
   })
 
   test('migrates legacy junction treatments into persistent junction records', () => {
@@ -217,7 +236,13 @@ describe('Environment plugin manifest', () => {
     )
   })
 
-  test('exposes an explicit spline-shape editing action for a selected road', () => {
+  test('exposes spline editing only for roads with spline alignment points', () => {
+    const straightResult = insertRoadSegment(
+      createEmptyRoadGraph(),
+      [0, 0, 0],
+      [12, 0, 0],
+    )
+    const straightNode = RoadNetworkNode.parse(straightResult.graph)
     const result = insertRoadSegment(createEmptyRoadGraph(), [0, 0, 0], [12, 0, 0], {
       alignment: [[6, 0, 4]],
     })
@@ -226,6 +251,11 @@ describe('Environment plugin manifest', () => {
       input: { node: RoadNetworkNode },
     ) => Array<{ id: string; run: (input: { sceneApi: unknown }) => unknown }>
 
+    expect(
+      quickActions({ node: straightNode }).some(
+        (action) => action.id === 'road:edit-spline',
+      ),
+    ).toBe(false)
     const editAction = quickActions({ node }).find((action) => action.id === 'road:edit-spline')
     expect(editAction).toBeDefined()
     editAction!.run({ sceneApi: {} })

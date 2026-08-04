@@ -26,6 +26,7 @@ import {
   type RoadPoint,
 } from './road-network-topology'
 import { RoadNetworkNode } from './schema'
+import { buildRoadCrossSection, withRoadSideComponents } from './road-cross-section'
 import { snapXZ } from './placement'
 import { nextRoadElevationMode, useEnvironmentStore } from './store'
 import { roadGraphHasBlockingIssues } from './road-network-validation'
@@ -73,11 +74,14 @@ function roadMagneticSnapTolerance(networks: RoadNetworkNode[]): number {
       const styleId = network.applyStyleToAll ? network.activeStyleId : edge.styleId
       const style = network.stylePresets[styleId]
       if (!style) continue
-      const carriagewayWidth =
-        style.laneCount * style.laneWidth + style.shoulderWidth * 2 + style.medianWidth
       // Capture anywhere over the visible road/sidewalk footprint, then pull
       // the cursor to the actual centerline before topology preview/commit.
-      tolerance = Math.max(tolerance, carriagewayWidth / 2 + style.sidewalkWidth + 0.4)
+      const crossSection = buildRoadCrossSection(style)
+      tolerance = Math.max(
+        tolerance,
+        crossSection.sides.left.outerOffset + 0.4,
+        crossSection.sides.right.outerOffset + 0.4,
+      )
     }
   }
   return tolerance
@@ -92,14 +96,22 @@ function commitSegment(
   const existing = roadNetworks(levelId)
   const merged = mergeRoadGraphs(existing)
   const graph = existing.length > 0 ? merged.graph : createEmptyRoadGraph()
+  const store = useEnvironmentStore.getState()
+  const activeStyle = graph.stylePresets[graph.activeStyleId]
+  if (activeStyle) {
+    graph.stylePresets = {
+      ...graph.stylePresets,
+      [graph.activeStyleId]: withRoadSideComponents(activeStyle, store.roadSideComponents),
+    }
+  }
   const result = insertRoadSegment(graph, start, end, {
     alignment,
-    bendRadius: useEnvironmentStore.getState().roadBendRadius,
+    bendRadius: store.roadBendRadius,
     tolerance: existing[0]?.snapTolerance ?? 0.5,
-    elevationMode: useEnvironmentStore.getState().roadElevationMode,
-    joinMode: useEnvironmentStore.getState().roadJoinMode,
-    level: useEnvironmentStore.getState().roadElevationMode === 'ground' ? 0 : 1,
-    stackLevel: useEnvironmentStore.getState().roadElevationMode === 'bridge' ? 1 : 0,
+    elevationMode: store.roadElevationMode,
+    joinMode: store.roadJoinMode,
+    level: store.roadElevationMode === 'ground' ? 0 : 1,
+    stackLevel: store.roadElevationMode === 'bridge' ? 1 : 0,
   })
   if (result.status !== 'inserted') return existing[0] ?? null
   if (roadGraphHasBlockingIssues(result.graph)) return null
@@ -161,7 +173,11 @@ export default function RoadNetworkTool() {
   const [splinePoints, setSplinePoints] = useState<Array<[number, number, number]>>([])
   const [cursor, setCursor] = useState<[number, number, number] | null>(null)
   const [snapTarget, setSnapTarget] = useState<RoadDraftSnapTarget | null>(null)
-  const style = useMemo(() => createDefaultRoadStyle(), [])
+  const roadSideComponents = useEnvironmentStore((state) => state.roadSideComponents)
+  const style = useMemo(
+    () => withRoadSideComponents(createDefaultRoadStyle(), roadSideComponents),
+    [roadSideComponents],
+  )
   const alignmentMode = useEnvironmentStore((state) => state.roadAlignmentMode)
   const bendRadius = useEnvironmentStore((state) => state.roadBendRadius)
   const elevationMode = useEnvironmentStore((state) => state.roadElevationMode)

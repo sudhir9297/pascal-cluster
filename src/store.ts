@@ -4,8 +4,10 @@ import {
   STANDARD_UTILITY_POLE_EXPOSED_HEIGHT_M,
 } from './utility-pole-geometry'
 import { STANDARD_LAMP_HEIGHT_M } from './lamp-constants'
-import type { UtilityPoleAssembly } from './schema'
+import type { RoadSideComponents, UtilityPoleAssembly } from './schema'
 import type { RoadSignId } from './road-sign-config'
+import type { RoadSide, RoadSideComponentWidthKey } from './road-cross-section'
+import { DEFAULT_ROAD_STYLE_PRESETS } from './road-style-presets'
 
 export type EnvironmentPlacementMode = 'single' | 'continuous'
 export type EnvironmentPanelCategory = 'roads' | 'lighting' | 'signs' | 'utilities'
@@ -49,6 +51,16 @@ type EnvironmentStore = {
   setRoadBendRadius: (value: number) => void
   roadElevationMode: RoadElevationMode
   setRoadElevationMode: (value: RoadElevationMode) => void
+  /** Side currently exposed by the road cross-section editor. */
+  roadSideEditorSide: RoadSide
+  setRoadSideEditorSide: (value: RoadSide) => void
+  /** Components authored for the next road, independently on each side. */
+  roadSideComponents: Record<RoadSide, RoadSideComponents>
+  setRoadSideComponentWidth: (
+    side: RoadSide,
+    key: RoadSideComponentWidthKey,
+    value: number,
+  ) => void
   roadJoinMode: RoadJoinMode
   setRoadJoinMode: (value: RoadJoinMode) => void
   roadElementSelection: RoadElementSelection | null
@@ -153,6 +165,22 @@ export const useEnvironmentStore = create<EnvironmentStore>((set) => ({
   setRoadBendRadius: (roadBendRadius) => set({ roadBendRadius }),
   roadElevationMode: 'ground',
   setRoadElevationMode: (roadElevationMode) => set({ roadElevationMode }),
+  roadSideEditorSide: 'left',
+  setRoadSideEditorSide: (roadSideEditorSide) => set({ roadSideEditorSide }),
+  roadSideComponents: {
+    left: { ...DEFAULT_ROAD_STYLE_PRESETS['local-street'].leftSide },
+    right: { ...DEFAULT_ROAD_STYLE_PRESETS['local-street'].rightSide },
+  },
+  setRoadSideComponentWidth: (side, key, value) =>
+    set((state) => ({
+      roadSideComponents: {
+        ...state.roadSideComponents,
+        [side]: {
+          ...state.roadSideComponents[side],
+          [key]: value,
+        },
+      },
+    })),
   roadJoinMode: 'auto',
   setRoadJoinMode: (roadJoinMode) => set({ roadJoinMode }),
   roadElementSelection: null,

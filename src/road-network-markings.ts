@@ -1,10 +1,12 @@
 import {
   buildJunctionBoundaryGeometry,
-  buildRoadRenderPaths,
   sampleRoadEdgePoints,
-  smoothRoadRenderPath,
-  trimRoadRenderPath,
 } from './road-network-geometry'
+import {
+  buildRoadTransitionProfiles,
+  trimRoadTransitionProfile,
+  type RoadTransitionSample,
+} from './road-transition-profile'
 import type { RoadGraphEdge, RoadNetworkNode, RoadStylePreset } from './schema'
 import { DEFAULT_ROAD_STYLE_PRESETS } from './road-style-presets'
 
@@ -75,16 +77,24 @@ function pointAtDistance(points: Point3[], distance: number): PathSample | null 
   return null
 }
 
-function offsetPath(points: Point3[], offset: number): Point3[] {
-  return points.map((point, index) => {
-    const previous = points[Math.max(0, index - 1)]!
-    const next = points[Math.min(points.length - 1, index + 1)]!
-    const length = Math.max(distanceXZ(previous, next), 1e-6)
+function offsetTransitionPath(
+  samples: RoadTransitionSample[],
+  boundaryIndex: number,
+): Point3[] {
+  return samples.map((sample, index) => {
+    const previous = samples[Math.max(0, index - 1)]!
+    const next = samples[Math.min(samples.length - 1, index + 1)]!
+    const length = Math.max(distanceXZ(previous.point, next.point), 1e-6)
     const left = [
-      -(next[2] - previous[2]) / length,
-      (next[0] - previous[0]) / length,
+      -(next.point[2] - previous.point[2]) / length,
+      (next.point[0] - previous.point[0]) / length,
     ] as const
-    return [point[0] + left[0] * offset, point[1], point[2] + left[1] * offset]
+    const offset = sample.laneBoundaryOffsets[boundaryIndex] ?? 0
+    return [
+      sample.point[0] + left[0] * offset,
+      sample.point[1] + sample.surfaceThickness + 0.014,
+      sample.point[2] + left[1] * offset,
+    ]
   })
 }
 
@@ -268,28 +278,20 @@ export function buildRoadNetworkMarkings(node: RoadNetworkNode): RoadMarkingPoly
   const approachCuts = Object.fromEntries(junctionData.flatMap(({ junction, solution }) =>
     Object.entries(solution.approachCuts).map(([edgeId, cut]) => [`${junction.nodeId}:${edgeId}`, cut])))
 
-  for (const path of buildRoadRenderPaths(
-    node,
-    (left, right) => resolveStyle(node, left)?.id === resolveStyle(node, right)?.id,
-  )) {
-    const edge = node.edges[path.edgeIds[0]!]
+  for (const profile of buildRoadTransitionProfiles(node)) {
+    const edge = node.edges[profile.edgeIds[0]!]
     if (!edge) continue
-    const style = resolveStyle(node, edge)
+    const style = profile.style
     if (!style?.markings) continue
-    const smooth = smoothRoadRenderPath(
-      path.points,
-      path.cornerPointIndices,
-      path.cornerNodeIds.map(
-        (nodeId) => node.graphNodes[nodeId]?.curveRadius ?? carriagewayWidth(style) * 0.65,
-      ),
-      10,
+    const trimmed = trimRoadTransitionProfile(
+      profile,
+      approachCuts[`${profile.startNodeId}:${profile.edgeIds[0]}`] ?? 0,
+      approachCuts[`${profile.endNodeId}:${profile.edgeIds.at(-1)}`] ?? 0,
     )
-    const points = trimRoadRenderPath(
-      smooth,
-      approachCuts[`${path.startNodeId}:${path.edgeIds[0]}`] ?? 0,
-      approachCuts[`${path.endNodeId}:${path.edgeIds.at(-1)}`] ?? 0,
-    ).map((point) => [
-      point[0], point[1] + style.surfaceThickness + 0.014, point[2],
+    const points = trimmed.samples.map((sample) => [
+      sample.point[0],
+      sample.point[1] + sample.surfaceThickness + 0.014,
+      sample.point[2],
     ] as Point3)
     if (points.length < 2) continue
     if (style.medianWidth === 0 && style.laneCount >= 2) {
@@ -297,10 +299,9 @@ export function buildRoadNetworkMarkings(node: RoadNetworkNode): RoadMarkingPoly
     }
     for (let boundary = 1; boundary < style.laneCount; boundary++) {
       if (style.laneCount % 2 === 0 && boundary === style.laneCount / 2) continue
-      const offset =
-        (boundary - style.laneCount / 2) * style.laneWidth +
-        Math.sign(boundary - style.laneCount / 2) * style.medianWidth / 2
-      for (const dash of splitRoadMarkingDashes(offsetPath(points, offset))) {
+      for (const dash of splitRoadMarkingDashes(
+        offsetTransitionPath(trimmed.samples, boundary - 1),
+      )) {
         polygons.push(...ribbonPolygons(dash, 0.09, 'lane-dash', style.markingColor, edge.id))
       }
     }

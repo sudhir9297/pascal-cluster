@@ -2,8 +2,14 @@ import type { FloorplanGeometry, GeometryContext } from '@pascal-app/core'
 import { classifyRoadJunction } from './road-network-topology'
 import { buildRoadCurbCornerHandles } from './road-network-corner-editing'
 import { buildRoadNetworkMarkings } from './road-network-markings'
+import { buildRoadJunctionBands, ROAD_SIDE_COMPONENT_SPECS } from './road-cross-section'
+import {
+  buildRoadTransitionProfiles,
+  type RoadTransitionSample,
+} from './road-transition-profile'
 import {
   buildJunctionBoundaryGeometry,
+  buildJunctionBoundarySidewalkGeometry,
   roadTerminalEnds,
   sampleRoadEdgePoints,
 } from './road-network-geometry'
@@ -28,21 +34,20 @@ function carriagewayWidth(style: RoadStylePreset): number {
   return style.laneCount * style.laneWidth + style.shoulderWidth * 2 + style.medianWidth
 }
 
-function edgePlanPoints(node: RoadNetworkNode, edge: RoadGraphEdge): PlanPoint[] {
-  return sampleRoadEdgePoints(node, edge).map((point) => [point[0], point[2]])
-}
-
-function segmentPolygon(start: PlanPoint, end: PlanPoint, width: number): PlanPoint[] {
-  const dx = end[0] - start[0]
-  const dy = end[1] - start[1]
+function profileOffsetPoint(
+  samples: RoadTransitionSample[],
+  index: number,
+  offset: number,
+): PlanPoint {
+  const sample = samples[index]!
+  const previous = samples[Math.max(0, index - 1)]!
+  const next = samples[Math.min(samples.length - 1, index + 1)]!
+  const dx = next.point[0] - previous.point[0]
+  const dy = next.point[2] - previous.point[2]
   const length = Math.max(Math.hypot(dx, dy), 1e-6)
-  const nx = (-dy / length) * (width / 2)
-  const ny = (dx / length) * (width / 2)
   return [
-    [start[0] + nx, start[1] + ny],
-    [end[0] + nx, end[1] + ny],
-    [end[0] - nx, end[1] - ny],
-    [start[0] - nx, start[1] - ny],
+    sample.point[0] - dy / length * offset,
+    sample.point[2] + dx / length * offset,
   ]
 }
 
@@ -55,27 +60,51 @@ export function buildRoadNetworkFloorplan(
     ? (ctx.viewState?.palette.selectedStroke ?? '#2563eb')
     : '#272a2d'
   const children: FloorplanGeometry[] = []
-  for (const edge of Object.values(node.edges)) {
-    const style = resolveStyle(node, edge)
-    if (!style) continue
-    const points = edgePlanPoints(node, edge)
-    for (let index = 0; index < points.length - 1; index++) {
-      const start = points[index]!
-      const end = points[index + 1]!
+  for (const profile of buildRoadTransitionProfiles(node)) {
+    const samples = profile.samples
+    for (let index = 0; index < samples.length - 1; index++) {
+      const start = samples[index]!
+      const end = samples[index + 1]!
       children.push({
         kind: 'polygon',
-        points: segmentPolygon(start, end, carriagewayWidth(style)),
-        fill: style.surfaceColor,
+        points: [
+          profileOffsetPoint(samples, index, start.carriagewayHalfWidth),
+          profileOffsetPoint(samples, index + 1, end.carriagewayHalfWidth),
+          profileOffsetPoint(samples, index + 1, -end.carriagewayHalfWidth),
+          profileOffsetPoint(samples, index, -start.carriagewayHalfWidth),
+        ],
+        fill: profile.style.surfaceColor,
         stroke,
         strokeWidth: selected ? 0.09 : 0.04,
         strokeLinejoin: 'round',
       })
+      for (const side of ['left', 'right'] as const) {
+        for (const spec of ROAD_SIDE_COMPONENT_SPECS) {
+          const startBounds = start.components[side][spec.kind]
+          const endBounds = end.components[side][spec.kind]
+          if (startBounds.width <= 1e-4 && endBounds.width <= 1e-4) continue
+          const sign = side === 'left' ? 1 : -1
+          children.push({
+            kind: 'polygon',
+            points: [
+              profileOffsetPoint(samples, index, sign * startBounds.outerOffset),
+              profileOffsetPoint(samples, index + 1, sign * endBounds.outerOffset),
+              profileOffsetPoint(samples, index + 1, sign * endBounds.innerOffset),
+              profileOffsetPoint(samples, index, sign * startBounds.innerOffset),
+            ],
+            fill: spec.color,
+            stroke: spec.color,
+            strokeWidth: 0,
+            strokeLinejoin: 'round',
+          })
+        }
+      }
       children.push({
         kind: 'hit-line',
-        x1: start[0],
-        y1: start[1],
-        x2: end[0],
-        y2: end[1],
+        x1: start.point[0],
+        y1: start.point[2],
+        x2: end.point[0],
+        y2: end.point[2],
         strokeWidthPx: 16,
       })
     }
@@ -118,6 +147,30 @@ export function buildRoadNetworkFloorplan(
         strokeWidth: selected ? 0.09 : 0.04,
         strokeLinejoin: 'round',
       })
+      const sideBands = buildRoadJunctionBands(
+        incident.flatMap((edge) => {
+          const style = resolveStyle(node, edge)
+          return style ? [style] : []
+        }),
+      )
+      for (const band of [...sideBands].reverse()) {
+        const surface = buildJunctionBoundarySidewalkGeometry(solution, band.outerWidth)
+        for (let offset = 0; offset + 11 < surface.positions.length; offset += 12) {
+          children.push({
+            kind: 'polygon',
+            points: [
+              [graphNode.position[0] + surface.positions[offset]!, graphNode.position[2] + surface.positions[offset + 2]!],
+              [graphNode.position[0] + surface.positions[offset + 3]!, graphNode.position[2] + surface.positions[offset + 5]!],
+              [graphNode.position[0] + surface.positions[offset + 9]!, graphNode.position[2] + surface.positions[offset + 11]!],
+              [graphNode.position[0] + surface.positions[offset + 6]!, graphNode.position[2] + surface.positions[offset + 8]!],
+            ],
+            fill: band.color,
+            stroke: band.color,
+            strokeWidth: 0,
+            strokeLinejoin: 'round',
+          })
+        }
+      }
       if (selected) {
         children.push({
           kind: 'text',
@@ -147,21 +200,8 @@ export function buildRoadNetworkFloorplan(
       }
       continue
     }
-    const radius = Math.max(
-      ...incident.map((edge) => {
-        const style = resolveStyle(node, edge)
-        return style ? carriagewayWidth(style) / 2 : 0
-      }),
-    )
-    children.push({
-      kind: 'circle',
-      cx: graphNode.position[0],
-      cy: graphNode.position[2],
-      r: radius,
-      fill: node.stylePresets[incident[0]!.styleId]?.surfaceColor ?? '#3f4246',
-      stroke,
-      strokeWidth: selected ? 0.09 : 0.04,
-    })
+    // Degree-two joins are already covered by continuous paths or a taper.
+    // Adding a disk here would hide the lane transition and create a bulb.
   }
   for (const marking of buildRoadNetworkMarkings(node)) {
     children.push({
