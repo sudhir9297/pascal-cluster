@@ -30,6 +30,7 @@ import {
 import { utilityPoleDefinition } from './utility-pole-definition'
 import { utilityWireDefinition } from './utility-wire-definition'
 import { roadSignDefinition } from './road-sign-definition'
+import { roadNetworkDefinition } from './road-network-definition'
 
 type PluginHostPanel = {
   id: string
@@ -47,16 +48,17 @@ type PluginHostPanel = {
 }
 
 /**
- * The Environment plugin manifest — the entire public surface of this package. A host
- * loads it through the same `loadPlugin` path the built-ins use: environment
- * node kinds plus one left-rail panel (`Environment`). Cast
- * mirrors the built-in bundle: `AnyNodeDefinition` is the
- * hand-maintained union today; the registry derives it post-migration.
+ * The Pascal Environment plugin manifest — the entire public surface of this
+ * package. A host loads it through the same `loadPlugin` path the built-ins use:
+ * environment node kinds plus one left-rail panel (`Environment`). The cast
+ * mirrors the built-in bundle: `AnyNodeDefinition` is the hand-maintained union
+ * today; the registry derives it post-migration.
  */
 export const environmentPlugin: Plugin = {
   id: 'pascal:environment',
   apiVersion: 1,
   nodes: [
+    roadNetworkDefinition as unknown as AnyNodeDefinition,
     streetLightDefinition as unknown as AnyNodeDefinition,
     postTopLightDefinition as unknown as AnyNodeDefinition,
     heritageCrookLightDefinition as unknown as AnyNodeDefinition,
@@ -90,7 +92,7 @@ export const environmentHostPanel: PluginHostPanel = {
   icon: { kind: 'url', src: ENVIRONMENT_ICON },
   component: () => import('./presets-panel'),
   pluginId: environmentPlugin.id,
-  description: 'Procedural street furniture for outdoor scenes.',
+  description: 'Procedural systems and assets for building complete outdoor environments.',
   creator: {
     name: 'Pascal',
     url: 'https://github.com/pascalorg',
@@ -125,6 +127,11 @@ export {
   UtilityPoleAssembly,
   UtilityWireSpanNode,
   RoadSignNode,
+  RoadNetworkNode,
+  RoadEdgeAttachment,
+  RoadGraphNode,
+  RoadGraphEdge,
+  RoadStylePreset,
   createRoadSignNode,
   createRoadSignPreviewNode,
   ROAD_SIGN_PREVIEW_ID,
@@ -155,6 +162,23 @@ export {
 export { utilityPoleDefinition } from './utility-pole-definition'
 export { utilityWireDefinition } from './utility-wire-definition'
 export { roadSignDefinition } from './road-sign-definition'
+export { roadNetworkDefinition } from './road-network-definition'
+export {
+  classifyRoadJunction,
+  createDefaultRoadStyle,
+  createEmptyRoadGraph,
+  incidentRoadEdges,
+  insertRoadSegment,
+  mergeRoadGraphs,
+  roadStyleWidth,
+  splitRoadGraphComponents,
+  type InsertRoadSegmentResult,
+  type RoadJunctionKind,
+  type RoadNetworkGraph,
+  type RoadPoint,
+} from './road-network-topology'
+export { sampleRoadEdgePoints, type RoadGeometryPoint } from './road-network-geometry'
+export { validateRoadGraph, type RoadValidationIssue } from './road-network-validation'
 export {
   ROAD_SIGN_CATALOG,
   ROAD_SIGN_IDS,

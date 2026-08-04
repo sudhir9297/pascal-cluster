@@ -2,7 +2,7 @@
 
 import { useScene } from '@pascal-app/core'
 import { SegmentedControl, SliderControl, ToggleControl, useEditor } from '@pascal-app/editor'
-import { Fragment, useMemo } from 'react'
+import { type DragEvent, Fragment, useMemo } from 'react'
 import {
   CATALOG_LAMP_THUMBNAIL,
   CATALOG_LAMP_THUMBNAILS,
@@ -15,6 +15,7 @@ import {
   TWIN_ARM_MEDIAN_LIGHT_THUMBNAIL,
   UTILITY_POLE_THUMBNAIL,
   ROAD_SIGN_THUMBNAILS,
+  ROAD_NETWORK_THUMBNAIL,
 } from './art'
 import {
   CATALOG_LAMP_VARIANTS,
@@ -22,7 +23,7 @@ import {
   getCatalogLampStyleOptions,
 } from './catalog-lamp-config'
 import { ROAD_SIGN_CATALOG, type RoadSignId } from './road-sign-config'
-import { useEnvironmentStore } from './store'
+import { ROAD_ELEVATION_OPTIONS, useEnvironmentStore } from './store'
 import {
   STANDARD_LAMP_HEIGHT_MAX_M,
   STANDARD_LAMP_HEIGHT_MIN_M,
@@ -40,6 +41,23 @@ const MULTI_HEAD_AREA_LIGHT_KIND = 'environment:multi-head-area-light'
 const TRUSS_ROADWAY_LIGHT_KIND = 'environment:truss-roadway-light'
 const UTILITY_POLE_KIND = 'environment:utility-pole'
 const ROAD_SIGN_KIND = 'environment:road-sign'
+const ROAD_NETWORK_KIND = 'environment:road-network'
+
+const activateRoadNetworkTool = () => {
+  const editor = useEditor.getState()
+  editor.setPhase('structure')
+  editor.setStructureLayer('elements')
+  editor.setCatalogCategory(null)
+  editor.setToolDefaults(ROAD_NETWORK_KIND as never, null)
+  editor.setMode('build')
+  ;(editor.setTool as (value: string) => void)(ROAD_NETWORK_KIND)
+}
+
+const dragRoadNetworkTool = (event: DragEvent<HTMLButtonElement>) => {
+  event.dataTransfer.effectAllowed = 'copy'
+  event.dataTransfer.setData('text/plain', ROAD_NETWORK_KIND)
+  activateRoadNetworkTool()
+}
 
 const activateCatalogLampTool = (kind: string) => {
   const setTool = useEditor.getState().setTool as (value: string) => void
@@ -223,6 +241,17 @@ function RoadSignArtwork({ signId }: { signId: RoadSignId }) {
   )
 }
 
+function RoadNetworkArtwork() {
+  return (
+    <img
+      alt="Road network"
+      className="aspect-square w-full rounded-lg object-cover ring-1 ring-black/10"
+      draggable={false}
+      src={ROAD_NETWORK_THUMBNAIL}
+    />
+  )
+}
+
 /** Environment asset cards and their placement brush settings. */
 export default function EnvironmentPanel() {
   const panelCategory = useEnvironmentStore((s) => s.panelCategory)
@@ -262,6 +291,10 @@ export default function EnvironmentPanel() {
   const roadSignScale = useEnvironmentStore((s) => s.roadSignScale)
   const roadSignMounting = useEnvironmentStore((s) => s.roadSignMounting)
   const roadSignId = useEnvironmentStore((s) => s.roadSignId)
+  const roadAlignmentMode = useEnvironmentStore((s) => s.roadAlignmentMode)
+  const roadBendRadius = useEnvironmentStore((s) => s.roadBendRadius)
+  const roadElevationMode = useEnvironmentStore((s) => s.roadElevationMode)
+  const roadJoinMode = useEnvironmentStore((s) => s.roadJoinMode)
   const activeTool = useEditor((s) => s.tool)
   const streetLightCount = useScene(
     (s) => Object.values(s.nodes).filter((n) => (n.type as string) === STREET_LIGHT_KIND).length,
@@ -317,6 +350,16 @@ export default function EnvironmentPanel() {
   const roadSignCount = useScene(
     (s) => Object.values(s.nodes).filter((n) => (n.type as string) === ROAD_SIGN_KIND).length,
   )
+  const roadSegmentCount = useScene((s) =>
+    Object.values(s.nodes).reduce(
+      (total, node) =>
+        (node.type as string) === ROAD_NETWORK_KIND
+          ? total + Object.keys((node as { edges?: Record<string, unknown> }).edges ?? {}).length
+          : total,
+      0,
+    ),
+  )
+  const roadNetworkArmed = (activeTool as string | null) === ROAD_NETWORK_KIND
   const streetLightArmed = (activeTool as string | null) === STREET_LIGHT_KIND
   const postTopLightArmed = (activeTool as string | null) === POST_TOP_LIGHT_KIND
   const heritageCrookLightArmed = (activeTool as string | null) === HERITAGE_CROOK_LIGHT_KIND
@@ -336,7 +379,9 @@ export default function EnvironmentPanel() {
   const utilityPoleArmed = (activeTool as string | null) === UTILITY_POLE_KIND
   const roadSignArmed = (activeTool as string | null) === ROAD_SIGN_KIND
   const armed =
-    panelCategory === 'lighting'
+    panelCategory === 'roads'
+      ? roadNetworkArmed
+      : panelCategory === 'lighting'
       ? streetLightArmed ||
         postTopLightArmed ||
         heritageCrookLightArmed ||
@@ -349,7 +394,9 @@ export default function EnvironmentPanel() {
         ? utilityPoleArmed
         : roadSignArmed
   const count =
-    panelCategory === 'lighting'
+    panelCategory === 'roads'
+      ? roadSegmentCount
+      : panelCategory === 'lighting'
       ? streetLightCount +
         postTopLightCount +
         heritageCrookLightCount +
@@ -374,14 +421,19 @@ export default function EnvironmentPanel() {
         <SegmentedControl
           onChange={setPanelCategory}
           options={[
-            { label: 'Lighting', value: 'lighting' },
+            { label: 'Roads', value: 'roads' },
+            { label: 'Lights', value: 'lighting' },
             { label: 'Signs', value: 'signs' },
             { label: 'Utilities', value: 'utilities' },
           ]}
           value={panelCategory}
         />
         <p className="text-sidebar-foreground/50 text-xs">
-          {panelCategory === 'signs' && roadSignArmed
+          {panelCategory === 'roads'
+            ? roadNetworkArmed
+              ? 'Click the ground to set road points. Enter or double-click finishes the path.'
+              : 'Click or drag Road into the scene, then set two or more points.'
+            : panelCategory === 'signs' && roadSignArmed
               ? 'Choose a sign, then click the ground to place it.'
               : armed && placementMode === 'continuous'
                 ? 'Continuous: click repeatedly to place. Press Esc to stop.'
@@ -395,7 +447,7 @@ export default function EnvironmentPanel() {
         </p>
       </header>
 
-      {panelCategory !== 'signs' && <div className="flex flex-col gap-1.5">
+      {panelCategory !== 'signs' && panelCategory !== 'roads' && <div className="flex flex-col gap-1.5">
         <span className="font-medium text-sidebar-foreground/65 text-xs">Placement</span>
         <div className="grid grid-cols-2 rounded-lg bg-sidebar-accent/55 p-1 ring-1 ring-sidebar-border">
           {(['single', 'continuous'] as const).map((mode) => {
@@ -418,6 +470,85 @@ export default function EnvironmentPanel() {
           })}
         </div>
       </div>}
+
+      {panelCategory === 'roads' && (
+        <>
+          <button
+            aria-pressed={roadNetworkArmed}
+            className={`group relative flex flex-col gap-2 rounded-xl border p-2 text-left transition-all ${
+              roadNetworkArmed
+                ? 'border-sidebar-ring bg-sidebar-accent shadow-sm'
+                : 'border-sidebar-border hover:border-sidebar-ring/50 hover:bg-sidebar-accent/40'
+            }`}
+            draggable
+            onClick={activateRoadNetworkTool}
+            onDragStart={dragRoadNetworkTool}
+            title="Click or drag to start drawing a connected road network"
+            type="button"
+          >
+            <div className="transition-transform group-hover:scale-[1.01]">
+              <RoadNetworkArtwork />
+            </div>
+            <span className="flex items-center justify-between gap-2 px-0.5 font-medium text-xs">
+              <span>Road</span>
+              <span className="font-normal text-sidebar-foreground/45">
+                {roadSegmentCount} segment{roadSegmentCount === 1 ? '' : 's'}
+              </span>
+            </span>
+            <span className="px-0.5 text-[11px] text-sidebar-foreground/50">
+              Drag or click to draw straight, spline and connected roads
+            </span>
+            {roadNetworkArmed && (
+              <span className="absolute top-3 right-3 h-2 w-2 rounded-full bg-sidebar-ring ring-2 ring-sidebar-accent" />
+            )}
+          </button>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="font-medium text-sidebar-foreground/65 text-xs">Alignment</span>
+            <SegmentedControl
+              onChange={useEnvironmentStore.getState().setRoadAlignmentMode}
+              options={[
+                { label: 'Straight', value: 'straight' },
+                { label: 'Spline', value: 'spline' },
+              ]}
+              value={roadAlignmentMode}
+            />
+          </div>
+
+          <SliderControl
+            label="Bend radius"
+            max={25}
+            min={0.5}
+            onChange={useEnvironmentStore.getState().setRoadBendRadius}
+            precision={1}
+            restoreOnCommit={false}
+            step={0.5}
+            unit="m"
+            value={roadBendRadius}
+          />
+
+          <div className="flex flex-col gap-1.5">
+            <span className="font-medium text-sidebar-foreground/65 text-xs">Elevation</span>
+            <SegmentedControl
+              onChange={useEnvironmentStore.getState().setRoadElevationMode}
+              options={ROAD_ELEVATION_OPTIONS}
+              value={roadElevationMode}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <span className="font-medium text-sidebar-foreground/65 text-xs">Crossings</span>
+            <SegmentedControl
+              onChange={useEnvironmentStore.getState().setRoadJoinMode}
+              options={[
+                { label: 'Auto join', value: 'auto' },
+                { label: 'No join', value: 'suppress' },
+              ]}
+              value={roadJoinMode}
+            />
+          </div>
+        </>
+      )}
 
       {panelCategory === 'lighting' && (
         <div className="grid grid-cols-2 gap-2">

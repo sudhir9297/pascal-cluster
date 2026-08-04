@@ -12,6 +12,7 @@ import {
   STANDARD_LAMP_HEIGHT_MIN_M,
 } from './lamp-constants'
 import { ROAD_SIGN_IDS } from './road-sign-config'
+import { DEFAULT_ROAD_STYLE_ID, DEFAULT_ROAD_STYLE_PRESETS } from './road-style-presets'
 
 /** A catalog-driven roadside sign with a reusable plate, graphic, and post. */
 export const RoadSignNode = BaseNode.extend({
@@ -472,3 +473,104 @@ export const UtilityWireSpanNode = BaseNode.extend({
 })
 
 export type UtilityWireSpanNode = z.infer<typeof UtilityWireSpanNode>
+
+/** A topological point shared by one or more road centerline edges. */
+export const RoadGraphNode = z.object({
+  id: z.string().min(1),
+  position: z.tuple([z.number(), z.number(), z.number()]),
+  level: z.number().int().default(0),
+  elevationMode: z.enum(['ground', 'bridge', 'tunnel']).default('ground'),
+  curveRadius: z.number().min(0.1).max(1000).optional(),
+  tangentLength: z.number().min(0).max(1000).optional(),
+  terminal: z.boolean().default(false),
+})
+
+export type RoadGraphNode = z.infer<typeof RoadGraphNode>
+
+/** A reusable cross-section and visual treatment shared by road edges. */
+export const RoadStylePreset = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1).max(64),
+  laneCount: z.number().int().min(1).max(12).default(2),
+  laneWidth: z.number().min(2.4).max(5).default(3.25),
+  shoulderWidth: z.number().min(0).max(4).default(0.5),
+  sidewalkWidth: z.number().min(0).max(6).default(0.5),
+  medianWidth: z.number().min(0).max(12).default(0),
+  surfaceThickness: z.number().min(0.02).max(1).default(0.14),
+  surfaceColor: z.string().default('#3f4246'),
+  markingColor: z.string().default('#f3f1df'),
+  markings: z.boolean().default(true),
+})
+
+export type RoadStylePreset = z.infer<typeof RoadStylePreset>
+
+/** One directed centerline edge. Direction controls traffic, not graph traversal. */
+export const RoadGraphEdge = z.object({
+  id: z.string().min(1),
+  startNodeId: z.string().min(1),
+  endNodeId: z.string().min(1),
+  alignment: z.array(z.tuple([z.number(), z.number(), z.number()])).default([]),
+  styleId: z.string().min(1).default('local-street'),
+  direction: z.enum(['both', 'forward', 'reverse']).default('both'),
+  roadClass: z
+    .enum(['alley', 'local', 'collector', 'arterial', 'highway', 'service'])
+    .default('local'),
+  joinMode: z.enum(['auto', 'suppress']).default('auto'),
+  stackLevel: z.number().int().default(0),
+  overlapGroup: z.string().min(1).optional(),
+  parentEdgeId: z.string().optional(),
+})
+
+export type RoadGraphEdge = z.infer<typeof RoadGraphEdge>
+
+/**
+ * A scene asset anchored by distance along a directed road edge. Stations are
+ * measured in metres from the edge's start node so the anchor can be remapped
+ * without moving the asset when topology splits that edge.
+ */
+export const RoadEdgeAttachment = z.object({
+  id: z.string().min(1),
+  edgeId: z.string().min(1),
+  assetNodeId: z.string().min(1),
+  kind: z.enum(['sign', 'lamp', 'asset']).default('asset'),
+  station: z.number().min(0).default(0),
+  lateralOffset: z.number().default(0),
+  verticalOffset: z.number().default(0),
+})
+
+export type RoadEdgeAttachment = z.infer<typeof RoadEdgeAttachment>
+
+/** A persistent, editable description of a generated road junction. */
+export const RoadJunction = z.object({
+  nodeId: z.string().min(1),
+  kind: z.enum(['tee', 'y', 'four-way-plus', 'four-way-x', 'multi-leg']),
+  treatment: z.enum(['auto', 'stop', 'yield', 'signal', 'roundabout']).default('auto'),
+  primaryMode: z.enum(['auto', 'manual']).default('auto'),
+  primaryEdgeIds: z.array(z.string().min(1)).max(2).default([]),
+  cornerRadii: z.record(z.string(), z.number().min(0.5).max(100)).default({}),
+  solverStatus: z.enum(['auto', 'warning', 'manual']).default('auto'),
+})
+
+export type RoadJunction = z.infer<typeof RoadJunction>
+
+/**
+ * One connected road component lives in each scene node. This keeps junction
+ * regeneration deterministic while making disconnected road systems
+ * independently selectable in the editor.
+ */
+export const RoadNetworkNode = BaseNode.extend({
+  id: objectId('road-network'),
+  type: nodeType('environment:road-network'),
+  graphNodes: z.record(z.string(), RoadGraphNode).default({}),
+  edges: z.record(z.string(), RoadGraphEdge).default({}),
+  attachments: z.record(z.string(), RoadEdgeAttachment).default({}),
+  junctions: z.record(z.string(), RoadJunction).default({}),
+  stylePresets: z.record(z.string(), RoadStylePreset).default({
+    ...DEFAULT_ROAD_STYLE_PRESETS,
+  }),
+  activeStyleId: z.string().min(1).default(DEFAULT_ROAD_STYLE_ID),
+  applyStyleToAll: z.boolean().default(true),
+  snapTolerance: z.number().min(0.05).max(5).default(0.5),
+})
+
+export type RoadNetworkNode = z.infer<typeof RoadNetworkNode>

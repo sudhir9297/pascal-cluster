@@ -1,9 +1,9 @@
 # Environment Scene Asset Research
 
-This is a plugin-oriented inventory for building convincing outdoor urban and
-suburban scenes. The plugin's first P0 street-furniture asset is a procedural
-street light; the recommendations below expand it into a layered environment
-system.
+This is the planning and implementation inventory for Pascal Environment, the
+environment-building plugin for creating convincing outdoor urban and suburban
+scenes. Its first P0 asset was a procedural street light; the recommendations
+below expand it into a complete, layered environment system.
 
 ## Core principle
 

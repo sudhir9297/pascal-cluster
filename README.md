@@ -1,8 +1,9 @@
-# Pascal Environment plugin
+# Pascal Environment Plugin
 
-A first-party environment plugin for the Pascal editor. It contributes
-configurable roadway and pedestrian lights, a wood utility pole, and a
-host-side Environment panel containing their placement controls.
+Pascal Environment is the first-party environment-building plugin for the
+Pascal editor. It provides procedural systems and configurable assets for
+populating complete outdoor scenes, with a host-side Environment panel for
+placing and editing them.
 
 ```bash
 git clone https://github.com/pascalorg/plugin-environment.git

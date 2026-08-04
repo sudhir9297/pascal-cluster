@@ -8,7 +8,25 @@ import type { UtilityPoleAssembly } from './schema'
 import type { RoadSignId } from './road-sign-config'
 
 export type EnvironmentPlacementMode = 'single' | 'continuous'
-export type EnvironmentPanelCategory = 'lighting' | 'signs' | 'utilities'
+export type EnvironmentPanelCategory = 'roads' | 'lighting' | 'signs' | 'utilities'
+export type RoadAlignmentMode = 'straight' | 'spline'
+export type RoadElevationMode = 'ground' | 'bridge'
+export const ROAD_ELEVATION_OPTIONS: Array<{ label: string; value: RoadElevationMode }> = [
+  { label: 'Ground', value: 'ground' },
+  { label: 'Bridge', value: 'bridge' },
+]
+
+export function nextRoadElevationMode(mode: RoadElevationMode): RoadElevationMode {
+  return mode === 'bridge' ? 'ground' : 'bridge'
+}
+export type RoadJoinMode = 'auto' | 'suppress'
+export type RoadElementSelection = {
+  networkId: string
+  kind: 'control' | 'corner' | 'edge' | 'junction' | 'spline'
+  id: string
+  cornerKey?: string
+  index?: number
+}
 
 /**
  * The plugin's own module-level state — the example of "plugins self-manage
@@ -24,6 +42,17 @@ type EnvironmentStore = {
   /** Whether a placement tool exits after one click or stays armed. */
   placementMode: EnvironmentPlacementMode
   setPlacementMode: (value: EnvironmentPlacementMode) => void
+  /** Whether the road tool commits each leg directly or drafts one multi-point spline. */
+  roadAlignmentMode: RoadAlignmentMode
+  setRoadAlignmentMode: (value: RoadAlignmentMode) => void
+  roadBendRadius: number
+  setRoadBendRadius: (value: number) => void
+  roadElevationMode: RoadElevationMode
+  setRoadElevationMode: (value: RoadElevationMode) => void
+  roadJoinMode: RoadJoinMode
+  setRoadJoinMode: (value: RoadJoinMode) => void
+  roadElementSelection: RoadElementSelection | null
+  setRoadElementSelection: (value: RoadElementSelection | null) => void
   /** Height (m) of the next street light. */
   streetLightHeight: number
   /** Horizontal reach (m) of the next street light's arm. */
@@ -114,10 +143,20 @@ type EnvironmentStore = {
 }
 
 export const useEnvironmentStore = create<EnvironmentStore>((set) => ({
-  panelCategory: 'lighting',
+  panelCategory: 'roads',
   setPanelCategory: (panelCategory) => set({ panelCategory }),
   placementMode: 'continuous',
   setPlacementMode: (placementMode) => set({ placementMode }),
+  roadAlignmentMode: 'straight',
+  setRoadAlignmentMode: (roadAlignmentMode) => set({ roadAlignmentMode }),
+  roadBendRadius: 5,
+  setRoadBendRadius: (roadBendRadius) => set({ roadBendRadius }),
+  roadElevationMode: 'ground',
+  setRoadElevationMode: (roadElevationMode) => set({ roadElevationMode }),
+  roadJoinMode: 'auto',
+  setRoadJoinMode: (roadJoinMode) => set({ roadJoinMode }),
+  roadElementSelection: null,
+  setRoadElementSelection: (roadElementSelection) => set({ roadElementSelection }),
   streetLightHeight: STANDARD_LAMP_HEIGHT_M,
   streetLightArmLength: 1.2,
   streetLightOn: false,

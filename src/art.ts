@@ -34,6 +34,7 @@ import speedLimitRoadSignThumbnail from './assets/speed-limit-road-sign-thumbnai
 import stopRoadSignThumbnail from './assets/stop-road-sign-thumbnail.svg'
 import warningRoadSignThumbnail from './assets/warning-road-sign-thumbnail.svg'
 import yieldRoadSignThumbnail from './assets/yield-road-sign-thumbnail.svg'
+import roadNetworkThumbnail from './assets/road-network-thumbnail.svg'
 
 /**
  * Bundled preset artwork. Raster assets live in `./assets` and travel with the
@@ -87,6 +88,7 @@ export const CATALOG_LAMP_THUMBNAILS = Object.fromEntries(
 /** Backwards-compatible default artwork for consumers that do not pick a projection. */
 export const CATALOG_LAMP_THUMBNAIL = CATALOG_LAMP_THUMBNAILS.shoebox
 export const UTILITY_POLE_THUMBNAIL = url(utilityPoleThumbnail)
+export const ROAD_NETWORK_THUMBNAIL = url(roadNetworkThumbnail)
 export const ROAD_SIGN_THUMBNAILS = {
   directional: url(directionalRoadSignThumbnail),
   'no-entry': url(noEntryRoadSignThumbnail),

@@ -364,10 +364,10 @@ decorations, crossings, and future traffic routes refer to nodes and edges.
 
 ```ts
 type RoadNetworkState = {
-  schemaVersion: 1
+  schemaVersion: 6
   nodes: Record<RoadNodeId, RoadNode>
   edges: Record<RoadEdgeId, RoadEdge>
-  junctionOverrides: Record<RoadNodeId, JunctionOverride>
+  junctions: Record<RoadNodeId, RoadJunctionState>
   stylePresets: Record<RoadStyleId, RoadCrossSection>
 }
 
@@ -407,20 +407,24 @@ type RoadCrossSection = {
   }>
 }
 
-type JunctionOverride = {
-  treatment?: 'auto' | 'simple' | 'roundabout' | 'manual'
-  throughPairs?: Array<[RoadEdgeId, RoadEdgeId]>
-  primaryEdgeId?: RoadEdgeId
-  cornerRadii?: Record<CornerId, number>
-  cornerStyle?: 'circular' | 'three-center' | 'chamfer'
-  allowedMovements?: LaneMovement[]
-  terrainPolicy?: 'primary-crown' | 'blended-plane' | 'manual'
+type RoadJunctionState = {
+  nodeId: RoadNodeId
+  // Regenerated from topology whenever approaches change.
+  kind: 'tee' | 'y' | 'four-way-plus' | 'four-way-x' | 'multi-leg'
+  treatment: 'auto' | 'stop' | 'yield' | 'signal' | 'roundabout'
+  primaryMode: 'auto' | 'manual'
+  primaryEdgeIds: RoadEdgeId[]
+  // One stable key for each pair of adjacent approaches.
+  cornerRadii: Record<CornerId, number>
+  solverStatus: 'auto' | 'warning' | 'manual'
 }
 ```
 
-Do **not** persist `shape: 'T' | 'Y' | 'PLUS'`. Derive it from degree and
-approach directions. Do not persist generated vertices, indices, UVs, curb
-meshes, or intersection triangles except as disposable caches.
+Do **not** treat `shape: 'T' | 'Y' | 'PLUS'` as authored source data. The
+current `kind` field is a reconciled classification snapshot and is regenerated
+from degree and approach directions whenever topology changes. Do not persist
+generated vertices, indices, UVs, curb meshes, or intersection triangles except
+as disposable caches.
 
 `AlignmentElement` endpoints and handles are **shape controls inside an edge**;
 `RoadNode` objects are **network topology**. This distinction avoids turning
@@ -729,3 +733,233 @@ they can become meaningful compliance checks.
 - [FHWA — Highway Terminology](https://highways.dot.gov/sites/fhwa.dot.gov/files/Chapter_01-20251007.pdf)
 - [NACTO — Corner Radii](https://nacto.org/publication/urban-street-design-guide/intersection-design-elements/corner-radii/)
 - [OpenStreetMap Wiki — Node Topology](https://wiki.openstreetmap.org/wiki/Node)
+
+## 10. Road-system implementation checklist
+
+This is the working, item-by-item delivery checklist. Checked items exist in
+the plugin today; unchecked items remain follow-up work rather than implied
+behavior.
+
+### Core graph and persistence
+
+- [x] Register `environment:road-network` as a first-class Pascal node.
+- [x] Store one semantic road graph per connected component so disconnected roads select independently.
+- [x] Merge road component nodes when a new segment connects them.
+- [x] Split legacy road nodes that contain multiple disconnected components.
+- [x] Give graph nodes stable IDs, positions, levels, elevation modes, and terminal flags.
+- [x] Persist authored bend radius and derived tangent length on graph nodes.
+- [x] Give graph edges stable IDs, endpoint references, alignment controls, directions, classes, style IDs, stack levels, overlap groups, and join policy.
+- [x] Store persistent junction records separately from derived junction meshes.
+- [x] Persist each junction's treatment, primary-road ownership, adjacent-corner radii, and solver status.
+- [x] Reconcile junction records whenever topology creates, removes, or changes an approach.
+- [x] Remap junction node, primary-edge, and corner references when road components merge or split.
+- [x] Migrate legacy treatment-only junction overrides into version-6 junction records.
+- [x] Render legacy in-memory road nodes safely before their new junction collection is present.
+- [x] Store reusable cross-section style presets in the road node.
+- [x] Generate deterministic inner node and edge IDs.
+- [x] Preserve an original edge ID when splitting an edge.
+- [x] Record lineage on the added half of a split edge.
+- [x] Reject zero-length road segments.
+- [x] Reject duplicate edges in either direction.
+- [x] Migrate version-1 road nodes into the full preset catalog.
+- [x] Keep old custom style records during migration.
+- [x] Fall back safely when a saved edge references a newly introduced preset.
+- [x] Add attachment/station remapping for future signs, lamps, and roadside assets on split edges.
+- [ ] Add semantic road graph import/export.
+
+### Drawing UX
+
+- [x] Surface Road as a Build tool.
+- [x] Surface a dedicated Roads tab and draggable Road card in the Environment side panel.
+- [x] Open the Environment panel on Roads by default.
+- [x] Expose straight/spline and ground/bridge choices beside the Road card.
+- [x] Expose bend radius and automatic/no-join crossing choices beside the Road card.
+- [x] Draw a road by clicking start and end points.
+- [x] Continue clicking to create connected L, V, and polyline roads.
+- [x] Finish the current chain with Enter.
+- [x] Finish the current chain with double-click.
+- [x] Return to Select after finishing so the committed road is immediately selectable.
+- [x] Cancel/leave the road tool with Escape through the host tool manager.
+- [x] Show a live full-width road preview.
+- [x] Reuse Pascal's wall-style ground marker and vertical guide while drafting roads.
+- [x] Use the host grid step and grid-snap mode.
+- [x] Make existing road meshes click-through while road drafting is active.
+- [x] Snap to an existing graph endpoint before considering an edge.
+- [x] Snap to and split an existing edge near its interior.
+- [x] Magnetically pull the Road-tool cursor from the visible road footprint onto its exact centerline.
+- [x] Show a green centerline snap ring and a distinct cyan existing-node snap ring before commit.
+- [x] Project snaps onto sampled spline centerlines instead of endpoint chords.
+- [x] Keep adding authored points to one live spline until Enter or double-click.
+- [x] Continue drawing after each committed straight leg.
+- [x] Toggle straight/spline drafting with C.
+- [x] Draft a centripetal interpolating spline through every clicked point.
+- [x] Show a distinct spline-point cursor state.
+- [x] Expose selected spline points as 2D curve handles.
+- [x] Offer an explicit Edit spline action on a selected spline road.
+- [x] Show directional 3D reshape handles only while spline editing is active.
+- [x] Drag a 3D spline handle with live road regeneration and one history commit.
+- [x] Keep terminal length arrows visible whenever the road is selected.
+- [x] Expose graph endpoints and junction nodes as draggable 2D handles.
+- [x] Match the host's wall/item chevron appearance at every selected degree-one road endpoint in 2D and 3D.
+- [x] Press-drag an endpoint chevron to lengthen or shorten the current road without creating another road item.
+- [x] Keep endpoint-chevron extension constrained to the road's outward tangent.
+- [x] Follow the sampled spline tangent when orienting an endpoint continuation arrow.
+- [x] Commit a dragged 2D spline point as one scene change.
+- [x] Toggle ground/bridge drafting with B.
+- [x] Show different cursor colors for ground and bridge modes.
+- [ ] Display the current straight/spline mode as a named HUD chip.
+- [ ] Display the current ground/bridge mode as a named HUD chip.
+- [ ] Add host angle-ray snapping for directional road legs.
+- [ ] Add magnetic alignment guides to other road endpoints and nearby geometry.
+- [x] Preview “extend,” “merge,” “split/T,” “cross,” and “no connection” before commit.
+- [x] Color the live ribbon and cursor by the pending topology operation.
+- [ ] Show an explicit red invalid cursor and actionable error message before rejected commits.
+- [ ] Add numeric length, bearing, radius, and tangent entry while drafting.
+
+### Automatic topology and shape derivation
+
+- [x] Split an existing same-level edge when a branch ends on its middle.
+- [x] Split both centerlines when a new road passes through an existing road.
+- [x] Create one shared topology node at a same-level crossing.
+- [x] Leave ground/bridge/tunnel crossings topologically independent.
+- [x] Compare actual vertical separation before connecting roads that overlap in plan.
+- [x] Preserve explicit stack levels, overlap groups, and automatic-join suppression.
+- [x] Intersect and split actual sampled curve geometry rather than endpoint chords.
+- [x] Preserve both authored curve halves when a curved edge is split.
+- [x] Derive dead-end nodes from degree one.
+- [x] Derive straight continuations from degree two and near-180-degree angles.
+- [x] Derive canonical L bends from near-90-degree degree-two nodes.
+- [x] Derive general V bends from other degree-two angles.
+- [x] Derive T junctions from degree three with one near-opposite road pair.
+- [x] Derive Y junctions from degree three without a near-opposite pair.
+- [x] Derive orthogonal plus junctions from degree four.
+- [x] Derive skewed X junctions from degree four.
+- [x] Classify degree-five-or-greater nodes as multi-leg junctions.
+- [x] Keep shape labels derived instead of persisting L/T/Y/+ as source data.
+- [x] Infer and persist an overridable primary road at every junction.
+- [x] Prefer the straightest continuation, then road class and width, during automatic primary-road inference.
+- [x] Preserve a valid manually chosen primary pair across junction reconciliation.
+- [x] Seed and preserve one curb-return radius for every adjacent approach pair.
+- [ ] Reclassify only affected neighborhoods after interactive edge deletion/move.
+- [ ] Add a graph cleanup command with a reviewable change list.
+
+### Geometry and appearance
+
+- [x] Generate a procedural 3D road surface from centerlines.
+- [x] Generate a matching selectable 2D floor-plan representation.
+- [x] Render curved roads as a continuous triangulated ribbon without segment gaps.
+- [x] Render compatible degree-two bends as one continuous carriageway, sidewalk, median, and marking path.
+- [x] Automatically fillet degree-two L/V centerlines so road markings follow the smooth turn.
+- [x] Generate degree-two bends as radius-driven circular tangent arcs.
+- [x] Reserve generated junction-center fills for degree-three-or-greater intersections.
+- [x] Trim approach sidewalks and markings back to generated junction boundaries.
+- [x] Continue sidewalks around curved junction perimeters while clipping every road opening.
+- [x] Render cross-section widths from lane, shoulder, and median values.
+- [x] Render sidewalks on both sides when the preset enables them.
+- [x] Render a raised center median for divided-road presets.
+- [x] Render center and lane-boundary markings.
+- [x] Keep decorative sidewalk, median, and marking meshes out of raycasting.
+- [x] Prevent flat road ribbons from casting shadow-map acne onto curved surfaces.
+- [x] Render an explicit central island and kerb for a roundabout treatment.
+- [x] Render bridge/tunnel alignments at separate elevations.
+- [x] Replace circular generic junction fills with trimmed approach-offset boundary solvers.
+- [x] Build each junction boundary from the actual width and direction of every incident approach.
+- [x] Trim each road's markings, medians, and sidewalks to its own solved approach cut.
+- [x] Generate watertight tangent fillets for every adjacent approach pair.
+- [x] Feed persisted per-corner curb-return radii into both 3D and 2D junction geometry.
+- [x] Generate sidewalk strips around solved curb returns while leaving road openings clear.
+- [x] Fill the straight sidewalk sleeves between every curb return and its trimmed road approach.
+- [x] Support unequal-width approaches without non-finite or open junction geometry.
+- [x] Select and edit one curb-return corner independently in the canvas.
+- [x] Add dashed marking patterns, stop lines, arrows, and crosswalks.
+- [ ] Add per-side curb, gutter, verge, bike-lane, and parking-lane components.
+- [ ] Add lane-width and lane-count transition tapers.
+- [ ] Add terrain following and elevation-profile editing.
+- [ ] Add bridge piers, abutments, decks, barriers, and clearance checks.
+- [ ] Add tunnel portals, lining, cut/fill, and terrain booleans.
+- [ ] Add embankment and excavation meshes.
+
+### Presets and inspector
+
+- [x] Provide Alley preset.
+- [x] Provide Local Street preset.
+- [x] Provide Collector preset.
+- [x] Provide Divided Arterial preset.
+- [x] Provide Highway preset.
+- [x] Change the active preset from the Road inspector.
+- [x] Optionally apply the active preset to the complete network.
+- [x] Edit the graph snapping tolerance from the inspector.
+- [x] Convert the busiest junction to a roundabout from a contextual action.
+- [x] Convert that roundabout back to an automatic standard junction.
+- [x] Select an individual road edge, junction, or curve control inside a connected network.
+- [x] Target contextual junction actions at the individually selected junction.
+- [x] Cycle a selected junction's primary-road pair and show the chosen approaches in-scene.
+- [x] Increase or decrease the selected junction's persisted curb-return radii.
+- [ ] Edit every cross-section component directly from the inspector.
+- [ ] Select and style individual edges while preserving a network default.
+- [ ] Select and override an individual junction's treatment.
+- [ ] Add left-driving/right-driving regional packs.
+- [ ] Add user-created road-style preset save/load.
+
+### Validation, history, and performance
+
+- [x] Validate missing edge endpoints.
+- [x] Validate duplicate edges.
+- [x] Validate self-edges.
+- [x] Validate very short edges.
+- [x] Validate non-finite graph-node positions.
+- [x] Validate non-finite alignment controls.
+- [x] Warn when an authored bend radius cannot fit the adjacent road lengths.
+- [x] Warn about isolated nodes.
+- [x] Warn about missing style references.
+- [x] Warn when a junction primary road or curb corner references a removed approach.
+- [x] Block junction records that reference a removed graph node.
+- [x] Make each committed road leg a host undo step.
+- [x] Make roundabout conversion a single undo step.
+- [x] Browser-test undo of roundabout conversion.
+- [x] Browser-test the Road palette entry, multi-click drawing, completion, and selection.
+- [x] Browser-test the Environment Roads panel, curved mode, bend radius, and no-join mode.
+- [x] Browser-test that junctions with no sidewalk triangles do not submit empty WebGPU meshes.
+- [x] Browser-test creation and selection of a generated crossing junction.
+- [x] Browser-test primary-road and curb-radius actions on the selected junction.
+- [x] Browser-test a solved four-way junction boundary, curved sidewalks, and live curb-radius regeneration.
+- [x] Browser-test press-dragging an open-end arrow, extending the same selected road, and creating no second item.
+- [x] Browser-test magnetic centerline capture, the live snap ring, and snapped T-junction creation.
+- [x] Browser-test continuous outer sidewalks across both seams of a T junction.
+- [x] Unit-test solved plus/T-like junction boundaries, unequal approach widths, and independent corner-radius data.
+- [x] Unit-test individual curb-return handle generation, T-junction filtering, drag solving, and single-key quick actions.
+- [x] Unit-test that road drafting uses the shared wall-style cursor instead of the old low cylinder.
+- [x] Unit-test curved dash spacing, junction-boundary clipping, inbound arrows, stop/signal controls, crosswalks, and one-way suppression.
+- [x] Unit-test continuous sidewalk coverage between T-junction curb returns and trimmed approaches.
+- [x] Unit-test open-end detection, continuation-arrow direction, and 2D/3D arrow rendering.
+- [x] Unit-test centerline/node snap priority, curved-road projection, and grade/join suppression.
+- [x] Unit-test straight and curved attachment-station remapping across split edges.
+- [x] Unit-test attachment ownership and ID remapping across component merge/separation.
+- [x] Unit-test straight, L, T, Y, plus, edge split, duplicate prevention, and bridge crossing.
+- [x] Browser-smoke-test schema migration, existing-road rendering, and Road-tool activation after attachment persistence changes.
+- [x] Browser-smoke-test the existing road scene and Road tool after adding individual curb-return controls.
+- [x] Browser-test topology-driven road-marking meshes in the existing scene with no marking runtime errors.
+- [x] Unit-test curve sampling and deterministic explicit alignments.
+- [x] Build and validate a representative 100-edge graph under a 500 ms test budget.
+- [x] Surface graph validation issues as red/amber 3D and floor-plan annotations.
+- [x] Block scene commits containing graph validation errors.
+- [ ] Add exact deterministic mesh snapshot fixtures.
+- [ ] Add deletion/regeneration/redo browser tests.
+- [ ] Record production GPU frame-time and mesh-cook budgets in Pascal.
+- [ ] Add incremental dirty-neighborhood geometry regeneration for large networks.
+- [ ] Add LOD, tiling, streaming, and cache diagnostics.
+
+### Traffic and advanced roadway behavior
+
+- [ ] Expand centerline edges into persistent directed lane graphs.
+- [ ] Edit lane-to-lane junction movements.
+- [ ] Add turn restrictions and permitted-movement visualization.
+- [ ] Add stop, yield, and signal controls.
+- [ ] Add traffic-signal phase/conflict scheduling.
+- [ ] Add turn pockets and slip lanes.
+- [ ] Expand divided-road intersections into linked internal nodes.
+- [ ] Add design-vehicle and swept-path checks.
+- [ ] Add pedestrian and bicycle movements.
+- [ ] Add lane-level routing and traffic simulation.
+- [ ] Add semantic roadside-decoration rules.
+- [ ] Add a manual junction-boundary editor for solver exceptions.

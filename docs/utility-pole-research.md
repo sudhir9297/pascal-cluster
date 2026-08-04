@@ -101,7 +101,7 @@ district, terrain, and required ground and phase clearances. USDA RUS Bulletin
 number. Its examples use design ruling spans of 350–375 ft, but those are
 engineering examples rather than a placement default.
 
-For this street-oriented plugin, automatic connection uses the **150 ft
+For this outdoor-environment plugin, automatic connection uses the **150 ft
 (45.72 m) maximum recommended urban span** stated in the referenced 13.2 kV
 overhead distribution standard. Rural spans remain a future configurable mode.
 When a pole is placed, the plugin inserts it into a nearby through-span or

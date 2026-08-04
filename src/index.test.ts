@@ -37,6 +37,7 @@ import {
   WallPackLightNode,
   WallArmLightNode,
   RoadSignNode,
+  RoadNetworkNode,
   createRoadSignNode,
   createRoadSignPreviewNode,
   ROAD_SIGN_PREVIEW_ID,
@@ -58,6 +59,8 @@ import { resolveStreetLightLayout } from './street-light-geometry'
 import { utilityPoleDefinition } from './utility-pole-definition'
 import { ROAD_SIGN_CATALOG, buildRoadSignGraphicSvg } from './road-sign-config'
 import { roadSignDefinition } from './road-sign-definition'
+import { roadNetworkDefinition } from './road-network-definition'
+import { createEmptyRoadGraph, insertRoadSegment } from './road-network-topology'
 import {
   buildRoadSignBackGeometry,
   buildRoadSignPlateGeometry,
@@ -78,6 +81,7 @@ describe('Environment plugin manifest', () => {
     expect(environmentPlugin.id).toBe('pascal:environment')
     expect(environmentPlugin.apiVersion).toBe(1)
     expect(environmentPlugin.nodes?.map((definition) => definition.kind)).toEqual([
+      'environment:road-network',
       'environment:street-light',
       'environment:pedestrian-post-light',
       'environment:heritage-crook-light',
@@ -103,6 +107,133 @@ describe('Environment plugin manifest', () => {
       'environment:utility-wire-span',
       'environment:road-sign',
     ])
+  })
+
+  test('registers a drawn road network with stable graph defaults', () => {
+    const road = RoadNetworkNode.parse({})
+    expect(road.type).toBe('environment:road-network')
+    expect(road.activeStyleId).toBe('local-street')
+    expect(road.stylePresets['local-street']?.laneCount).toBe(2)
+    expect(road.stylePresets['local-street']?.sidewalkWidth).toBe(0.5)
+    expect(road.stylePresets.arterial?.laneCount).toBe(4)
+    expect(road.attachments).toEqual({})
+    expect(road.applyStyleToAll).toBe(true)
+    expect(roadNetworkDefinition.capabilities.drawTool).toBe(true)
+    expect(roadNetworkDefinition.tool).toBeDefined()
+    expect(roadNetworkDefinition.renderer).toBeDefined()
+    expect(roadNetworkDefinition.floorplan).toBeDefined()
+    expect(roadNetworkDefinition.parametrics).toBeDefined()
+    const migratedRoad = (roadNetworkDefinition as unknown as {
+      migrate: Record<number, (value: unknown) => unknown>
+    }).migrate[1]!({ stylePresets: { custom: { id: 'custom' } } }) as {
+      stylePresets: Record<string, unknown>
+      applyStyleToAll: boolean
+    }
+    expect(migratedRoad.stylePresets.arterial).toBeDefined()
+    expect(migratedRoad.stylePresets.custom).toEqual({ id: 'custom' })
+    expect(migratedRoad.applyStyleToAll).toBe(true)
+    const narrowedRoad = (roadNetworkDefinition as unknown as {
+      migrate: Record<number, (value: unknown) => unknown>
+    }).migrate[2]!({
+      stylePresets: {
+        'local-street': { id: 'local-street', sidewalkWidth: 1.5 },
+        custom: { id: 'custom', sidewalkWidth: 1.2 },
+      },
+    }) as { stylePresets: Record<string, { sidewalkWidth: number }> }
+    expect(narrowedRoad.stylePresets['local-street']?.sidewalkWidth).toBe(0.5)
+    expect(narrowedRoad.stylePresets.custom?.sidewalkWidth).toBe(1.2)
+    const attachmentMigration = (roadNetworkDefinition as unknown as {
+      migrate: Record<number, (value: unknown) => unknown>
+    }).migrate[6]!
+    expect(attachmentMigration({ edges: {} })).toMatchObject({ attachments: {} })
+    expect(attachmentMigration({ attachments: { existing: { id: 'existing' } } }))
+      .toMatchObject({ attachments: { existing: { id: 'existing' } } })
+  })
+
+  test('migrates legacy junction treatments into persistent junction records', () => {
+    const base = insertRoadSegment(createEmptyRoadGraph(), [-10, 0, 0], [10, 0, 0])
+    const tee = insertRoadSegment(base.graph, [0, 0, -8], [0, 0, 0], { tolerance: 0.1 })
+    const junctionId = Object.keys(tee.graph.junctions)[0]!
+    const { junctions: _junctions, ...legacyGraph } = tee.graph
+    const migrated = (roadNetworkDefinition as unknown as {
+      migrate: Record<number, (value: unknown) => unknown>
+    }).migrate[5]!({
+      ...legacyGraph,
+      junctionOverrides: { [junctionId]: 'signal' },
+    }) as RoadNetworkNode
+
+    expect(migrated.junctions[junctionId]?.kind).toBe('tee')
+    expect(migrated.junctions[junctionId]?.treatment).toBe('signal')
+    expect(migrated.junctions[junctionId]?.primaryEdgeIds).toHaveLength(2)
+    expect('junctionOverrides' in migrated).toBe(false)
+  })
+
+  test('edits the selected junction primary road and only the selected curb corner', () => {
+    const base = insertRoadSegment(createEmptyRoadGraph(), [-10, 0, 0], [10, 0, 0])
+    const plus = insertRoadSegment(base.graph, [0, 0, -10], [0, 0, 10], { tolerance: 0.1 })
+    const node = RoadNetworkNode.parse(plus.graph)
+    const junctionId = Object.keys(node.junctions)[0]!
+    useEnvironmentStore.getState().setRoadElementSelection({
+      networkId: node.id,
+      kind: 'junction',
+      id: junctionId,
+    })
+    const quickActions = roadNetworkDefinition.quickActions as unknown as (
+      input: { node: RoadNetworkNode },
+    ) => Array<{
+      id: string
+      run: (input: { sceneApi: { update: (id: string, patch: Partial<AnyNode>) => void } }) => unknown
+    }>
+    const junctionActions = quickActions({ node })
+    const patches: Partial<AnyNode>[] = []
+    const sceneApi = { update: (_id: string, patch: Partial<AnyNode>) => patches.push(patch) }
+
+    junctionActions.find((action) => action.id === 'road:cycle-primary')!.run({ sceneApi })
+    expect(junctionActions.some((action) => action.id === 'road:widen-corner')).toBe(false)
+    const cornerKey = Object.keys(node.junctions[junctionId]!.cornerRadii)[0]!
+    useEnvironmentStore.getState().setRoadElementSelection({
+      networkId: node.id,
+      kind: 'corner',
+      id: junctionId,
+      cornerKey,
+    })
+    const cornerActions = quickActions({ node })
+    expect(cornerActions.some((action) => action.id === 'road:widen-corners')).toBe(false)
+    cornerActions.find((action) => action.id === 'road:widen-corner')!.run({ sceneApi })
+    useEnvironmentStore.getState().setRoadElementSelection(null)
+
+    const primaryPatch = patches[0] as unknown as Pick<RoadNetworkNode, 'junctions'>
+    const cornerPatch = patches[1] as unknown as Pick<RoadNetworkNode, 'junctions'>
+    expect(primaryPatch.junctions[junctionId]?.primaryMode).toBe('manual')
+    expect(primaryPatch.junctions[junctionId]?.primaryEdgeIds).not.toEqual(
+      node.junctions[junctionId]!.primaryEdgeIds,
+    )
+    expect(cornerPatch.junctions[junctionId]!.cornerRadii[cornerKey]).toBe(
+      node.junctions[junctionId]!.cornerRadii[cornerKey]! + 1,
+    )
+    expect(Object.entries(cornerPatch.junctions[junctionId]!.cornerRadii)
+      .filter(([key]) => key !== cornerKey)).toEqual(
+      Object.entries(node.junctions[junctionId]!.cornerRadii).filter(([key]) => key !== cornerKey),
+    )
+  })
+
+  test('exposes an explicit spline-shape editing action for a selected road', () => {
+    const result = insertRoadSegment(createEmptyRoadGraph(), [0, 0, 0], [12, 0, 0], {
+      alignment: [[6, 0, 4]],
+    })
+    const node = RoadNetworkNode.parse(result.graph)
+    const quickActions = roadNetworkDefinition.quickActions as unknown as (
+      input: { node: RoadNetworkNode },
+    ) => Array<{ id: string; run: (input: { sceneApi: unknown }) => unknown }>
+
+    const editAction = quickActions({ node }).find((action) => action.id === 'road:edit-spline')
+    expect(editAction).toBeDefined()
+    editAction!.run({ sceneApi: {} })
+    expect(useEnvironmentStore.getState().roadElementSelection).toMatchObject({
+      networkId: node.id,
+      kind: 'spline',
+    })
+    useEnvironmentStore.getState().setRoadElementSelection(null)
   })
 
   test('associates the Environment panel with the plugin', () => {
@@ -502,8 +633,10 @@ describe('Environment plugin manifest', () => {
     useEnvironmentStore.getState().setPlacementMode('continuous')
   })
 
-  test('separates lighting and utility assets into panel categories', () => {
-    expect(useEnvironmentStore.getState().panelCategory).toBe('lighting')
+  test('separates roads, lighting, signs, and utility assets into panel categories', () => {
+    expect(useEnvironmentStore.getState().panelCategory).toBe('roads')
+    useEnvironmentStore.getState().setPanelCategory('roads')
+    expect(useEnvironmentStore.getState().panelCategory).toBe('roads')
     useEnvironmentStore.getState().setPanelCategory('signs')
     expect(useEnvironmentStore.getState().panelCategory).toBe('signs')
     useEnvironmentStore.getState().setPanelCategory('utilities')

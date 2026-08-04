@@ -1,7 +1,7 @@
 {
   "name": "@pascal-app/plugin-environment",
   "version": "0.1.0",
-  "description": "First-party Pascal editor plugin with configurable procedural street-furniture nodes and an Environment settings panel.",
+  "description": "First-party Pascal environment-building plugin with procedural systems and configurable assets for complete outdoor scenes.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/pascalorg/plugin-environment.git"
