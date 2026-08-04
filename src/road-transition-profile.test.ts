@@ -2,6 +2,8 @@ import { describe, expect, test } from 'bun:test'
 import { createEmptyRoadGraph, insertRoadSegment } from './road-network-topology'
 import {
   buildRoadTransitionProfiles,
+  buildRoadTransitionProfilesIncremental,
+  createRoadTransitionProfileCache,
   trimRoadTransitionProfile,
 } from './road-transition-profile'
 import { RoadNetworkNode, type RoadGraphEdge } from './schema'
@@ -64,6 +66,49 @@ function twoStyleRoad(turn = false) {
 }
 
 describe('road lane transition profiles', () => {
+	test('reuses remote cooked profiles after a localized edge edit', () => {
+		const first = insertRoadSegment(
+			createEmptyRoadGraph(),
+			[0, 0, 0],
+			[20, 0, 0],
+		).graph
+		const graph = insertRoadSegment(first, [100, 0, 0], [120, 0, 0]).graph
+		const node = RoadNetworkNode.parse(graph)
+		const cache = createRoadTransitionProfileCache()
+		const initial = buildRoadTransitionProfilesIncremental(node, cache)
+		expect(cache.stats).toEqual({
+			rebuiltProfiles: 2,
+			reusedProfiles: 0,
+			totalProfiles: 2,
+		})
+
+		const localEdge = Object.values(node.edges).find((edge) => {
+			const start = node.graphNodes[edge.startNodeId]!
+			return start.position[0] < 50
+		})!
+		const edited = RoadNetworkNode.parse({
+			...node,
+			edges: {
+				...node.edges,
+				[localEdge.id]: { ...localEdge, alignment: [[10, 0, 3]] },
+			},
+		})
+		const updated = buildRoadTransitionProfilesIncremental(edited, cache)
+		const remoteInitial = initial.find((profile) => !profile.edgeIds.includes(localEdge.id))!
+		const remoteUpdated = updated.find((profile) => !profile.edgeIds.includes(localEdge.id))!
+		const localInitial = initial.find((profile) => profile.edgeIds.includes(localEdge.id))!
+		const localUpdated = updated.find((profile) => profile.edgeIds.includes(localEdge.id))!
+
+		expect(cache.stats).toEqual({
+			rebuiltProfiles: 1,
+			reusedProfiles: 1,
+			totalProfiles: 2,
+		})
+		expect(remoteUpdated).toBe(remoteInitial)
+		expect(localUpdated).not.toBe(localInitial)
+		expect(localUpdated.samples.some((sample) => sample.point[2] > 2.5)).toBe(true)
+	})
+
   test('tapers the wider approach into the narrower receiving section', () => {
     const { narrowEdge, node, wideEdge } = twoStyleRoad()
     const profiles = buildRoadTransitionProfiles(node)

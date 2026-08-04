@@ -82,3 +82,5 @@ export const DEFAULT_ROAD_STYLE_PRESETS = {
 export const ROAD_STYLE_PRESET_IDS = Object.keys(DEFAULT_ROAD_STYLE_PRESETS) as Array<
   keyof typeof DEFAULT_ROAD_STYLE_PRESETS
 >
+
+export type RoadStylePresetId = keyof typeof DEFAULT_ROAD_STYLE_PRESETS

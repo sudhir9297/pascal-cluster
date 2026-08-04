@@ -1,8 +1,9 @@
 'use client'
 
-import { useScene } from '@pascal-app/core'
+import { type AnyNode, type AnyNodeId, useScene } from '@pascal-app/core'
 import { SegmentedControl, SliderControl, ToggleControl, useEditor } from '@pascal-app/editor'
-import { type DragEvent, Fragment, useMemo } from 'react'
+import { useViewer } from '@pascal-app/viewer'
+import { type DragEvent, Fragment, useMemo, useState } from 'react'
 import {
   CATALOG_LAMP_THUMBNAIL,
   CATALOG_LAMP_THUMBNAILS,
@@ -30,8 +31,16 @@ import {
 } from './lamp-constants'
 import { STANDARD_UTILITY_POLE_CROSSARM_LENGTH_M } from './utility-pole-geometry'
 import { STANDARD_UTILITY_POLE_AUTO_CONNECT_DISTANCE_M } from './utility-wire-auto-connect'
-import type { UtilityPoleAssembly } from './schema'
-import type { RoadSideComponentWidthKey } from './road-cross-section'
+import { RoadNetworkNode, type UtilityPoleAssembly } from './schema'
+import { buildRoadCrossSection, type RoadSideComponentWidthKey } from './road-cross-section'
+import { buildRoadDraftStyle } from './road-draft-style'
+import { exportRoadNetworkGraph, importRoadNetworkGraph } from './road-network-io'
+import { planRoadGraphCleanup, type RoadCleanupPlan } from './road-network-cleanup'
+import {
+  DEFAULT_ROAD_STYLE_PRESETS,
+  ROAD_STYLE_PRESET_IDS,
+  type RoadStylePresetId,
+} from './road-style-presets'
 
 const STREET_LIGHT_KIND = 'environment:street-light'
 const POST_TOP_LIGHT_KIND = 'environment:pedestrian-post-light'
@@ -43,6 +52,10 @@ const TRUSS_ROADWAY_LIGHT_KIND = 'environment:truss-roadway-light'
 const UTILITY_POLE_KIND = 'environment:utility-pole'
 const ROAD_SIGN_KIND = 'environment:road-sign'
 const ROAD_NETWORK_KIND = 'environment:road-network'
+
+function roadSegmentLabel(count: number): string {
+  return `${count} road segment${count === 1 ? '' : 's'}`
+}
 
 const ROAD_SIDE_COMPONENT_CONTROLS: Array<{
   key: RoadSideComponentWidthKey
@@ -269,6 +282,16 @@ function RoadNetworkArtwork() {
 
 /** Environment asset cards and their placement brush settings. */
 export default function EnvironmentPanel() {
+  const selectedIds = useViewer((s) => s.selection.selectedIds)
+  const activeLevelId = useViewer((s) => s.selection.levelId)
+  const [roadExchangeStatus, setRoadExchangeStatus] = useState<{
+    kind: 'error' | 'success'
+    message: string
+  } | null>(null)
+  const [roadCleanupReview, setRoadCleanupReview] = useState<{
+    networkId: string
+    plan: RoadCleanupPlan
+  } | null>(null)
   const panelCategory = useEnvironmentStore((s) => s.panelCategory)
   const setPanelCategory = useEnvironmentStore((s) => s.setPanelCategory)
   const height = useEnvironmentStore((s) => s.streetLightHeight)
@@ -309,7 +332,12 @@ export default function EnvironmentPanel() {
   const roadAlignmentMode = useEnvironmentStore((s) => s.roadAlignmentMode)
   const roadBendRadius = useEnvironmentStore((s) => s.roadBendRadius)
   const roadElevationMode = useEnvironmentStore((s) => s.roadElevationMode)
-  const roadSideEditorSide = useEnvironmentStore((s) => s.roadSideEditorSide)
+  const roadCrossSectionEditorTab = useEnvironmentStore((s) => s.roadCrossSectionEditorTab)
+  const roadStylePresetId = useEnvironmentStore((s) => s.roadStylePresetId)
+  const roadLaneCount = useEnvironmentStore((s) => s.roadLaneCount)
+  const roadLaneWidth = useEnvironmentStore((s) => s.roadLaneWidth)
+  const roadShoulderWidth = useEnvironmentStore((s) => s.roadShoulderWidth)
+  const roadMedianWidth = useEnvironmentStore((s) => s.roadMedianWidth)
   const roadSideComponents = useEnvironmentStore((s) => s.roadSideComponents)
   const roadJoinMode = useEnvironmentStore((s) => s.roadJoinMode)
   const activeTool = useEditor((s) => s.tool)
@@ -342,6 +370,13 @@ export default function EnvironmentPanel() {
       Object.values(s.nodes).filter((n) => (n.type as string) === TRUSS_ROADWAY_LIGHT_KIND).length,
   )
   const sceneNodes = useScene((s) => s.nodes)
+  const selectedRoadNetwork = useMemo(() => {
+    if (selectedIds.length !== 1) return null
+    const node = sceneNodes[selectedIds[0] as AnyNodeId]
+    return (node?.type as string) === ROAD_NETWORK_KIND
+      ? node as unknown as RoadNetworkNode
+      : null
+  }, [sceneNodes, selectedIds])
   const catalogLampCounts = useMemo(() => {
     const counts: Record<string, number> = {}
     for (const node of Object.values(sceneNodes)) {
@@ -425,6 +460,120 @@ export default function EnvironmentPanel() {
       : panelCategory === 'utilities'
         ? utilityPoleCount
         : roadSignCount
+  const roadDraftStyle = useMemo(() => buildRoadDraftStyle({
+    laneCount: roadLaneCount,
+    laneWidth: roadLaneWidth,
+    medianWidth: roadMedianWidth,
+    presetId: roadStylePresetId,
+    shoulderWidth: roadShoulderWidth,
+    sides: roadSideComponents,
+  }), [
+    roadLaneCount,
+    roadLaneWidth,
+    roadMedianWidth,
+    roadShoulderWidth,
+    roadSideComponents,
+    roadStylePresetId,
+  ])
+  const roadCrossSection = useMemo(
+    () => buildRoadCrossSection(roadDraftStyle),
+    [roadDraftStyle],
+  )
+  const selectedRoadSide = roadCrossSectionEditorTab === 'roadway'
+    ? null
+    : roadCrossSectionEditorTab
+
+  const copySelectedRoadGraph = async () => {
+    if (!selectedRoadNetwork) {
+      setRoadExchangeStatus({ kind: 'error', message: 'Select one road network first.' })
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(exportRoadNetworkGraph(selectedRoadNetwork))
+      setRoadExchangeStatus({
+        kind: 'success',
+        message: `Copied ${roadSegmentLabel(Object.keys(selectedRoadNetwork.edges).length)} as JSON.`,
+      })
+    } catch {
+      setRoadExchangeStatus({ kind: 'error', message: 'Clipboard access was not available.' })
+    }
+  }
+
+  const reviewSelectedRoadCleanup = () => {
+    if (!selectedRoadNetwork) {
+      setRoadExchangeStatus({ kind: 'error', message: 'Select one road network first.' })
+      return
+    }
+    const plan = planRoadGraphCleanup(selectedRoadNetwork, {
+      horizontalTolerance: selectedRoadNetwork.snapTolerance,
+      verticalTolerance: 0.25,
+      minEdgeLength: 0.05,
+    })
+    setRoadCleanupReview({ networkId: selectedRoadNetwork.id, plan })
+    setRoadExchangeStatus({
+      kind: 'success',
+      message: plan.changes.length === 0
+        ? 'No cleanup changes are needed.'
+        : `Review ${plan.changes.length} proposed cleanup change${plan.changes.length === 1 ? '' : 's'} before applying.`,
+    })
+  }
+
+  const applyReviewedRoadCleanup = () => {
+    if (
+      !selectedRoadNetwork
+      || !roadCleanupReview
+      || roadCleanupReview.networkId !== selectedRoadNetwork.id
+    ) {
+      setRoadExchangeStatus({ kind: 'error', message: 'The reviewed road is no longer selected.' })
+      return
+    }
+    const changeCount = roadCleanupReview.plan.changes.length
+    if (changeCount === 0) return
+    useScene.getState().updateNode(
+      selectedRoadNetwork.id as AnyNodeId,
+      roadCleanupReview.plan.resultGraph as Partial<AnyNode>,
+    )
+    useEnvironmentStore.getState().setRoadElementSelection(null)
+    setRoadCleanupReview(null)
+    setRoadExchangeStatus({
+      kind: 'success',
+      message: `Applied ${changeCount} reviewed cleanup change${changeCount === 1 ? '' : 's'}.`,
+    })
+  }
+
+  const importRoadGraphFromClipboard = async () => {
+    if (!activeLevelId) {
+      setRoadExchangeStatus({ kind: 'error', message: 'Open a level before importing roads.' })
+      return
+    }
+    try {
+      const graph = importRoadNetworkGraph(await navigator.clipboard.readText())
+      const scene = useScene.getState()
+      setRoadCleanupReview(null)
+      if (selectedRoadNetwork) {
+        scene.updateNode(selectedRoadNetwork.id as AnyNodeId, graph as Partial<AnyNode>)
+        useEnvironmentStore.getState().setRoadElementSelection(null)
+        setRoadExchangeStatus({
+          kind: 'success',
+          message: `Replaced the selected road with ${roadSegmentLabel(Object.keys(graph.edges).length)}.`,
+        })
+        return
+      }
+
+      const network = RoadNetworkNode.parse({ ...graph, parentId: activeLevelId })
+      scene.createNode(network as unknown as AnyNode, activeLevelId as AnyNodeId)
+      useViewer.getState().setSelection({ selectedIds: [network.id as AnyNodeId] })
+      setRoadExchangeStatus({
+        kind: 'success',
+        message: `Imported ${roadSegmentLabel(Object.keys(graph.edges).length)}.`,
+      })
+    } catch (error) {
+      setRoadExchangeStatus({
+        kind: 'error',
+        message: error instanceof Error ? error.message : 'Road import failed.',
+      })
+    }
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-4 text-sidebar-foreground">
@@ -520,6 +669,122 @@ export default function EnvironmentPanel() {
             )}
           </button>
 
+          <div className="flex flex-col gap-3 rounded-xl border border-sidebar-border bg-sidebar-accent/20 p-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex flex-col gap-0.5">
+                <span className="font-medium text-sidebar-foreground text-sm">
+                  Road cross-section
+                </span>
+                <span className="text-[11px] text-sidebar-foreground/50">
+                  {roadLaneCount} lane{roadLaneCount === 1 ? '' : 's'} ·{' '}
+                  {roadCrossSection.totalWidth.toFixed(2)} m overall
+                </span>
+              </div>
+            </div>
+
+            <label className="flex flex-col gap-1.5">
+              <span className="font-medium text-sidebar-foreground/65 text-xs">Preset</span>
+              <select
+                aria-label="Road preset"
+                className="h-8 rounded-md border border-sidebar-border bg-sidebar px-2 text-sidebar-foreground text-xs outline-none focus:ring-1 focus:ring-sidebar-ring"
+                onChange={(event) =>
+                  useEnvironmentStore
+                    .getState()
+                    .setRoadStylePresetId(event.target.value as RoadStylePresetId)
+                }
+                value={roadStylePresetId}
+              >
+                {ROAD_STYLE_PRESET_IDS.map((presetId) => (
+                  <option key={presetId} value={presetId}>
+                    {DEFAULT_ROAD_STYLE_PRESETS[presetId].name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <SegmentedControl
+              onChange={useEnvironmentStore.getState().setRoadCrossSectionEditorTab}
+              options={[
+                { label: 'Roadway', value: 'roadway' },
+                { label: 'Left', value: 'left' },
+                { label: 'Right', value: 'right' },
+              ]}
+              value={roadCrossSectionEditorTab}
+            />
+
+            {selectedRoadSide === null ? (
+              <>
+                <SliderControl
+                  label="Lane count"
+                  max={12}
+                  min={1}
+                  onChange={useEnvironmentStore.getState().setRoadLaneCount}
+                  precision={0}
+                  restoreOnCommit={false}
+                  step={1}
+                  value={roadLaneCount}
+                />
+                <SliderControl
+                  label="Lane width"
+                  max={5}
+                  min={2.4}
+                  onChange={useEnvironmentStore.getState().setRoadLaneWidth}
+                  precision={2}
+                  restoreOnCommit={false}
+                  step={0.05}
+                  unit="m"
+                  value={roadLaneWidth}
+                />
+                <SliderControl
+                  label="Shoulder"
+                  max={4}
+                  min={0}
+                  onChange={useEnvironmentStore.getState().setRoadShoulderWidth}
+                  precision={2}
+                  restoreOnCommit={false}
+                  step={0.05}
+                  unit="m"
+                  value={roadShoulderWidth}
+                />
+                <SliderControl
+                  label="Median"
+                  max={12}
+                  min={0}
+                  onChange={useEnvironmentStore.getState().setRoadMedianWidth}
+                  precision={2}
+                  restoreOnCommit={false}
+                  step={0.1}
+                  unit="m"
+                  value={roadMedianWidth}
+                />
+              </>
+            ) : (
+              <>
+                <span className="text-[11px] text-sidebar-foreground/45">
+                  Set a width to zero to remove that component from this side.
+                </span>
+                {ROAD_SIDE_COMPONENT_CONTROLS.map((control) => (
+                  <SliderControl
+                    key={control.key}
+                    label={control.label}
+                    max={control.max}
+                    min={0}
+                    onChange={(value) =>
+                      useEnvironmentStore
+                        .getState()
+                        .setRoadSideComponentWidth(selectedRoadSide, control.key, value)
+                    }
+                    precision={2}
+                    restoreOnCommit={false}
+                    step={control.step}
+                    unit="m"
+                    value={roadSideComponents[selectedRoadSide][control.key]}
+                  />
+                ))}
+              </>
+            )}
+          </div>
+
           <div className="flex flex-col gap-1.5">
             <span className="font-medium text-sidebar-foreground/65 text-xs">Alignment</span>
             <SegmentedControl
@@ -565,40 +830,119 @@ export default function EnvironmentPanel() {
             />
           </div>
 
-          <div className="flex flex-col gap-3 rounded-lg border border-sidebar-border p-3">
-            <div className="flex flex-col gap-1.5">
-              <span className="font-medium text-sidebar-foreground/65 text-xs">Road side</span>
-              <SegmentedControl
-                onChange={useEnvironmentStore.getState().setRoadSideEditorSide}
-                options={[
-                  { label: 'Left', value: 'left' },
-                  { label: 'Right', value: 'right' },
-                ]}
-                value={roadSideEditorSide}
-              />
-              <span className="text-[11px] text-sidebar-foreground/45">
-                Set a width to zero to remove that component from this side.
+          <div className="flex flex-col gap-2 rounded-xl border border-sidebar-border p-3">
+            <div className="flex flex-col gap-0.5">
+              <span className="font-medium text-sidebar-foreground text-sm">Road graph data</span>
+              <span className="text-[11px] text-sidebar-foreground/50">
+                {selectedRoadNetwork
+                  ? `${roadSegmentLabel(Object.keys(selectedRoadNetwork.edges).length)} selected`
+                  : 'Import creates a new road; select one to replace or export it.'}
               </span>
             </div>
-            {ROAD_SIDE_COMPONENT_CONTROLS.map((control) => (
-              <SliderControl
-                key={control.key}
-                label={control.label}
-                max={control.max}
-                min={0}
-                onChange={(value) =>
-                  useEnvironmentStore
-                    .getState()
-                    .setRoadSideComponentWidth(roadSideEditorSide, control.key, value)
-                }
-                precision={2}
-                restoreOnCommit={false}
-                step={control.step}
-                unit="m"
-                value={roadSideComponents[roadSideEditorSide][control.key]}
-              />
-            ))}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                className="rounded-md border border-sidebar-border bg-sidebar px-2 py-1.5 font-medium text-xs transition-colors hover:bg-sidebar-accent disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={!selectedRoadNetwork}
+                onClick={copySelectedRoadGraph}
+                type="button"
+              >
+                Copy JSON
+              </button>
+              <button
+                className="rounded-md border border-sidebar-border bg-sidebar px-2 py-1.5 font-medium text-xs transition-colors hover:bg-sidebar-accent disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={!activeLevelId}
+                onClick={importRoadGraphFromClipboard}
+                type="button"
+              >
+                Import JSON
+              </button>
+              <button
+                className="col-span-2 rounded-md border border-sidebar-border bg-sidebar px-2 py-1.5 font-medium text-xs transition-colors hover:bg-sidebar-accent disabled:cursor-not-allowed disabled:opacity-40"
+                data-road-cleanup-review-button
+                disabled={!selectedRoadNetwork}
+                onClick={reviewSelectedRoadCleanup}
+                type="button"
+              >
+                Review cleanup
+              </button>
+            </div>
+            {roadCleanupReview && roadCleanupReview.networkId === selectedRoadNetwork?.id && (
+              <div
+                className="flex flex-col gap-2 rounded-lg border border-sidebar-border bg-sidebar-accent/35 p-2.5"
+                data-road-cleanup-review
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-semibold text-xs">Cleanup review</span>
+                    <span className="text-[10px] text-sidebar-foreground/55">
+                      {roadCleanupReview.plan.options.horizontalTolerance.toFixed(2)} m plan ·{' '}
+                      {roadCleanupReview.plan.options.verticalTolerance.toFixed(2)} m vertical
+                    </span>
+                  </div>
+                  <span className="rounded-full bg-sidebar px-2 py-0.5 font-medium text-[10px]">
+                    {roadCleanupReview.plan.changes.length} changes
+                  </span>
+                </div>
+                {roadCleanupReview.plan.changes.length === 0 ? (
+                  <p className="m-0 text-[11px] text-sidebar-foreground/65">
+                    This road graph is already clean at the shown tolerances.
+                  </p>
+                ) : (
+                  <ol className="m-0 flex max-h-52 list-decimal flex-col gap-1.5 overflow-y-auto pl-4">
+                    {roadCleanupReview.plan.changes.map((change) => (
+                      <li
+                        className="pl-0.5 text-[11px]"
+                        data-road-cleanup-change={change.kind}
+                        key={change.id}
+                      >
+                        <span className="font-medium">{change.title}</span>
+                        <span className="block text-[10px] leading-snug text-sidebar-foreground/55">
+                          {change.detail}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+                {roadCleanupReview.plan.afterIssues.length > 0 && (
+                  <div className="rounded-md bg-amber-500/10 px-2 py-1.5 text-[10px] text-amber-700 dark:text-amber-300">
+                    {roadCleanupReview.plan.afterIssues.length} validation issue
+                    {roadCleanupReview.plan.afterIssues.length === 1 ? '' : 's'} will remain after cleanup.
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    className="rounded-md border border-sidebar-border bg-sidebar px-2 py-1.5 font-medium text-xs hover:bg-sidebar-accent"
+                    onClick={() => setRoadCleanupReview(null)}
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="rounded-md bg-sidebar-primary px-2 py-1.5 font-medium text-sidebar-primary-foreground text-xs disabled:cursor-not-allowed disabled:opacity-40"
+                    data-road-cleanup-apply-button
+                    disabled={roadCleanupReview.plan.changes.length === 0}
+                    onClick={applyReviewedRoadCleanup}
+                    type="button"
+                  >
+                    Apply changes
+                  </button>
+                </div>
+              </div>
+            )}
+            {roadExchangeStatus && (
+              <span
+                className={`text-[11px] ${
+                  roadExchangeStatus.kind === 'error'
+                    ? 'text-red-500'
+                    : 'text-emerald-600 dark:text-emerald-400'
+                }`}
+                role="status"
+              >
+                {roadExchangeStatus.message}
+              </span>
+            )}
           </div>
+
         </>
       )}
 

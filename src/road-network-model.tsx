@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import type { ThreeEvent } from '@react-three/fiber'
 import { BufferGeometry, DoubleSide, Float32BufferAttribute } from 'three'
 import {
   buildJunctionBoundaryGeometry,
   buildJunctionBoundarySidewalkGeometry,
+  buildRoadRibbonGeometry,
   sampleRoadEdgePoints,
   type JunctionBoundaryGeometryData,
 } from './road-network-geometry'
@@ -21,7 +22,8 @@ import {
   type RoadJunctionBand,
 } from './road-cross-section'
 import {
-  buildRoadTransitionProfiles,
+  buildRoadTransitionProfilesIncremental,
+  createRoadTransitionProfileCache,
   trimRoadTransitionProfile,
   type RoadTransitionSample,
 } from './road-transition-profile'
@@ -29,6 +31,22 @@ import type { RoadGraphEdge, RoadNetworkNode, RoadStylePreset } from './schema'
 import { DEFAULT_ROAD_STYLE_PRESETS } from './road-style-presets'
 import type { RoadElementSelection } from './store'
 import { roadValidationIssuePoint, validateRoadGraph } from './road-network-validation'
+import { recordRoadGeometryCacheDiagnostics } from './road-network-scale'
+import { buildRoadLaneMovementGuides } from './road-lane-movements'
+import { buildRoadChannelizationGuides } from './road-channelization'
+import { buildDividedJunctionGraphGuides } from './road-divided-junctions'
+import { buildRoadSweptPathCheck } from './road-swept-path'
+import { buildRoadActiveModeGuides } from './road-active-modes'
+import { buildRoadTrafficRouteGuide, buildRoadTrafficVehicleSamples } from './road-traffic-simulation'
+import { buildRoadsideDecorationPreviews } from './roadside-decoration-rules'
+import {
+  buildManualRoadJunctionBand,
+  buildManualRoadJunctionBoundary,
+} from './road-junction-boundary-editor'
+import { RoadNetworkBridgeStructures } from './road-network-bridge-model'
+import { RoadNetworkTunnelStructures } from './road-network-tunnel-model'
+import { RoadNetworkEarthworks } from './road-network-earthworks-model'
+import type { TerrainField } from './terrain-field-compat'
 
 const NO_RAYCAST = () => undefined
 
@@ -156,34 +174,15 @@ export function RoadRibbonSurface({
 }) {
   const geometry = useMemo(() => {
     const result = new BufferGeometry()
-    if (points.length < 2) return result
-    const halfWidth = (width ?? carriagewayWidth(style)) / 2
-    const positions: number[] = []
-    for (let index = 0; index < points.length; index++) {
-      const point = points[index]!
-      const previous = points[Math.max(0, index - 1)]!
-      const next = points[Math.min(points.length - 1, index + 1)]!
-      const dx = next[0] - previous[0]
-      const dz = next[2] - previous[2]
-      const length = Math.max(Math.hypot(dx, dz), 1e-6)
-      const normalX = -dz / length
-      const normalZ = dx / length
-      const centerX = point[0] + normalX * lateralOffset
-      const centerZ = point[2] + normalZ * lateralOffset
-      const y = point[1] + style.surfaceThickness + elevationOffset
-      positions.push(centerX + normalX * halfWidth, y, centerZ + normalZ * halfWidth)
-      positions.push(centerX - normalX * halfWidth, y, centerZ - normalZ * halfWidth)
-    }
-    const indices: number[] = []
-    for (let index = 0; index < points.length - 1; index++) {
-      const left = index * 2
-      const right = left + 1
-      const nextLeft = left + 2
-      const nextRight = left + 3
-      indices.push(left, nextLeft, right, nextLeft, nextRight, right)
-    }
-    result.setAttribute('position', new Float32BufferAttribute(positions, 3))
-    result.setIndex(indices)
+    const mesh = buildRoadRibbonGeometry(points, {
+      elevationOffset,
+      lateralOffset,
+      surfaceThickness: style.surfaceThickness,
+      width: width ?? carriagewayWidth(style),
+    })
+    if (mesh.positions.length === 0) return result
+    result.setAttribute('position', new Float32BufferAttribute(mesh.positions, 3))
+    result.setIndex(mesh.indices)
     result.computeVertexNormals()
     result.computeBoundingBox()
     result.computeBoundingSphere()
@@ -362,17 +361,21 @@ function RoadJunctionSurface({
 function RoadJunctionSideBand({
   band,
   center,
+  manualBoundary,
   solution,
   surfaceY,
 }: {
   band: RoadJunctionBand
   center: readonly [number, number, number]
+  manualBoundary?: ReadonlyArray<readonly [number, number]>
   solution: JunctionBoundaryGeometryData
   surfaceY: number
 }) {
   const surface = useMemo(
-    () => buildJunctionBoundarySidewalkGeometry(solution, band.outerWidth),
-    [band.outerWidth, solution],
+    () => manualBoundary
+      ? buildManualRoadJunctionBand(manualBoundary, band.outerWidth)
+      : buildJunctionBoundarySidewalkGeometry(solution, band.outerWidth),
+    [band.outerWidth, manualBoundary, solution],
   )
   const geometry = useMemo(() => {
     const result = new BufferGeometry()
@@ -447,12 +450,15 @@ function RoadMarkingSurface({
 
 /** The procedural road surface. Splines are represented as sampled alignment legs. */
 export function RoadNetworkModel({
+	clearancePeers = [],
   elementSelection,
   ghost = false,
   nonInteractive = false,
   node,
   onSelectElement,
+	terrain = null,
 }: {
+	clearancePeers?: RoadNetworkNode[]
   elementSelection?: RoadElementSelection | null
   ghost?: boolean
   nonInteractive?: boolean
@@ -461,7 +467,9 @@ export function RoadNetworkModel({
     selection: Omit<RoadElementSelection, 'networkId'>,
     event: ThreeEvent<PointerEvent>,
   ) => void
+	terrain?: TerrainField | null
 }) {
+  const transitionProfileCache = useRef(createRoadTransitionProfileCache())
   const junctionSurfaces = useMemo(
     () =>
       Object.values(node.graphNodes).flatMap((graphNode) => {
@@ -498,12 +506,18 @@ export function RoadNetworkModel({
         })
         const sideBands = buildRoadJunctionBands(styles)
         const treatment = junction?.treatment ?? 'auto'
-        const solution = buildJunctionBoundaryGeometry(
+        const automaticSolution = buildJunctionBoundaryGeometry(
           approaches,
           junction?.cornerRadii ?? {},
         )
+        const manualBoundary = junction?.manualBoundaryEnabled && junction.manualBoundaryPoints.length >= 3
+          ? junction.manualBoundaryPoints
+          : undefined
+        const solution = manualBoundary
+          ? buildManualRoadJunctionBoundary(automaticSolution, manualBoundary)
+          : automaticSolution
         return style && radius > 0
-          ? [{ graphNode, junction, radius, sideBands, solution, style, treatment }]
+          ? [{ graphNode, junction, manualBoundary, radius, sideBands, solution, style, treatment }]
           : []
       }),
     [node],
@@ -522,7 +536,7 @@ export function RoadNetworkModel({
   )
   const edgeSurfaces = useMemo(
     () =>
-      buildRoadTransitionProfiles(node).map((profile) => {
+      buildRoadTransitionProfilesIncremental(node, transitionProfileCache.current).map((profile) => {
         const decorativeProfile = trimRoadTransitionProfile(
           profile,
           junctionTrimByApproach[`${profile.startNodeId}:${profile.edgeIds[0]}`] ?? 0,
@@ -534,13 +548,16 @@ export function RoadNetworkModel({
       }),
     [junctionTrimByApproach, node],
   )
+  useEffect(() => {
+    recordRoadGeometryCacheDiagnostics(node.id, transitionProfileCache.current.stats)
+  }, [edgeSurfaces, node.id])
   const validationMarkers = useMemo(
     () =>
-      validateRoadGraph(node).flatMap((issue, index) => {
+      validateRoadGraph(node, node.maxRoadGrade, clearancePeers).flatMap((issue, index) => {
         const point = roadValidationIssuePoint(node, issue)
         return point ? [{ index, issue, point }] : []
       }),
-    [node],
+    [clearancePeers, node],
   )
   const markingGroups = useMemo(() => {
     const groups = new Map<string, RoadMarkingPolygon[]>()
@@ -555,9 +572,179 @@ export function RoadNetworkModel({
       polygons,
     }))
   }, [node])
+  const laneMovementGuides = useMemo(
+    () => node.showLaneMovements ? buildRoadLaneMovementGuides(node) : [],
+    [node],
+  )
+  const channelizationGuides = useMemo(
+    () => buildRoadChannelizationGuides(node),
+    [node],
+  )
+  const dividedJunctionGraph = useMemo(
+    () => node.showDividedJunctionGraph
+      ? buildDividedJunctionGraphGuides(node)
+      : { links: [], nodes: [] },
+    [node],
+  )
+  const sweptPathCheck = useMemo(
+    () => node.showSweptPath ? buildRoadSweptPathCheck(node) : null,
+    [node],
+  )
+  const activeModeGuides = useMemo(
+    () => node.showActiveModeMovements ? buildRoadActiveModeGuides(node) : [],
+    [node],
+  )
+  const trafficPreview = useMemo(() => {
+    if (!node.showTrafficSimulation) return null
+    const routes = Object.values(node.trafficRoutes ?? {}).sort((first, second) => first.id.localeCompare(second.id))
+    const route = routes.find((candidate) => candidate.id === node.selectedTrafficRouteId) ?? routes[0]
+    return route ? {
+      points: buildRoadTrafficRouteGuide(node, route),
+      route,
+      vehicles: buildRoadTrafficVehicleSamples(node, route),
+    } : null
+  }, [node])
+  const roadsideDecorationPreviews = useMemo(
+    () => node.showRoadsideDecorations ? buildRoadsideDecorationPreviews(node) : [],
+    [node],
+  )
 
   return (
     <group name="road-network-model">
+		{laneMovementGuides.map((guide) => (
+			<RoadRibbonSurface
+				color={guide.enabled ? '#22c55e' : '#ef4444'}
+				key={guide.id}
+				name={`road-lane-movement-${guide.enabled ? 'permitted' : 'restricted'}:${guide.id}`}
+				nonInteractive
+				opacity={0.9}
+				points={guide.points}
+				style={{ ...DEFAULT_ROAD_STYLE_PRESETS['local-street'], surfaceThickness: 0.02 }}
+				width={guide.enabled ? 0.18 : 0.12}
+			/>
+		))}
+		{!ghost ? channelizationGuides.map((guide) => (
+			<group key={guide.id} name={`road-${guide.kind}:${guide.id}`}>
+				<RoadRibbonSurface
+					color={guide.style.surfaceColor}
+					elevationOffset={0.018}
+					lateralOffset={guide.lateralOffset}
+					name={`road-${guide.kind}-surface`}
+					nonInteractive
+					points={guide.points}
+					style={guide.style}
+					width={guide.width}
+				/>
+				{[-1, 1].map((side) => (
+					<RoadRibbonSurface
+						color="#f8fafc"
+						elevationOffset={0.04}
+						key={side}
+						lateralOffset={guide.lateralOffset + side * (guide.width / 2 - 0.045)}
+						name={`road-${guide.kind}-edge-line`}
+						nonInteractive
+						points={guide.points}
+						style={guide.style}
+						width={0.09}
+					/>
+				))}
+			</group>
+		)) : null}
+		{!ghost ? dividedJunctionGraph.links.map((guide) => (
+			<RoadRibbonSurface
+				color="#22d3ee"
+				key={guide.id}
+				name={`road-divided-internal-link:${guide.id}`}
+				nonInteractive
+				opacity={0.92}
+				points={guide.points}
+				style={{ ...DEFAULT_ROAD_STYLE_PRESETS['local-street'], surfaceThickness: 0 }}
+				width={0.14}
+			/>
+		)) : null}
+		{!ghost ? dividedJunctionGraph.nodes.map((internal) => (
+			<mesh key={internal.id} name={`road-divided-internal-node:${internal.id}`} position={internal.position} raycast={NO_RAYCAST}>
+				<sphereGeometry args={[0.22, 14, 10]} />
+				<meshBasicMaterial color={internal.direction === 'inbound' ? '#f97316' : '#22d3ee'} depthTest={false} />
+			</mesh>
+		)) : null}
+		{!ghost && sweptPathCheck ? (
+			<group name="road-design-vehicle-swept-path">
+				<RoadRibbonSurface
+					color={sweptPathCheck.passes ? '#22c55e' : '#ef4444'}
+					name="road-swept-envelope"
+					nonInteractive
+					opacity={0.34}
+					points={sweptPathCheck.points}
+					style={{ ...DEFAULT_ROAD_STYLE_PRESETS['local-street'], surfaceThickness: 0 }}
+					width={sweptPathCheck.envelopeWidth}
+				/>
+				<RoadRibbonSurface
+					color="#fbbf24"
+					name="road-swept-path-centerline"
+					nonInteractive
+					points={sweptPathCheck.points}
+					style={{ ...DEFAULT_ROAD_STYLE_PRESETS['local-street'], surfaceThickness: 0.01 }}
+					width={0.12}
+				/>
+			</group>
+		) : null}
+		{!ghost ? activeModeGuides.map((guide) => (
+			<RoadRibbonSurface
+				color={guide.color}
+				key={guide.id}
+				name={`road-${guide.mode}-movement:${guide.id}`}
+				nonInteractive
+				opacity={0.9}
+				points={guide.points}
+				style={{ ...DEFAULT_ROAD_STYLE_PRESETS['local-street'], surfaceThickness: 0 }}
+				width={guide.width}
+			/>
+		)) : null}
+		{!ghost && trafficPreview ? (
+			<group name="road-lane-traffic-simulation">
+				<RoadRibbonSurface
+					color="#a855f7"
+					name={`road-traffic-route:${trafficPreview.route.id}`}
+					nonInteractive
+					opacity={0.84}
+					points={trafficPreview.points}
+					style={{ ...DEFAULT_ROAD_STYLE_PRESETS['local-street'], surfaceThickness: 0 }}
+					width={0.16}
+				/>
+				{trafficPreview.vehicles.map((vehicle) => (
+					<mesh key={vehicle.id} name={`road-traffic-vehicle:${vehicle.id}`} position={vehicle.position} raycast={NO_RAYCAST}>
+						<boxGeometry args={[0.7, 0.28, 1.35]} />
+						<meshStandardMaterial color="#f97316" emissive="#7c2d12" emissiveIntensity={0.35} />
+					</mesh>
+				))}
+			</group>
+		) : null}
+		{!ghost ? roadsideDecorationPreviews.map((decoration) => (
+			<group key={decoration.id} name={`roadside-${decoration.kind}:${decoration.id}`} position={decoration.position}>
+				{decoration.kind === 'lamp' ? (
+					<>
+						<mesh position={[0, 1, 0]} raycast={NO_RAYCAST}><cylinderGeometry args={[0.06, 0.08, 2, 10]} /><meshStandardMaterial color="#64748b" /></mesh>
+						<mesh position={[0, 2.05, 0]} raycast={NO_RAYCAST}><sphereGeometry args={[0.16, 12, 8]} /><meshBasicMaterial color="#fde68a" /></mesh>
+					</>
+				) : decoration.kind === 'tree' ? (
+					<>
+						<mesh position={[0, 0.55, 0]} raycast={NO_RAYCAST}><cylinderGeometry args={[0.1, 0.14, 1.1, 9]} /><meshStandardMaterial color="#7c4a2d" /></mesh>
+						<mesh position={[0, 1.35, 0]} raycast={NO_RAYCAST}><sphereGeometry args={[0.58, 12, 9]} /><meshStandardMaterial color="#4d7c0f" /></mesh>
+					</>
+				) : decoration.kind === 'sign' ? (
+					<>
+						<mesh position={[0, 0.65, 0]} raycast={NO_RAYCAST}><cylinderGeometry args={[0.035, 0.035, 1.3, 8]} /><meshStandardMaterial color="#71717a" /></mesh>
+						<mesh position={[0, 1.25, 0]} raycast={NO_RAYCAST}><boxGeometry args={[0.52, 0.4, 0.06]} /><meshStandardMaterial color="#f59e0b" /></mesh>
+					</>
+				) : (
+					<mesh position={[0, 0.35, 0]} raycast={NO_RAYCAST}><boxGeometry args={[0.12, 0.42, 0.9]} /><meshStandardMaterial color="#cbd5e1" /></mesh>
+				)}
+			</group>
+		)) : null}
+      {!ghost ? <RoadNetworkBridgeStructures node={node} /> : null}
+		{!ghost ? <RoadNetworkTunnelStructures node={node} terrain={terrain} /> : null}
+		{!ghost ? <RoadNetworkEarthworks node={node} terrain={terrain} /> : null}
       {edgeSurfaces.map(({ decorativeProfile, profile }) => (
         <group key={profile.key}>
           <RoadVariableRibbonSurface
@@ -665,7 +852,7 @@ export function RoadNetworkModel({
             </group>
           ))
         : null}
-      {junctionSurfaces.map(({ graphNode, junction, radius, sideBands, solution, style, treatment }) => (
+      {junctionSurfaces.map(({ graphNode, junction, manualBoundary, radius, sideBands, solution, style, treatment }) => (
         <group key={graphNode.id}>
           <RoadJunctionSurface
             center={graphNode.position}
@@ -691,6 +878,7 @@ export function RoadNetworkModel({
                   band={band}
                   center={graphNode.position}
                   key={band.kind}
+                  manualBoundary={manualBoundary}
                   solution={solution}
                   surfaceY={style.surfaceThickness + band.elevationOffset}
                 />
@@ -717,6 +905,31 @@ export function RoadNetworkModel({
               </mesh>
             </>
           ) : null}
+          {!ghost &&
+          junction?.manualBoundaryEnabled &&
+          (elementSelection?.kind === 'junction' || elementSelection?.kind === 'corner') &&
+          elementSelection.id === graphNode.id
+            ? junction.manualBoundaryPoints.map((point, index) => (
+                <group
+                  key={`manual-boundary:${index}`}
+                  name={`road-manual-boundary-point:${index + 1}`}
+                  position={[
+                    graphNode.position[0] + point[0],
+                    graphNode.position[1] + style.surfaceThickness + 0.32,
+                    graphNode.position[2] + point[1],
+                  ]}
+                >
+                  <mesh raycast={NO_RAYCAST} rotation={[Math.PI / 2, 0, 0]}>
+                    <torusGeometry args={[0.2, 0.055, 8, 20]} />
+                    <meshBasicMaterial color="#facc15" depthTest={false} />
+                  </mesh>
+                  <mesh raycast={NO_RAYCAST}>
+                    <sphereGeometry args={[0.07, 10, 8]} />
+                    <meshBasicMaterial color="#ffffff" depthTest={false} />
+                  </mesh>
+                </group>
+              ))
+            : null}
           {!ghost &&
           elementSelection?.kind === 'junction' &&
           elementSelection.id === graphNode.id

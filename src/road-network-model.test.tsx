@@ -269,7 +269,7 @@ describe('road network corner rendering', () => {
 
     expect(patch).not.toBeNull()
     expect(Object.keys(patch!.graphNodes)).toHaveLength(Object.keys(node.graphNodes).length)
-    expect(Object.keys(patch!)).toEqual(['graphNodes'])
+    expect(Object.keys(patch!).sort()).toEqual(['graphNodes', 'junctions'])
     expect(patch!.graphNodes[terminal.id]?.position).toEqual([10, 0, 15])
     expect(node.graphNodes[terminal.id]?.position).toEqual([10, 0, 10])
   })

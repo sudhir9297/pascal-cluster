@@ -1,44 +1,47 @@
-import { BaseNode, generateId, nodeType, objectId } from '@pascal-app/core'
-import { z } from 'zod'
-import { BOLLARD_LIGHT_DIMENSIONS } from './bollard-light-geometry'
-import { WALL_ARM_LIGHT_DIMENSIONS } from './wall-arm-light-geometry'
+import { BaseNode, generateId, nodeType, objectId } from "@pascal-app/core";
+import { z } from "zod";
+import { BOLLARD_LIGHT_DIMENSIONS } from "./bollard-light-geometry";
 import {
-  STANDARD_UTILITY_POLE_CROSSARM_LENGTH_M,
-  STANDARD_UTILITY_POLE_EXPOSED_HEIGHT_M,
-} from './utility-pole-geometry'
+	STANDARD_LAMP_HEIGHT_M,
+	STANDARD_LAMP_HEIGHT_MAX_M,
+	STANDARD_LAMP_HEIGHT_MIN_M,
+} from "./lamp-constants";
+import { ROAD_SIGN_IDS } from "./road-sign-config";
 import {
-  STANDARD_LAMP_HEIGHT_M,
-  STANDARD_LAMP_HEIGHT_MAX_M,
-  STANDARD_LAMP_HEIGHT_MIN_M,
-} from './lamp-constants'
-import { ROAD_SIGN_IDS } from './road-sign-config'
-import { DEFAULT_ROAD_STYLE_ID, DEFAULT_ROAD_STYLE_PRESETS } from './road-style-presets'
+	DEFAULT_ROAD_STYLE_ID,
+	DEFAULT_ROAD_STYLE_PRESETS,
+} from "./road-style-presets";
+import {
+	STANDARD_UTILITY_POLE_CROSSARM_LENGTH_M,
+	STANDARD_UTILITY_POLE_EXPOSED_HEIGHT_M,
+} from "./utility-pole-geometry";
+import { WALL_ARM_LIGHT_DIMENSIONS } from "./wall-arm-light-geometry";
 
 /** A catalog-driven roadside sign with a reusable plate, graphic, and post. */
 export const RoadSignNode = BaseNode.extend({
-  id: objectId('road-sign'),
-  type: nodeType('environment:road-sign'),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  signId: z.enum(ROAD_SIGN_IDS).default('stop'),
-  postHeight: z.number().min(1.2).max(4.5).default(2.1),
-  scale: z.number().min(0.5).max(2.5).default(1),
-  mounting: z.enum(['single-post', 'double-post']).default('single-post'),
-  text: z.string().max(32).default(''),
-  postColor: z.string().default('#687177'),
-  backColor: z.string().default('#747d83'),
-})
+	id: objectId("road-sign"),
+	type: nodeType("environment:road-sign"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	signId: z.enum(ROAD_SIGN_IDS).default("stop"),
+	postHeight: z.number().min(1.2).max(4.5).default(2.1),
+	scale: z.number().min(0.5).max(2.5).default(1),
+	mounting: z.enum(["single-post", "double-post"]).default("single-post"),
+	text: z.string().max(32).default(""),
+	postColor: z.string().default("#687177"),
+	backColor: z.string().default("#747d83"),
+});
 
-export type RoadSignNode = z.infer<typeof RoadSignNode>
+export type RoadSignNode = z.infer<typeof RoadSignNode>;
 
-export type RoadSignNodeInput = z.input<typeof RoadSignNode>
+export type RoadSignNodeInput = z.input<typeof RoadSignNode>;
 
 /**
  * Preview nodes are rendered locally and never inserted into the scene store.
  * Giving the preview a stable, clearly non-persistent ID keeps it out of the
  * same identity space as placed signs.
  */
-export const ROAD_SIGN_PREVIEW_ID = 'road-sign_preview'
+export const ROAD_SIGN_PREVIEW_ID = "road-sign_preview";
 
 /**
  * Create a placed road sign with an ID that is fresh against the current
@@ -46,496 +49,721 @@ export const ROAD_SIGN_PREVIEW_ID = 'road-sign_preview'
  * IDs are already in the host scene; this boundary can.
  */
 export function createRoadSignNode(
-  input: RoadSignNodeInput,
-  occupiedIds: Iterable<string> = [],
+	input: RoadSignNodeInput,
+	occupiedIds: Iterable<string> = [],
 ): RoadSignNode {
-  const occupied = new Set(occupiedIds)
-  const { id: _ignoredId, ...draft } = input
+	const occupied = new Set(occupiedIds);
+	const { id: _ignoredId, ...draft } = input;
 
-  let id = generateId('road-sign')
-  while (occupied.has(id)) id = generateId('road-sign')
+	let id = generateId("road-sign");
+	while (occupied.has(id)) id = generateId("road-sign");
 
-  return RoadSignNode.parse({ ...draft, id })
+	return RoadSignNode.parse({ ...draft, id });
 }
 
 /** Create the local-only node used by the road-sign placement preview. */
-export function createRoadSignPreviewNode(input: RoadSignNodeInput): RoadSignNode {
-  const { id: _ignoredId, ...draft } = input
-  return RoadSignNode.parse({ ...draft, id: ROAD_SIGN_PREVIEW_ID })
+export function createRoadSignPreviewNode(
+	input: RoadSignNodeInput,
+): RoadSignNode {
+	const { id: _ignoredId, ...draft } = input;
+	return RoadSignNode.parse({ ...draft, id: ROAD_SIGN_PREVIEW_ID });
 }
 
 /** A swept-arm roadway pole with a low-profile full-cutoff LED luminaire. */
 export const StreetLightNode = BaseNode.extend({
-  id: objectId('street-light'),
-  type: nodeType('environment:street-light'),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  armLength: z.number().min(0.3).max(3).default(1.2),
-  poleColor: z.string().default('#48535b'),
-  lightOn: z.boolean().default(false),
-  lightColor: z.string().default('#ffd9a3'),
-  intensity: z.number().min(0).max(5000).default(1200),
-})
+	id: objectId("street-light"),
+	type: nodeType("environment:street-light"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	height: z
+		.number()
+		.min(STANDARD_LAMP_HEIGHT_MIN_M)
+		.max(STANDARD_LAMP_HEIGHT_MAX_M)
+		.default(STANDARD_LAMP_HEIGHT_M),
+	armLength: z.number().min(0.3).max(3).default(1.2),
+	poleColor: z.string().default("#48535b"),
+	lightOn: z.boolean().default(false),
+	lightColor: z.string().default("#ffd9a3"),
+	intensity: z.number().min(0).max(5000).default(1200),
+});
 
-export type StreetLightNode = z.infer<typeof StreetLightNode>
+export type StreetLightNode = z.infer<typeof StreetLightNode>;
 
 /** A pedestrian-scale pole with a centered, downward-facing post-top luminaire. */
 export const PedestrianPostLightNode = BaseNode.extend({
-  id: objectId('pedestrian-post-light'),
-  type: nodeType('environment:pedestrian-post-light'),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  poleColor: z.string().default('#30343b'),
-  lightOn: z.boolean().default(false),
-  lightColor: z.string().default('#ffd9a3'),
-  intensity: z.number().min(0).max(3000).default(650),
-})
+	id: objectId("pedestrian-post-light"),
+	type: nodeType("environment:pedestrian-post-light"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	height: z
+		.number()
+		.min(STANDARD_LAMP_HEIGHT_MIN_M)
+		.max(STANDARD_LAMP_HEIGHT_MAX_M)
+		.default(STANDARD_LAMP_HEIGHT_M),
+	poleColor: z.string().default("#30343b"),
+	lightOn: z.boolean().default(false),
+	lightColor: z.string().default("#ffd9a3"),
+	intensity: z.number().min(0).max(3000).default(650),
+});
 
-export type PedestrianPostLightNode = z.infer<typeof PedestrianPostLightNode>
+export type PedestrianPostLightNode = z.infer<typeof PedestrianPostLightNode>;
 
 /** A heritage pole with a curved Bishop's Crook arm and pendant teardrop lamp. */
 export const HeritageCrookLightNode = BaseNode.extend({
-  id: objectId('heritage-crook-light'),
-  type: nodeType('environment:heritage-crook-light'),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  armReach: z.number().min(0.5).max(1.5).default(0.9),
-  poleColor: z.string().default('#24272b'),
-  lightOn: z.boolean().default(false),
-  lightColor: z.string().default('#ffd5a0'),
-  intensity: z.number().min(0).max(3500).default(750),
-})
+	id: objectId("heritage-crook-light"),
+	type: nodeType("environment:heritage-crook-light"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	height: z
+		.number()
+		.min(STANDARD_LAMP_HEIGHT_MIN_M)
+		.max(STANDARD_LAMP_HEIGHT_MAX_M)
+		.default(STANDARD_LAMP_HEIGHT_M),
+	armReach: z.number().min(0.5).max(1.5).default(0.9),
+	poleColor: z.string().default("#24272b"),
+	lightOn: z.boolean().default(false),
+	lightColor: z.string().default("#ffd5a0"),
+	intensity: z.number().min(0).max(3500).default(750),
+});
 
-export type HeritageCrookLightNode = z.infer<typeof HeritageCrookLightNode>
+export type HeritageCrookLightNode = z.infer<typeof HeritageCrookLightNode>;
 
 /** A classic swept mast-arm roadway pole with a broad cobra-head luminaire. */
 export const CobraHeadLightNode = BaseNode.extend({
-  id: objectId('cobra-head-light'),
-  type: nodeType('environment:cobra-head-light'),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  armLength: z.number().min(0.5).max(3).default(1.25),
-  poleColor: z.string().default('#363b40'),
-  lightOn: z.boolean().default(false),
-  lightColor: z.string().default('#ffd39a'),
-  intensity: z.number().min(0).max(5000).default(1400),
-})
+	id: objectId("cobra-head-light"),
+	type: nodeType("environment:cobra-head-light"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	height: z
+		.number()
+		.min(STANDARD_LAMP_HEIGHT_MIN_M)
+		.max(STANDARD_LAMP_HEIGHT_MAX_M)
+		.default(STANDARD_LAMP_HEIGHT_M),
+	armLength: z.number().min(0.5).max(3).default(1.25),
+	poleColor: z.string().default("#363b40"),
+	lightOn: z.boolean().default(false),
+	lightColor: z.string().default("#ffd39a"),
+	intensity: z.number().min(0).max(5000).default(1400),
+});
 
-export type CobraHeadLightNode = z.infer<typeof CobraHeadLightNode>
+export type CobraHeadLightNode = z.infer<typeof CobraHeadLightNode>;
 
 /** A median pole carrying opposing full-cutoff LED roadway fixtures. */
 export const TwinArmMedianLightNode = BaseNode.extend({
-  id: objectId('twin-arm-median-light'),
-  type: nodeType('environment:twin-arm-median-light'),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  armLength: z.number().min(0.5).max(3).default(1.35),
-  poleColor: z.string().default('#363b40'),
-  lightOn: z.boolean().default(false),
-  lightColor: z.string().default('#ffd39a'),
-  intensity: z.number().min(0).max(5000).default(1400),
-})
+	id: objectId("twin-arm-median-light"),
+	type: nodeType("environment:twin-arm-median-light"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	height: z
+		.number()
+		.min(STANDARD_LAMP_HEIGHT_MIN_M)
+		.max(STANDARD_LAMP_HEIGHT_MAX_M)
+		.default(STANDARD_LAMP_HEIGHT_M),
+	armLength: z.number().min(0.5).max(3).default(1.35),
+	poleColor: z.string().default("#363b40"),
+	lightOn: z.boolean().default(false),
+	lightColor: z.string().default("#ffd39a"),
+	intensity: z.number().min(0).max(5000).default(1400),
+});
 
-export type TwinArmMedianLightNode = z.infer<typeof TwinArmMedianLightNode>
+export type TwinArmMedianLightNode = z.infer<typeof TwinArmMedianLightNode>;
 
 /** A junction or parking-area pole with three or four radial roadway heads. */
 export const MultiHeadAreaLightNode = BaseNode.extend({
-  id: objectId('multi-head-area-light'),
-  type: nodeType('environment:multi-head-area-light'),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  armLength: z.number().min(0.5).max(3).default(1.2),
-  headCount: z.union([z.literal(3), z.literal(4)]).default(4),
-  poleColor: z.string().default('#363b40'),
-  lightOn: z.boolean().default(false),
-  lightColor: z.string().default('#ffd39a'),
-  intensity: z.number().min(0).max(5000).default(1200),
-})
+	id: objectId("multi-head-area-light"),
+	type: nodeType("environment:multi-head-area-light"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	height: z
+		.number()
+		.min(STANDARD_LAMP_HEIGHT_MIN_M)
+		.max(STANDARD_LAMP_HEIGHT_MAX_M)
+		.default(STANDARD_LAMP_HEIGHT_M),
+	armLength: z.number().min(0.5).max(3).default(1.2),
+	headCount: z.union([z.literal(3), z.literal(4)]).default(4),
+	poleColor: z.string().default("#363b40"),
+	lightOn: z.boolean().default(false),
+	lightColor: z.string().default("#ffd39a"),
+	intensity: z.number().min(0).max(5000).default(1200),
+});
 
-export type MultiHeadAreaLightNode = z.infer<typeof MultiHeadAreaLightNode>
+export type MultiHeadAreaLightNode = z.infer<typeof MultiHeadAreaLightNode>;
 
 /** A fitted pipe-truss roadway pole carrying a full-cutoff LED luminaire. */
 export const TrussRoadwayLightNode = BaseNode.extend({
-  id: objectId('truss-roadway-light'),
-  type: nodeType('environment:truss-roadway-light'),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  armLength: z.number().min(0.8).max(3.5).default(2),
-  braceDepth: z.number().min(0.35).max(1.2).default(0.75),
-  poleColor: z.string().default('#596166'),
-  lightOn: z.boolean().default(false),
-  lightColor: z.string().default('#ffd39a'),
-  intensity: z.number().min(0).max(5000).default(1400),
-})
+	id: objectId("truss-roadway-light"),
+	type: nodeType("environment:truss-roadway-light"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	height: z
+		.number()
+		.min(STANDARD_LAMP_HEIGHT_MIN_M)
+		.max(STANDARD_LAMP_HEIGHT_MAX_M)
+		.default(STANDARD_LAMP_HEIGHT_M),
+	armLength: z.number().min(0.8).max(3.5).default(2),
+	braceDepth: z.number().min(0.35).max(1.2).default(0.75),
+	poleColor: z.string().default("#596166"),
+	lightOn: z.boolean().default(false),
+	lightColor: z.string().default("#ffd39a"),
+	intensity: z.number().min(0).max(5000).default(1400),
+});
 
-export type TrussRoadwayLightNode = z.infer<typeof TrussRoadwayLightNode>
+export type TrussRoadwayLightNode = z.infer<typeof TrussRoadwayLightNode>;
 
 /** A tapered high mast with a lowering ring and six outward-aimed LED luminaires. */
 export const HighMastCrownLightNode = BaseNode.extend({
-  id: objectId('high-mast-crown-light'),
-  type: nodeType('environment:high-mast-crown-light'),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(18),
-  armLength: z.number().min(0.9).max(3).default(1.8),
-  visualStyle: z.string().default('high-mast'),
-  poleColor: z.string().default('#667178'),
-  lightOn: z.boolean().default(false),
-  lightColor: z.string().default('#f4f0dc'),
-  intensity: z.number().min(0).max(10000).default(7200),
-})
+	id: objectId("high-mast-crown-light"),
+	type: nodeType("environment:high-mast-crown-light"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	height: z
+		.number()
+		.min(STANDARD_LAMP_HEIGHT_MIN_M)
+		.max(STANDARD_LAMP_HEIGHT_MAX_M)
+		.default(18),
+	armLength: z.number().min(0.9).max(3).default(1.8),
+	visualStyle: z.string().default("high-mast"),
+	poleColor: z.string().default("#667178"),
+	lightOn: z.boolean().default(false),
+	lightColor: z.string().default("#f4f0dc"),
+	intensity: z.number().min(0).max(10000).default(7200),
+});
 
-export type HighMastCrownLightNode = z.infer<typeof HighMastCrownLightNode>
+export type HighMastCrownLightNode = z.infer<typeof HighMastCrownLightNode>;
 
 /** Square parking-area pole carrying one low-profile LED luminaire. */
 export const ShoeboxAreaLightNode = BaseNode.extend({
-  id: objectId('shoebox-area-light'),
-  type: nodeType('environment:shoebox-area-light'),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  armLength: z.number().min(0.35).max(2.5).default(0.65),
-  visualStyle: z.string().default('shoebox'),
-  poleColor: z.string().default('#4a535a'),
-  lightOn: z.boolean().default(false),
-  lightColor: z.string().default('#ffd39a'),
-  intensity: z.number().min(0).max(10000).default(2200),
-})
+	id: objectId("shoebox-area-light"),
+	type: nodeType("environment:shoebox-area-light"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	height: z
+		.number()
+		.min(STANDARD_LAMP_HEIGHT_MIN_M)
+		.max(STANDARD_LAMP_HEIGHT_MAX_M)
+		.default(STANDARD_LAMP_HEIGHT_M),
+	armLength: z.number().min(0.35).max(2.5).default(0.65),
+	visualStyle: z.string().default("shoebox"),
+	poleColor: z.string().default("#4a535a"),
+	lightOn: z.boolean().default(false),
+	lightColor: z.string().default("#ffd39a"),
+	intensity: z.number().min(0).max(10000).default(2200),
+});
 
-export type ShoeboxAreaLightNode = z.infer<typeof ShoeboxAreaLightNode>
+export type ShoeboxAreaLightNode = z.infer<typeof ShoeboxAreaLightNode>;
 
 /** Projector/floodlight pole with a tilted rectangular floodlight head. */
 export const FloodlightPoleNode = BaseNode.extend({
-  id: objectId('floodlight-pole'),
-  type: nodeType('environment:floodlight-pole'),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  armLength: z.number().min(0.4).max(2.5).default(0.9),
-  visualStyle: z.string().default('floodlight'),
-  poleColor: z.string().default('#343a40'),
-  lightOn: z.boolean().default(false),
-  lightColor: z.string().default('#fff0c2'),
-  intensity: z.number().min(0).max(12000).default(2800),
-})
+	id: objectId("floodlight-pole"),
+	type: nodeType("environment:floodlight-pole"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	height: z
+		.number()
+		.min(STANDARD_LAMP_HEIGHT_MIN_M)
+		.max(STANDARD_LAMP_HEIGHT_MAX_M)
+		.default(STANDARD_LAMP_HEIGHT_M),
+	armLength: z.number().min(0.4).max(2.5).default(0.9),
+	visualStyle: z.string().default("floodlight"),
+	poleColor: z.string().default("#343a40"),
+	lightOn: z.boolean().default(false),
+	lightColor: z.string().default("#fff0c2"),
+	intensity: z.number().min(0).max(12000).default(2800),
+});
 
-export type FloodlightPoleNode = z.infer<typeof FloodlightPoleNode>
+export type FloodlightPoleNode = z.infer<typeof FloodlightPoleNode>;
 
 /** Traditional post-top lantern with a pitched cap and transparent panes. */
 export const TraditionalPostTopLanternNode = BaseNode.extend({
-  id: objectId('traditional-post-top-lantern'),
-  type: nodeType('environment:traditional-post-top-lantern'),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  armLength: z.number().min(0.4).max(1.4).default(0.7),
-  visualStyle: z.string().default('lantern'),
-  poleColor: z.string().default('#25282d'),
-  lightOn: z.boolean().default(false),
-  lightColor: z.string().default('#ffd9a3'),
-  intensity: z.number().min(0).max(3500).default(650),
-})
+	id: objectId("traditional-post-top-lantern"),
+	type: nodeType("environment:traditional-post-top-lantern"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	height: z
+		.number()
+		.min(STANDARD_LAMP_HEIGHT_MIN_M)
+		.max(STANDARD_LAMP_HEIGHT_MAX_M)
+		.default(STANDARD_LAMP_HEIGHT_M),
+	armLength: z.number().min(0.4).max(1.4).default(0.7),
+	visualStyle: z.string().default("lantern"),
+	poleColor: z.string().default("#25282d"),
+	lightOn: z.boolean().default(false),
+	lightColor: z.string().default("#ffd9a3"),
+	intensity: z.number().min(0).max(3500).default(650),
+});
 
-export type TraditionalPostTopLanternNode = z.infer<typeof TraditionalPostTopLanternNode>
+export type TraditionalPostTopLanternNode = z.infer<
+	typeof TraditionalPostTopLanternNode
+>;
 
 /** Prismatic acorn post-top lamp with a decorative civic pole. */
 export const GlobePostTopLightNode = BaseNode.extend({
-  id: objectId('globe-post-top-light'),
-  type: nodeType('environment:globe-post-top-light'),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  armLength: z.number().min(0.3).max(1).default(0.55),
-  visualStyle: z.string().default('globe'),
-  poleColor: z.string().default('#30343b'),
-  lightOn: z.boolean().default(false),
-  lightColor: z.string().default('#ffe0ad'),
-  intensity: z.number().min(0).max(3000).default(520),
-})
+	id: objectId("globe-post-top-light"),
+	type: nodeType("environment:globe-post-top-light"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	height: z
+		.number()
+		.min(STANDARD_LAMP_HEIGHT_MIN_M)
+		.max(STANDARD_LAMP_HEIGHT_MAX_M)
+		.default(STANDARD_LAMP_HEIGHT_M),
+	armLength: z.number().min(0.3).max(1).default(0.55),
+	visualStyle: z.string().default("globe"),
+	poleColor: z.string().default("#30343b"),
+	lightOn: z.boolean().default(false),
+	lightColor: z.string().default("#ffe0ad"),
+	intensity: z.number().min(0).max(3000).default(520),
+});
 
-export type GlobePostTopLightNode = z.infer<typeof GlobePostTopLightNode>
+export type GlobePostTopLightNode = z.infer<typeof GlobePostTopLightNode>;
 
 /** Decorative three-light candelabra with a raised centre and scroll arms. */
 export const DecorativeCandelabraLightNode = BaseNode.extend({
-  id: objectId('decorative-candelabra-light'),
-  type: nodeType('environment:decorative-candelabra-light'),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  armLength: z.number().min(0.5).max(2).default(1.15),
-  visualStyle: z.string().default('candelabra'),
-  poleColor: z.string().default('#25282d'),
-  lightOn: z.boolean().default(false),
-  lightColor: z.string().default('#ffd5a0'),
-  intensity: z.number().min(0).max(6000).default(1100),
-})
+	id: objectId("decorative-candelabra-light"),
+	type: nodeType("environment:decorative-candelabra-light"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	height: z
+		.number()
+		.min(STANDARD_LAMP_HEIGHT_MIN_M)
+		.max(STANDARD_LAMP_HEIGHT_MAX_M)
+		.default(STANDARD_LAMP_HEIGHT_M),
+	armLength: z.number().min(0.5).max(2).default(1.15),
+	visualStyle: z.string().default("candelabra"),
+	poleColor: z.string().default("#25282d"),
+	lightOn: z.boolean().default(false),
+	lightColor: z.string().default("#ffd5a0"),
+	intensity: z.number().min(0).max(6000).default(1100),
+});
 
-export type DecorativeCandelabraLightNode = z.infer<typeof DecorativeCandelabraLightNode>
+export type DecorativeCandelabraLightNode = z.infer<
+	typeof DecorativeCandelabraLightNode
+>;
 
 /** Professional twin-head low-voltage light for paths and planting beds. */
 export const PathGardenLightNode = BaseNode.extend({
-  id: objectId('path-garden-light'),
-  type: nodeType('environment:path-garden-light'),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(0.55).max(STANDARD_LAMP_HEIGHT_MAX_M).default(0.78),
-  /** The shared reach parameter controls the opposed head span. */
-  armLength: z.number().min(0.2).max(0.8).default(0.46),
-  visualStyle: z.string().default('path'),
-  poleColor: z.string().default('#343b37'),
-  lightOn: z.boolean().default(false),
-  lightColor: z.string().default('#ffe0b2'),
-  intensity: z.number().min(0).max(1200).default(240),
-})
+	id: objectId("path-garden-light"),
+	type: nodeType("environment:path-garden-light"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	height: z.number().min(0.55).max(STANDARD_LAMP_HEIGHT_MAX_M).default(0.78),
+	/** The shared reach parameter controls the opposed head span. */
+	armLength: z.number().min(0.2).max(0.8).default(0.46),
+	visualStyle: z.string().default("path"),
+	poleColor: z.string().default("#343b37"),
+	lightOn: z.boolean().default(false),
+	lightColor: z.string().default("#ffe0b2"),
+	intensity: z.number().min(0).max(1200).default(240),
+});
 
-export type PathGardenLightNode = z.infer<typeof PathGardenLightNode>
+export type PathGardenLightNode = z.infer<typeof PathGardenLightNode>;
 
 /** Low bollard light for pedestrian paths, plazas, and planting beds. */
 export const BollardLightNode = BaseNode.extend({
-  id: objectId('bollard-light'),
-  type: nodeType('environment:bollard-light'),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number()
-    .min(BOLLARD_LIGHT_DIMENSIONS.minHeight)
-    // Values above the current product range remain readable so saved scenes
-    // from the former shared six-metre catalog contract can be migrated by
-    // resolveBollardLightLayout. Placement and handles use the tighter range.
-    .max(STANDARD_LAMP_HEIGHT_MAX_M)
-    .default(BOLLARD_LIGHT_DIMENSIONS.defaultHeight),
-  armLength: z.number().min(0.15).max(0.5).default(0.25),
-  visualStyle: z.string().default('bollard'),
-  poleColor: z.string().default('#30363a'),
-  lightOn: z.boolean().default(false),
-  lightColor: z.string().default('#ffe2b8'),
-  intensity: z.number().min(0).max(1000).default(180),
-})
+	id: objectId("bollard-light"),
+	type: nodeType("environment:bollard-light"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	height: z
+		.number()
+		.min(BOLLARD_LIGHT_DIMENSIONS.minHeight)
+		// Values above the current product range remain readable so saved scenes
+		// from the former shared six-metre catalog contract can be migrated by
+		// resolveBollardLightLayout. Placement and handles use the tighter range.
+		.max(STANDARD_LAMP_HEIGHT_MAX_M)
+		.default(BOLLARD_LIGHT_DIMENSIONS.defaultHeight),
+	armLength: z.number().min(0.15).max(0.5).default(0.25),
+	visualStyle: z.string().default("bollard"),
+	poleColor: z.string().default("#30363a"),
+	lightOn: z.boolean().default(false),
+	lightColor: z.string().default("#ffe2b8"),
+	intensity: z.number().min(0).max(1000).default(180),
+});
 
-export type BollardLightNode = z.infer<typeof BollardLightNode>
+export type BollardLightNode = z.infer<typeof BollardLightNode>;
 
 /** Twin-optic roadway luminaire suspended from a catenary between tapered poles. */
 export const CatenaryStreetLightNode = BaseNode.extend({
-  id: objectId('catenary-street-light'),
-  type: nodeType('environment:catenary-street-light'),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  armLength: z.number().min(2).max(12).default(6),
-  visualStyle: z.string().default('catenary'),
-  poleColor: z.string().default('#363b40'),
-  lightOn: z.boolean().default(false),
-  lightColor: z.string().default('#ffd39a'),
-  intensity: z.number().min(0).max(5000).default(1300),
-})
+	id: objectId("catenary-street-light"),
+	type: nodeType("environment:catenary-street-light"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	height: z
+		.number()
+		.min(STANDARD_LAMP_HEIGHT_MIN_M)
+		.max(STANDARD_LAMP_HEIGHT_MAX_M)
+		.default(STANDARD_LAMP_HEIGHT_M),
+	armLength: z.number().min(2).max(12).default(6),
+	visualStyle: z.string().default("catenary"),
+	poleColor: z.string().default("#363b40"),
+	lightOn: z.boolean().default(false),
+	lightColor: z.string().default("#ffd39a"),
+	intensity: z.number().min(0).max(5000).default(1300),
+});
 
-export type CatenaryStreetLightNode = z.infer<typeof CatenaryStreetLightNode>
+export type CatenaryStreetLightNode = z.infer<typeof CatenaryStreetLightNode>;
 
 /** Architectural wall bracket with an integrated low-profile LED roadway head. */
 export const WallArmLightNode = BaseNode.extend({
-  id: objectId('wall-arm-light'),
-  type: nodeType('environment:wall-arm-light'),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  /** Pascal wall-host metadata. Position is wall-local; `height` owns elevation. */
-  wallId: z.string().optional(),
-  wallT: z.number().min(0).max(1).optional(),
-  side: z.enum(['front', 'back']).optional(),
-  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  armLength: z.number().min(0.5).max(3).default(WALL_ARM_LIGHT_DIMENSIONS.defaultArmLength),
-  visualStyle: z.string().default('wall-arm'),
-  poleColor: z.string().default('#363b40'),
-  lightOn: z.boolean().default(false),
-  lightColor: z.string().default('#ffd39a'),
-  intensity: z.number().min(0).max(5000).default(1100),
-})
+	id: objectId("wall-arm-light"),
+	type: nodeType("environment:wall-arm-light"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	/** Pascal wall-host metadata. Position is wall-local; `height` owns elevation. */
+	wallId: z.string().optional(),
+	wallT: z.number().min(0).max(1).optional(),
+	side: z.enum(["front", "back"]).optional(),
+	height: z
+		.number()
+		.min(STANDARD_LAMP_HEIGHT_MIN_M)
+		.max(STANDARD_LAMP_HEIGHT_MAX_M)
+		.default(STANDARD_LAMP_HEIGHT_M),
+	armLength: z
+		.number()
+		.min(0.5)
+		.max(3)
+		.default(WALL_ARM_LIGHT_DIMENSIONS.defaultArmLength),
+	visualStyle: z.string().default("wall-arm"),
+	poleColor: z.string().default("#363b40"),
+	lightOn: z.boolean().default(false),
+	lightColor: z.string().default("#ffd39a"),
+	intensity: z.number().min(0).max(5000).default(1100),
+});
 
-export type WallArmLightNode = z.infer<typeof WallArmLightNode>
+export type WallArmLightNode = z.infer<typeof WallArmLightNode>;
 
 /** Full-cutoff architectural LED wall pack mounted directly to a facade. */
 export const WallPackLightNode = BaseNode.extend({
-  id: objectId('wall-pack-light'),
-  type: nodeType('environment:wall-pack-light'),
-  /** Pascal wall-host metadata. Position is the exact wall-local cursor anchor. */
-  wallId: z.string().optional(),
-  wallT: z.number().min(0).max(1).optional(),
-  side: z.enum(['front', 'back']).optional(),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(2.7),
-  /** Housing projection from the wall; legacy values are clamped by the model. */
-  armLength: z.number().min(0.2).max(0.8).default(0.3),
-  visualStyle: z.string().default('wall-pack'),
-  poleColor: z.string().default('#443a32'),
-  lightOn: z.boolean().default(false),
-  lightColor: z.string().default('#fff0c2'),
-  intensity: z.number().min(0).max(3000).default(700),
-})
+	id: objectId("wall-pack-light"),
+	type: nodeType("environment:wall-pack-light"),
+	/** Pascal wall-host metadata. Position is the exact wall-local cursor anchor. */
+	wallId: z.string().optional(),
+	wallT: z.number().min(0).max(1).optional(),
+	side: z.enum(["front", "back"]).optional(),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	height: z
+		.number()
+		.min(STANDARD_LAMP_HEIGHT_MIN_M)
+		.max(STANDARD_LAMP_HEIGHT_MAX_M)
+		.default(2.7),
+	/** Housing projection from the wall; legacy values are clamped by the model. */
+	armLength: z.number().min(0.2).max(0.8).default(0.3),
+	visualStyle: z.string().default("wall-pack"),
+	poleColor: z.string().default("#443a32"),
+	lightOn: z.boolean().default(false),
+	lightColor: z.string().default("#fff0c2"),
+	intensity: z.number().min(0).max(3000).default(700),
+});
 
-export type WallPackLightNode = z.infer<typeof WallPackLightNode>
+export type WallPackLightNode = z.infer<typeof WallPackLightNode>;
 
 /** Sealed continuous-line LED luminaire for tunnel and underpass ceilings. */
 export const TunnelLuminaireNode = BaseNode.extend({
-  id: objectId('tunnel-luminaire'),
-  type: nodeType('environment:tunnel-luminaire'),
-  /** Pascal host contract: this fixture mounts to the underside of a ceiling. */
-  attachTo: z.literal('ceiling').default('ceiling'),
-  /** The selected ceiling host; null keeps legacy level-hosted scenes readable. */
-  ceilingId: z.string().nullable().default(null),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  armLength: z.number().min(0.8).max(4).default(2.2),
-  visualStyle: z.string().default('tunnel'),
-  poleColor: z.string().default('#7a8388'),
-  lightOn: z.boolean().default(false),
-  lightColor: z.string().default('#e9f2ff'),
-  intensity: z.number().min(0).max(7000).default(1800),
-})
+	id: objectId("tunnel-luminaire"),
+	type: nodeType("environment:tunnel-luminaire"),
+	/** Pascal host contract: this fixture mounts to the underside of a ceiling. */
+	attachTo: z.literal("ceiling").default("ceiling"),
+	/** The selected ceiling host; null keeps legacy level-hosted scenes readable. */
+	ceilingId: z.string().nullable().default(null),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	height: z
+		.number()
+		.min(STANDARD_LAMP_HEIGHT_MIN_M)
+		.max(STANDARD_LAMP_HEIGHT_MAX_M)
+		.default(STANDARD_LAMP_HEIGHT_M),
+	armLength: z.number().min(0.8).max(4).default(2.2),
+	visualStyle: z.string().default("tunnel"),
+	poleColor: z.string().default("#7a8388"),
+	lightOn: z.boolean().default(false),
+	lightColor: z.string().default("#e9f2ff"),
+	intensity: z.number().min(0).max(7000).default(1800),
+});
 
-export type TunnelLuminaireNode = z.infer<typeof TunnelLuminaireNode>
+export type TunnelLuminaireNode = z.infer<typeof TunnelLuminaireNode>;
 
 /** Recessed canopy/soffit fixture; armLength stores the square face width. */
 export const CanopySoffitLightNode = BaseNode.extend({
-  id: objectId('canopy-soffit-light'),
-  type: nodeType('environment:canopy-soffit-light'),
-  attachTo: z.literal('ceiling').default('ceiling'),
-  ceilingId: z.string().nullable().default(null),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  // Keep the legacy upper bound so scenes authored with the former span-based
-  // control still parse; the layout resolver scales those values on render.
-  armLength: z.number().min(0.34).max(2.5).default(0.42),
-  visualStyle: z.string().default('canopy'),
-  poleColor: z.string().default('#d5d9d8'),
-  lightOn: z.boolean().default(false),
-  lightColor: z.string().default('#fff3d2'),
-  intensity: z.number().min(0).max(5000).default(1200),
-})
+	id: objectId("canopy-soffit-light"),
+	type: nodeType("environment:canopy-soffit-light"),
+	attachTo: z.literal("ceiling").default("ceiling"),
+	ceilingId: z.string().nullable().default(null),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	height: z
+		.number()
+		.min(STANDARD_LAMP_HEIGHT_MIN_M)
+		.max(STANDARD_LAMP_HEIGHT_MAX_M)
+		.default(STANDARD_LAMP_HEIGHT_M),
+	// Keep the legacy upper bound so scenes authored with the former span-based
+	// control still parse; the layout resolver scales those values on render.
+	armLength: z.number().min(0.34).max(2.5).default(0.42),
+	visualStyle: z.string().default("canopy"),
+	poleColor: z.string().default("#d5d9d8"),
+	lightOn: z.boolean().default(false),
+	lightColor: z.string().default("#fff3d2"),
+	intensity: z.number().min(0).max(5000).default(1200),
+});
 
-export type CanopySoffitLightNode = z.infer<typeof CanopySoffitLightNode>
+export type CanopySoffitLightNode = z.infer<typeof CanopySoffitLightNode>;
 
 /** Single-sided solar street light with integrated PV, battery and roadway optics. */
 export const SolarStreetLightNode = BaseNode.extend({
-  id: objectId('solar-street-light'),
-  type: nodeType('environment:solar-street-light'),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(STANDARD_LAMP_HEIGHT_MIN_M).max(STANDARD_LAMP_HEIGHT_MAX_M).default(STANDARD_LAMP_HEIGHT_M),
-  armLength: z.number().min(0.5).max(3).default(1.3),
-  visualStyle: z.string().default('solar'),
-  poleColor: z.string().default('#3c4348'),
-  lightOn: z.boolean().default(false),
-  lightColor: z.string().default('#ffd39a'),
-  intensity: z.number().min(0).max(5000).default(1000),
-})
+	id: objectId("solar-street-light"),
+	type: nodeType("environment:solar-street-light"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	height: z
+		.number()
+		.min(STANDARD_LAMP_HEIGHT_MIN_M)
+		.max(STANDARD_LAMP_HEIGHT_MAX_M)
+		.default(STANDARD_LAMP_HEIGHT_M),
+	armLength: z.number().min(0.5).max(3).default(1.3),
+	visualStyle: z.string().default("solar"),
+	poleColor: z.string().default("#3c4348"),
+	lightOn: z.boolean().default(false),
+	lightColor: z.string().default("#ffd39a"),
+	intensity: z.number().min(0).max(5000).default(1000),
+});
 
-export type SolarStreetLightNode = z.infer<typeof SolarStreetLightNode>
+export type SolarStreetLightNode = z.infer<typeof SolarStreetLightNode>;
 
-export const UtilityPoleAssembly = z.enum(['tangent', 'small-angle', 'junction', 'dead-end'])
-export type UtilityPoleAssembly = z.infer<typeof UtilityPoleAssembly>
+export const UtilityPoleAssembly = z.enum([
+	"tangent",
+	"small-angle",
+	"junction",
+	"dead-end",
+]);
+export type UtilityPoleAssembly = z.infer<typeof UtilityPoleAssembly>;
 
 /** A wood, three-phase distribution pole with a lower neutral and optional transformer. */
 export const UtilityPoleNode = BaseNode.extend({
-  id: objectId('utility-pole'),
-  type: nodeType('environment:utility-pole'),
-  position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-  height: z.number().min(7.62).max(15.85).default(STANDARD_UTILITY_POLE_EXPOSED_HEIGHT_M),
-  crossarmLength: z
-    .number()
-    .min(STANDARD_UTILITY_POLE_CROSSARM_LENGTH_M)
-    .max(3.66)
-    .default(STANDARD_UTILITY_POLE_CROSSARM_LENGTH_M),
-  assembly: UtilityPoleAssembly.default('tangent'),
-  woodColor: z.string().default('#765033'),
-  transformerMounted: z.boolean().default(true),
-  transformerColor: z.string().default('#66716d'),
-})
+	id: objectId("utility-pole"),
+	type: nodeType("environment:utility-pole"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	height: z
+		.number()
+		.min(7.62)
+		.max(15.85)
+		.default(STANDARD_UTILITY_POLE_EXPOSED_HEIGHT_M),
+	crossarmLength: z
+		.number()
+		.min(STANDARD_UTILITY_POLE_CROSSARM_LENGTH_M)
+		.max(3.66)
+		.default(STANDARD_UTILITY_POLE_CROSSARM_LENGTH_M),
+	assembly: UtilityPoleAssembly.default("tangent"),
+	woodColor: z.string().default("#765033"),
+	transformerMounted: z.boolean().default(true),
+	transformerColor: z.string().default("#66716d"),
+});
 
-export type UtilityPoleNode = z.infer<typeof UtilityPoleNode>
+export type UtilityPoleNode = z.infer<typeof UtilityPoleNode>;
 
 /** An automatically managed three-primary-plus-neutral span between two utility poles. */
 export const UtilityWireSpanNode = BaseNode.extend({
-  id: objectId('utility-wire-span'),
-  type: nodeType('environment:utility-wire-span'),
-  fromPoleId: z.string().min(1),
-  toPoleId: z.string().min(1),
-  conductorColor: z.string().default('#25292b'),
-  sagRatio: z.number().min(0.01).max(0.08).default(0.035),
-})
+	id: objectId("utility-wire-span"),
+	type: nodeType("environment:utility-wire-span"),
+	fromPoleId: z.string().min(1),
+	toPoleId: z.string().min(1),
+	conductorColor: z.string().default("#25292b"),
+	sagRatio: z.number().min(0.01).max(0.08).default(0.035),
+});
 
-export type UtilityWireSpanNode = z.infer<typeof UtilityWireSpanNode>
+export type UtilityWireSpanNode = z.infer<typeof UtilityWireSpanNode>;
 
 /** A topological point shared by one or more road centerline edges. */
 export const RoadGraphNode = z.object({
-  id: z.string().min(1),
-  position: z.tuple([z.number(), z.number(), z.number()]),
-  level: z.number().int().default(0),
-  elevationMode: z.enum(['ground', 'bridge', 'tunnel']).default('ground'),
-  curveRadius: z.number().min(0.1).max(1000).optional(),
-  tangentLength: z.number().min(0).max(1000).optional(),
-  terminal: z.boolean().default(false),
-})
+	id: z.string().min(1),
+	position: z.tuple([z.number(), z.number(), z.number()]),
+	level: z.number().int().default(0),
+	elevationMode: z.enum(["ground", "bridge", "tunnel"]).default("ground"),
+	curveRadius: z.number().min(0.1).max(1000).optional(),
+	tangentLength: z.number().min(0).max(1000).optional(),
+	terminal: z.boolean().default(false),
+});
 
-export type RoadGraphNode = z.infer<typeof RoadGraphNode>
+export type RoadGraphNode = z.infer<typeof RoadGraphNode>;
 
 /** Optional authored widths for one side of a road, ordered from carriageway outward. */
 export const RoadSideComponents = z.object({
-  parkingLaneWidth: z.number().min(0).max(4).default(0),
-  bikeLaneWidth: z.number().min(0).max(3).default(0),
-  gutterWidth: z.number().min(0).max(2).default(0),
-  curbWidth: z.number().min(0).max(1).default(0),
-  vergeWidth: z.number().min(0).max(8).default(0),
-  sidewalkWidth: z.number().min(0).max(6).default(0),
-})
+	parkingLaneWidth: z.number().min(0).max(4).default(0),
+	bikeLaneWidth: z.number().min(0).max(3).default(0),
+	gutterWidth: z.number().min(0).max(2).default(0),
+	curbWidth: z.number().min(0).max(1).default(0),
+	vergeWidth: z.number().min(0).max(8).default(0),
+	sidewalkWidth: z.number().min(0).max(6).default(0),
+});
 
-export type RoadSideComponents = z.infer<typeof RoadSideComponents>
+export type RoadSideComponents = z.infer<typeof RoadSideComponents>;
 
 /** A reusable cross-section and visual treatment shared by road edges. */
 export const RoadStylePreset = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1).max(64),
-  laneCount: z.number().int().min(1).max(12).default(2),
-  laneWidth: z.number().min(2.4).max(5).default(3.25),
-  shoulderWidth: z.number().min(0).max(4).default(0.5),
-  sidewalkWidth: z.number().min(0).max(6).default(0.5),
-  medianWidth: z.number().min(0).max(12).default(0),
-  surfaceThickness: z.number().min(0.02).max(1).default(0.14),
-  surfaceColor: z.string().default('#3f4246'),
-  markingColor: z.string().default('#f3f1df'),
-  markings: z.boolean().default(true),
-  leftSide: RoadSideComponents.optional(),
-  rightSide: RoadSideComponents.optional(),
-})
+	id: z.string().min(1),
+	name: z.string().min(1).max(64),
+	laneCount: z.number().int().min(1).max(12).default(2),
+	laneWidth: z.number().min(2.4).max(5).default(3.25),
+	shoulderWidth: z.number().min(0).max(4).default(0.5),
+	sidewalkWidth: z.number().min(0).max(6).default(0.5),
+	medianWidth: z.number().min(0).max(12).default(0),
+	surfaceThickness: z.number().min(0.02).max(1).default(0.14),
+	surfaceColor: z.string().default("#3f4246"),
+	markingColor: z.string().default("#f3f1df"),
+	markings: z.boolean().default(true),
+	leftSide: RoadSideComponents.optional(),
+	rightSide: RoadSideComponents.optional(),
+});
 
-export type RoadStylePreset = z.infer<typeof RoadStylePreset>
+export type RoadStylePreset = z.infer<typeof RoadStylePreset>;
+
+/** An interior point of the independently authored road vertical profile. */
+export const RoadVerticalProfilePoint = z.object({
+	id: z.string().min(1),
+	station: z.number().min(0),
+	elevation: z.number(),
+	curveLength: z.number().min(0).max(1000).default(0),
+	/** Optional link used by the direct 3D alignment-point elevation grip. */
+	alignmentPointIndex: z.number().int().min(0).optional(),
+});
+
+export type RoadVerticalProfilePoint = z.infer<typeof RoadVerticalProfilePoint>;
 
 /** One directed centerline edge. Direction controls traffic, not graph traversal. */
 export const RoadGraphEdge = z.object({
-  id: z.string().min(1),
-  startNodeId: z.string().min(1),
-  endNodeId: z.string().min(1),
-  alignment: z.array(z.tuple([z.number(), z.number(), z.number()])).default([]),
-  styleId: z.string().min(1).default('local-street'),
-  direction: z.enum(['both', 'forward', 'reverse']).default('both'),
-  roadClass: z
-    .enum(['alley', 'local', 'collector', 'arterial', 'highway', 'service'])
-    .default('local'),
-  joinMode: z.enum(['auto', 'suppress']).default('auto'),
-  stackLevel: z.number().int().default(0),
-  overlapGroup: z.string().min(1).optional(),
-  parentEdgeId: z.string().optional(),
-})
+	id: z.string().min(1),
+	startNodeId: z.string().min(1),
+	endNodeId: z.string().min(1),
+	alignment: z.array(z.tuple([z.number(), z.number(), z.number()])).default([]),
+	profileMode: z.enum(["legacy", "designed"]).default("legacy"),
+	verticalProfile: z.array(RoadVerticalProfilePoint).default([]),
+	styleId: z.string().min(1).default("local-street"),
+	direction: z.enum(["both", "forward", "reverse"]).default("both"),
+	roadClass: z
+		.enum(["alley", "local", "collector", "arterial", "highway", "service"])
+		.default("local"),
+	joinMode: z.enum(["auto", "suppress"]).default("auto"),
+	stackLevel: z.number().int().default(0),
+	overlapGroup: z.string().min(1).optional(),
+	parentEdgeId: z.string().optional(),
+});
 
-export type RoadGraphEdge = z.infer<typeof RoadGraphEdge>
+export type RoadGraphEdge = z.infer<typeof RoadGraphEdge>;
+
+/** A persistent directed lane generated from one authored centerline edge. */
+export const RoadLane = z.object({
+	id: z.string().min(1),
+	edgeId: z.string().min(1),
+	startNodeId: z.string().min(1),
+	endNodeId: z.string().min(1),
+	direction: z.enum(["forward", "reverse"]),
+	index: z.number().int().min(0),
+	lateralOffset: z.number(),
+	width: z.number().min(0.5).max(8),
+	kind: z.enum(["general", "turn", "slip"]).default("general"),
+	junctionNodeId: z.string().min(1).optional(),
+	turn: z.enum(["left", "through", "right", "u-turn"]).optional(),
+});
+
+export type RoadLane = z.infer<typeof RoadLane>;
+
+/** One permitted or prohibited connection between directed lanes at a junction. */
+export const RoadLaneMovement = z.object({
+	id: z.string().min(1),
+	junctionNodeId: z.string().min(1),
+	fromLaneId: z.string().min(1),
+	toLaneId: z.string().min(1),
+	turn: z.enum(["left", "through", "right", "u-turn"]),
+	enabled: z.boolean().default(true),
+});
+
+export type RoadLaneMovement = z.infer<typeof RoadLaneMovement>;
+
+export const RoadActiveModeMovement = z.object({
+	id: z.string().min(1),
+	junctionNodeId: z.string().min(1),
+	mode: z.enum(["pedestrian", "bicycle"]),
+	fromEdgeId: z.string().min(1),
+	toEdgeId: z.string().min(1),
+	kind: z.enum(["crossing", "left", "through", "right"]),
+	sourceMovementId: z.string().min(1).optional(),
+	enabled: z.boolean().default(true),
+});
+
+export type RoadActiveModeMovement = z.infer<typeof RoadActiveModeMovement>;
+
+/** One timed traffic-signal phase containing compatible lane movements. */
+export const RoadSignalPhase = z.object({
+	id: z.string().min(1),
+	name: z.string().min(1),
+	durationSeconds: z.number().min(5).max(180).default(30),
+	clearanceSeconds: z.number().min(0).max(15).default(3),
+	movementIds: z.array(z.string().min(1)).default([]),
+});
+
+export type RoadSignalPhase = z.infer<typeof RoadSignalPhase>;
+
+/** Persistent signal timing for one generated road junction. */
+export const RoadSignalPlan = z.object({
+	junctionNodeId: z.string().min(1),
+	mode: z.enum(["fixed", "actuated"]).default("fixed"),
+	offsetSeconds: z.number().min(0).max(300).default(0),
+	phases: z.array(RoadSignalPhase).default([]),
+});
+
+export type RoadSignalPlan = z.infer<typeof RoadSignalPlan>;
+
+export const RoadInternalJunctionNode = z.object({
+	id: z.string().min(1),
+	junctionNodeId: z.string().min(1),
+	edgeId: z.string().min(1),
+	direction: z.enum(["inbound", "outbound"]),
+	position: z.tuple([z.number(), z.number(), z.number()]),
+});
+
+export type RoadInternalJunctionNode = z.infer<typeof RoadInternalJunctionNode>;
+
+export const RoadInternalJunctionLink = z.object({
+	id: z.string().min(1),
+	junctionNodeId: z.string().min(1),
+	startNodeId: z.string().min(1),
+	endNodeId: z.string().min(1),
+	movementId: z.string().min(1),
+});
+
+export type RoadInternalJunctionLink = z.infer<typeof RoadInternalJunctionLink>;
+
+export const RoadDividedJunctionExpansion = z.object({
+	junctionNodeId: z.string().min(1),
+	nodes: z.record(z.string(), RoadInternalJunctionNode).default({}),
+	links: z.record(z.string(), RoadInternalJunctionLink).default({}),
+});
+
+export type RoadDividedJunctionExpansion = z.infer<typeof RoadDividedJunctionExpansion>;
+
+export const RoadTrafficRoute = z.object({
+	id: z.string().min(1),
+	startLaneId: z.string().min(1),
+	endLaneId: z.string().min(1),
+	laneIds: z.array(z.string().min(1)).min(1),
+	movementIds: z.array(z.string().min(1)).default([]),
+	lengthMeters: z.number().min(0),
+	travelTimeSeconds: z.number().min(0),
+});
+
+export type RoadTrafficRoute = z.infer<typeof RoadTrafficRoute>;
+
+export const RoadsideDecoration = z.object({
+	id: z.string().min(1),
+	edgeId: z.string().min(1),
+	kind: z.enum(["lamp", "tree", "sign", "guardrail"]),
+	side: z.enum(["left", "right"]),
+	station: z.number().min(0),
+	lateralOffset: z.number(),
+	ruleId: z.string().min(1),
+});
+
+export type RoadsideDecoration = z.infer<typeof RoadsideDecoration>;
 
 /**
  * A scene asset anchored by distance along a directed road edge. Stations are
@@ -543,29 +771,42 @@ export type RoadGraphEdge = z.infer<typeof RoadGraphEdge>
  * without moving the asset when topology splits that edge.
  */
 export const RoadEdgeAttachment = z.object({
-  id: z.string().min(1),
-  edgeId: z.string().min(1),
-  assetNodeId: z.string().min(1),
-  kind: z.enum(['sign', 'lamp', 'asset']).default('asset'),
-  station: z.number().min(0).default(0),
-  lateralOffset: z.number().default(0),
-  verticalOffset: z.number().default(0),
-})
+	id: z.string().min(1),
+	edgeId: z.string().min(1),
+	assetNodeId: z.string().min(1),
+	kind: z.enum(["sign", "lamp", "asset"]).default("asset"),
+	station: z.number().min(0).default(0),
+	lateralOffset: z.number().default(0),
+	verticalOffset: z.number().default(0),
+});
 
-export type RoadEdgeAttachment = z.infer<typeof RoadEdgeAttachment>
+export type RoadEdgeAttachment = z.infer<typeof RoadEdgeAttachment>;
 
 /** A persistent, editable description of a generated road junction. */
 export const RoadJunction = z.object({
-  nodeId: z.string().min(1),
-  kind: z.enum(['tee', 'y', 'four-way-plus', 'four-way-x', 'multi-leg']),
-  treatment: z.enum(['auto', 'stop', 'yield', 'signal', 'roundabout']).default('auto'),
-  primaryMode: z.enum(['auto', 'manual']).default('auto'),
-  primaryEdgeIds: z.array(z.string().min(1)).max(2).default([]),
-  cornerRadii: z.record(z.string(), z.number().min(0.5).max(100)).default({}),
-  solverStatus: z.enum(['auto', 'warning', 'manual']).default('auto'),
-})
+	nodeId: z.string().min(1),
+	kind: z.enum(["tee", "y", "four-way-plus", "four-way-x", "multi-leg"]),
+	treatment: z
+		.enum(["auto", "stop", "yield", "signal", "roundabout"])
+		.default("auto"),
+	primaryMode: z.enum(["auto", "manual"]).default("auto"),
+	primaryEdgeIds: z.array(z.string().min(1)).max(2).default([]),
+	approachControls: z
+		.record(z.string(), z.enum(["auto", "none", "stop", "yield", "signal"]))
+		.default({}),
+	turnPocketEdges: z
+		.record(z.string(), z.enum(["left", "right", "both"]))
+		.default({}),
+	slipLaneMovementIds: z.array(z.string().min(1)).default([]),
+	cornerRadii: z.record(z.string(), z.number().min(0.5).max(100)).default({}),
+	manualBoundaryEnabled: z.boolean().default(false),
+	manualBoundaryPoints: z
+		.array(z.tuple([z.number().min(-1000).max(1000), z.number().min(-1000).max(1000)]))
+		.default([]),
+	solverStatus: z.enum(["auto", "warning", "manual"]).default("auto"),
+});
 
-export type RoadJunction = z.infer<typeof RoadJunction>
+export type RoadJunction = z.infer<typeof RoadJunction>;
 
 /**
  * One connected road component lives in each scene node. This keeps junction
@@ -573,18 +814,79 @@ export type RoadJunction = z.infer<typeof RoadJunction>
  * independently selectable in the editor.
  */
 export const RoadNetworkNode = BaseNode.extend({
-  id: objectId('road-network'),
-  type: nodeType('environment:road-network'),
-  graphNodes: z.record(z.string(), RoadGraphNode).default({}),
-  edges: z.record(z.string(), RoadGraphEdge).default({}),
-  attachments: z.record(z.string(), RoadEdgeAttachment).default({}),
-  junctions: z.record(z.string(), RoadJunction).default({}),
-  stylePresets: z.record(z.string(), RoadStylePreset).default({
-    ...DEFAULT_ROAD_STYLE_PRESETS,
-  }),
-  activeStyleId: z.string().min(1).default(DEFAULT_ROAD_STYLE_ID),
-  applyStyleToAll: z.boolean().default(true),
-  snapTolerance: z.number().min(0.05).max(5).default(0.5),
-})
+	id: objectId("road-network"),
+	type: nodeType("environment:road-network"),
+	graphNodes: z.record(z.string(), RoadGraphNode).default({}),
+	edges: z.record(z.string(), RoadGraphEdge).default({}),
+	lanes: z.record(z.string(), RoadLane).default({}),
+	laneMovements: z.record(z.string(), RoadLaneMovement).default({}),
+	activeModeMovements: z.record(z.string(), RoadActiveModeMovement).default({}),
+	showActiveModeMovements: z.boolean().default(false),
+	signalPlans: z.record(z.string(), RoadSignalPlan).default({}),
+	dividedJunctions: z.record(z.string(), RoadDividedJunctionExpansion).default({}),
+	showDividedJunctionGraph: z.boolean().default(false),
+	designVehicle: z
+		.enum(["passenger-car", "delivery-truck", "fire-engine", "tractor-trailer"])
+		.default("passenger-car"),
+	sweptPathMovementId: z.string().min(1).optional(),
+	showSweptPath: z.boolean().default(false),
+	trafficRoutes: z.record(z.string(), RoadTrafficRoute).default({}),
+	selectedTrafficRouteId: z.string().min(1).optional(),
+	trafficFreeFlowSpeed: z.number().min(1).max(55).default(13.9),
+	trafficDemandPerHour: z.number().min(1).max(5000).default(600),
+	trafficPreviewTimeSeconds: z.number().min(0).max(3600).default(0),
+	showTrafficSimulation: z.boolean().default(false),
+	roadsideDecorations: z.record(z.string(), RoadsideDecoration).default({}),
+	roadsideDecorationRules: z.object({
+		lamps: z.boolean().default(true),
+		trees: z.boolean().default(true),
+		signs: z.boolean().default(true),
+		guardrails: z.boolean().default(true),
+	}).default({ lamps: true, trees: true, signs: true, guardrails: true }),
+	roadsideDecorationDensity: z.enum(["sparse", "standard", "dense"]).default("standard"),
+	showRoadsideDecorations: z.boolean().default(false),
+	showLaneMovements: z.boolean().default(false),
+	attachments: z.record(z.string(), RoadEdgeAttachment).default({}),
+	junctions: z.record(z.string(), RoadJunction).default({}),
+	stylePresets: z.record(z.string(), RoadStylePreset).default({
+		...DEFAULT_ROAD_STYLE_PRESETS,
+	}),
+	activeStyleId: z.string().min(1).default(DEFAULT_ROAD_STYLE_ID),
+	applyStyleToAll: z.boolean().default(true),
+	regionalPack: z
+		.enum(["right-driving", "left-driving"])
+		.default("right-driving"),
+	snapTolerance: z.number().min(0.05).max(5).default(0.5),
+	/** Vertical clearance between a conformed road centerline and the terrain. */
+	terrainOffset: z.number().min(-10).max(10).default(0.05),
+	/** Width of the blended terrain shoulder beyond the generated road footprint. */
+	terrainFalloff: z.number().min(0).max(50).default(2.5),
+	/** Horizontal run per metre of rise for generated fill slopes. */
+	embankmentSlope: z.number().min(0.5).max(8).default(2),
+	/** Horizontal run per metre of rise for generated cut slopes. */
+	excavationSlope: z.number().min(0.25).max(8).default(1.5),
+	/** Advisory grade threshold shown by the independent vertical-profile editor. */
+	maxRoadGrade: z.number().min(0.01).max(1).default(0.12),
+	/** Structural slab depth below bridge-mode road surfaces. */
+	bridgeDeckThickness: z.number().min(0.2).max(3).default(0.65),
+	/** Height of the continuous concrete barrier at each bridge deck edge. */
+	bridgeBarrierHeight: z.number().min(0.5).max(2).default(1.05),
+	/** Maximum nominal distance between generated bridge pier bents. */
+	bridgePierSpacing: z.number().min(4).max(80).default(18),
+	/** Diameter of each generated bridge pier column. */
+	bridgePierDiameter: z.number().min(0.4).max(4).default(1.1),
+	/** Advisory vertical clearance required beneath a bridge deck. */
+	bridgeMinimumClearance: z.number().min(1).max(12).default(4.5),
+	/** Clear height measured from the tunnel road surface to the lining soffit. */
+	tunnelClearHeight: z.number().min(3).max(15).default(5.5),
+	/** Extra horizontal clearance outside the complete authored road section. */
+	tunnelSideClearance: z.number().min(0.25).max(8).default(0.75),
+	/** Structural thickness of the swept tunnel lining shell. */
+	tunnelLiningThickness: z.number().min(0.15).max(2).default(0.35),
+	/** Length of the open excavation and finished apron outside each portal. */
+	tunnelPortalCutLength: z.number().min(1).max(40).default(6),
+	/** Horizontal run per metre of rise for generated portal cut slopes. */
+	tunnelCutSlope: z.number().min(0.25).max(5).default(1.5),
+});
 
-export type RoadNetworkNode = z.infer<typeof RoadNetworkNode>
+export type RoadNetworkNode = z.infer<typeof RoadNetworkNode>;

@@ -120,6 +120,9 @@ describe('Environment plugin manifest', () => {
     expect(road.stylePresets.arterial?.laneCount).toBe(4)
     expect(road.attachments).toEqual({})
     expect(road.applyStyleToAll).toBe(true)
+		expect(road.regionalPack).toBe('right-driving')
+		expect(road.embankmentSlope).toBe(2)
+		expect(road.excavationSlope).toBe(1.5)
     expect(roadNetworkDefinition.capabilities.drawTool).toBe(true)
     expect(roadNetworkDefinition.tool).toBeDefined()
     expect(roadNetworkDefinition.renderer).toBeDefined()
@@ -167,6 +170,91 @@ describe('Environment plugin manifest', () => {
         custom: { id: 'custom', name: 'Custom' },
       },
     })
+		const bridgeMigration = (roadNetworkDefinition as unknown as {
+			migrate: Record<number, (value: unknown) => unknown>
+		}).migrate[10]!
+		expect(bridgeMigration({ edges: {} })).toMatchObject({
+			bridgeDeckThickness: 0.65,
+			bridgeBarrierHeight: 1.05,
+			bridgePierSpacing: 18,
+			bridgePierDiameter: 1.1,
+			bridgeMinimumClearance: 4.5,
+		})
+		const tunnelMigration = (roadNetworkDefinition as unknown as {
+			migrate: Record<number, (value: unknown) => unknown>
+		}).migrate[11]!
+		expect(tunnelMigration({ edges: {} })).toMatchObject({
+			tunnelClearHeight: 5.5,
+			tunnelSideClearance: 0.75,
+			tunnelLiningThickness: 0.35,
+			tunnelPortalCutLength: 6,
+			tunnelCutSlope: 1.5,
+		})
+		const earthworkMigration = (roadNetworkDefinition as unknown as {
+			migrate: Record<number, (value: unknown) => unknown>
+		}).migrate[12]!
+		expect(earthworkMigration({ edges: {} })).toMatchObject({
+			embankmentSlope: 2,
+			excavationSlope: 1.5,
+		})
+		const regionalMigration = (roadNetworkDefinition as unknown as {
+			migrate: Record<number, (value: unknown) => unknown>
+		}).migrate[13]!
+		expect(regionalMigration({ edges: {} })).toMatchObject({
+			regionalPack: 'right-driving',
+		})
+  })
+
+  test('publishes live named HUD chips for road alignment and elevation', () => {
+    const hints = roadNetworkDefinition.toolHints as unknown as Array<{
+      key: string
+      chip?: {
+        cycle: () => void
+        labels: Record<string, string>
+        value: () => string
+      }
+    }>
+    const alignment = hints.find((hint) => hint.key === 'C')?.chip
+    const elevation = hints.find((hint) => hint.key === 'B')?.chip
+    expect(alignment).toBeDefined()
+    expect(elevation).toBeDefined()
+
+    useEnvironmentStore.getState().setRoadAlignmentMode('straight')
+    expect(alignment?.labels[alignment.value()]).toBe('Alignment: Straight')
+    alignment?.cycle()
+    expect(alignment?.labels[alignment.value()]).toBe('Alignment: Spline')
+
+    useEnvironmentStore.getState().setRoadElevationMode('ground')
+    expect(elevation?.labels[elevation.value()]).toBe('Elevation: Ground')
+    elevation?.cycle()
+    expect(elevation?.labels[elevation.value()]).toBe('Elevation: Bridge')
+
+    useEnvironmentStore.getState().setRoadAlignmentMode('straight')
+    useEnvironmentStore.getState().setRoadElevationMode('ground')
+  })
+
+  test('exposes a segment-scoped delete action for the selected road edge', () => {
+    const result = insertRoadSegment(
+      createEmptyRoadGraph(),
+      [0, 0, 0],
+      [10, 0, 0],
+    )
+    const node = RoadNetworkNode.parse(result.graph)
+    const edgeId = Object.keys(node.edges)[0]!
+    useEnvironmentStore.getState().setRoadElementSelection({
+      networkId: node.id,
+      kind: 'edge',
+      id: edgeId,
+    })
+    const quickActions = roadNetworkDefinition.quickActions as unknown as (
+      input: { node: RoadNetworkNode },
+    ) => Array<{ id: string; label: string }>
+
+    expect(quickActions({ node })).toContainEqual(expect.objectContaining({
+      id: 'road:delete-edge',
+      label: 'Delete segment',
+    }))
+    useEnvironmentStore.getState().setRoadElementSelection(null)
   })
 
   test('migrates legacy junction treatments into persistent junction records', () => {

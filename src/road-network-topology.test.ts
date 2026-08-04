@@ -8,6 +8,8 @@ import {
   mergeRoadGraphs,
   previewRoadInsertion,
   reconcileRoadJunctions,
+  roadBendRadiusForTangentLength,
+  roadBendTangentLength,
   roadStyleWidth,
   snapRoadDraftPoint,
   splitRoadGraphComponents,
@@ -24,6 +26,26 @@ function planLength(points: Array<readonly [number, number, number]>): number {
 }
 
 describe('road network topology', () => {
+  test('derives a bend radius from a requested tangent distance', () => {
+    const first = insertRoadSegment(
+      createEmptyRoadGraph(),
+      [-20, 0, 0],
+      [0, 0, 0],
+    )
+    const result = insertRoadSegment(first.graph, [0, 0, 0], [0, 0, 20], {
+      tangentLength: 3,
+      tolerance: 0.01,
+    })
+    const bend = Object.values(result.graph.graphNodes).find(
+      (node) => classifyRoadJunction(result.graph, node.id) === 'bend-l',
+    )!
+
+    expect(roadBendRadiusForTangentLength(result.graph, bend.id, 3)).toBeCloseTo(3, 6)
+    expect(bend.curveRadius).toBeCloseTo(3, 6)
+    expect(bend.tangentLength).toBeCloseTo(3, 6)
+    expect(roadBendTangentLength(result.graph, bend.id, bend.curveRadius!)).toBeCloseTo(3, 6)
+  })
+
   test('magnetically projects a draft point onto a road centerline', () => {
     const base = insertRoadSegment(createEmptyRoadGraph(), [0, 0, 0], [10, 0, 0]).graph
 

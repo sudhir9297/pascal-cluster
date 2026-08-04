@@ -16,6 +16,10 @@ import {
 import type { RoadGraphEdge, RoadNetworkNode, RoadStylePreset } from './schema'
 import { DEFAULT_ROAD_STYLE_PRESETS } from './road-style-presets'
 import { roadValidationIssuePoint, validateRoadGraph } from './road-network-validation'
+import {
+  buildManualRoadJunctionBand,
+  buildManualRoadJunctionBoundary,
+} from './road-junction-boundary-editor'
 
 type PlanPoint = readonly [number, number]
 
@@ -128,10 +132,16 @@ export function buildRoadNetworkFloorplan(
         }]
       })
       const junction = node.junctions?.[graphNode.id]
-      const solution = buildJunctionBoundaryGeometry(
+      const automaticSolution = buildJunctionBoundaryGeometry(
         approaches,
         junction?.cornerRadii ?? {},
       )
+      const manualBoundary = junction?.manualBoundaryEnabled && junction.manualBoundaryPoints.length >= 3
+        ? junction.manualBoundaryPoints
+        : undefined
+      const solution = manualBoundary
+        ? buildManualRoadJunctionBoundary(automaticSolution, manualBoundary)
+        : automaticSolution
       const primaryEdge = junction?.primaryEdgeIds
         .map((edgeId) => node.edges[edgeId])
         .find(Boolean)
@@ -154,16 +164,27 @@ export function buildRoadNetworkFloorplan(
         }),
       )
       for (const band of [...sideBands].reverse()) {
-        const surface = buildJunctionBoundarySidewalkGeometry(solution, band.outerWidth)
-        for (let offset = 0; offset + 11 < surface.positions.length; offset += 12) {
+        const surface = manualBoundary
+          ? buildManualRoadJunctionBand(manualBoundary, band.outerWidth)
+          : buildJunctionBoundarySidewalkGeometry(solution, band.outerWidth)
+        const stride = manualBoundary ? 6 : 12
+        for (let offset = 0; offset + stride - 1 < surface.positions.length; offset += stride) {
+          const points: PlanPoint[] = manualBoundary
+            ? [
+                [graphNode.position[0] + surface.positions[offset]!, graphNode.position[2] + surface.positions[offset + 2]!],
+                [graphNode.position[0] + surface.positions[offset + 3]!, graphNode.position[2] + surface.positions[offset + 5]!],
+                [graphNode.position[0] + surface.positions[(offset + 9) % surface.positions.length]!, graphNode.position[2] + surface.positions[(offset + 11) % surface.positions.length]!],
+                [graphNode.position[0] + surface.positions[(offset + 6) % surface.positions.length]!, graphNode.position[2] + surface.positions[(offset + 8) % surface.positions.length]!],
+              ]
+            : [
+                [graphNode.position[0] + surface.positions[offset]!, graphNode.position[2] + surface.positions[offset + 2]!],
+                [graphNode.position[0] + surface.positions[offset + 3]!, graphNode.position[2] + surface.positions[offset + 5]!],
+                [graphNode.position[0] + surface.positions[offset + 9]!, graphNode.position[2] + surface.positions[offset + 11]!],
+                [graphNode.position[0] + surface.positions[offset + 6]!, graphNode.position[2] + surface.positions[offset + 8]!],
+              ]
           children.push({
             kind: 'polygon',
-            points: [
-              [graphNode.position[0] + surface.positions[offset]!, graphNode.position[2] + surface.positions[offset + 2]!],
-              [graphNode.position[0] + surface.positions[offset + 3]!, graphNode.position[2] + surface.positions[offset + 5]!],
-              [graphNode.position[0] + surface.positions[offset + 9]!, graphNode.position[2] + surface.positions[offset + 11]!],
-              [graphNode.position[0] + surface.positions[offset + 6]!, graphNode.position[2] + surface.positions[offset + 8]!],
-            ],
+            points,
             fill: band.color,
             stroke: band.color,
             strokeWidth: 0,

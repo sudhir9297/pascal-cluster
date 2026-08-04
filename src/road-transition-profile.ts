@@ -323,6 +323,108 @@ export function buildRoadTransitionProfiles(node: RoadNetworkNode): RoadTransiti
   })
 }
 
+export type RoadTransitionProfileCacheStats = {
+  rebuiltProfiles: number
+  reusedProfiles: number
+  totalProfiles: number
+}
+
+type RoadTransitionProfileCacheEntry = {
+  profile: RoadTransitionProfile | null
+  signature: string
+}
+
+export type RoadTransitionProfileCache = {
+  entries: Map<string, RoadTransitionProfileCacheEntry>
+  stats: RoadTransitionProfileCacheStats
+}
+
+export function createRoadTransitionProfileCache(): RoadTransitionProfileCache {
+  return {
+    entries: new Map(),
+    stats: { rebuiltProfiles: 0, reusedProfiles: 0, totalProfiles: 0 },
+  }
+}
+
+function transitionPathSignature(node: RoadNetworkNode, path: RoadRenderPath): string {
+  const dependencyEdgeIds = new Set(path.edgeIds)
+  for (const nodeId of [path.startNodeId, path.endNodeId]) {
+    for (const edge of Object.values(node.edges)) {
+      if (edge.startNodeId === nodeId || edge.endNodeId === nodeId) {
+        dependencyEdgeIds.add(edge.id)
+      }
+    }
+  }
+  const dependencyEdges = [...dependencyEdgeIds]
+    .sort()
+    .flatMap((edgeId) => {
+      const edge = node.edges[edgeId]
+      return edge ? [edge] : []
+    })
+  const dependencyNodeIds = new Set([
+    path.startNodeId,
+    path.endNodeId,
+    ...path.cornerNodeIds,
+    ...dependencyEdges.flatMap((edge) => [edge.startNodeId, edge.endNodeId]),
+  ])
+  const dependencyNodes = [...dependencyNodeIds]
+    .sort()
+    .flatMap((nodeId) => {
+      const graphNode = node.graphNodes[nodeId]
+      return graphNode ? [graphNode] : []
+    })
+  const styles = [...new Set(dependencyEdges.flatMap((edge) => {
+    const style = resolveStyle(node, edge)
+    return style ? [style.id] : []
+  }))]
+    .sort()
+    .flatMap((styleId) => {
+      const style = node.stylePresets[styleId] ??
+        DEFAULT_ROAD_STYLE_PRESETS[styleId as keyof typeof DEFAULT_ROAD_STYLE_PRESETS]
+      return style ? [style] : []
+    })
+  return JSON.stringify({
+    dependencyEdges,
+    dependencyNodes,
+    path,
+    styles,
+  })
+}
+
+/**
+ * Rebuild only render paths whose own edges, corner nodes, endpoint neighbors,
+ * or resolved styles changed. Unaffected profiles retain object identity so
+ * React/Three can reuse their cooked buffers across localized edits.
+ */
+export function buildRoadTransitionProfilesIncremental(
+  node: RoadNetworkNode,
+  cache: RoadTransitionProfileCache,
+): RoadTransitionProfile[] {
+  const paths = buildRoadRenderPaths(
+    node,
+    (left, right) => resolveStyle(node, left)?.id === resolveStyle(node, right)?.id,
+  )
+  const nextEntries = new Map<string, RoadTransitionProfileCacheEntry>()
+  const profiles: RoadTransitionProfile[] = []
+  let rebuiltProfiles = 0
+  let reusedProfiles = 0
+  for (const path of paths) {
+    const key = path.edgeIds.join(':')
+    const signature = transitionPathSignature(node, path)
+    const previous = cache.entries.get(key)
+    const profile = previous?.signature === signature
+      ? previous.profile
+      : profileForPath(node, path)
+    if (previous?.signature === signature) reusedProfiles += 1
+    else rebuiltProfiles += 1
+    nextEntries.set(key, { profile, signature })
+    if (profile) profiles.push(profile)
+  }
+  cache.entries = nextEntries
+  cache.stats = { rebuiltProfiles, reusedProfiles, totalProfiles: paths.length }
+  return profiles
+}
+
 function interpolateBounds(
   first: RoadTransitionComponentBounds,
   second: RoadTransitionComponentBounds,

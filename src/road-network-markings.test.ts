@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test'
 import {
   buildRoadNetworkMarkings,
+  incomingLaneOffsets,
   splitRoadMarkingDashes,
 } from './road-network-markings'
 import { createEmptyRoadGraph, insertRoadSegment } from './road-network-topology'
@@ -87,6 +88,19 @@ describe('topology-driven road markings', () => {
     expect(markings.filter((marking) => marking.kind === 'crosswalk')).toHaveLength(18)
   })
 
+  test('renders a per-approach yield line without changing the other controls', () => {
+    const node = teeNetwork()
+    const junctionId = Object.keys(node.junctions)[0]!
+    const edgeId = Object.values(node.edges)[0]!.id
+    node.junctions[junctionId] = {
+      ...node.junctions[junctionId]!,
+      approachControls: { [edgeId]: 'yield' },
+    }
+    const markings = buildRoadNetworkMarkings(node)
+    expect(markings.some((marking) => marking.edgeId === edgeId && marking.kind === 'yield-line')).toBe(true)
+    expect(markings.some((marking) => marking.edgeId === edgeId && marking.kind === 'stop-line')).toBe(false)
+  })
+
   test('suppresses approach controls and arrows for one-way traffic leaving a junction', () => {
     const node = teeNetwork()
     const junctionId = Object.keys(node.junctions)[0]!
@@ -102,4 +116,24 @@ describe('topology-driven road markings', () => {
     expect(markings.some((marking) =>
       marking.edgeId === branch.id && marking.kind === 'crosswalk')).toBe(false)
   })
+
+	test('regional packs mirror incoming lanes and centerline colors', () => {
+		const node = teeNetwork()
+		const junctionId = Object.keys(node.junctions)[0]!
+		const edge = Object.values(node.edges).find(
+			(candidate) => candidate.startNodeId === junctionId || candidate.endNodeId === junctionId,
+		)!
+		const style = node.stylePresets[edge.styleId]!
+		expect(incomingLaneOffsets(edge, junctionId, style, 'left')).toEqual(
+			incomingLaneOffsets(edge, junctionId, style, 'right').map((offset) => -offset),
+		)
+		const right = buildRoadNetworkMarkings(node)
+		const left = buildRoadNetworkMarkings({ ...node, regionalPack: 'left-driving' })
+		expect(new Set(
+			right.filter((marking) => marking.kind === 'centerline').map((marking) => marking.color),
+		)).toEqual(new Set(['#e8c447']))
+		expect(new Set(
+			left.filter((marking) => marking.kind === 'centerline').map((marking) => marking.color),
+		)).toEqual(new Set(['#f3f1df']))
+	})
 })

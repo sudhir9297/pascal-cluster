@@ -9,6 +9,7 @@ import {
 } from './road-transition-profile'
 import type { RoadGraphEdge, RoadNetworkNode, RoadStylePreset } from './schema'
 import { DEFAULT_ROAD_STYLE_PRESETS } from './road-style-presets'
+import { resolveRoadRegionalPack, type RoadRegionalPack } from './road-regional-packs'
 
 export type RoadMarkingKind =
   | 'centerline'
@@ -16,6 +17,7 @@ export type RoadMarkingKind =
   | 'direction-arrow'
   | 'lane-dash'
   | 'stop-line'
+  | 'yield-line'
 
 export type RoadMarkingPolygon = {
   color: string
@@ -211,10 +213,28 @@ function arrowPolygons(sample: PathSample, lateralOffset: number): Point3[][] {
   ]
 }
 
-function incomingLaneOffsets(
+function yieldTeeth(sample: PathSample, centerOffset: number, width: number): Point3[][] {
+	const outward = sample.direction
+	const left = [-outward[1], outward[0]] as const
+	const toothCount = Math.max(1, Math.floor(width / 0.9))
+	return Array.from({ length: toothCount }, (_, index) => {
+		const lateral = centerOffset - width / 2 + (index + 0.5) * width / toothCount
+		const centerX = sample.point[0] + left[0] * lateral
+		const centerZ = sample.point[2] + left[1] * lateral
+		const half = Math.min(0.32, width / toothCount * 0.35)
+		return [
+			[centerX - outward[0] * 0.28 - left[0] * half, sample.point[1], centerZ - outward[1] * 0.28 - left[1] * half],
+			[centerX - outward[0] * 0.28 + left[0] * half, sample.point[1], centerZ - outward[1] * 0.28 + left[1] * half],
+			[centerX + outward[0] * 0.28, sample.point[1], centerZ + outward[1] * 0.28],
+		] as Point3[]
+	})
+}
+
+export function incomingLaneOffsets(
   edge: RoadGraphEdge,
   junctionId: string,
   style: RoadStylePreset,
+	drivingSide: RoadRegionalPack['drivingSide'] = 'right',
 ): number[] {
   const incoming =
     edge.direction === 'both' ||
@@ -226,22 +246,24 @@ function incomingLaneOffsets(
       (index - (style.laneCount - 1) / 2) * style.laneWidth)
   }
   const count = Math.max(1, Math.floor(style.laneCount / 2))
+	const side = drivingSide === 'right' ? 1 : -1
   return Array.from({ length: count }, (_, index) =>
-    style.medianWidth / 2 + style.laneWidth * (index + 0.5))
+    side * (style.medianWidth / 2 + style.laneWidth * (index + 0.5)))
 }
 
 function approachControlWidth(
   edge: RoadGraphEdge,
   junctionId: string,
   style: RoadStylePreset,
+	drivingSide: RoadRegionalPack['drivingSide'],
 ): { centerOffset: number; width: number } | null {
-  const offsets = incomingLaneOffsets(edge, junctionId, style)
+  const offsets = incomingLaneOffsets(edge, junctionId, style, drivingSide)
   if (offsets.length === 0) return null
   if (edge.direction !== 'both') {
     return { centerOffset: 0, width: style.laneCount * style.laneWidth }
   }
   return {
-    centerOffset: style.medianWidth / 2 + offsets.length * style.laneWidth / 2,
+		centerOffset: offsets.reduce((sum, offset) => sum + offset, 0) / offsets.length,
     width: offsets.length * style.laneWidth,
   }
 }
@@ -274,6 +296,7 @@ function buildJunctionData(node: RoadNetworkNode) {
 /** Build all topology-driven painted road markings as flat, non-interactive polygons. */
 export function buildRoadNetworkMarkings(node: RoadNetworkNode): RoadMarkingPolygon[] {
   const polygons: RoadMarkingPolygon[] = []
+	const regionalPack = resolveRoadRegionalPack(node)
   const junctionData = buildJunctionData(node)
   const approachCuts = Object.fromEntries(junctionData.flatMap(({ junction, solution }) =>
     Object.entries(solution.approachCuts).map(([edgeId, cut]) => [`${junction.nodeId}:${edgeId}`, cut])))
@@ -295,14 +318,26 @@ export function buildRoadNetworkMarkings(node: RoadNetworkNode): RoadMarkingPoly
     ] as Point3)
     if (points.length < 2) continue
     if (style.medianWidth === 0 && style.laneCount >= 2) {
-      polygons.push(...ribbonPolygons(points, 0.12, 'centerline', '#e8c447', edge.id))
+      polygons.push(...ribbonPolygons(
+			points,
+			0.12,
+			'centerline',
+			regionalPack.centerlineColor,
+			edge.id,
+		))
     }
     for (let boundary = 1; boundary < style.laneCount; boundary++) {
       if (style.laneCount % 2 === 0 && boundary === style.laneCount / 2) continue
       for (const dash of splitRoadMarkingDashes(
         offsetTransitionPath(trimmed.samples, boundary - 1),
       )) {
-        polygons.push(...ribbonPolygons(dash, 0.09, 'lane-dash', style.markingColor, edge.id))
+        polygons.push(...ribbonPolygons(
+			dash,
+			0.09,
+			'lane-dash',
+			regionalPack.markingColor,
+			edge.id,
+		))
       }
     }
   }
@@ -317,13 +352,18 @@ export function buildRoadNetworkMarkings(node: RoadNetworkNode): RoadMarkingPoly
       const outward = edge.startNodeId === junction.nodeId ? sampled : [...sampled].reverse()
       const yOffset = style.surfaceThickness + 0.016
       const elevated = outward.map((point) => [point[0], point[1] + yOffset, point[2]] as Point3)
-      const laneOffsets = incomingLaneOffsets(edge, junction.nodeId, style)
+      const laneOffsets = incomingLaneOffsets(
+			edge,
+			junction.nodeId,
+			style,
+			regionalPack.drivingSide,
+		)
       const arrowSample = pointAtDistance(elevated, cut + 10.5)
       if (arrowSample) {
         for (const laneOffset of laneOffsets) {
           for (const points of arrowPolygons(arrowSample, laneOffset)) {
             polygons.push({
-              color: style.markingColor,
+              color: regionalPack.markingColor,
               edgeId: edge.id,
               junctionId: junction.nodeId,
               kind: 'direction-arrow',
@@ -332,32 +372,42 @@ export function buildRoadNetworkMarkings(node: RoadNetworkNode): RoadMarkingPoly
           }
         }
       }
-      const controlled =
-        junction.treatment === 'stop' ||
-        junction.treatment === 'signal' ||
-        (junction.treatment === 'auto' && !primaryEdges.has(edge.id))
-      const controlWidth = approachControlWidth(edge, junction.nodeId, style)
-      if (!controlled || !controlWidth) continue
+      const explicitControl = junction.approachControls?.[edge.id] ?? 'auto'
+      const control = explicitControl !== 'auto'
+        ? explicitControl
+        : junction.treatment === 'stop' || junction.treatment === 'yield' || junction.treatment === 'signal'
+          ? junction.treatment
+          : junction.treatment === 'auto' && !primaryEdges.has(edge.id)
+            ? 'stop'
+            : 'none'
+      const controlWidth = approachControlWidth(
+			edge,
+			junction.nodeId,
+			style,
+			regionalPack.drivingSide,
+		)
+      if (control === 'none' || !controlWidth) continue
       const stopSample = pointAtDistance(elevated, cut + 5.5)
       if (stopSample) {
-        polygons.push({
-          color: style.markingColor,
-          edgeId: edge.id,
-          junctionId: junction.nodeId,
-          kind: 'stop-line',
-          points: orientedRectangle(
-            stopSample,
-            controlWidth.centerOffset,
-            controlWidth.width,
-            0.35,
-          ),
-        })
+		if (control === 'yield') {
+			for (const points of yieldTeeth(stopSample, controlWidth.centerOffset, controlWidth.width)) {
+				polygons.push({ color: regionalPack.markingColor, edgeId: edge.id, junctionId: junction.nodeId, kind: 'yield-line', points })
+			}
+		} else {
+			polygons.push({
+				color: regionalPack.markingColor,
+				edgeId: edge.id,
+				junctionId: junction.nodeId,
+				kind: 'stop-line',
+				points: orientedRectangle(stopSample, controlWidth.centerOffset, controlWidth.width, 0.35),
+			})
+		}
       }
       for (let bar = 0; bar < 6; bar++) {
         const sample = pointAtDistance(elevated, cut + 1 + bar * 0.68)
         if (!sample) continue
         polygons.push({
-          color: style.markingColor,
+          color: regionalPack.markingColor,
           edgeId: edge.id,
           junctionId: junction.nodeId,
           kind: 'crosswalk',

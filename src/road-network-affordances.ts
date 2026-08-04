@@ -1,5 +1,6 @@
 import { type AnyNodeId, useLiveNodeOverrides, useScene } from '@pascal-app/core'
 import { roadCurbCornerRadiusAtPlanPoint } from './road-network-corner-editing'
+import { moveRoadGraphNode } from './road-network-graph-editing'
 import type { RoadNetworkNode } from './schema'
 import { useEnvironmentStore } from './store'
 
@@ -66,7 +67,10 @@ export const roadNodePointAffordance = {
     const { nodeId: graphNodeId } = payload as RoadNodePayload
     const nodeId = node.id as AnyNodeId
     const originalGraphNode = node.graphNodes[graphNodeId]
-    let lastGraphNodes = node.graphNodes
+    let lastPatch: Pick<RoadNetworkNode, 'graphNodes' | 'junctions'> = {
+      graphNodes: node.graphNodes,
+      junctions: node.junctions,
+    }
     useEnvironmentStore.getState().setRoadElementSelection({
       networkId: node.id,
       kind: 'control',
@@ -76,21 +80,21 @@ export const roadNodePointAffordance = {
       affectedIds: [nodeId],
       apply({ planPoint }: { planPoint: PlanPoint }) {
         if (!originalGraphNode) return
-        lastGraphNodes = {
-          ...node.graphNodes,
-          [graphNodeId]: {
-            ...originalGraphNode,
-            position: [planPoint[0], originalGraphNode.position[1], planPoint[1]],
-          },
-        }
-        useLiveNodeOverrides.getState().set(nodeId, { graphNodes: lastGraphNodes })
+        const moved = moveRoadGraphNode(node, graphNodeId, [
+          planPoint[0],
+          originalGraphNode.position[1],
+          planPoint[1],
+        ])
+        if (!moved) return
+        lastPatch = moved.patch
+        useLiveNodeOverrides.getState().set(nodeId, lastPatch)
         useScene.getState().markDirty(nodeId)
       },
       canCommit() {
         return Boolean(originalGraphNode)
       },
       commit() {
-        useScene.getState().updateNode(nodeId, { graphNodes: lastGraphNodes } as never)
+        useScene.getState().updateNode(nodeId, lastPatch as never)
         useLiveNodeOverrides.getState().clear(nodeId)
       },
     }

@@ -111,7 +111,7 @@ function RoadExtensionArrow({
     const maximumRetraction = terminalRetractionLimit(initialNode, terminal)
     const pointer = new Vector2()
     const moveRay = new Ray()
-    let lastPatch: Pick<RoadNetworkNode, 'graphNodes'> | null = null
+    let lastPatch: Pick<RoadNetworkNode, 'graphNodes' | 'junctions'> | null = null
     let historyPaused = true
 
     useViewer.getState().setInputDragging(true)

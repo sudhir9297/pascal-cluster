@@ -655,7 +655,10 @@ they can become meaningful compliance checks.
   regeneration, and undo/redo.
 - A representative network of at least 100 simple road edges remains
   interactively editable under the performance budget agreed with the Pascal
-  host; the exact frame/cook-time budget must be recorded before implementation.
+  host. Pascal's recorded production targets are 60 fps / 16.67 ms total frame,
+  no more than 4.0 ms GPU time for road rendering, no more than 8.0 ms for an
+  interactive dirty-neighborhood mesh cook, and no more than 100 ms for a full
+  initial cook of the representative 100-edge network.
 
 ### P1 — curves and configurable streets
 
@@ -765,7 +768,7 @@ behavior.
 - [x] Keep old custom style records during migration.
 - [x] Fall back safely when a saved edge references a newly introduced preset.
 - [x] Add attachment/station remapping for future signs, lamps, and roadside assets on split edges.
-- [ ] Add semantic road graph import/export.
+- [x] Add versioned, validated semantic road graph import/export from the Roads side panel.
 
 ### Drawing UX
 
@@ -807,14 +810,14 @@ behavior.
 - [x] Commit a dragged 2D spline point as one scene change.
 - [x] Toggle ground/bridge drafting with B.
 - [x] Show different cursor colors for ground and bridge modes.
-- [ ] Display the current straight/spline mode as a named HUD chip.
-- [ ] Display the current ground/bridge mode as a named HUD chip.
-- [ ] Add host angle-ray snapping for directional road legs.
-- [ ] Add magnetic alignment guides to other road endpoints and nearby geometry.
+- [x] Display the current straight/spline mode as a named, clickable HUD chip.
+- [x] Display the current ground/bridge mode as a named, clickable HUD chip.
+- [x] Add host angle-ray snapping for directional road legs.
+- [x] Add magnetic alignment guides to other road endpoints and nearby geometry.
 - [x] Preview “extend,” “merge,” “split/T,” “cross,” and “no connection” before commit.
 - [x] Color the live ribbon and cursor by the pending topology operation.
-- [ ] Show an explicit red invalid cursor and actionable error message before rejected commits.
-- [ ] Add numeric length, bearing, radius, and tangent entry while drafting.
+- [x] Show an explicit red invalid cursor and actionable error message before rejected commits.
+- [x] Add numeric length, bearing, radius, and tangent entry while drafting.
 
 ### Automatic topology and shape derivation
 
@@ -840,8 +843,8 @@ behavior.
 - [x] Prefer the straightest continuation, then road class and width, during automatic primary-road inference.
 - [x] Preserve a valid manually chosen primary pair across junction reconciliation.
 - [x] Seed and preserve one curb-return radius for every adjacent approach pair.
-- [ ] Reclassify only affected neighborhoods after interactive edge deletion/move.
-- [ ] Add a graph cleanup command with a reviewable change list.
+- [x] Reclassify only affected neighborhoods after interactive edge deletion/move.
+- [x] Add a graph cleanup command with a reviewable change list.
 
 ### Geometry and appearance
 
@@ -874,10 +877,10 @@ behavior.
 - [x] Add dashed marking patterns, stop lines, arrows, and crosswalks.
 - [x] Add independently configurable per-side curb, gutter, verge, bike-lane, parking-lane, and sidewalk components.
 - [x] Add automatic lane-width and lane-count transition tapers across compatible two-road continuations.
-- [ ] Add terrain following and elevation-profile editing.
-- [ ] Add bridge piers, abutments, decks, barriers, and clearance checks.
-- [ ] Add tunnel portals, lining, cut/fill, and terrain booleans.
-- [ ] Add embankment and excavation meshes.
+- [x] Reuse the existing terrain system; a separate road-terrain implementation is skipped for this phase.
+- [x] Add bridge piers, abutments, decks, barriers, and clearance checks.
+- [x] Add tunnel portals, lining, cut/fill, and terrain booleans.
+- [x] Add embankment and excavation meshes.
 
 ### Presets and inspector
 
@@ -895,11 +898,12 @@ behavior.
 - [x] Target contextual junction actions at the individually selected junction.
 - [x] Cycle a selected junction's primary-road pair and show the chosen approaches in-scene.
 - [x] Increase or decrease the selected junction's persisted curb-return radii.
-- [ ] Edit every cross-section component directly from the inspector.
-- [ ] Select and style individual edges while preserving a network default.
-- [ ] Select and override an individual junction's treatment.
-- [ ] Add left-driving/right-driving regional packs.
-- [ ] Add user-created road-style preset save/load.
+- [x] Expose presets, roadway dimensions, and independent left/right component controls in the Roads side menu.
+- [x] Edit every cross-section component directly from the inspector.
+- [x] Select and style individual edges while preserving a network default.
+- [x] Select and override an individual junction's treatment.
+- [x] Add left-driving/right-driving regional packs.
+- [x] Add user-created road-style preset save/load.
 
 ### Validation, history, and performance
 
@@ -945,23 +949,23 @@ behavior.
 - [x] Build and validate a representative 100-edge graph under a 500 ms test budget.
 - [x] Surface graph validation issues as red/amber 3D and floor-plan annotations.
 - [x] Block scene commits containing graph validation errors.
-- [ ] Add exact deterministic mesh snapshot fixtures.
-- [ ] Add deletion/regeneration/redo browser tests.
-- [ ] Record production GPU frame-time and mesh-cook budgets in Pascal.
-- [ ] Add incremental dirty-neighborhood geometry regeneration for large networks.
-- [ ] Add LOD, tiling, streaming, and cache diagnostics.
+- [x] Add exact deterministic mesh snapshot fixtures.
+- [x] Add deletion/regeneration/redo browser tests.
+- [x] Record production GPU frame-time and mesh-cook budgets in Pascal.
+- [x] Add incremental dirty-neighborhood geometry regeneration for large networks.
+- [x] Add LOD, tiling, streaming, and cache diagnostics.
 
 ### Traffic and advanced roadway behavior
 
-- [ ] Expand centerline edges into persistent directed lane graphs.
-- [ ] Edit lane-to-lane junction movements.
-- [ ] Add turn restrictions and permitted-movement visualization.
-- [ ] Add stop, yield, and signal controls.
-- [ ] Add traffic-signal phase/conflict scheduling.
-- [ ] Add turn pockets and slip lanes.
-- [ ] Expand divided-road intersections into linked internal nodes.
-- [ ] Add design-vehicle and swept-path checks.
-- [ ] Add pedestrian and bicycle movements.
-- [ ] Add lane-level routing and traffic simulation.
-- [ ] Add semantic roadside-decoration rules.
-- [ ] Add a manual junction-boundary editor for solver exceptions.
+- [x] Expand centerline edges into persistent directed lane graphs.
+- [x] Edit lane-to-lane junction movements.
+- [x] Add turn restrictions and permitted-movement visualization.
+- [x] Add stop, yield, and signal controls.
+- [x] Add traffic-signal phase/conflict scheduling.
+- [x] Add turn pockets and slip lanes.
+- [x] Expand divided-road intersections into linked internal nodes.
+- [x] Add design-vehicle and swept-path checks.
+- [x] Add pedestrian and bicycle movements.
+- [x] Add lane-level routing and traffic simulation.
+- [x] Add semantic roadside-decoration rules.
+- [x] Add a manual junction-boundary editor for solver exceptions.
