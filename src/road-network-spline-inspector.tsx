@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { ActionButton, ActionGroup, SliderControl } from "@pascal-app/editor";
 import {
 	deleteRoadSplinePoints,
 	flattenRoadSplinePoints,
@@ -12,77 +12,6 @@ import {
 import type { RoadNetworkNode } from "./schema";
 import { useEnvironmentStore } from "./store";
 
-function CoordinateField({
-	label,
-	onCommit,
-	value,
-}: {
-	label: string;
-	onCommit: (value: number) => void;
-	value: number;
-}) {
-	const [draft, setDraft] = useState(value.toFixed(2));
-	useEffect(() => setDraft(value.toFixed(2)), [value]);
-
-	const commit = () => {
-		const parsed = Number.parseFloat(draft);
-		if (Number.isFinite(parsed)) onCommit(parsed);
-		else setDraft(value.toFixed(2));
-	};
-
-	return (
-		<label
-			style={{
-				alignItems: "center",
-				display: "grid",
-				gap: 8,
-				gridTemplateColumns: "72px minmax(0, 1fr)",
-			}}
-		>
-			<span style={{ color: "#cbd5e1", fontSize: 12 }}>{label}</span>
-			<span
-				style={{
-					alignItems: "center",
-					background: "rgba(15, 23, 42, 0.72)",
-					border: "1px solid rgba(148, 163, 184, 0.28)",
-					borderRadius: 6,
-					display: "flex",
-					overflow: "hidden",
-				}}
-			>
-				<input
-					aria-label={`${label} in metres`}
-					inputMode="decimal"
-					onBlur={commit}
-					onChange={(event) => setDraft(event.target.value)}
-					onKeyDown={(event) => {
-						if (event.key === "Enter") event.currentTarget.blur();
-						if (event.key === "Escape") {
-							setDraft(value.toFixed(2));
-							event.currentTarget.blur();
-						}
-					}}
-					step="0.01"
-					style={{
-						background: "transparent",
-						border: 0,
-						color: "#f8fafc",
-						minWidth: 0,
-						outline: 0,
-						padding: "6px 8px",
-						width: "100%",
-					}}
-					type="number"
-					value={draft}
-				/>
-				<span style={{ color: "#94a3b8", fontSize: 11, paddingRight: 8 }}>
-					m
-				</span>
-			</span>
-		</label>
-	);
-}
-
 export function RoadSplinePointEditor({
 	node,
 	onUpdate,
@@ -92,11 +21,7 @@ export function RoadSplinePointEditor({
 }) {
 	const selection = useEnvironmentStore((state) => state.roadElementSelection);
 	if (selection?.networkId !== node.id) {
-		return (
-			<p style={{ color: "#94a3b8", fontSize: 12, lineHeight: 1.4 }}>
-				Choose Edit spline, then select a green point.
-			</p>
-		);
+		return null;
 	}
 
 	const selectedIndices =
@@ -113,11 +38,7 @@ export function RoadSplinePointEditor({
 				? node.graphNodes[selection.id]?.position
 				: undefined;
 	if (!point) {
-		return (
-			<p style={{ color: "#94a3b8", fontSize: 12, lineHeight: 1.4 }}>
-				Select a green spline point to edit its exact position.
-			</p>
-		);
+		return null;
 	}
 
 	const updateCoordinate = (axis: 0 | 1 | 2, value: number) => {
@@ -163,78 +84,56 @@ export function RoadSplinePointEditor({
 	};
 
 	return (
-		<div style={{ display: "grid", gap: 8 }}>
-			<CoordinateField
+		<div className="flex flex-col gap-1.5">
+			<SliderControl
 				label="X"
-				onCommit={(value) => updateCoordinate(0, value)}
+				max={1000}
+				min={-1000}
+				onChange={(value) => updateCoordinate(0, value)}
+				precision={2}
+				step={0.01}
+				unit="m"
 				value={point[0]}
 			/>
-			<CoordinateField
+			<SliderControl
 				label="Elevation"
-				onCommit={(value) => updateCoordinate(1, value)}
+				max={1000}
+				min={-1000}
+				onChange={(value) => updateCoordinate(1, value)}
+				precision={2}
+				step={0.01}
+				unit="m"
 				value={point[1]}
 			/>
-			<CoordinateField
+			<SliderControl
 				label="Z"
-				onCommit={(value) => updateCoordinate(2, value)}
+				max={1000}
+				min={-1000}
+				onChange={(value) => updateCoordinate(2, value)}
+				precision={2}
+				step={0.01}
+				unit="m"
 				value={point[2]}
 			/>
 			{selection.kind === "control" ? (
-				<div
-					style={{
-						display: "grid",
-						gap: 6,
-						gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-						marginTop: 4,
-					}}
-				>
-					<button
+				<ActionGroup className="flex-wrap pt-1">
+					<ActionButton
+						label="Flatten"
 						onClick={() => runSelectedPointCommand("flatten")}
-						style={{
-							background: "rgba(30, 41, 59, 0.84)",
-							border: "1px solid rgba(148, 163, 184, 0.28)",
-							borderRadius: 6,
-							color: "#e2e8f0",
-							cursor: "pointer",
-							padding: "7px 8px",
-						}}
 						type="button"
-					>
-						Flatten
-					</button>
-					<button
+					/>
+					<ActionButton
+						label="Grade"
 						onClick={() => runSelectedPointCommand("grade")}
-						style={{
-							background: "rgba(30, 41, 59, 0.84)",
-							border: "1px solid rgba(148, 163, 184, 0.28)",
-							borderRadius: 6,
-							color: "#e2e8f0",
-							cursor: "pointer",
-							padding: "7px 8px",
-						}}
 						type="button"
-					>
-						Constant grade
-					</button>
-					<button
+					/>
+					<ActionButton
+						className="min-w-full text-red-300"
+						label={`Delete${selectedIndices.length > 1 ? ` (${selectedIndices.length})` : ""}`}
 						onClick={() => runSelectedPointCommand("delete")}
-						style={{
-							background: "rgba(127, 29, 29, 0.28)",
-							border: "1px solid rgba(248, 113, 113, 0.34)",
-							borderRadius: 6,
-							color: "#fecaca",
-							cursor: "pointer",
-							gridColumn: "1 / -1",
-							padding: "7px 8px",
-						}}
 						type="button"
-					>
-						Delete selected{" "}
-						{selectedIndices.length > 1
-							? `(${selectedIndices.length})`
-							: "point"}
-					</button>
-				</div>
+					/>
+				</ActionGroup>
 			) : null}
 		</div>
 	);

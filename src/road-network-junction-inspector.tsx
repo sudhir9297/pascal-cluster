@@ -1,5 +1,17 @@
 "use client";
 
+import {
+	ActionButton,
+	ActionGroup,
+	MetricControl,
+	SliderControl,
+} from "@pascal-app/editor";
+import {
+	ROAD_PANEL_SELECT_CLASS,
+	RoadPanelEmpty,
+	RoadPanelField,
+	RoadPanelSubheading,
+} from "./road-panel-controls";
 import type { RoadJunction, RoadNetworkNode } from "./schema";
 import { useEnvironmentStore } from "./store";
 import {
@@ -76,42 +88,28 @@ export function RoadJunctionInspector({
 			: null;
 	const junction = junctionId ? node.junctions[junctionId] : null;
 	if (junctionEntries.length === 0) {
-		return (
-			<p style={{ color: "#94a3b8", fontSize: 11, lineHeight: 1.4, margin: 0 }}>
-				This road network has no three-way or multi-leg junctions yet.
-			</p>
-		);
+		return <RoadPanelEmpty>No junctions</RoadPanelEmpty>;
 	}
 	return (
-		<div style={{ display: "grid", gap: 9 }}>
-			<label style={{ display: "grid", fontSize: 12, gap: 5 }}>
-				<span>Junction</span>
-				<select
-					aria-label="Road junction"
-					onChange={(event) => {
-						const id = event.currentTarget.value;
-						setSelection(
-							id ? { networkId: node.id, kind: "junction", id } : null,
-						);
-					}}
-					style={{
-						background: "rgba(15, 23, 42, 0.72)",
-						border: "1px solid rgba(148, 163, 184, 0.28)",
-						borderRadius: 6,
-						color: "#e2e8f0",
-						fontSize: 12,
-						padding: "7px 8px",
-					}}
-					value={junctionId ?? ""}
-				>
-					<option value="">Choose junction…</option>
-					{junctionEntries.map((candidate, index) => (
-						<option key={candidate.nodeId} value={candidate.nodeId}>
-							{index + 1}. {candidate.kind.replaceAll("-", " ")}
-						</option>
-					))}
-				</select>
-			</label>
+		<div className="flex flex-col gap-2">
+			<select
+				aria-label="Road junction"
+				className={ROAD_PANEL_SELECT_CLASS}
+				onChange={(event) => {
+					const id = event.currentTarget.value;
+					setSelection(
+						id ? { networkId: node.id, kind: "junction", id } : null,
+					);
+				}}
+				value={junctionId ?? ""}
+			>
+				<option value="">Choose junction…</option>
+				{junctionEntries.map((candidate, index) => (
+					<option key={candidate.nodeId} value={candidate.nodeId}>
+						{index + 1}. {candidate.kind.replaceAll("-", " ")}
+					</option>
+				))}
+			</select>
 			{junction && junctionId ? (
 				<RoadJunctionTreatmentControls
 					junctionId={junctionId}
@@ -119,9 +117,7 @@ export function RoadJunctionInspector({
 					onUpdate={onUpdate}
 				/>
 			) : (
-				<p style={{ color: "#94a3b8", fontSize: 11, lineHeight: 1.4, margin: 0 }}>
-					Choose a junction here or select one in the canvas.
-				</p>
+				<RoadPanelEmpty>Select a junction</RoadPanelEmpty>
 			)}
 		</div>
 	);
@@ -136,20 +132,50 @@ export function RoadJunctionTreatmentControls({
 	node: RoadNetworkNode;
 	onUpdate: (patch: Partial<RoadNetworkNode>) => void;
 }) {
+	const selection = useEnvironmentStore((state) => state.roadElementSelection);
 	const junction = node.junctions[junctionId];
 	if (!junction) return null;
+	const selectedCornerKey =
+		selection?.networkId === node.id &&
+		selection.kind === "corner" &&
+		selection.id === junctionId &&
+		selection.cornerKey &&
+		junction.cornerRadii[selection.cornerKey] !== undefined
+			? selection.cornerKey
+			: null;
 	const approachEdges = Object.values(node.edges)
 		.filter((edge) => edge.startNodeId === junctionId || edge.endNodeId === junctionId)
 		.sort((a, b) => a.id.localeCompare(b.id));
 	return (
-		<div style={{ display: "grid", gap: 8 }}>
-			<p style={{ color: "#94a3b8", fontSize: 11, lineHeight: 1.4, margin: 0 }}>
-				Selected {junction.kind.replaceAll("-", " ")} junction
-			</p>
-			<label style={{ display: "grid", fontSize: 12, gap: 5 }}>
-				<span>Junction treatment</span>
+		<div className="flex flex-col gap-2">
+			{selectedCornerKey ? (
+				<SliderControl
+					label="Corner radius"
+					max={100}
+					min={0.5}
+					onChange={(radius) => onUpdate({
+						junctions: {
+							...node.junctions,
+							[junctionId]: {
+								...junction,
+								cornerRadii: {
+									...junction.cornerRadii,
+									[selectedCornerKey]: radius,
+								},
+								solverStatus: "manual",
+							},
+						},
+					})}
+					precision={1}
+					step={0.1}
+					unit="m"
+					value={junction.cornerRadii[selectedCornerKey]!}
+				/>
+			) : null}
+			<RoadPanelField label="Treatment">
 				<select
 					aria-label="Selected junction treatment"
+					className={ROAD_PANEL_SELECT_CLASS}
 					onChange={(event) => {
 						const treatment = event.currentTarget.value as RoadJunction["treatment"];
 						const junctions = overrideRoadJunctionTreatment(
@@ -159,14 +185,6 @@ export function RoadJunctionTreatmentControls({
 						);
 						if (junctions) onUpdate({ junctions });
 					}}
-					style={{
-						background: "rgba(15, 23, 42, 0.72)",
-						border: "1px solid rgba(148, 163, 184, 0.28)",
-						borderRadius: 6,
-						color: "#e2e8f0",
-						fontSize: 12,
-						padding: "7px 8px",
-					}}
 					value={junction.treatment}
 				>
 					{ROAD_JUNCTION_TREATMENTS.map((treatment) => (
@@ -175,14 +193,14 @@ export function RoadJunctionTreatmentControls({
 						</option>
 					))}
 				</select>
-			</label>
-			<fieldset style={{ border: 0, display: "grid", gap: 6, margin: 0, padding: 0 }}>
-				<legend style={{ fontSize: 12, marginBottom: 4 }}>Approach controls</legend>
+			</RoadPanelField>
+			<div className="flex flex-col gap-1.5">
+				<RoadPanelSubheading>Approaches</RoadPanelSubheading>
 				{approachEdges.map((edge, index) => (
-					<label key={edge.id} style={{ alignItems: "center", display: "flex", fontSize: 11, gap: 8, justifyContent: "space-between" }}>
-						<span>Approach {index + 1}</span>
+					<RoadPanelField key={edge.id} label={`Approach ${index + 1}`}>
 						<select
 							aria-label={`Approach ${index + 1} control`}
+							className={ROAD_PANEL_SELECT_CLASS}
 							onChange={(event) => {
 								const junctions = overrideRoadJunctionApproachControl(
 									node,
@@ -192,97 +210,101 @@ export function RoadJunctionTreatmentControls({
 								);
 								if (junctions) onUpdate({ junctions });
 							}}
-							style={{ background: "rgba(15, 23, 42, 0.72)", border: "1px solid rgba(148, 163, 184, 0.28)", borderRadius: 6, color: "#e2e8f0", fontSize: 11, padding: "5px 6px" }}
 							value={junction.approachControls?.[edge.id] ?? "auto"}
 						>
 							{ROAD_APPROACH_CONTROLS.map((control) => (
 								<option key={control} value={control}>{control[0]!.toUpperCase() + control.slice(1)}</option>
 							))}
 						</select>
-					</label>
+					</RoadPanelField>
 				))}
-			</fieldset>
+			</div>
 			<div
 				aria-label="Manual junction boundary editor"
-				style={{
-					borderTop: "1px solid rgba(148, 163, 184, 0.18)",
-					display: "grid",
-					gap: 7,
-					paddingTop: 8,
-				}}
+				className="flex flex-col gap-2 border-border/50 border-t pt-2"
 			>
-				<div style={{ alignItems: "center", display: "flex", justifyContent: "space-between" }}>
-					<span style={{ fontSize: 12 }}>Junction boundary</span>
-					<strong style={{ color: junction.manualBoundaryEnabled ? "#facc15" : "#94a3b8", fontSize: 10 }}>
-						{junction.manualBoundaryEnabled ? "MANUAL" : "AUTOMATIC"}
-					</strong>
-				</div>
+				<RoadPanelSubheading>
+					Boundary · {junction.manualBoundaryEnabled ? "Manual" : "Automatic"}
+				</RoadPanelSubheading>
 				{junction.manualBoundaryEnabled ? (
 					<>
-						<p style={{ color: "#94a3b8", fontSize: 10, lineHeight: 1.35, margin: 0 }}>
-							Offsets are local metres from the junction centre. Yellow viewport rings identify each point.
-						</p>
-						<div style={{ display: "grid", gap: 5, maxHeight: 224, overflowY: "auto" }}>
+						<div className="flex max-h-72 flex-col gap-2 overflow-y-auto pr-1">
 							{junction.manualBoundaryPoints.map((point, index) => (
-								<div key={index} style={{ alignItems: "center", display: "grid", gap: 4, gridTemplateColumns: "30px 1fr 1fr 24px" }}>
-									<span style={{ color: "#94a3b8", fontSize: 10 }}>P{index + 1}</span>
-									{([0, 1] as const).map((axis) => (
-										<input
-											aria-label={`Boundary point ${index + 1} ${axis === 0 ? "X" : "Z"}`}
-											key={axis}
-											onChange={(event) => {
-												const junctions = updateRoadManualJunctionBoundaryPoint(
-													node,
-													junctionId,
-													index,
-													axis,
-													Number(event.currentTarget.value),
-												);
-												if (junctions) onUpdate({ junctions });
-											}}
-											step={0.1}
-											style={{ background: "rgba(15, 23, 42, 0.72)", border: "1px solid rgba(148, 163, 184, 0.28)", borderRadius: 5, color: "#e2e8f0", fontSize: 10, minWidth: 0, padding: "4px" }}
-											type="number"
-											value={Number(point[axis].toFixed(2))}
-										/>
-									))}
-									<button
+								<div
+									className="flex flex-col gap-1 rounded-lg border border-border/40 bg-white/[0.03] p-2"
+									key={index}
+								>
+									<RoadPanelSubheading>P{index + 1}</RoadPanelSubheading>
+									<div className="grid grid-cols-2 gap-1">
+										{([0, 1] as const).map((axis) => (
+											<div
+												aria-label={`Boundary point ${index + 1} ${axis === 0 ? "X" : "Z"}`}
+												key={axis}
+											>
+												<MetricControl
+													label={axis === 0 ? "X" : "Z"}
+													max={1000}
+													min={-1000}
+													onChange={(value) => {
+														const junctions = updateRoadManualJunctionBoundaryPoint(
+															node,
+															junctionId,
+															index,
+															axis,
+															value,
+														);
+														if (junctions) onUpdate({ junctions });
+													}}
+													precision={2}
+													step={0.1}
+													unit="m"
+													value={point[axis]}
+												/>
+											</div>
+										))}
+									</div>
+									<ActionButton
 										aria-label={`Remove boundary point ${index + 1}`}
+										className="h-8 text-red-300"
 										disabled={junction.manualBoundaryPoints.length <= 3}
+										label="Remove"
 										onClick={() => {
 											const junctions = removeRoadManualJunctionBoundaryPoint(node, junctionId, index);
 											if (junctions) onUpdate({ junctions });
 										}}
 										type="button"
-									>−</button>
+									/>
 								</div>
 							))}
 						</div>
-						<div style={{ display: "grid", gap: 5, gridTemplateColumns: "1fr 1fr" }}>
-							<button
+						<ActionGroup>
+							<ActionButton
+								label="Add point"
 								onClick={() => {
 									const junctions = addRoadManualJunctionBoundaryPoint(node, junctionId);
 									if (junctions) onUpdate({ junctions });
 								}}
 								type="button"
-							>Add point</button>
-							<button
+							/>
+							<ActionButton
+								label="Reset"
 								onClick={() => {
 									const junctions = resetRoadManualJunctionBoundary(node, junctionId);
 									if (junctions) onUpdate({ junctions });
 								}}
 								type="button"
-							>Reset automatic</button>
-						</div>
+							/>
+						</ActionGroup>
 					</>
 				) : (
-					<button
+					<ActionButton
+						label="Edit boundary"
 						onClick={() => {
 							const junctions = enableRoadManualJunctionBoundary(node, junctionId);
 							if (junctions) onUpdate({ junctions });
 						}}
 						type="button"
-					>Enable manual boundary</button>
+					/>
 				)}
 			</div>
 		</div>

@@ -193,6 +193,38 @@ describe('road centerline geometry', () => {
     )).toBe(true)
   })
 
+	test('keeps an outer sidewalk band from covering the gutter on curved junction corners', () => {
+		const approaches = [
+			{ edgeId: 'east', angle: 0, halfWidth: 4 },
+			{ edgeId: 'north', angle: Math.PI / 2, halfWidth: 4 },
+			{ edgeId: 'west', angle: Math.PI, halfWidth: 4 },
+			{ edgeId: 'south', angle: -Math.PI / 2, halfWidth: 4 },
+		]
+		const solution = buildJunctionBoundaryGeometry(approaches, {}, 12)
+		const gutterWidth = 0.45
+		const totalRoadsideWidth = 2.4
+		const sidewalkWidth = 1.2
+		const gutter = buildJunctionBoundarySidewalkGeometry(solution, gutterWidth)
+		const sidewalk = buildJunctionBoundarySidewalkGeometry(
+			solution,
+			sidewalkWidth,
+			totalRoadsideWidth - sidewalkWidth,
+		)
+		const corner = solution.corners[0]!
+		const center = corner.center!
+		const inner = corner.innerPoints[Math.floor(corner.innerPoints.length / 2)]!
+		const dx = inner[0] - center[0]
+		const dz = inner[1] - center[1]
+		const length = Math.hypot(dx, dz)
+		const sample = [
+			center[0] + (dx / length) * (corner.effectiveRadius - gutterWidth / 2),
+			center[1] + (dz / length) * (corner.effectiveRadius - gutterWidth / 2),
+		] as const
+
+		expect(meshCoversPlanPoint(gutter.positions, gutter.indices, sample)).toBe(true)
+		expect(meshCoversPlanPoint(sidewalk.positions, sidewalk.indices, sample)).toBe(false)
+	})
+
   test('uses each persisted corner radius independently', () => {
     const approaches = [
       { edgeId: 'east', angle: 0, halfWidth: 4 },

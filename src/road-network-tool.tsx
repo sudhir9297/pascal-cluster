@@ -110,35 +110,9 @@ export function RoadDraftCursor({
 			<CursorSphere
 				color={invalid ? "#ef4444" : color}
 				height={WALL_STYLE_CURSOR_HEIGHT}
-				showTooltip={Boolean(invalid || showNumeric)}
+				showTooltip={Boolean(showNumeric)}
 				tooltipContent={
-					invalid ? (
-						<div
-							data-road-draft-error={invalid.code}
-							role="alert"
-							style={{
-								background: "#7f1d1d",
-								border: "1px solid #fca5a5",
-								borderRadius: 8,
-								boxShadow: "0 10px 24px rgba(127, 29, 29, 0.35)",
-								color: "#fff",
-								display: "grid",
-								fontFamily: "system-ui, sans-serif",
-								flexShrink: 0,
-								gap: 2,
-								padding: "8px 10px",
-								textAlign: "left",
-								width: 240,
-							}}
-						>
-							<strong style={{ fontSize: 12, lineHeight: "16px" }}>
-								{invalid.title}
-							</strong>
-							<span style={{ color: "#fecaca", fontSize: 11, lineHeight: "15px" }}>
-								{invalid.message}
-							</span>
-						</div>
-					) : showNumeric ? (
+					showNumeric ? (
 						<div
 							data-road-draft-numeric={numeric?.field ?? "constraints"}
 							role="status"

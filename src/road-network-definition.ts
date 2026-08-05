@@ -2,7 +2,6 @@ import {
 	type AnyNode,
 	type AnyNodeId,
 	type NodeDefinition,
-	useScene,
 } from "@pascal-app/core";
 import {
 	roadControlPointAffordance,
@@ -11,7 +10,6 @@ import {
 	roadNodePointAffordance,
 } from "./road-network-affordances";
 import { buildRoadNetworkFloorplan } from "./road-network-floorplan";
-import { deleteRoadEdge } from "./road-network-graph-editing";
 import { roadNetworkParametrics } from "./road-network-parametrics";
 import {
 	createDefaultRoadStyle,
@@ -30,7 +28,7 @@ type RoadNetworkDefinition = NodeDefinition<typeof RoadNetworkNode> &
 
 export const roadNetworkDefinition: RoadNetworkDefinition = {
 	kind: "environment:road-network",
-	schemaVersion: 26,
+	schemaVersion: 30,
 	schema: RoadNetworkNode,
 	category: "structure",
 	snapProfile: "structural",
@@ -234,33 +232,7 @@ export const roadNetworkDefinition: RoadNetworkDefinition = {
 						: 4.5,
 			};
 		},
-		11: (old: unknown) => {
-			if (!(old && typeof old === "object")) return old;
-			const previous = old as Record<string, unknown>;
-			return {
-				...previous,
-				tunnelClearHeight:
-					typeof previous.tunnelClearHeight === "number"
-						? previous.tunnelClearHeight
-						: 5.5,
-				tunnelSideClearance:
-					typeof previous.tunnelSideClearance === "number"
-						? previous.tunnelSideClearance
-						: 0.75,
-				tunnelLiningThickness:
-					typeof previous.tunnelLiningThickness === "number"
-						? previous.tunnelLiningThickness
-						: 0.35,
-				tunnelPortalCutLength:
-					typeof previous.tunnelPortalCutLength === "number"
-						? previous.tunnelPortalCutLength
-						: 6,
-				tunnelCutSlope:
-					typeof previous.tunnelCutSlope === "number"
-						? previous.tunnelCutSlope
-						: 1.5,
-			};
-		},
+		11: (old: unknown) => old,
 		12: (old: unknown) => {
 			if (!(old && typeof old === "object")) return old;
 			const previous = old as Record<string, unknown>;
@@ -287,81 +259,22 @@ export const roadNetworkDefinition: RoadNetworkDefinition = {
 						: "right-driving",
 			};
 		},
-		14: (old: unknown) => {
-			if (!(old && typeof old === "object")) return old;
-			const previous = old as Record<string, unknown>;
-			return {
-				...previous,
-				lanes:
-					previous.lanes && typeof previous.lanes === "object"
-						? previous.lanes
-						: {},
-			};
-		},
-		15: (old: unknown) => {
-			if (!(old && typeof old === "object")) return old;
-			const previous = old as Record<string, unknown>;
-			return { ...previous, laneMovements: {} };
-		},
-		16: (old: unknown) => {
-			if (!(old && typeof old === "object")) return old;
-			return { ...(old as Record<string, unknown>), showLaneMovements: false };
-		},
+		14: (old: unknown) => old,
+		15: (old: unknown) => old,
+		16: (old: unknown) => old,
 		17: (old: unknown) => old,
-		18: (old: unknown) => {
-			if (!(old && typeof old === "object")) return old;
-			const previous = old as Record<string, unknown>;
-			return {
-				...previous,
-				signalPlans:
-					previous.signalPlans && typeof previous.signalPlans === "object"
-						? previous.signalPlans
-						: {},
-			};
-		},
+		18: (old: unknown) => old,
 		19: (old: unknown) => old,
-		20: (old: unknown) => {
-			if (!(old && typeof old === "object")) return old;
-			return {
-				...(old as Record<string, unknown>),
-				dividedJunctions: {},
-				showDividedJunctionGraph: false,
-			};
-		},
-		21: (old: unknown) => {
-			if (!(old && typeof old === "object")) return old;
-			return {
-				...(old as Record<string, unknown>),
-				designVehicle: "passenger-car",
-				showSweptPath: false,
-			};
-		},
-		22: (old: unknown) => {
-			if (!(old && typeof old === "object")) return old;
-			return {
-				...(old as Record<string, unknown>),
-				activeModeMovements: {},
-				showActiveModeMovements: false,
-			};
-		},
-		23: (old: unknown) => {
-			if (!(old && typeof old === "object")) return old;
-			return {
-				...(old as Record<string, unknown>),
-				trafficRoutes: {},
-				trafficFreeFlowSpeed: 13.9,
-				trafficDemandPerHour: 600,
-				trafficPreviewTimeSeconds: 0,
-				showTrafficSimulation: false,
-			};
-		},
+		20: (old: unknown) => old,
+		21: (old: unknown) => old,
+		22: (old: unknown) => old,
+		23: (old: unknown) => old,
 		24: (old: unknown) => {
 			if (!(old && typeof old === "object")) return old;
 			return {
 				...(old as Record<string, unknown>),
 				roadsideDecorations: {},
-				roadsideDecorationRules: { lamps: true, trees: true, signs: true, guardrails: true },
-				roadsideDecorationDensity: "standard",
+				roadsideDecorationSpacing: 30,
 				showRoadsideDecorations: false,
 			};
 		},
@@ -388,6 +301,90 @@ export const roadNetworkDefinition: RoadNetworkDefinition = {
 				),
 			};
 		},
+		26: (old: unknown) => old,
+		27: (old: unknown) => {
+			if (!(old && typeof old === "object")) return old;
+			const previous = { ...(old as Record<string, unknown>) };
+			for (const key of [
+				"tunnelClearHeight",
+				"tunnelSideClearance",
+				"tunnelLiningThickness",
+				"tunnelPortalCutLength",
+				"tunnelCutSlope",
+			] as const) {
+				delete previous[key];
+			}
+			const graphNodes =
+				previous.graphNodes && typeof previous.graphNodes === "object"
+					? (previous.graphNodes as Record<string, unknown>)
+					: {};
+			const retiredTunnelNodeIds = new Set(
+				Object.entries(graphNodes).flatMap(([id, graphNode]) =>
+					graphNode && typeof graphNode === "object" &&
+					(graphNode as { elevationMode?: unknown }).elevationMode === "tunnel"
+						? [id]
+						: [],
+				),
+			);
+			const edges =
+				previous.edges && typeof previous.edges === "object"
+					? (previous.edges as Record<string, unknown>)
+					: {};
+			return {
+				...previous,
+				graphNodes: Object.fromEntries(
+					Object.entries(graphNodes).map(([id, graphNode]) => [
+						id,
+						graphNode && typeof graphNode === "object" &&
+						(graphNode as { elevationMode?: unknown }).elevationMode === "tunnel"
+							? { ...(graphNode as Record<string, unknown>), elevationMode: "ground" }
+							: graphNode,
+					]),
+				),
+				edges: Object.fromEntries(
+					Object.entries(edges).map(([id, edge]) => {
+						if (!(edge && typeof edge === "object")) return [id, edge];
+						const value = edge as Record<string, unknown>;
+						return [
+							id,
+							retiredTunnelNodeIds.has(String(value.startNodeId)) &&
+							retiredTunnelNodeIds.has(String(value.endNodeId))
+								? { ...value, stackLevel: 0 }
+								: edge,
+						];
+					}),
+				),
+			};
+		},
+		28: (old: unknown) => {
+			if (!(old && typeof old === "object")) return old;
+			const previous = { ...(old as Record<string, unknown>) };
+			const density = previous.roadsideDecorationDensity;
+			delete previous.roadsideDecorationDensity;
+			delete previous.roadsideDecorationRules;
+			return {
+				...previous,
+				roadsideDecorationSpacing:
+					typeof previous.roadsideDecorationSpacing === "number"
+						? previous.roadsideDecorationSpacing
+						: density === "sparse"
+							? 45
+							: density === "dense"
+								? 20
+								: 30,
+			};
+		},
+		29: (old: unknown) => {
+			if (!(old && typeof old === "object")) return old;
+			const previous = old as Record<string, unknown>;
+			return {
+				...previous,
+				roadsideLampsBothSides:
+					typeof previous.roadsideLampsBothSides === "boolean"
+						? previous.roadsideLampsBothSides
+						: false,
+			};
+		},
 	},
 	defaults: () => ({
 		object: "node",
@@ -396,25 +393,10 @@ export const roadNetworkDefinition: RoadNetworkDefinition = {
 		metadata: {},
 		graphNodes: {},
 		edges: {},
-		lanes: {},
-		laneMovements: {},
-		activeModeMovements: {},
-		showActiveModeMovements: false,
-		signalPlans: {},
-		dividedJunctions: {},
-		showDividedJunctionGraph: false,
-		designVehicle: "passenger-car",
-		showSweptPath: false,
-		trafficRoutes: {},
-		trafficFreeFlowSpeed: 13.9,
-		trafficDemandPerHour: 600,
-		trafficPreviewTimeSeconds: 0,
-		showTrafficSimulation: false,
 		roadsideDecorations: {},
-		roadsideDecorationRules: { lamps: true, trees: true, signs: true, guardrails: true },
-		roadsideDecorationDensity: "standard",
+		roadsideDecorationSpacing: 30,
+		roadsideLampsBothSides: false,
 		showRoadsideDecorations: false,
-		showLaneMovements: false,
 		attachments: {},
 		junctions: {},
 		stylePresets: { ...DEFAULT_ROAD_STYLE_PRESETS },
@@ -432,11 +414,6 @@ export const roadNetworkDefinition: RoadNetworkDefinition = {
 		bridgePierSpacing: 18,
 		bridgePierDiameter: 1.1,
 		bridgeMinimumClearance: 4.5,
-		tunnelClearHeight: 5.5,
-		tunnelSideClearance: 0.75,
-		tunnelLiningThickness: 0.35,
-		tunnelPortalCutLength: 6,
-		tunnelCutSlope: 1.5,
 	}),
 	capabilities: {
 		selectable: { hitVolume: "bbox" },
@@ -485,42 +462,7 @@ export const roadNetworkDefinition: RoadNetworkDefinition = {
 					},
 				}
 			: null;
-		const deleteEdgeAction = Object.keys(node.edges).length > 0
-			? {
-					id: "road:delete-edge",
-					label: "Delete segment",
-					title:
-						"Delete only the selected segment and reclassify nearby junctions",
-					icon: { kind: "iconify" as const, name: "lucide:trash-2" },
-					history: "single" as const,
-					run: () => {
-						const current =
-							useEnvironmentStore.getState().roadElementSelection;
-						const edgeId =
-							current?.networkId === node.id &&
-							current.kind === "edge" &&
-							node.edges[current.id]
-								? current.id
-								: null;
-						if (!edgeId) return { selectedIds: [node.id as AnyNodeId] };
-						const deletion = deleteRoadEdge(node, edgeId);
-						if (!deletion) return { selectedIds: [node.id as AnyNodeId] };
-						const scene = useScene.getState();
-						useEnvironmentStore.getState().setRoadElementSelection(null);
-						if (deletion.empty) scene.deleteNode(node.id as AnyNodeId);
-						else {
-							scene.updateNode(
-								node.id as AnyNodeId,
-								deletion.patch as Partial<AnyNode>,
-							);
-						}
-						return {
-							selectedIds: deletion.empty ? [] : [node.id as AnyNodeId],
-						};
-					},
-				}
-			: null;
-		const editingActions = [splineAction, deleteEdgeAction].filter(
+		const editingActions = [splineAction].filter(
 			(action): action is NonNullable<typeof action> => Boolean(action),
 		);
 		const selectedJunctionId =

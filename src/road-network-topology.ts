@@ -116,8 +116,6 @@ function cloneGraph(graph: RoadNetworkGraph): RoadNetworkGraph {
 					...junction,
 					primaryEdgeIds: [...junction.primaryEdgeIds],
 					approachControls: { ...(junction.approachControls ?? {}) },
-					turnPocketEdges: { ...(junction.turnPocketEdges ?? {}) },
-					slipLaneMovementIds: [...(junction.slipLaneMovementIds ?? [])],
 					cornerRadii: { ...junction.cornerRadii },
 				},
 			]),
@@ -220,21 +218,6 @@ export function mergeRoadGraphs(sources: RoadNetworkGraph[]): {
 						edgeIdMap[edgeId] ? [[edgeIdMap[edgeId]!, control]] : [],
 					),
 				),
-				turnPocketEdges: Object.fromEntries(
-					Object.entries(junction.turnPocketEdges ?? {}).flatMap(([edgeId, pocket]) =>
-						edgeIdMap[edgeId] ? [[edgeIdMap[edgeId]!, pocket]] : [],
-					),
-				),
-				slipLaneMovementIds: (junction.slipLaneMovementIds ?? []).map((movementId) => {
-					let remapped = movementId.replace(
-						`movement:${junction.nodeId}:`,
-						`movement:${nodeId}:`,
-					);
-					for (const [oldEdgeId, newEdgeId] of Object.entries(edgeIdMap)) {
-						remapped = remapped.replaceAll(`lane:${oldEdgeId}:`, `lane:${newEdgeId}:`);
-					}
-					return remapped;
-				}),
 				cornerRadii: Object.fromEntries(
 					Object.entries(junction.cornerRadii).flatMap(([key, radius]) => {
 						const pair = parseRoadJunctionCornerKey(key);
@@ -511,12 +494,6 @@ function derivedRoadJunction(
 				incidentIds.has(edgeId),
 			),
 		),
-		turnPocketEdges: Object.fromEntries(
-			Object.entries(previous?.turnPocketEdges ?? {}).filter(([edgeId]) =>
-				incidentIds.has(edgeId),
-			),
-		),
-		slipLaneMovementIds: [...(previous?.slipLaneMovementIds ?? [])],
 		primaryMode: manualPrimary ? "manual" : "auto",
 		primaryEdgeIds,
 		cornerRadii,

@@ -180,16 +180,6 @@ describe('Environment plugin manifest', () => {
 			bridgePierDiameter: 1.1,
 			bridgeMinimumClearance: 4.5,
 		})
-		const tunnelMigration = (roadNetworkDefinition as unknown as {
-			migrate: Record<number, (value: unknown) => unknown>
-		}).migrate[11]!
-		expect(tunnelMigration({ edges: {} })).toMatchObject({
-			tunnelClearHeight: 5.5,
-			tunnelSideClearance: 0.75,
-			tunnelLiningThickness: 0.35,
-			tunnelPortalCutLength: 6,
-			tunnelCutSlope: 1.5,
-		})
 		const earthworkMigration = (roadNetworkDefinition as unknown as {
 			migrate: Record<number, (value: unknown) => unknown>
 		}).migrate[12]!
@@ -204,6 +194,109 @@ describe('Environment plugin manifest', () => {
 			regionalPack: 'right-driving',
 		})
   })
+
+  test('shows only visual road controls in the inspector', () => {
+    const groups = roadNetworkDefinition.parametrics!.groups
+    const labels = groups.map((group) => group.label)
+    const keys = groups.flatMap((group) => group.fields.map((field) => field.key))
+
+		expect(labels).toEqual([
+			'Style',
+			'Roadside',
+			'Terrain',
+			'Road',
+			'Junction',
+		])
+    expect(labels).not.toContain('Directed lanes')
+    expect(labels).not.toContain('Lane movements')
+    expect(labels).not.toContain('Signal timing')
+    expect(labels).not.toContain('Channelization')
+    expect(labels).not.toContain('Divided junctions')
+    expect(labels).not.toContain('Vehicle checks')
+    expect(labels).not.toContain('Walking and cycling')
+    expect(labels).not.toContain('Traffic simulation')
+    expect(labels).not.toContain('Performance budget')
+    expect(labels).not.toContain('Scale diagnostics')
+    expect(keys).not.toContain('snapTolerance')
+    expect(keys).not.toContain('maxRoadGrade')
+    expect(keys).not.toContain('bridgeMinimumClearance')
+		expect(keys).not.toContain('verticalProfileEditor')
+		expect(keys).not.toContain('bridgeDeckThickness')
+		expect(keys).not.toContain('bridgeBarrierHeight')
+		expect(keys).not.toContain('bridgePierSpacing')
+		expect(keys).not.toContain('bridgePierDiameter')
+  })
+
+	test('retires legacy road tunnels as ordinary ground roads', () => {
+		const retireTunnels = (roadNetworkDefinition as unknown as {
+			migrate: Record<number, (value: unknown) => unknown>
+		}).migrate[27]!
+		const migrated = retireTunnels({
+			graphNodes: {
+				start: { id: 'start', elevationMode: 'tunnel', position: [0, 0, 0] },
+				end: { id: 'end', elevationMode: 'tunnel', position: [10, 0, 0] },
+			},
+			edges: {
+				edge: { id: 'edge', startNodeId: 'start', endNodeId: 'end', stackLevel: -1 },
+			},
+			tunnelClearHeight: 5.5,
+			tunnelPortalCutLength: 6,
+		}) as {
+			graphNodes: Record<string, { elevationMode: string }>
+			edges: Record<string, { stackLevel: number }>
+			tunnelClearHeight?: number
+			tunnelPortalCutLength?: number
+		}
+
+		expect(migrated.graphNodes.start?.elevationMode).toBe('ground')
+		expect(migrated.graphNodes.end?.elevationMode).toBe('ground')
+		expect(migrated.edges.edge?.stackLevel).toBe(0)
+		expect(migrated.tunnelClearHeight).toBeUndefined()
+		expect(migrated.tunnelPortalCutLength).toBeUndefined()
+		const parsedLegacy = RoadNetworkNode.parse({
+			graphNodes: {
+				start: { id: 'start', elevationMode: 'tunnel', position: [0, 0, 0] },
+				end: { id: 'end', elevationMode: 'tunnel', position: [10, 0, 0] },
+			},
+			edges: {
+				edge: {
+					id: 'edge',
+					startNodeId: 'start',
+					endNodeId: 'end',
+					stackLevel: -1,
+				},
+			},
+		})
+		expect(parsedLegacy.graphNodes.start?.elevationMode).toBe('ground')
+		expect(parsedLegacy.edges.edge?.stackLevel).toBe(0)
+	})
+
+	test('migrates roadside density presets to explicit metre spacing', () => {
+		const migrateSpacing = (roadNetworkDefinition as unknown as {
+			migrate: Record<number, (value: unknown) => unknown>
+		}).migrate[28]!
+		expect(migrateSpacing({ roadsideDecorationDensity: 'sparse' })).toMatchObject({
+			roadsideDecorationSpacing: 45,
+		})
+		expect(migrateSpacing({ roadsideDecorationDensity: 'standard' })).toMatchObject({
+			roadsideDecorationSpacing: 30,
+		})
+		expect(migrateSpacing({ roadsideDecorationDensity: 'dense' })).toMatchObject({
+			roadsideDecorationSpacing: 20,
+		})
+	})
+
+	test('keeps legacy roads on one-sided lamps by default', () => {
+		const migrateLampSides = (roadNetworkDefinition as unknown as {
+			migrate: Record<number, (value: unknown) => unknown>
+		}).migrate[29]!
+		expect(migrateLampSides({})).toMatchObject({
+			roadsideLampsBothSides: false,
+		})
+		expect(migrateLampSides({ roadsideLampsBothSides: true })).toMatchObject({
+			roadsideLampsBothSides: true,
+		})
+	})
 
   test('publishes live named HUD chips for road alignment and elevation', () => {
     const hints = roadNetworkDefinition.toolHints as unknown as Array<{
@@ -233,7 +326,7 @@ describe('Environment plugin manifest', () => {
     useEnvironmentStore.getState().setRoadElevationMode('ground')
   })
 
-  test('exposes a segment-scoped delete action for the selected road edge', () => {
+  test('does not expose a redundant segment delete quick action', () => {
     const result = insertRoadSegment(
       createEmptyRoadGraph(),
       [0, 0, 0],
@@ -250,9 +343,8 @@ describe('Environment plugin manifest', () => {
       input: { node: RoadNetworkNode },
     ) => Array<{ id: string; label: string }>
 
-    expect(quickActions({ node })).toContainEqual(expect.objectContaining({
+    expect(quickActions({ node })).not.toContainEqual(expect.objectContaining({
       id: 'road:delete-edge',
-      label: 'Delete segment',
     }))
     useEnvironmentStore.getState().setRoadElementSelection(null)
   })

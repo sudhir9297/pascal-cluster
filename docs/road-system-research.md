@@ -672,28 +672,27 @@ they can become meaningful compliance checks.
 - Selection-scoped Cleanup Roads with a reviewable change list.
 - Import/export of semantic graph data.
 
-### P2 — junction systems
+### P2 — visual junction systems
 
-- Directed lanes and editable lane-to-lane movements.
-- Median handling, islands, turn pockets, slip lanes, and crosswalk/stop-line
-  anchors.
+- Median handling, islands, crosswalks, and stop/yield/signal road markings.
 - Roundabout conversion and dedicated roundabout state.
-- Divided-road intersection expansion into multiple linked nodes.
 - Bridges, tunnels, vertical profiles, embankment/cut behavior, and clearance
   checks.
-- Three-centered curb returns and design-vehicle/swept-path-informed presets.
+- Three-centered curb returns and independently editable junction boundaries.
 - Manual junction boundary editor for solver exceptions.
 - Regional packs for driving side, markings, typical widths, and controls.
 
-### P3 — simulation and scale
+### P3 — visual scene enrichment
 
-- Traffic routing over the directed lane graph.
-- Signals, stop/yield controls, turn restrictions, pedestrian/bicycle movements,
-  and conflict scheduling.
 - Roadside-decoration and marking rules driven by semantic sidelines/stations.
-- Network tiling, background mesh generation, LODs, and streaming.
-- Large-network profiling, incremental regeneration budgets, and cache
-  invalidation diagnostics.
+- Incremental geometry regeneration that remains internal rather than appearing
+  as inspector diagnostics.
+
+Lane graphs, movement editors, signal scheduling, channelization analysis,
+divided-junction debug graphs, swept-path checks, active-mode movement overlays,
+traffic simulation, and performance/scale diagnostics were prototyped and then
+removed from the current product scope. The Road inspector intentionally exposes
+only controls that change visible road geometry or appearance.
 
 ## 9. Decision summary
 
@@ -871,11 +870,12 @@ behavior.
 - [x] Generate watertight tangent fillets for every adjacent approach pair.
 - [x] Feed persisted per-corner curb-return radii into both 3D and 2D junction geometry.
 - [x] Generate sidewalk strips around solved curb returns while leaving road openings clear.
+- [x] Render gutter, kerb, verge, and sidewalk junction curves as non-overlapping material rings.
 - [x] Fill the straight sidewalk sleeves between every curb return and its trimmed road approach.
 - [x] Support unequal-width approaches without non-finite or open junction geometry.
 - [x] Select and edit one curb-return corner independently in the canvas.
 - [x] Add dashed marking patterns, stop lines, arrows, and crosswalks.
-- [x] Add independently configurable per-side curb, gutter, verge, bike-lane, parking-lane, and sidewalk components.
+- [x] Share kerb, gutter, verge, and sidewalk widths across both sides and every connected segment; keep bike and parking lanes independently configurable per side.
 - [x] Add automatic lane-width and lane-count transition tapers across compatible two-road continuations.
 - [x] Reuse the existing terrain system; a separate road-terrain implementation is skipped for this phase.
 - [x] Add bridge piers, abutments, decks, barriers, and clearance checks.
@@ -898,7 +898,7 @@ behavior.
 - [x] Target contextual junction actions at the individually selected junction.
 - [x] Cycle a selected junction's primary-road pair and show the chosen approaches in-scene.
 - [x] Increase or decrease the selected junction's persisted curb-return radii.
-- [x] Expose presets, roadway dimensions, and independent left/right component controls in the Roads side menu.
+- [x] Expose presets, roadway dimensions, shared roadside controls, and independent left/right bike and parking controls in the Roads side menu.
 - [x] Edit every cross-section component directly from the inspector.
 - [x] Select and style individual edges while preserving a network default.
 - [x] Select and override an individual junction's treatment.
@@ -953,19 +953,18 @@ behavior.
 - [x] Add deletion/regeneration/redo browser tests.
 - [x] Record production GPU frame-time and mesh-cook budgets in Pascal.
 - [x] Add incremental dirty-neighborhood geometry regeneration for large networks.
-- [x] Add LOD, tiling, streaming, and cache diagnostics.
 
-### Traffic and advanced roadway behavior
+### Visual roadway behavior and scope cleanup
 
-- [x] Expand centerline edges into persistent directed lane graphs.
-- [x] Edit lane-to-lane junction movements.
-- [x] Add turn restrictions and permitted-movement visualization.
-- [x] Add stop, yield, and signal controls.
-- [x] Add traffic-signal phase/conflict scheduling.
-- [x] Add turn pockets and slip lanes.
-- [x] Expand divided-road intersections into linked internal nodes.
-- [x] Add design-vehicle and swept-path checks.
-- [x] Add pedestrian and bicycle movements.
-- [x] Add lane-level routing and traffic simulation.
+- [x] Add visible stop, yield, and signal road markings.
 - [x] Add semantic roadside-decoration rules.
 - [x] Add a manual junction-boundary editor for solver exceptions.
+- [x] Remove directed-lane and lane-movement authoring from the package.
+- [x] Remove signal-timing and conflict-scheduling authoring from the package.
+- [x] Remove channelization, turn-pocket, and slip-lane analysis from the package.
+- [x] Remove divided-junction debug expansion from the package.
+- [x] Remove design-vehicle and swept-path checks from the package.
+- [x] Remove pedestrian/bicycle movement overlays from the package.
+- [x] Remove lane-level routing and traffic simulation from the package.
+- [x] Remove performance-budget, LOD, streaming, and cache diagnostics from the Road inspector and package.
+- [x] Keep only controls that change road geometry or appearance in the Road inspector.

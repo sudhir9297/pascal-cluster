@@ -574,15 +574,24 @@ export const UtilityWireSpanNode = BaseNode.extend({
 export type UtilityWireSpanNode = z.infer<typeof UtilityWireSpanNode>;
 
 /** A topological point shared by one or more road centerline edges. */
-export const RoadGraphNode = z.object({
+const RoadGraphNodeSchema = z.object({
 	id: z.string().min(1),
 	position: z.tuple([z.number(), z.number(), z.number()]),
 	level: z.number().int().default(0),
-	elevationMode: z.enum(["ground", "bridge", "tunnel"]).default("ground"),
+	elevationMode: z.enum(["ground", "bridge"]).default("ground"),
 	curveRadius: z.number().min(0.1).max(1000).optional(),
 	tangentLength: z.number().min(0).max(1000).optional(),
 	terminal: z.boolean().default(false),
 });
+
+export const RoadGraphNode = z.preprocess(
+	(value) =>
+		value && typeof value === "object" &&
+		(value as { elevationMode?: unknown }).elevationMode === "tunnel"
+			? { ...value, elevationMode: "ground" }
+			: value,
+	RoadGraphNodeSchema,
+);
 
 export type RoadGraphNode = z.infer<typeof RoadGraphNode>;
 
@@ -630,7 +639,7 @@ export const RoadVerticalProfilePoint = z.object({
 export type RoadVerticalProfilePoint = z.infer<typeof RoadVerticalProfilePoint>;
 
 /** One directed centerline edge. Direction controls traffic, not graph traversal. */
-export const RoadGraphEdge = z.object({
+const RoadGraphEdgeSchema = z.object({
 	id: z.string().min(1),
 	startNodeId: z.string().min(1),
 	endNodeId: z.string().min(1),
@@ -643,127 +652,53 @@ export const RoadGraphEdge = z.object({
 		.enum(["alley", "local", "collector", "arterial", "highway", "service"])
 		.default("local"),
 	joinMode: z.enum(["auto", "suppress"]).default("auto"),
-	stackLevel: z.number().int().default(0),
+	stackLevel: z.number().int().min(0).default(0),
 	overlapGroup: z.string().min(1).optional(),
 	parentEdgeId: z.string().optional(),
 });
 
+export const RoadGraphEdge = z.preprocess(
+	(value) =>
+		value && typeof value === "object" &&
+		typeof (value as { stackLevel?: unknown }).stackLevel === "number" &&
+		((value as { stackLevel: number }).stackLevel < 0)
+			? { ...value, stackLevel: 0 }
+			: value,
+	RoadGraphEdgeSchema,
+);
+
 export type RoadGraphEdge = z.infer<typeof RoadGraphEdge>;
-
-/** A persistent directed lane generated from one authored centerline edge. */
-export const RoadLane = z.object({
-	id: z.string().min(1),
-	edgeId: z.string().min(1),
-	startNodeId: z.string().min(1),
-	endNodeId: z.string().min(1),
-	direction: z.enum(["forward", "reverse"]),
-	index: z.number().int().min(0),
-	lateralOffset: z.number(),
-	width: z.number().min(0.5).max(8),
-	kind: z.enum(["general", "turn", "slip"]).default("general"),
-	junctionNodeId: z.string().min(1).optional(),
-	turn: z.enum(["left", "through", "right", "u-turn"]).optional(),
-});
-
-export type RoadLane = z.infer<typeof RoadLane>;
-
-/** One permitted or prohibited connection between directed lanes at a junction. */
-export const RoadLaneMovement = z.object({
-	id: z.string().min(1),
-	junctionNodeId: z.string().min(1),
-	fromLaneId: z.string().min(1),
-	toLaneId: z.string().min(1),
-	turn: z.enum(["left", "through", "right", "u-turn"]),
-	enabled: z.boolean().default(true),
-});
-
-export type RoadLaneMovement = z.infer<typeof RoadLaneMovement>;
-
-export const RoadActiveModeMovement = z.object({
-	id: z.string().min(1),
-	junctionNodeId: z.string().min(1),
-	mode: z.enum(["pedestrian", "bicycle"]),
-	fromEdgeId: z.string().min(1),
-	toEdgeId: z.string().min(1),
-	kind: z.enum(["crossing", "left", "through", "right"]),
-	sourceMovementId: z.string().min(1).optional(),
-	enabled: z.boolean().default(true),
-});
-
-export type RoadActiveModeMovement = z.infer<typeof RoadActiveModeMovement>;
-
-/** One timed traffic-signal phase containing compatible lane movements. */
-export const RoadSignalPhase = z.object({
-	id: z.string().min(1),
-	name: z.string().min(1),
-	durationSeconds: z.number().min(5).max(180).default(30),
-	clearanceSeconds: z.number().min(0).max(15).default(3),
-	movementIds: z.array(z.string().min(1)).default([]),
-});
-
-export type RoadSignalPhase = z.infer<typeof RoadSignalPhase>;
-
-/** Persistent signal timing for one generated road junction. */
-export const RoadSignalPlan = z.object({
-	junctionNodeId: z.string().min(1),
-	mode: z.enum(["fixed", "actuated"]).default("fixed"),
-	offsetSeconds: z.number().min(0).max(300).default(0),
-	phases: z.array(RoadSignalPhase).default([]),
-});
-
-export type RoadSignalPlan = z.infer<typeof RoadSignalPlan>;
-
-export const RoadInternalJunctionNode = z.object({
-	id: z.string().min(1),
-	junctionNodeId: z.string().min(1),
-	edgeId: z.string().min(1),
-	direction: z.enum(["inbound", "outbound"]),
-	position: z.tuple([z.number(), z.number(), z.number()]),
-});
-
-export type RoadInternalJunctionNode = z.infer<typeof RoadInternalJunctionNode>;
-
-export const RoadInternalJunctionLink = z.object({
-	id: z.string().min(1),
-	junctionNodeId: z.string().min(1),
-	startNodeId: z.string().min(1),
-	endNodeId: z.string().min(1),
-	movementId: z.string().min(1),
-});
-
-export type RoadInternalJunctionLink = z.infer<typeof RoadInternalJunctionLink>;
-
-export const RoadDividedJunctionExpansion = z.object({
-	junctionNodeId: z.string().min(1),
-	nodes: z.record(z.string(), RoadInternalJunctionNode).default({}),
-	links: z.record(z.string(), RoadInternalJunctionLink).default({}),
-});
-
-export type RoadDividedJunctionExpansion = z.infer<typeof RoadDividedJunctionExpansion>;
-
-export const RoadTrafficRoute = z.object({
-	id: z.string().min(1),
-	startLaneId: z.string().min(1),
-	endLaneId: z.string().min(1),
-	laneIds: z.array(z.string().min(1)).min(1),
-	movementIds: z.array(z.string().min(1)).default([]),
-	lengthMeters: z.number().min(0),
-	travelTimeSeconds: z.number().min(0),
-});
-
-export type RoadTrafficRoute = z.infer<typeof RoadTrafficRoute>;
 
 export const RoadsideDecoration = z.object({
 	id: z.string().min(1),
 	edgeId: z.string().min(1),
-	kind: z.enum(["lamp", "tree", "sign", "guardrail"]),
+	kind: z.enum(["lamp", "sign"]),
 	side: z.enum(["left", "right"]),
 	station: z.number().min(0),
 	lateralOffset: z.number(),
 	ruleId: z.string().min(1),
+	/** Direction the visible sign face points along the directed edge. */
+	facing: z.enum(["forward", "reverse"]).optional(),
+	/** Generated junction fixtures can anchor directly to a rendered curb return. */
+	worldPosition: z.tuple([z.number(), z.number(), z.number()]).optional(),
+	worldRotationY: z.number().optional(),
 });
 
 export type RoadsideDecoration = z.infer<typeof RoadsideDecoration>;
+
+const RoadsideDecorations = z.preprocess(
+	(value) => {
+		if (!(value && typeof value === "object") || Array.isArray(value)) return value;
+		return Object.fromEntries(
+			Object.entries(value).filter(([, decoration]) => {
+				if (!(decoration && typeof decoration === "object")) return true;
+				const kind = (decoration as { kind?: unknown }).kind;
+				return kind !== "tree" && kind !== "guardrail";
+			}),
+		);
+	},
+	z.record(z.string(), RoadsideDecoration),
+);
 
 /**
  * A scene asset anchored by distance along a directed road edge. Stations are
@@ -794,10 +729,6 @@ export const RoadJunction = z.object({
 	approachControls: z
 		.record(z.string(), z.enum(["auto", "none", "stop", "yield", "signal"]))
 		.default({}),
-	turnPocketEdges: z
-		.record(z.string(), z.enum(["left", "right", "both"]))
-		.default({}),
-	slipLaneMovementIds: z.array(z.string().min(1)).default([]),
 	cornerRadii: z.record(z.string(), z.number().min(0.5).max(100)).default({}),
 	manualBoundaryEnabled: z.boolean().default(false),
 	manualBoundaryPoints: z
@@ -818,34 +749,10 @@ export const RoadNetworkNode = BaseNode.extend({
 	type: nodeType("environment:road-network"),
 	graphNodes: z.record(z.string(), RoadGraphNode).default({}),
 	edges: z.record(z.string(), RoadGraphEdge).default({}),
-	lanes: z.record(z.string(), RoadLane).default({}),
-	laneMovements: z.record(z.string(), RoadLaneMovement).default({}),
-	activeModeMovements: z.record(z.string(), RoadActiveModeMovement).default({}),
-	showActiveModeMovements: z.boolean().default(false),
-	signalPlans: z.record(z.string(), RoadSignalPlan).default({}),
-	dividedJunctions: z.record(z.string(), RoadDividedJunctionExpansion).default({}),
-	showDividedJunctionGraph: z.boolean().default(false),
-	designVehicle: z
-		.enum(["passenger-car", "delivery-truck", "fire-engine", "tractor-trailer"])
-		.default("passenger-car"),
-	sweptPathMovementId: z.string().min(1).optional(),
-	showSweptPath: z.boolean().default(false),
-	trafficRoutes: z.record(z.string(), RoadTrafficRoute).default({}),
-	selectedTrafficRouteId: z.string().min(1).optional(),
-	trafficFreeFlowSpeed: z.number().min(1).max(55).default(13.9),
-	trafficDemandPerHour: z.number().min(1).max(5000).default(600),
-	trafficPreviewTimeSeconds: z.number().min(0).max(3600).default(0),
-	showTrafficSimulation: z.boolean().default(false),
-	roadsideDecorations: z.record(z.string(), RoadsideDecoration).default({}),
-	roadsideDecorationRules: z.object({
-		lamps: z.boolean().default(true),
-		trees: z.boolean().default(true),
-		signs: z.boolean().default(true),
-		guardrails: z.boolean().default(true),
-	}).default({ lamps: true, trees: true, signs: true, guardrails: true }),
-	roadsideDecorationDensity: z.enum(["sparse", "standard", "dense"]).default("standard"),
+	roadsideDecorations: RoadsideDecorations.default({}),
+	roadsideDecorationSpacing: z.number().min(10).max(100).default(30),
+	roadsideLampsBothSides: z.boolean().default(false),
 	showRoadsideDecorations: z.boolean().default(false),
-	showLaneMovements: z.boolean().default(false),
 	attachments: z.record(z.string(), RoadEdgeAttachment).default({}),
 	junctions: z.record(z.string(), RoadJunction).default({}),
 	stylePresets: z.record(z.string(), RoadStylePreset).default({
@@ -877,16 +784,6 @@ export const RoadNetworkNode = BaseNode.extend({
 	bridgePierDiameter: z.number().min(0.4).max(4).default(1.1),
 	/** Advisory vertical clearance required beneath a bridge deck. */
 	bridgeMinimumClearance: z.number().min(1).max(12).default(4.5),
-	/** Clear height measured from the tunnel road surface to the lining soffit. */
-	tunnelClearHeight: z.number().min(3).max(15).default(5.5),
-	/** Extra horizontal clearance outside the complete authored road section. */
-	tunnelSideClearance: z.number().min(0.25).max(8).default(0.75),
-	/** Structural thickness of the swept tunnel lining shell. */
-	tunnelLiningThickness: z.number().min(0.15).max(2).default(0.35),
-	/** Length of the open excavation and finished apron outside each portal. */
-	tunnelPortalCutLength: z.number().min(1).max(40).default(6),
-	/** Horizontal run per metre of rise for generated portal cut slopes. */
-	tunnelCutSlope: z.number().min(0.25).max(5).default(1.5),
 });
 
 export type RoadNetworkNode = z.infer<typeof RoadNetworkNode>;

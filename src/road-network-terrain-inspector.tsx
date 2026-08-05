@@ -1,7 +1,9 @@
 "use client";
 
 import { type AnyNode, useScene } from "@pascal-app/core";
+import { ActionButton, ActionGroup } from "@pascal-app/editor";
 import { useState } from "react";
+import { RoadPanelStatus } from "./road-panel-controls";
 import {
 	conformRoadNetworkToTerrain,
 	gradeTerrainToRoad,
@@ -36,15 +38,6 @@ function fieldOptionsForSite(site: SiteLike) {
 		spacing,
 	};
 }
-
-const buttonStyle = {
-	background: "rgba(30, 41, 59, 0.84)",
-	border: "1px solid rgba(148, 163, 184, 0.28)",
-	borderRadius: 6,
-	color: "#e2e8f0",
-	cursor: "pointer",
-	padding: "8px 10px",
-} as const;
 
 const terrainMessages = new Map<string, string>();
 
@@ -84,8 +77,8 @@ export function RoadTerrainEditor({
 		onUpdate(result.value);
 		report(
 			result.changed > 0
-				? `Conformed ${result.changed} road points. Bridge and tunnel edges were preserved.`
-				: "Road already matches the terrain, or only bridge/tunnel edges were present.",
+				? `Conformed ${result.changed} road points. Bridge edges were preserved.`
+				: "Road already matches the terrain, or only bridge edges were present.",
 		);
 	};
 
@@ -113,36 +106,13 @@ export function RoadTerrainEditor({
 	};
 
 	return (
-		<div style={{ display: "grid", gap: 8 }}>
-			<p
-				style={{
-					color: "#94a3b8",
-					fontSize: 12,
-					lineHeight: 1.45,
-					margin: 0,
-				}}
-			>
-				Conform moves ground-mode roads to the site. Grade reshapes the site to
-				the current road profile. Neither action changes bridge or tunnel edges.
-			</p>
-			<button onClick={conformRoad} style={buttonStyle} type="button">
-				Conform road to terrain
-			</button>
-			<button onClick={gradeTerrain} style={buttonStyle} type="button">
-				Grade terrain to road
-			</button>
+		<div className="flex flex-col gap-2">
+			<ActionGroup>
+				<ActionButton label="Conform road" onClick={conformRoad} type="button" />
+				<ActionButton label="Grade terrain" onClick={gradeTerrain} type="button" />
+			</ActionGroup>
 			{message ? (
-				<p
-					aria-live="polite"
-					style={{
-						color: "#bbf7d0",
-						fontSize: 11,
-						lineHeight: 1.4,
-						margin: 0,
-					}}
-				>
-					{message}
-				</p>
+				<RoadPanelStatus>{message}</RoadPanelStatus>
 			) : null}
 		</div>
 	);

@@ -4,29 +4,17 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
 	loadRoadStylePreset,
 	RoadStylePresetLibrary,
-	saveRoadStylePreset,
 } from "./road-network-preset-library";
 import { RoadNetworkNode } from "./schema";
 
-describe("user-created road-style preset library", () => {
-	test("saves a complete immutable copy and makes duplicate names unique", () => {
-		const node = RoadNetworkNode.parse({});
-		const first = saveRoadStylePreset(node, "My Boulevard");
-		const withFirst = RoadNetworkNode.parse({ ...node, ...first });
-		const second = saveRoadStylePreset(withFirst, "My Boulevard");
-		expect(first.activeStyleId).toBe("custom:my-boulevard");
-		expect(second.activeStyleId).toBe("custom:my-boulevard-2");
-		expect(first.stylePresets[first.activeStyleId]?.laneCount).toBe(2);
-		expect(node.stylePresets[first.activeStyleId]).toBeUndefined();
-	});
-
+describe("road-style preset library", () => {
 	test("loads only existing presets", () => {
 		const node = RoadNetworkNode.parse({});
 		expect(loadRoadStylePreset(node, "arterial")).toEqual({ activeStyleId: "arterial" });
 		expect(loadRoadStylePreset(node, "missing")).toBeNull();
 	});
 
-	test("renders save and load controls", () => {
+	test("renders built-in preset controls without custom save actions", () => {
 		const markup = renderToStaticMarkup(
 			createElement(RoadStylePresetLibrary, {
 				node: RoadNetworkNode.parse({}),
@@ -34,7 +22,9 @@ describe("user-created road-style preset library", () => {
 			}),
 		);
 		expect(markup).toContain('aria-label="Saved road-style preset"');
-		expect(markup).toContain('aria-label="New road-style preset name"');
-		expect(markup).toContain("Save current style as preset");
+		expect(markup).toContain("Right driving");
+		expect(markup).toContain("Apply to every segment");
+		expect(markup).not.toContain("Save as");
+		expect(markup).not.toContain("Save preset");
 	});
 });

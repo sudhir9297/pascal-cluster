@@ -71,7 +71,7 @@ describe("manual road junction boundary editor", () => {
 		);
 		expect(controls).toContain('aria-label="Manual junction boundary editor"');
 		expect(controls).toContain('aria-label="Boundary point 1 X"');
-		expect(controls).toContain("Reset automatic");
+		expect(controls).toContain("Reset");
 
 		const model = renderToStaticMarkup(
 			createElement(RoadNetworkModel, {

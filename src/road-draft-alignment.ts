@@ -5,7 +5,7 @@ export const ROAD_DRAFT_ALIGNMENT_ID = "__road_draft__";
 export const ROAD_DRAFT_ALIGNMENT_THRESHOLD_M = 0.18;
 
 export type RoadEndpointAlignmentOptions = {
-	elevationMode: "bridge" | "ground" | "tunnel";
+	elevationMode: "bridge" | "ground";
 	excludePoint?: RoadPoint | null;
 	level: number;
 };

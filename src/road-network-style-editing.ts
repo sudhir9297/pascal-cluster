@@ -15,6 +15,11 @@ export type RoadwayStyleNumberKey =
 
 export type RoadSideStyleNumberKey = keyof RoadSideComponents;
 
+export type RoadSharedSideStyleNumberKey = Extract<
+	RoadSideStyleNumberKey,
+	"curbWidth" | "gutterWidth" | "sidewalkWidth" | "vergeWidth"
+>;
+
 export type RoadStyleEditingPatch = Pick<
 	RoadNetworkNode,
 	"applyStyleToAll" | "edges" | "stylePresets"
@@ -95,6 +100,56 @@ export function editRoadNetworkDefaultSide(
 			},
 		},
 	};
+}
+
+function roadNetworkStyleIds(node: RoadNetworkNode): string[] {
+	return Array.from(new Set([
+		node.activeStyleId,
+		...Object.values(node.edges).map((edge) =>
+			node.applyStyleToAll ? node.activeStyleId : edge.styleId,
+		),
+	]));
+}
+
+/** Resolve one mirrored roadside value across every segment style in this connected road. */
+export function resolveRoadNetworkSharedSideValue(
+	node: RoadNetworkNode,
+	key: RoadSharedSideStyleNumberKey,
+): number {
+	return Math.max(
+		...roadNetworkStyleIds(node).flatMap((styleId) => {
+			const style = node.stylePresets[styleId] ?? resolveRoadNetworkDefaultStyle(node);
+			return [
+				resolveRoadSideComponents(style, "left")[key],
+				resolveRoadSideComponents(style, "right")[key],
+			];
+		}),
+	);
+}
+
+/** Mirror one common roadside dimension onto both sides of every connected segment. */
+export function editRoadNetworkSharedSide(
+	node: RoadNetworkNode,
+	key: RoadSharedSideStyleNumberKey,
+	value: number,
+): RoadNetworkNode["stylePresets"] {
+	const safeValue = clamp(value, SIDE_LIMITS[key]);
+	const stylePresets = { ...node.stylePresets };
+	for (const styleId of roadNetworkStyleIds(node)) {
+		const style = stylePresets[styleId] ?? resolveRoadNetworkDefaultStyle(node);
+		stylePresets[styleId] = {
+			...style,
+			leftSide: {
+				...resolveRoadSideComponents(style, "left"),
+				[key]: safeValue,
+			},
+			rightSide: {
+				...resolveRoadSideComponents(style, "right"),
+				[key]: safeValue,
+			},
+		};
+	}
+	return stylePresets;
 }
 
 function edgeStyleId(edgeId: string): string {

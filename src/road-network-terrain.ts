@@ -26,8 +26,8 @@ function edgeFollowsGround(
 }
 
 /**
- * Put ground-mode road control points on the terrain surface. Bridge and tunnel
- * edges are deliberately left alone: conforming terrain is an explicit road
+ * Put ground-mode road control points on the terrain surface. Bridge edges are
+ * deliberately left alone: conforming terrain is an explicit road
  * operation, not a reason to destroy authored structures.
  */
 export function conformRoadNetworkToTerrain(

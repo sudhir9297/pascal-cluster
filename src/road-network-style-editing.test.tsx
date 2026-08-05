@@ -7,6 +7,7 @@ import {
 	editRoadEdgeSide,
 	editRoadNetworkDefaultRoadway,
 	editRoadNetworkDefaultSide,
+	editRoadNetworkSharedSide,
 	resetRoadEdgeStyle,
 } from "./road-network-style-editing";
 import { RoadNetworkNode } from "./schema";
@@ -40,7 +41,7 @@ describe("road cross-section inspector editing", () => {
 			?.rightSide?.curbWidth).toBe(0);
 	});
 
-	test("renders a direct input for every roadway and left/right component", () => {
+	test("renders shared roadside sliders and per-side parking and bike sliders", () => {
 		const markup = renderToStaticMarkup(
 			createElement(RoadCrossSectionInspector, {
 				node: RoadNetworkNode.parse({}),
@@ -55,19 +56,17 @@ describe("road cross-section inspector editing", () => {
 			"Surface thickness",
 			"Left side parking lane",
 			"Left side bike lane",
-			"Left side gutter",
-			"Left side curb",
-			"Left side verge",
-			"Left side sidewalk",
 			"Right side parking lane",
 			"Right side bike lane",
-			"Right side gutter",
-			"Right side curb",
-			"Right side verge",
-			"Right side sidewalk",
+			"Shared gutter",
+			"Shared kerb",
+			"Shared verge",
+			"Shared sidewalk",
 		]) {
 			expect(markup).toContain(`aria-label="${label} in metres"`);
 		}
+		expect(markup).not.toContain('aria-label="Left side sidewalk in metres"');
+		expect(markup).not.toContain('aria-label="Right side sidewalk in metres"');
 	});
 
 	test("creates an edge-local style while preserving the network default", () => {
@@ -94,5 +93,51 @@ describe("road cross-section inspector editing", () => {
 		const reset = resetRoadEdgeStyle(node, targetId)!;
 		expect(reset.edges[targetId]?.styleId).toBe("local-street");
 		expect(reset.stylePresets[`edge-style:${targetId}`]).toBeUndefined();
+	});
+
+	test("applies a shared roadside width to both sides of every segment in a plus network", () => {
+		const through = insertRoadSegment(
+			createEmptyRoadGraph(),
+			[-12, 0, 0],
+			[12, 0, 0],
+		);
+		const crossed = insertRoadSegment(
+			through.graph,
+			[0, 0, -12],
+			[0, 0, 12],
+			{ tolerance: 0.1 },
+		);
+		let node = RoadNetworkNode.parse(crossed.graph);
+		const selectedEdgeId = Object.keys(node.edges)[0]!;
+		const edgeStylePatch = editRoadEdgeRoadway(
+			node,
+			selectedEdgeId,
+			"laneCount",
+			4,
+		)!;
+		node = RoadNetworkNode.parse({ ...node, ...edgeStylePatch });
+		for (const [key, value] of [
+			["gutterWidth", 0.45],
+			["curbWidth", 0.2],
+			["vergeWidth", 1.25],
+			["sidewalkWidth", 2.25],
+		] as const) {
+			node = RoadNetworkNode.parse({
+				...node,
+				stylePresets: editRoadNetworkSharedSide(node, key, value),
+			});
+		}
+
+		for (const edge of Object.values(node.edges)) {
+			const style = node.stylePresets[edge.styleId]!;
+			expect(style.leftSide?.gutterWidth).toBe(0.45);
+			expect(style.rightSide?.gutterWidth).toBe(0.45);
+			expect(style.leftSide?.curbWidth).toBe(0.2);
+			expect(style.rightSide?.curbWidth).toBe(0.2);
+			expect(style.leftSide?.vergeWidth).toBe(1.25);
+			expect(style.rightSide?.vergeWidth).toBe(1.25);
+			expect(style.leftSide?.sidewalkWidth).toBe(2.25);
+			expect(style.rightSide?.sidewalkWidth).toBe(2.25);
+		}
 	});
 });

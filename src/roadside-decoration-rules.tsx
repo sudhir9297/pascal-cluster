@@ -1,6 +1,18 @@
 "use client";
 
-import { sampleRoadEdgePoints } from "./road-network-geometry";
+import { SliderControl, ToggleControl } from "@pascal-app/editor";
+import {
+	buildRoadCrossSection,
+	buildRoadJunctionBands,
+	resolveRoadSideComponents,
+	ROAD_SIDE_COMPONENT_SPECS,
+} from "./road-cross-section";
+import {
+	buildJunctionBoundarySidePaths,
+	buildJunctionBoundaryGeometry,
+	sampleRoadEdgePoints,
+	type JunctionBoundaryApproach,
+} from "./road-network-geometry";
 import { DEFAULT_ROAD_STYLE_PRESETS } from "./road-style-presets";
 import type { RoadGraphEdge, RoadNetworkNode, RoadsideDecoration, RoadStylePreset } from "./schema";
 
@@ -18,74 +30,430 @@ function sampledLength(points: Array<[number, number, number]>): number {
 	}, 0);
 }
 
-function stations(length: number, spacing: number, inset = spacing / 2): number[] {
+function sampledPolylinePoint(
+	points: ReadonlyArray<readonly [number, number]>,
+	distance: number,
+): { index: number; point: readonly [number, number]; ratio: number } | null {
+	let remaining = distance;
+	for (let index = 0; index < points.length - 1; index += 1) {
+		const start = points[index]!;
+		const end = points[index + 1]!;
+		const length = Math.hypot(end[0] - start[0], end[1] - start[1]);
+		if (remaining > length && index < points.length - 2) {
+			remaining -= length;
+			continue;
+		}
+		const ratio = Math.min(1, remaining / Math.max(length, 1e-6));
+		return {
+			index,
+			point: [
+				start[0] + (end[0] - start[0]) * ratio,
+				start[1] + (end[1] - start[1]) * ratio,
+			],
+			ratio,
+		};
+	}
+	return null;
+}
+
+function sampledPolylineLength(
+	points: ReadonlyArray<readonly [number, number]>,
+): number {
+	return points.slice(1).reduce((sum, point, index) => {
+		const previous = points[index]!;
+		return sum + Math.hypot(point[0] - previous[0], point[1] - previous[1]);
+	}, 0);
+}
+
+function stations(
+	length: number,
+	spacing: number,
+	startInset: number,
+	endInset: number,
+): number[] {
 	const result: number[] = [];
-	for (let station = inset; station < length - inset * 0.35; station += spacing) result.push(station);
+	for (
+		let station = startInset;
+		station <= length - endInset + 1e-6;
+		station += spacing
+	) {
+		result.push(station);
+	}
 	return result;
 }
 
-function sideWidth(style: RoadStylePreset, side: "left" | "right"): number {
-	const components = style[side === "left" ? "leftSide" : "rightSide"];
-	return Object.values(components ?? {}).reduce((sum, value) => sum + value, 0);
+export const ROADSIDE_LAMP_MIN_VERGE_WIDTH = 1;
+export const ROADSIDE_LAMP_MIN_CORNER_SETBACK = 10;
+export const ROADSIDE_LAMP_JUNCTION_MARGIN = 2;
+export const ROADSIDE_SIGN_LAMP_MIN_SEPARATION = 3;
+
+const VERGE_ELEVATION_OFFSET = ROAD_SIDE_COMPONENT_SPECS.find(
+	(spec) => spec.kind === "verge",
+)!.elevationOffset;
+
+/** Give every used road style furnishing strips for generated lamps and signs. */
+export function ensureRoadsideLampVerge(
+	node: RoadNetworkNode,
+): RoadNetworkNode["stylePresets"] | null {
+	const styleIds = new Set([
+		node.activeStyleId,
+		...(!node.applyStyleToAll
+			? Object.values(node.edges).map((edge) => edge.styleId)
+			: []),
+	]);
+	const stylePresets = { ...node.stylePresets };
+	let changed = false;
+	for (const styleId of styleIds) {
+		const style =
+			stylePresets[styleId] ??
+			DEFAULT_ROAD_STYLE_PRESETS[
+				styleId as keyof typeof DEFAULT_ROAD_STYLE_PRESETS
+			] ??
+			{ ...DEFAULT_ROAD_STYLE_PRESETS["local-street"], id: styleId };
+		let nextStyle = style;
+		for (const side of ["left", "right"] as const) {
+			const components = resolveRoadSideComponents(nextStyle, side);
+			if (components.vergeWidth >= ROADSIDE_LAMP_MIN_VERGE_WIDTH) continue;
+			nextStyle = {
+				...nextStyle,
+				[side === "left" ? "leftSide" : "rightSide"]: {
+					...components,
+					vergeWidth: ROADSIDE_LAMP_MIN_VERGE_WIDTH,
+				},
+			};
+			changed = true;
+		}
+		if (nextStyle !== style) stylePresets[styleId] = nextStyle;
+	}
+	return changed ? stylePresets : null;
 }
 
-/** Derive deterministic lamps, trees, signs, and guardrails from road semantics. */
+function roadsideOuterOffset(
+	style: RoadStylePreset,
+	side: "left" | "right",
+	extraOffset: number,
+): number {
+	const sideSign = side === "left" ? 1 : -1;
+	return sideSign * (buildRoadCrossSection(style).sides[side].outerOffset + extraOffset);
+}
+
+function lampVergeOffset(
+	style: RoadStylePreset,
+	side: "left" | "right",
+): number {
+	const verge = buildRoadCrossSection(style).sides[side].components.find(
+		(component) => component.kind === "verge",
+	);
+	return verge?.lateralOffset ?? roadsideOuterOffset(style, side, 0.5);
+}
+
+function resolvedRoadsideDecorationSpacing(spacing: number | undefined): number {
+	return Number.isFinite(spacing)
+		? Math.min(100, Math.max(10, spacing!))
+		: 30;
+}
+
+function lampClearanceKey(nodeId: string, edgeId: string): string {
+	return `${nodeId}:${edgeId}`;
+}
+
+function carriagewayWidth(style: RoadStylePreset): number {
+	return style.laneCount * style.laneWidth + style.shoulderWidth * 2 + style.medianWidth;
+}
+
+function junctionApproach(
+	node: RoadNetworkNode,
+	nodeId: string,
+	edge: RoadGraphEdge,
+): JunctionBoundaryApproach | null {
+	const points = sampleRoadEdgePoints(node, edge, 48);
+	if (points.length < 2) return null;
+	const from = edge.startNodeId === nodeId ? points[0]! : points.at(-1)!;
+	const toward = edge.startNodeId === nodeId ? points[1]! : points.at(-2)!;
+	return {
+		angle: Math.atan2(toward[2] - from[2], toward[0] - from[0]),
+		edgeId: edge.id,
+		halfWidth: carriagewayWidth(edgeStyle(node, edge)) / 2,
+	};
+}
+
+function isMeaningfulTwoEdgeBend(approaches: JunctionBoundaryApproach[]): boolean {
+	if (approaches.length !== 2) return false;
+	const delta = Math.abs(Math.atan2(
+		Math.sin(approaches[0]!.angle - approaches[1]!.angle),
+		Math.cos(approaches[0]!.angle - approaches[1]!.angle),
+	));
+	return Math.abs(Math.PI - delta) > Math.PI / 18;
+}
+
+/** Match pole setbacks to the same curb-return envelope used by the road mesh. */
+function roadsideLampEndClearances(node: RoadNetworkNode): Map<string, number> {
+	const clearances = new Map<string, number>();
+	for (const graphNode of Object.values(node.graphNodes)) {
+		const incident = Object.values(node.edges).filter(
+			(edge) => edge.startNodeId === graphNode.id || edge.endNodeId === graphNode.id,
+		);
+		if (incident.length < 2) continue;
+		const approaches = incident.flatMap((edge) => {
+			const approach = junctionApproach(node, graphNode.id, edge);
+			return approach ? [approach] : [];
+		});
+		if (approaches.length !== incident.length) continue;
+		if (incident.length === 2 && !isMeaningfulTwoEdgeBend(approaches)) continue;
+		const solution = incident.length >= 3
+			? buildJunctionBoundaryGeometry(
+				approaches,
+				node.junctions?.[graphNode.id]?.cornerRadii ?? {},
+			)
+			: null;
+		for (const edge of incident) {
+			const style = edgeStyle(node, edge);
+			const widthAwareFallback = Math.max(
+				ROADSIDE_LAMP_MIN_CORNER_SETBACK,
+				buildRoadCrossSection(style).totalWidth / 2 + ROADSIDE_LAMP_JUNCTION_MARGIN,
+			);
+			const junctionCut = solution?.approachCuts[edge.id] ?? 0;
+			clearances.set(
+				lampClearanceKey(graphNode.id, edge.id),
+				Math.max(
+					widthAwareFallback,
+					junctionCut + ROADSIDE_LAMP_JUNCTION_MARGIN,
+				),
+			);
+		}
+	}
+	return clearances;
+}
+
+/** Fill long rendered curb returns that edge-station lamps cannot reach. */
+function addJunctionLighting(
+	node: RoadNetworkNode,
+	decorations: RoadNetworkNode["roadsideDecorations"],
+	spacing: number,
+): void {
+	if (!node.roadsideLampsBothSides) return;
+	for (const graphNode of Object.values(node.graphNodes)) {
+		const incident = Object.values(node.edges).filter(
+			(edge) => edge.startNodeId === graphNode.id || edge.endNodeId === graphNode.id,
+		);
+		if (incident.length < 3) continue;
+		const approaches = incident.flatMap((edge) => {
+			const approach = junctionApproach(node, graphNode.id, edge);
+			return approach ? [approach] : [];
+		});
+		if (approaches.length !== incident.length) continue;
+		const solution = buildJunctionBoundaryGeometry(
+			approaches,
+			node.junctions?.[graphNode.id]?.cornerRadii ?? {},
+		);
+		const styles = incident.map((edge) => edgeStyle(node, edge));
+		const vergeBand = buildRoadJunctionBands(styles).find((band) => band.kind === "verge");
+		if (!vergeBand) continue;
+		const vergeCenterOffset = vergeBand.outerWidth - vergeBand.width / 2;
+		const primaryStyle = node.junctions?.[graphNode.id]?.primaryEdgeIds.flatMap((edgeId) => {
+			const edge = node.edges[edgeId];
+			return edge ? [edgeStyle(node, edge)] : [];
+		})[0] ?? styles[0]!;
+		const paths = buildJunctionBoundarySidePaths(solution, vergeCenterOffset);
+		const innerPaths = buildJunctionBoundarySidePaths(solution);
+		const endpointGap =
+			ROADSIDE_LAMP_JUNCTION_MARGIN + ROADSIDE_SIGN_LAMP_MIN_SEPARATION + 0.25;
+		for (let pathIndex = 0; pathIndex < paths.length; pathIndex += 1) {
+			const path = paths[pathIndex]!;
+			const innerPath = innerPaths[pathIndex]!;
+			const pathLength = sampledPolylineLength(path.points);
+			const intervalCount = Math.ceil((pathLength + endpointGap * 2) / spacing);
+			const fixtureCount = Math.max(
+				0,
+				intervalCount - 1,
+			);
+			for (let index = 1; index <= fixtureCount; index += 1) {
+				const distance =
+					(pathLength + endpointGap * 2) * index / intervalCount - endpointGap;
+				const sample = sampledPolylinePoint(path.points, distance);
+				if (!sample) continue;
+				const innerStart = innerPath.points[sample.index]!;
+				const innerEnd = innerPath.points[sample.index + 1]!;
+				const innerPoint = [
+					innerStart[0] + (innerEnd[0] - innerStart[0]) * sample.ratio,
+					innerStart[1] + (innerEnd[1] - innerStart[1]) * sample.ratio,
+				] as const;
+				const inwardX = innerPoint[0] - sample.point[0];
+				const inwardZ = innerPoint[1] - sample.point[1];
+				const worldRotationY = Math.atan2(-inwardZ, inwardX);
+				const isApproachSleeve =
+					sample.index === 0 || sample.index === path.points.length - 2;
+				const ruleId = isApproachSleeve
+					? "junction-approach-lighting"
+					: "junction-lighting";
+				const id = [
+					`roadside:${ruleId}`,
+					graphNode.id,
+					path.fromEdgeId,
+					path.toEdgeId,
+					index,
+				].join(":");
+				decorations[id] = {
+					edgeId: path.fromEdgeId,
+					id,
+					kind: "lamp",
+					lateralOffset: 0,
+					ruleId,
+					side: "right",
+					station: distance,
+					worldPosition: [
+						graphNode.position[0] + sample.point[0],
+						graphNode.position[1] + primaryStyle.surfaceThickness + VERGE_ELEVATION_OFFSET,
+						graphNode.position[2] + sample.point[1],
+					],
+					worldRotationY,
+				};
+			}
+		}
+	}
+}
+
+/** Derive deterministic lamps and signs from road semantics. */
 export function buildRoadsideDecorations(node: RoadNetworkNode): RoadNetworkNode["roadsideDecorations"] {
 	const decorations: RoadNetworkNode["roadsideDecorations"] = {};
-	const densityFactor = node.roadsideDecorationDensity === "dense" ? 0.65 : node.roadsideDecorationDensity === "sparse" ? 1.5 : 1;
+	const spacing = resolvedRoadsideDecorationSpacing(node.roadsideDecorationSpacing);
+	const lampEndClearances = roadsideLampEndClearances(node);
+	const degreeByNode = new Map<string, number>();
+	for (const edge of Object.values(node.edges)) {
+		degreeByNode.set(edge.startNodeId, (degreeByNode.get(edge.startNodeId) ?? 0) + 1);
+		degreeByNode.set(edge.endNodeId, (degreeByNode.get(edge.endNodeId) ?? 0) + 1);
+	}
 	for (const edge of Object.values(node.edges).sort((a, b) => a.id.localeCompare(b.id))) {
 		const style = edgeStyle(node, edge);
 		const points = sampleRoadEdgePoints(node, edge, 36) as Array<[number, number, number]>;
 		const length = sampledLength(points);
-		const elevationModes = [node.graphNodes[edge.startNodeId]?.elevationMode, node.graphNodes[edge.endNodeId]?.elevationMode];
-		const carriagewayHalf = (style.laneCount * style.laneWidth + style.medianWidth + style.shoulderWidth * 2) / 2;
-		const add = (kind: RoadsideDecoration["kind"], side: "left" | "right", station: number, extraOffset: number, ruleId: string) => {
-			const sideSign = side === "left" ? 1 : -1;
+		const add = (
+			kind: RoadsideDecoration["kind"],
+			side: "left" | "right",
+			station: number,
+			lateralOffset: number,
+			ruleId: string,
+			facing?: RoadsideDecoration["facing"],
+		) => {
 			const id = `roadside:${ruleId}:${edge.id}:${side}:${station.toFixed(2)}`;
 			decorations[id] = {
 				edgeId: edge.id,
+				...(facing ? { facing } : {}),
 				id,
 				kind,
-				lateralOffset: sideSign * (carriagewayHalf + sideWidth(style, side) + extraOffset),
+				lateralOffset,
 				ruleId,
 				side,
 				station,
 			};
 		};
 
-		if (node.roadsideDecorationRules.lamps && edge.roadClass !== "alley") {
-			for (const station of stations(length, 30 * densityFactor, 6)) {
-				add("lamp", "right", station, 0.7, "regular-lighting");
+		if (edge.roadClass !== "alley") {
+			const regularInset = Math.min(6, spacing / 2);
+			const startInset = Math.max(
+				regularInset,
+				lampEndClearances.get(lampClearanceKey(edge.startNodeId, edge.id)) ?? 0,
+			);
+			const endInset = Math.max(
+				regularInset,
+				lampEndClearances.get(lampClearanceKey(edge.endNodeId, edge.id)) ?? 0,
+			);
+			const lampSides = node.roadsideLampsBothSides
+				? (["left", "right"] as const)
+				: (["right"] as const);
+			const lampStations = stations(length, spacing, startInset, endInset);
+			const endHasConnectedClearance = lampEndClearances.has(
+				lampClearanceKey(edge.endNodeId, edge.id),
+			);
+			const endStation = length - endInset;
+			if (
+				endHasConnectedClearance &&
+				endStation >= startInset &&
+				!lampStations.some((station) => Math.abs(station - endStation) < 1e-3)
+			) {
+				lampStations.push(endStation);
+			}
+			lampStations.sort((left, right) => left - right);
+			for (const station of lampStations) {
+				for (const side of lampSides) {
+					add("lamp", side, station, lampVergeOffset(style, side), "regular-lighting");
+				}
 			}
 		}
-		if (node.roadsideDecorationRules.trees && elevationModes.every((mode) => mode === "ground")) {
-			for (const side of ["left", "right"] as const) {
-				const vergeWidth = style[side === "left" ? "leftSide" : "rightSide"]?.vergeWidth ?? 0;
-				if (vergeWidth < 0.4) continue;
-				for (const station of stations(length, 18 * densityFactor, 8)) add("tree", side, station, 1.4, "verge-trees");
-			}
-		}
-		if (node.roadsideDecorationRules.signs && length > 8) {
-			add("sign", node.regionalPack === "left-driving" ? "left" : "right", Math.max(2, length - 4), 0.5, "terminal-signage");
-		}
-		if (node.roadsideDecorationRules.guardrails && (elevationModes.includes("bridge") || edge.roadClass === "highway")) {
-			for (const side of ["left", "right"] as const) {
-				for (const station of stations(length, 6 * densityFactor, 2)) add("guardrail", side, station, 0.15, "edge-protection");
+		if (length > 8) {
+			const startDegree = degreeByNode.get(edge.startNodeId) ?? 0;
+			const endDegree = degreeByNode.get(edge.endNodeId) ?? 0;
+			const startIsJunction = startDegree >= 3;
+			const endIsJunction = endDegree >= 3;
+			const startClearance = lampEndClearances.get(
+				lampClearanceKey(edge.startNodeId, edge.id),
+			) ?? ROADSIDE_LAMP_MIN_CORNER_SETBACK;
+			const endClearance = lampEndClearances.get(
+				lampClearanceKey(edge.endNodeId, edge.id),
+			) ?? ROADSIDE_LAMP_MIN_CORNER_SETBACK;
+			const drivingSide = node.regionalPack === "left-driving" ? "left" : "right";
+			const sideForFacing = (facing: "forward" | "reverse") =>
+				facing === "reverse"
+					? drivingSide
+					: drivingSide === "right" ? "left" : "right";
+			const addSign = (
+				station: number,
+				facing: "forward" | "reverse",
+				ruleId: string,
+			) => {
+				const side = sideForFacing(facing);
+				add(
+					"sign",
+					side,
+					station,
+					lampVergeOffset(style, side),
+					ruleId,
+					facing,
+				);
+			};
+			if (startIsJunction && endIsJunction) {
+				if (startClearance + endClearance + 4 <= length) {
+					addSign(startClearance, "forward", "junction-signage");
+					addSign(length - endClearance, "reverse", "junction-signage");
+				}
+			} else if (startIsJunction) {
+				if (startClearance <= length - 2) {
+					addSign(startClearance, "forward", "junction-signage");
+				}
+			} else if (endIsJunction) {
+				if (endClearance <= length - 2) {
+					addSign(length - endClearance, "reverse", "junction-signage");
+				}
+			} else if (endDegree === 1) {
+				addSign(length - 4, "reverse", "terminal-signage");
+			} else if (startDegree === 1) {
+				addSign(4, "forward", "terminal-signage");
 			}
 		}
 	}
-	return decorations;
+	addJunctionLighting(node, decorations, spacing);
+	return resolveLampSignCollisions(node, decorations);
 }
 
 export type RoadsideDecorationPreview = RoadsideDecoration & {
 	position: [number, number, number];
+	rotationY: number;
 };
 
 export function buildRoadsideDecorationPreviews(node: RoadNetworkNode): RoadsideDecorationPreview[] {
 	return Object.values(node.roadsideDecorations ?? {}).flatMap((decoration) => {
+		if (decoration.worldPosition && decoration.worldRotationY !== undefined) {
+			return [{
+				...decoration,
+				position: [...decoration.worldPosition] as [number, number, number],
+				rotationY: decoration.worldRotationY,
+			}];
+		}
 		const edge = node.edges[decoration.edgeId];
 		if (!edge) return [];
+		const style = edgeStyle(node, edge);
 		const points = sampleRoadEdgePoints(node, edge, 40) as Array<[number, number, number]>;
+		const edgeLength = sampledLength(points);
 		let remaining = decoration.station;
 		for (let index = 0; index < points.length - 1; index += 1) {
 			const start = points[index]!;
@@ -99,17 +467,102 @@ export function buildRoadsideDecorationPreviews(node: RoadNetworkNode): Roadside
 			const dx = end[0] - start[0];
 			const dz = end[2] - start[2];
 			const horizontal = Math.max(Math.hypot(dx, dz), 1e-6);
+			const tangentAngle = Math.atan2(dz, dx);
+			const signFacesForward = decoration.facing
+				? decoration.facing === "forward"
+				: decoration.station <= edgeLength / 2;
+			const rotationY = decoration.kind === "lamp"
+				? -tangentAngle + (decoration.side === "left" ? Math.PI / 2 : -Math.PI / 2)
+				: -tangentAngle + (signFacesForward ? Math.PI / 2 : -Math.PI / 2);
 			return [{
 				...decoration,
 				position: [
 					start[0] + dx * ratio - dz / horizontal * decoration.lateralOffset,
-					start[1] + (end[1] - start[1]) * ratio + 0.15,
+					start[1] + (end[1] - start[1]) * ratio +
+						style.surfaceThickness + VERGE_ELEVATION_OFFSET,
 					start[2] + dz * ratio + dx / horizontal * decoration.lateralOffset,
 				],
+				rotationY,
 			}];
 		}
 		return [];
 	});
+}
+
+/** Preserve sign visibility while keeping a nearby fixture wherever the road has room. */
+function resolveLampSignCollisions(
+	node: RoadNetworkNode,
+	decorations: RoadNetworkNode["roadsideDecorations"],
+): RoadNetworkNode["roadsideDecorations"] {
+	let resolved = { ...decorations };
+	const minimumLampSeparation = Math.min(
+		6,
+		resolvedRoadsideDecorationSpacing(node.roadsideDecorationSpacing) / 2,
+	);
+	for (let attempt = 0; attempt < 4; attempt += 1) {
+		const previews = buildRoadsideDecorationPreviews({
+			...node,
+			roadsideDecorations: resolved,
+		});
+		const signs = previews.filter((decoration) => decoration.kind === "sign");
+		const collisions = previews.flatMap((lamp) => {
+			if (lamp.kind !== "lamp") return [];
+			const sign = signs
+				.map((candidate) => ({
+					candidate,
+					distance: Math.hypot(
+						lamp.position[0] - candidate.position[0],
+						lamp.position[1] - candidate.position[1],
+						lamp.position[2] - candidate.position[2],
+					),
+				}))
+				.filter(({ distance }) => distance < ROADSIDE_SIGN_LAMP_MIN_SEPARATION)
+				.sort((left, right) => left.distance - right.distance)[0]?.candidate;
+			return sign ? [{ lamp, sign }] : [];
+		});
+		if (collisions.length === 0) return resolved;
+		for (const { lamp, sign } of collisions) {
+			delete resolved[lamp.id];
+			if (lamp.worldPosition) continue;
+			if (lamp.edgeId !== sign.edgeId) continue;
+			const direction = sign.facing === "forward" ? 1 : -1;
+			const station = sign.station + direction * (
+				ROADSIDE_SIGN_LAMP_MIN_SEPARATION + (attempt + 1) * 0.25
+			);
+			const edge = node.edges[lamp.edgeId];
+			if (!edge) continue;
+			const edgeLength = sampledLength(
+				sampleRoadEdgePoints(node, edge, 36) as Array<[number, number, number]>,
+			);
+			if (station <= 0 || station >= edgeLength) continue;
+			const id = `roadside:${lamp.ruleId}:${lamp.edgeId}:${lamp.side}:${station.toFixed(2)}`;
+			const overlapsExistingLamp = Object.values(resolved).some((candidate) =>
+				candidate.kind === "lamp" &&
+				!candidate.worldPosition &&
+				candidate.edgeId === lamp.edgeId &&
+				candidate.side === lamp.side &&
+				Math.abs(candidate.station - station) < minimumLampSeparation
+			);
+			if (!overlapsExistingLamp) resolved[id] = { ...lamp, id, station };
+		}
+	}
+	const finalPreviews = buildRoadsideDecorationPreviews({
+		...node,
+		roadsideDecorations: resolved,
+	});
+	const finalSigns = finalPreviews.filter((decoration) => decoration.kind === "sign");
+	const unsafeLampIds = new Set(finalPreviews.flatMap((lamp) =>
+		lamp.kind === "lamp" && finalSigns.some((sign) => Math.hypot(
+			lamp.position[0] - sign.position[0],
+			lamp.position[1] - sign.position[1],
+			lamp.position[2] - sign.position[2],
+		) < ROADSIDE_SIGN_LAMP_MIN_SEPARATION)
+			? [lamp.id]
+			: []
+	));
+	return Object.fromEntries(
+		Object.entries(resolved).filter(([id]) => !unsafeLampIds.has(id)),
+	);
 }
 
 export function RoadsideDecorationInspector({
@@ -119,32 +572,43 @@ export function RoadsideDecorationInspector({
 	node: RoadNetworkNode;
 	onUpdate: (patch: Partial<RoadNetworkNode>) => void;
 }) {
-	const decorations = Object.values(node.roadsideDecorations ?? {});
-	const counts = Object.fromEntries(["lamp", "tree", "sign", "guardrail"].map((kind) => [kind, decorations.filter((item) => item.kind === kind).length]));
+	const spacing = resolvedRoadsideDecorationSpacing(node.roadsideDecorationSpacing);
 	return (
-		<div aria-label="Semantic roadside decoration rules" style={{ display: "grid", gap: 7 }}>
-			<p style={{ color: "#e2e8f0", fontSize: 12, margin: 0 }}>{decorations.length} generated roadside elements</p>
-			<label style={{ display: "grid", fontSize: 11, gap: 4 }}>
-				<span>Density</span>
-				<select aria-label="Roadside decoration density" onChange={(event) => onUpdate({ roadsideDecorationDensity: event.currentTarget.value as RoadNetworkNode["roadsideDecorationDensity"] })} value={node.roadsideDecorationDensity}>
-					<option value="sparse">Sparse</option><option value="standard">Standard</option><option value="dense">Dense</option>
-				</select>
-			</label>
-			{(["lamps", "trees", "signs", "guardrails"] as const).map((rule) => (
-				<label key={rule} style={{ alignItems: "center", display: "flex", fontSize: 11, gap: 7 }}>
-					<input
-						aria-label={`Generate roadside ${rule}`}
-						checked={node.roadsideDecorationRules[rule]}
-						onChange={(event) => onUpdate({ roadsideDecorationRules: { ...node.roadsideDecorationRules, [rule]: event.currentTarget.checked } })}
-						type="checkbox"
-					/>
-					<span>{rule} ({counts[rule === "lamps" ? "lamp" : rule === "trees" ? "tree" : rule === "signs" ? "sign" : "guardrail"] ?? 0})</span>
-				</label>
-			))}
-			<label style={{ alignItems: "center", display: "flex", fontSize: 11, gap: 7 }}>
-				<input aria-label="Show roadside decoration preview" checked={node.showRoadsideDecorations} onChange={(event) => onUpdate({ showRoadsideDecorations: event.currentTarget.checked })} type="checkbox" />
-				<span>Show generated preview</span>
-			</label>
+		<div aria-label="Roadside decorations" className="flex flex-col gap-2">
+			<div aria-label="Roadside decoration visibility">
+				<ToggleControl
+					checked={node.showRoadsideDecorations}
+					label="Show lamps and signs"
+					onChange={(showRoadsideDecorations) => {
+						const stylePresets = showRoadsideDecorations
+							? ensureRoadsideLampVerge(node)
+							: null;
+						onUpdate({
+							showRoadsideDecorations,
+							...(stylePresets ? { stylePresets } : {}),
+						});
+					}}
+				/>
+			</div>
+			<div aria-label="Roadside lamp sides">
+				<ToggleControl
+					checked={node.roadsideLampsBothSides ?? false}
+					label="Lamps on both sides"
+					onChange={(roadsideLampsBothSides) => onUpdate({ roadsideLampsBothSides })}
+				/>
+			</div>
+			<div aria-label="Roadside decoration spacing">
+				<SliderControl
+					label="Spacing"
+					max={100}
+					min={10}
+					onChange={(roadsideDecorationSpacing) => onUpdate({ roadsideDecorationSpacing })}
+					precision={0}
+					step={1}
+					unit="m"
+					value={spacing}
+				/>
+			</div>
 		</div>
 	);
 }

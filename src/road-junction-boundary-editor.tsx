@@ -200,8 +200,10 @@ export function buildManualRoadJunctionBoundary(
 export function buildManualRoadJunctionBand(
 	boundary: ReadonlyArray<RoadManualBoundaryPoint>,
 	width: number,
+	innerOffset = 0,
 ): RoadSurfaceGeometryData {
 	if (boundary.length < 3 || width <= 0) return { indices: [], positions: [] };
+	const safeInnerOffset = Math.max(0, innerOffset);
 	const center = boundary.reduce(
 		(accumulator, [x, z]) => [accumulator[0] + x, accumulator[1] + z] as const,
 		[0, 0] as const,
@@ -213,7 +215,14 @@ export function buildManualRoadJunctionBand(
 		const dx = x - centerX;
 		const dz = z - centerZ;
 		const length = Math.max(Math.hypot(dx, dz), 1e-6);
-		positions.push(x, 0, z, x + (dx / length) * width, 0, z + (dz / length) * width);
+		positions.push(
+			x + (dx / length) * safeInnerOffset,
+			0,
+			z + (dz / length) * safeInnerOffset,
+			x + (dx / length) * (safeInnerOffset + width),
+			0,
+			z + (dz / length) * (safeInnerOffset + width),
+		);
 	}
 	const indices: number[] = [];
 	for (let index = 0; index < boundary.length; index++) {

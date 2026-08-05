@@ -1,6 +1,14 @@
 "use client";
 
+import { ActionButton, ActionGroup, SliderControl } from "@pascal-app/editor";
 import { useEffect, useMemo, useState } from "react";
+import {
+	ROAD_PANEL_SELECT_CLASS,
+	RoadPanelEmpty,
+	RoadPanelField,
+	RoadPanelStatus,
+	RoadPanelSubheading,
+} from "./road-panel-controls";
 import {
 	addRoadVerticalProfilePoint,
 	bakeRoadVerticalProfile,
@@ -13,61 +21,6 @@ import {
 } from "./road-network-vertical-profile";
 import type { RoadGraphEdge, RoadNetworkNode } from "./schema";
 import { useEnvironmentStore } from "./store";
-
-const actionStyle = {
-	background: "rgba(30, 41, 59, 0.84)",
-	border: "1px solid rgba(148, 163, 184, 0.28)",
-	borderRadius: 6,
-	color: "#e2e8f0",
-	cursor: "pointer",
-	padding: "7px 8px",
-} as const;
-
-function ProfileNumber({
-	label,
-	onCommit,
-	value,
-}: {
-	label: string;
-	onCommit: (value: number) => void;
-	value: number;
-}) {
-	const [draft, setDraft] = useState(value.toFixed(2));
-	useEffect(() => setDraft(value.toFixed(2)), [value]);
-	const commit = () => {
-		const parsed = Number.parseFloat(draft);
-		if (Number.isFinite(parsed)) onCommit(parsed);
-		else setDraft(value.toFixed(2));
-	};
-	return (
-		<label style={{ display: "grid", gap: 3 }}>
-			<span style={{ color: "#94a3b8", fontSize: 10 }}>{label}</span>
-			<input
-				aria-label={`${label} in metres`}
-				onBlur={commit}
-				onChange={(event) => setDraft(event.target.value)}
-				onKeyDown={(event) => {
-					if (event.key === "Enter") event.currentTarget.blur();
-					if (event.key === "Escape") {
-						setDraft(value.toFixed(2));
-						event.currentTarget.blur();
-					}
-				}}
-				style={{
-					background: "rgba(15, 23, 42, 0.72)",
-					border: "1px solid rgba(148, 163, 184, 0.24)",
-					borderRadius: 5,
-					color: "#f8fafc",
-					minWidth: 0,
-					padding: "5px 6px",
-					width: "100%",
-				}}
-				type="number"
-				value={draft}
-			/>
-		</label>
-	);
-}
 
 function ProfilePreview({
 	edge,
@@ -106,14 +59,8 @@ function ProfilePreview({
 	return (
 		<svg
 			aria-label="Vertical profile preview"
+			className="h-[62px] w-full rounded-lg border border-border/40 bg-black/20"
 			role="img"
-			style={{
-				background: "rgba(15, 23, 42, 0.58)",
-				border: "1px solid rgba(148, 163, 184, 0.2)",
-				borderRadius: 6,
-				height: 62,
-				width: "100%",
-			}}
 			viewBox="0 0 260 62"
 		>
 			<title>Vertical profile preview</title>
@@ -147,7 +94,7 @@ export function RoadVerticalProfileEditor({
 		[edge, node],
 	);
 	if (!edge || !summary) {
-		return <p style={{ color: "#94a3b8", fontSize: 12 }}>Draw a road first.</p>;
+		return <RoadPanelEmpty>No road segments</RoadPanelEmpty>;
 	}
 	const profileMode = edge.profileMode ?? "legacy";
 	const profile = edge.verticalProfile ?? [];
@@ -166,104 +113,51 @@ export function RoadVerticalProfileEditor({
 	};
 
 	return (
-		<div style={{ display: "grid", gap: 8 }}>
+		<div className="flex flex-col gap-2">
 			{edgeIds.length > 1 ? (
-				<select
-					aria-label="Vertical profile road segment"
-					onChange={(event) => setEdgeId(event.target.value)}
-					style={{
-						background: "#2c2c2e",
-						border: "1px solid rgba(148,163,184,.25)",
-						borderRadius: 6,
-						color: "#e2e8f0",
-						padding: "6px 8px",
-					}}
-					value={edge.id}
-				>
-					{edgeIds.map((id, index) => (
-						<option key={id} value={id}>{`Segment ${index + 1}`}</option>
-					))}
-				</select>
+				<RoadPanelField label="Segment">
+					<select
+						aria-label="Vertical profile road segment"
+						className={ROAD_PANEL_SELECT_CLASS}
+						onChange={(event) => setEdgeId(event.target.value)}
+						value={edge.id}
+					>
+						{edgeIds.map((id, index) => (
+							<option key={id} value={id}>{`Segment ${index + 1}`}</option>
+						))}
+					</select>
+				</RoadPanelField>
 			) : null}
 			{profileMode !== "designed" ? (
-				<>
-					<p
-						style={{
-							color: "#94a3b8",
-							fontSize: 12,
-							lineHeight: 1.45,
-							margin: 0,
-						}}
-					>
-						Elevation currently follows the 3D spline points. Enable a profile
-						to edit plan shape and road grades independently.
-					</p>
-					<button
-						onClick={() => run(enableRoadVerticalProfile)}
-						style={actionStyle}
-						type="button"
-					>
-						Enable separate vertical profile
-					</button>
-				</>
+				<ActionButton
+					label="Enable vertical profile"
+					onClick={() => run(enableRoadVerticalProfile)}
+					type="button"
+				/>
 			) : (
 				<>
 					<ProfilePreview edge={edge} node={node} />
-					<p
-						style={{
-							color: gradeWarning ? "#fca5a5" : "#bbf7d0",
-							fontSize: 11,
-							margin: 0,
-						}}
-					>
-						{summary.length.toFixed(2)} m · {profile.length} profile points ·
-						max grade {(summary.maxAbsGrade * 100).toFixed(1)}%
-						{gradeWarning ? ` (limit ${(maxGrade * 100).toFixed(1)}%)` : ""}
-					</p>
-					<div
-						style={{ display: "grid", gap: 6, gridTemplateColumns: "1fr 1fr" }}
-					>
-						<button
-							onClick={() => run(addRoadVerticalProfilePoint)}
-							style={actionStyle}
-							type="button"
-						>
-							Add profile point
-						</button>
-						<button
-							onClick={() => run(smoothRoadVerticalProfile)}
-							style={actionStyle}
-							type="button"
-						>
-							Smooth vertical curves
-						</button>
-					</div>
+					{gradeWarning ? (
+						<RoadPanelStatus>
+							Grade {(summary.maxAbsGrade * 100).toFixed(1)}% exceeds {(maxGrade * 100).toFixed(1)}%
+						</RoadPanelStatus>
+					) : null}
+					<ActionGroup>
+						<ActionButton label="Add point" onClick={() => run(addRoadVerticalProfilePoint)} type="button" />
+						<ActionButton label="Smooth" onClick={() => run(smoothRoadVerticalProfile)} type="button" />
+					</ActionGroup>
 					{profile.map((point, index) => (
 						<div
+							className="flex flex-col gap-1 rounded-lg border border-border/40 bg-white/[0.03] p-2"
 							key={point.id}
-							style={{
-								background: "rgba(30,41,59,.45)",
-								border: "1px solid rgba(148,163,184,.18)",
-								borderRadius: 6,
-								display: "grid",
-								gap: 6,
-								padding: 7,
-							}}
 						>
-							<span
-								style={{ color: "#cbd5e1", fontSize: 11 }}
-							>{`PVI ${index + 1}`}</span>
-							<div
-								style={{
-									display: "grid",
-									gap: 5,
-									gridTemplateColumns: "repeat(3, minmax(0,1fr))",
-								}}
-							>
-								<ProfileNumber
-									label={`PVI ${index + 1} station`}
+							<RoadPanelSubheading>{`PVI ${index + 1}`}</RoadPanelSubheading>
+							<SliderControl
+								label="Station"
+								max={summary.length}
+								min={0}
 									value={point.station}
-									onCommit={(station) => {
+									onChange={(station) => {
 										const patch = updateRoadVerticalProfilePoint(
 											node,
 											edge.id,
@@ -272,11 +166,16 @@ export function RoadVerticalProfileEditor({
 										);
 										if (patch) onUpdate(patch);
 									}}
+									precision={2}
+									step={0.1}
+									unit="m"
 								/>
-								<ProfileNumber
-									label={`PVI ${index + 1} elevation`}
+							<SliderControl
+								label="Elevation"
+								max={1000}
+								min={-1000}
 									value={point.elevation}
-									onCommit={(elevation) => {
+									onChange={(elevation) => {
 										const patch = updateRoadVerticalProfilePoint(
 											node,
 											edge.id,
@@ -285,11 +184,16 @@ export function RoadVerticalProfileEditor({
 										);
 										if (patch) onUpdate(patch);
 									}}
+									precision={2}
+									step={0.1}
+									unit="m"
 								/>
-								<ProfileNumber
-									label={`PVI ${index + 1} curve length`}
+							<SliderControl
+								label="Curve length"
+								max={1000}
+								min={0}
 									value={point.curveLength}
-									onCommit={(curveLength) => {
+									onChange={(curveLength) => {
 										const patch = updateRoadVerticalProfilePoint(
 											node,
 											edge.id,
@@ -298,9 +202,13 @@ export function RoadVerticalProfileEditor({
 										);
 										if (patch) onUpdate(patch);
 									}}
+									precision={2}
+									step={0.1}
+									unit="m"
 								/>
-							</div>
-							<button
+							<ActionButton
+								className="text-red-300"
+								label="Remove point"
 								onClick={() => {
 									const patch = deleteRoadVerticalProfilePoint(
 										node,
@@ -309,20 +217,15 @@ export function RoadVerticalProfileEditor({
 									);
 									if (patch) onUpdate(patch);
 								}}
-								style={{ ...actionStyle, color: "#fecaca" }}
 								type="button"
-							>
-								Remove PVI {index + 1}
-							</button>
+							/>
 						</div>
 					))}
-					<button
+					<ActionButton
+						label="Bake to spline"
 						onClick={() => run(bakeRoadVerticalProfile)}
-						style={actionStyle}
 						type="button"
-					>
-						Bake profile back to spline points
-					</button>
+					/>
 				</>
 			)}
 		</div>

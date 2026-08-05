@@ -1,12 +1,17 @@
 "use client";
 
+import { ActionButton, SliderControl } from "@pascal-app/editor";
+import { RoadPanelSubheading } from "./road-panel-controls";
 import {
 	editRoadEdgeRoadway,
 	editRoadEdgeSide,
 	editRoadNetworkDefaultRoadway,
 	editRoadNetworkDefaultSide,
+	editRoadNetworkSharedSide,
 	resetRoadEdgeStyle,
+	resolveRoadNetworkSharedSideValue,
 	resolveRoadStyleEditingScope,
+	type RoadSharedSideStyleNumberKey,
 	type RoadSideStyleNumberKey,
 	type RoadwayStyleNumberKey,
 } from "./road-network-style-editing";
@@ -34,6 +39,18 @@ const ROADWAY_CONTROLS: Array<{
 	},
 ];
 
+const SHARED_SIDE_CONTROLS: Array<{
+	key: RoadSharedSideStyleNumberKey;
+	label: string;
+	max: number;
+	step: number;
+}> = [
+	{ key: "gutterWidth", label: "Gutter", max: 2, step: 0.05 },
+	{ key: "curbWidth", label: "Kerb", max: 1, step: 0.05 },
+	{ key: "vergeWidth", label: "Verge", max: 8, step: 0.1 },
+	{ key: "sidewalkWidth", label: "Sidewalk", max: 6, step: 0.1 },
+];
+
 const SIDE_CONTROLS: Array<{
 	key: RoadSideStyleNumberKey;
 	label: string;
@@ -42,23 +59,10 @@ const SIDE_CONTROLS: Array<{
 }> = [
 	{ key: "parkingLaneWidth", label: "Parking lane", max: 4, step: 0.1 },
 	{ key: "bikeLaneWidth", label: "Bike lane", max: 3, step: 0.1 },
-	{ key: "gutterWidth", label: "Gutter", max: 2, step: 0.05 },
-	{ key: "curbWidth", label: "Curb", max: 1, step: 0.05 },
-	{ key: "vergeWidth", label: "Verge", max: 8, step: 0.1 },
-	{ key: "sidewalkWidth", label: "Sidewalk", max: 6, step: 0.1 },
 ];
 
-const inputStyle = {
-	background: "rgba(15, 23, 42, 0.72)",
-	border: "1px solid rgba(148, 163, 184, 0.28)",
-	borderRadius: 6,
-	color: "#e2e8f0",
-	fontSize: 12,
-	padding: "6px 8px",
-	width: 88,
-} as const;
-
-function NumberField({
+function RoadDimension({
+	accessibilityLabel,
 	label,
 	max,
 	min = 0,
@@ -66,6 +70,7 @@ function NumberField({
 	step,
 	value,
 }: {
+	accessibilityLabel: string;
 	label: string;
 	max: number;
 	min?: number;
@@ -74,30 +79,18 @@ function NumberField({
 	value: number;
 }) {
 	return (
-		<label
-			style={{
-				alignItems: "center",
-				display: "flex",
-				fontSize: 12,
-				gap: 8,
-				justifyContent: "space-between",
-			}}
-		>
-			<span>{label}</span>
-			<input
-				aria-label={`${label} in metres`}
+		<div aria-label={`${accessibilityLabel} in metres`}>
+			<SliderControl
+				label={label}
 				max={max}
 				min={min}
-				onChange={(event) => {
-					const next = event.currentTarget.valueAsNumber;
-					if (Number.isFinite(next)) onChange(next);
-				}}
+				onChange={onChange}
+				precision={step >= 1 ? 0 : step >= 0.1 ? 1 : 2}
 				step={step}
-				style={inputStyle}
-				type="number"
+				unit={label === "Lane count" ? "" : "m"}
 				value={value}
 			/>
-		</label>
+		</div>
 	);
 }
 
@@ -135,36 +128,29 @@ export function RoadCrossSectionInspector({
 		}
 		onUpdate({ stylePresets: editRoadNetworkDefaultSide(node, side, key, value) });
 	};
+	const updateSharedSide = (
+		key: RoadSharedSideStyleNumberKey,
+		value: number,
+	) => {
+		onUpdate({ stylePresets: editRoadNetworkSharedSide(node, key, value) });
+	};
 	return (
-		<div style={{ display: "grid", gap: 12 }}>
-			<p style={{ color: "#94a3b8", fontSize: 11, lineHeight: 1.4, margin: 0 }}>
-				{scope.edgeId ? "Editing selected segment" : "Editing network default"}: {style.name}
-			</p>
+		<div className="flex flex-col gap-2">
 			{scope.edgeId ? (
-				<button
+				<ActionButton
+					label="Use network style"
 					onClick={() => {
 						const patch = resetRoadEdgeStyle(node, scope.edgeId!);
 						if (patch) onUpdate(patch);
 					}}
-					style={{
-						background: "rgba(30, 41, 59, 0.84)",
-						border: "1px solid rgba(148, 163, 184, 0.28)",
-						borderRadius: 6,
-						color: "#e2e8f0",
-						cursor: "pointer",
-						padding: "7px 9px",
-					}}
 					type="button"
-				>
-					Use network default
-				</button>
+				/>
 			) : null}
-			<fieldset style={{ border: 0, display: "grid", gap: 7, margin: 0, padding: 0 }}>
-				<legend style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>
-					Roadway
-				</legend>
+			<div className="flex flex-col gap-1">
+				<RoadPanelSubheading>Roadway</RoadPanelSubheading>
 				{ROADWAY_CONTROLS.map((control) => (
-					<NumberField
+					<RoadDimension
+						accessibilityLabel={control.label}
 						key={control.key}
 						label={control.label}
 						max={control.max}
@@ -174,29 +160,42 @@ export function RoadCrossSectionInspector({
 						value={style[control.key]}
 					/>
 				))}
-			</fieldset>
+			</div>
+			<div className="flex flex-col gap-1">
+				<RoadPanelSubheading>Shared roadside</RoadPanelSubheading>
+				{SHARED_SIDE_CONTROLS.map((control) => (
+					<RoadDimension
+						accessibilityLabel={`Shared ${control.label.toLowerCase()}`}
+						key={control.key}
+						label={control.label}
+						max={control.max}
+						onChange={(value) => updateSharedSide(control.key, value)}
+						step={control.step}
+						value={resolveRoadNetworkSharedSideValue(node, control.key)}
+					/>
+				))}
+			</div>
 			{(["left", "right"] as const).map((side: RoadSide) => {
 				const components = resolveRoadSideComponents(style, side);
 				const sideLabel = side === "left" ? "Left side" : "Right side";
 				return (
-					<fieldset
+					<div
 						key={side}
-						style={{ border: 0, display: "grid", gap: 7, margin: 0, padding: 0 }}
+						className="flex flex-col gap-1"
 					>
-						<legend style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>
-							{sideLabel}
-						</legend>
+						<RoadPanelSubheading>{sideLabel}</RoadPanelSubheading>
 						{SIDE_CONTROLS.map((control) => (
-							<NumberField
+							<RoadDimension
+								accessibilityLabel={`${sideLabel} ${control.label.toLowerCase()}`}
 								key={control.key}
-								label={`${sideLabel} ${control.label.toLowerCase()}`}
+								label={control.label}
 								max={control.max}
 								onChange={(value) => updateSide(side, control.key, value)}
 								step={control.step}
 								value={components[control.key]}
 							/>
 						))}
-					</fieldset>
+					</div>
 				);
 			})}
 		</div>

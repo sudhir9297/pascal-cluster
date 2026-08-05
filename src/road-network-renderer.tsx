@@ -14,23 +14,23 @@ import type { Group } from 'three'
 import { RoadNetworkExtensionControls } from './road-network-extension-controls'
 import { roadNetworkEditingControlsState } from './road-network-editing-controls'
 import { deleteRoadEdge } from './road-network-graph-editing'
-import { buildDirectedRoadLanes } from './road-network-lanes'
-import { buildRoadLaneMovements } from './road-lane-movements'
-import { buildRoadSignalPlans } from './road-signal-phasing'
-import { buildDividedRoadJunctionExpansions } from './road-divided-junctions'
-import { buildRoadActiveModeMovements } from './road-active-modes'
-import { buildRoadTrafficRoutes } from './road-traffic-simulation'
-import { buildRoadsideDecorations } from './roadside-decoration-rules'
+import {
+  buildRoadsideDecorations,
+  ensureRoadsideLampVerge,
+} from './roadside-decoration-rules'
 import { RoadNetworkModel } from './road-network-model'
 import { RoadNetworkSplineControls } from './road-network-spline-controls'
 import { splitRoadGraphComponents } from './road-network-topology'
 import { RoadNetworkNode } from './schema'
 import { useEnvironmentStore, type RoadElementSelection } from './store'
 import { decodeTerrainField } from './terrain-field-compat'
+import { roadRuntimeDefaultsPatch } from './road-network-runtime-defaults'
 
 export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNetworkNode }) {
   const ref = useRef<Group>(null!)
   const normalizedSignatureRef = useRef<string | null>(null)
+  const roadsideSyncSignatureRef = useRef<string | null>(null)
+  const runtimeDefaultsSignatureRef = useRef<string | null>(null)
   const handlers = useNodeEvents(storeNode as never, 'environment:road-network' as never)
   const roadToolActive = useEditor(
     (state) => state.mode === 'build' && (state.tool as string | null) === 'environment:road-network',
@@ -96,99 +96,67 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
   const override = useLiveNodeOverrides(
     (state) => state.get(storeNode.id as AnyNodeId) as Partial<RoadNetworkNode> | undefined,
   )
-  const node = override ? ({ ...storeNode, ...override } as RoadNetworkNode) : storeNode
-  const generatedLanes = useMemo(() => buildDirectedRoadLanes(node), [
-    node.activeStyleId,
-    node.applyStyleToAll,
-    node.edges,
-    node.graphNodes,
-		node.junctions,
-    node.regionalPack,
-    node.stylePresets,
-  ])
-  useEffect(() => {
-    if (JSON.stringify(node.lanes) === JSON.stringify(generatedLanes)) return
-    useScene.getState().updateNode(node.id as AnyNodeId, {
-      lanes: generatedLanes,
-    } as Partial<AnyNode>)
-  }, [generatedLanes, node.id, node.lanes])
-  const generatedLaneMovements = useMemo(
-    () => buildRoadLaneMovements({ ...node, lanes: generatedLanes }),
-    [generatedLanes, node],
+  // Local editor scenes can retain an already-mounted node while a plugin schema
+  // advances. Parse at the renderer boundary so every derived subsystem receives
+  // the same defaults even before the host persists its migration patch.
+  const node = useMemo(
+    () => RoadNetworkNode.parse(override ? { ...storeNode, ...override } : storeNode),
+    [override, storeNode],
   )
   useEffect(() => {
-    if (JSON.stringify(node.laneMovements) === JSON.stringify(generatedLaneMovements)) return
-    useScene.getState().updateNode(node.id as AnyNodeId, {
-      laneMovements: generatedLaneMovements,
-    } as Partial<AnyNode>)
-  }, [generatedLaneMovements, node.id, node.laneMovements])
-  const generatedActiveModeMovements = useMemo(
-    () => buildRoadActiveModeMovements({
-      ...node,
-      lanes: generatedLanes,
-      laneMovements: generatedLaneMovements,
-    }),
-    [generatedLaneMovements, generatedLanes, node],
-  )
-  useEffect(() => {
-    if (JSON.stringify(node.activeModeMovements ?? {}) === JSON.stringify(generatedActiveModeMovements)) return
-    useScene.getState().updateNode(node.id as AnyNodeId, {
-      activeModeMovements: generatedActiveModeMovements,
-    } as Partial<AnyNode>)
-  }, [generatedActiveModeMovements, node.activeModeMovements, node.id])
-  const generatedSignalPlans = useMemo(
-    () => buildRoadSignalPlans({
-      ...node,
-      lanes: generatedLanes,
-      laneMovements: generatedLaneMovements,
-    }),
-    [generatedLaneMovements, generatedLanes, node],
-  )
-  useEffect(() => {
-    if (JSON.stringify(node.signalPlans ?? {}) === JSON.stringify(generatedSignalPlans)) return
-    useScene.getState().updateNode(node.id as AnyNodeId, {
-      signalPlans: generatedSignalPlans,
-    } as Partial<AnyNode>)
-  }, [generatedSignalPlans, node.id, node.signalPlans])
-  const generatedTrafficRoutes = useMemo(
-    () => buildRoadTrafficRoutes({
-      ...node,
-      lanes: generatedLanes,
-      laneMovements: generatedLaneMovements,
-      signalPlans: generatedSignalPlans,
-    }),
-    [generatedLaneMovements, generatedLanes, generatedSignalPlans, node],
-  )
-  useEffect(() => {
-    if (JSON.stringify(node.trafficRoutes ?? {}) === JSON.stringify(generatedTrafficRoutes)) return
-    useScene.getState().updateNode(node.id as AnyNodeId, {
-      trafficRoutes: generatedTrafficRoutes,
-    } as Partial<AnyNode>)
-  }, [generatedTrafficRoutes, node.id, node.trafficRoutes])
-  const generatedRoadsideDecorations = useMemo(
-    () => buildRoadsideDecorations(node),
+    const patch = roadRuntimeDefaultsPatch(storeNode, node)
+    const missingKeys = Object.keys(patch)
+    if (missingKeys.length === 0) {
+      runtimeDefaultsSignatureRef.current = null
+      return
+    }
+    const signature = `${storeNode.id}:${missingKeys.join(',')}`
+    if (runtimeDefaultsSignatureRef.current === signature) return
+    runtimeDefaultsSignatureRef.current = signature
+    useScene.getState().updateNode(
+      storeNode.id as AnyNodeId,
+      patch as Partial<AnyNode>,
+    )
+  }, [node, storeNode])
+  const roadsideLampStylePresets = useMemo(
+    () => node.showRoadsideDecorations ? ensureRoadsideLampVerge(node) : null,
     [node],
   )
+  const roadsideNode = useMemo(
+    () => roadsideLampStylePresets
+      ? { ...node, stylePresets: roadsideLampStylePresets }
+      : node,
+    [node, roadsideLampStylePresets],
+  )
   useEffect(() => {
-    if (JSON.stringify(node.roadsideDecorations ?? {}) === JSON.stringify(generatedRoadsideDecorations)) return
+    if (!roadsideLampStylePresets) return
+    useScene.getState().updateNode(node.id as AnyNodeId, {
+      stylePresets: roadsideLampStylePresets,
+    } as Partial<AnyNode>)
+  }, [node.id, roadsideLampStylePresets])
+  const generatedRoadsideDecorations = useMemo(
+    () => buildRoadsideDecorations(roadsideNode),
+    [roadsideNode],
+  )
+  useEffect(() => {
+    const signature = JSON.stringify(generatedRoadsideDecorations)
+    if (JSON.stringify(node.roadsideDecorations ?? {}) === signature) {
+      roadsideSyncSignatureRef.current = null
+      return
+    }
+    if (roadsideSyncSignatureRef.current === signature) return
+    roadsideSyncSignatureRef.current = signature
     useScene.getState().updateNode(node.id as AnyNodeId, {
       roadsideDecorations: generatedRoadsideDecorations,
     } as Partial<AnyNode>)
   }, [generatedRoadsideDecorations, node.id, node.roadsideDecorations])
-  const generatedDividedJunctions = useMemo(
-    () => buildDividedRoadJunctionExpansions({
-      ...node,
-      lanes: generatedLanes,
-      laneMovements: generatedLaneMovements,
+  const renderedNode = useMemo(
+    () => ({
+      ...roadsideNode,
+      roadsideDecorations: generatedRoadsideDecorations,
     }),
-    [generatedLaneMovements, generatedLanes, node],
+    [generatedRoadsideDecorations, roadsideNode],
   )
-  useEffect(() => {
-    if (JSON.stringify(node.dividedJunctions ?? {}) === JSON.stringify(generatedDividedJunctions)) return
-    useScene.getState().updateNode(node.id as AnyNodeId, {
-      dividedJunctions: generatedDividedJunctions,
-    } as Partial<AnyNode>)
-  }, [generatedDividedJunctions, node.dividedJunctions, node.id])
   const storedComponents = useMemo(
     () => splitRoadGraphComponents(storeNode),
     [storeNode],
@@ -266,7 +234,7 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
       <RoadNetworkModel
 		clearancePeers={clearancePeers}
         elementSelection={elementSelection}
-        node={node}
+        node={renderedNode}
         nonInteractive={roadToolActive}
         onSelectElement={roadToolActive ? undefined : onSelectElement}
 		terrain={terrain}

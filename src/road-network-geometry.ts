@@ -52,6 +52,82 @@ export type RoadRibbonGeometryOptions = {
 	width: number;
 };
 
+/** Follow the same outward offset used by generated junction side bands. */
+export function offsetJunctionBoundaryCornerPoints(
+	corner: JunctionBoundaryCorner,
+	offset: number,
+): Array<readonly [number, number]> {
+	const safeOffset = Math.max(0, offset);
+	if (corner.center && corner.effectiveRadius > 0) {
+		const radius = Math.max(0.05, corner.effectiveRadius - safeOffset);
+		return corner.innerPoints.map(([x, z]) => {
+			const dx = x - corner.center![0];
+			const dz = z - corner.center![1];
+			const length = Math.max(Math.hypot(dx, dz), 1e-6);
+			return [
+				corner.center![0] + (dx / length) * radius,
+				corner.center![1] + (dz / length) * radius,
+			] as const;
+		});
+	}
+	return corner.innerPoints.map(([x, z]) => [
+		x + corner.outerDirection[0] * safeOffset,
+		z + corner.outerDirection[1] * safeOffset,
+	] as const);
+}
+
+export type JunctionBoundarySidePath = {
+	fromEdgeId: string;
+	points: Array<readonly [number, number]>;
+	toEdgeId: string;
+};
+
+/**
+ * Trace each continuous roadside between adjacent approach openings, including
+ * both straight approach sleeves and the curb-return curve between them.
+ */
+export function buildJunctionBoundarySidePaths(
+	solution: Pick<
+		JunctionBoundaryGeometryData,
+		"approachCuts" | "approaches" | "corners"
+	>,
+	offset = 0,
+): JunctionBoundarySidePath[] {
+	if (
+		solution.approaches.length < 3 ||
+		solution.corners.length !== solution.approaches.length
+	) return [];
+	const safeOffset = Math.max(0, offset);
+	return solution.corners.flatMap((corner, index) => {
+		const from = solution.approaches[index]!;
+		const to = solution.approaches[(index + 1) % solution.approaches.length]!;
+		const fromCut = solution.approachCuts[from.edgeId];
+		const toCut = solution.approachCuts[to.edgeId];
+		if (fromCut === undefined || toCut === undefined) return [];
+		const fromDirection = [Math.cos(from.angle), Math.sin(from.angle)] as const;
+		const fromLeft = [-fromDirection[1], fromDirection[0]] as const;
+		const toDirection = [Math.cos(to.angle), Math.sin(to.angle)] as const;
+		const toLeft = [-toDirection[1], toDirection[0]] as const;
+		const fromLeftCap = [
+			fromDirection[0] * fromCut + fromLeft[0] * (from.halfWidth + safeOffset),
+			fromDirection[1] * fromCut + fromLeft[1] * (from.halfWidth + safeOffset),
+		] as const;
+		const toRightCap = [
+			toDirection[0] * toCut - toLeft[0] * (to.halfWidth + safeOffset),
+			toDirection[1] * toCut - toLeft[1] * (to.halfWidth + safeOffset),
+		] as const;
+		return [{
+			fromEdgeId: from.edgeId,
+			points: [
+				fromLeftCap,
+				...offsetJunctionBoundaryCornerPoints(corner, safeOffset),
+				toRightCap,
+			],
+			toEdgeId: to.edgeId,
+		}];
+	});
+}
+
 /**
  * Build the exact indexed ribbon consumed by the 3D road renderer.
  *
@@ -816,36 +892,24 @@ export function buildJunctionBoundarySidewalkGeometry(
 		"approachCuts" | "approaches" | "corners"
 	>,
 	width: number,
+	innerOffset = 0,
 ): RoadSurfaceGeometryData {
 	const positions: number[] = [];
 	const indices: number[] = [];
 	if (width <= 0) return { indices, positions };
+	const safeInnerOffset = Math.max(0, innerOffset);
 	for (const corner of solution.corners) {
 		if (corner.innerPoints.length < 2) continue;
-		let outerPoints: Array<readonly [number, number]>;
-		if (corner.center && corner.effectiveRadius > 0) {
-			const outerRadius = Math.max(0.05, corner.effectiveRadius - width);
-			outerPoints = corner.innerPoints.map(([x, z]) => {
-				const dx = x - corner.center![0];
-				const dz = z - corner.center![1];
-				const length = Math.max(Math.hypot(dx, dz), 1e-6);
-				return [
-					corner.center![0] + (dx / length) * outerRadius,
-					corner.center![1] + (dz / length) * outerRadius,
-				] as const;
-			});
-		} else {
-			outerPoints = corner.innerPoints.map(
-				([x, z]) =>
-					[
-						x + corner.outerDirection[0] * width,
-						z + corner.outerDirection[1] * width,
-					] as const,
-			);
-		}
-		for (let index = 0; index < corner.innerPoints.length - 1; index++) {
-			const innerStart = corner.innerPoints[index]!;
-			const innerEnd = corner.innerPoints[index + 1]!;
+		const innerPoints = safeInnerOffset === 0
+			? corner.innerPoints
+			: offsetJunctionBoundaryCornerPoints(corner, safeInnerOffset);
+		const outerPoints = offsetJunctionBoundaryCornerPoints(
+			corner,
+			safeInnerOffset + width,
+		);
+		for (let index = 0; index < innerPoints.length - 1; index++) {
+			const innerStart = innerPoints[index]!;
+			const innerEnd = innerPoints[index + 1]!;
 			const outerStart = outerPoints[index]!;
 			const outerEnd = outerPoints[index + 1]!;
 			appendSidewalkQuad(
@@ -882,35 +946,59 @@ export function buildJunctionBoundarySidewalkGeometry(
 			direction[0] * cut + left[0] * approach.halfWidth,
 			direction[1] * cut + left[1] * approach.halfWidth,
 		] as const;
+		const rightInnerStart = safeInnerOffset === 0
+			? previousPoint
+			: [
+				previousPoint[0] - left[0] * safeInnerOffset,
+				previousPoint[1] - left[1] * safeInnerOffset,
+			] as const;
+		const rightInnerEnd = safeInnerOffset === 0
+			? rightCap
+			: [
+				rightCap[0] - left[0] * safeInnerOffset,
+				rightCap[1] - left[1] * safeInnerOffset,
+			] as const;
 		const rightOuterStart = [
-			previousPoint[0] - left[0] * width,
-			previousPoint[1] - left[1] * width,
+			previousPoint[0] - left[0] * (safeInnerOffset + width),
+			previousPoint[1] - left[1] * (safeInnerOffset + width),
 		] as const;
 		const rightOuterEnd = [
-			rightCap[0] - left[0] * width,
-			rightCap[1] - left[1] * width,
+			rightCap[0] - left[0] * (safeInnerOffset + width),
+			rightCap[1] - left[1] * (safeInnerOffset + width),
 		] as const;
+		const leftInnerStart = safeInnerOffset === 0
+			? leftCap
+			: [
+				leftCap[0] + left[0] * safeInnerOffset,
+				leftCap[1] + left[1] * safeInnerOffset,
+			] as const;
+		const leftInnerEnd = safeInnerOffset === 0
+			? nextPoint
+			: [
+				nextPoint[0] + left[0] * safeInnerOffset,
+				nextPoint[1] + left[1] * safeInnerOffset,
+			] as const;
 		const leftOuterStart = [
-			leftCap[0] + left[0] * width,
-			leftCap[1] + left[1] * width,
+			leftCap[0] + left[0] * (safeInnerOffset + width),
+			leftCap[1] + left[1] * (safeInnerOffset + width),
 		] as const;
 		const leftOuterEnd = [
-			nextPoint[0] + left[0] * width,
-			nextPoint[1] + left[1] * width,
+			nextPoint[0] + left[0] * (safeInnerOffset + width),
+			nextPoint[1] + left[1] * (safeInnerOffset + width),
 		] as const;
 		appendSidewalkQuad(
 			positions,
 			indices,
-			previousPoint,
-			rightCap,
+			rightInnerStart,
+			rightInnerEnd,
 			rightOuterStart,
 			rightOuterEnd,
 		);
 		appendSidewalkQuad(
 			positions,
 			indices,
-			leftCap,
-			nextPoint,
+			leftInnerStart,
+			leftInnerEnd,
 			leftOuterStart,
 			leftOuterEnd,
 		);

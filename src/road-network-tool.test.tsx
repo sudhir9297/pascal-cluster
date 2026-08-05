@@ -35,11 +35,12 @@ describe('road drafting cursor', () => {
     expect(source).toContain('clearRoadAlignmentGuides();')
   })
 
-  test('blocks rejected commits with a red cursor and actionable alert', () => {
+  test('blocks rejected commits with visual feedback but no floating error text', () => {
     const source = readFileSync(new URL('./road-network-tool.tsx', import.meta.url), 'utf8')
 
-    expect(source).toContain('data-road-draft-error={invalid.code}')
-    expect(source).toContain('role="alert"')
+    expect(source).not.toContain('data-road-draft-error={invalid.code}')
+    expect(source).not.toContain('role="alert"')
+    expect(source).toContain('showTooltip={Boolean(showNumeric)}')
     expect(source).toContain('name="road-invalid-cursor"')
     expect(source).toContain('roadDraftInvalidState(')
     expect(source).toContain('setAttemptedInvalid(invalid)')
@@ -67,12 +68,12 @@ describe('road drafting cursor', () => {
     expect(nextRoadElevationMode('bridge')).toBe('ground')
   })
 
-	test('keeps tunnel conversion in the selected-road inspector', () => {
+	test('does not expose tunnel conversion in the selected-road inspector', () => {
 		const source = readFileSync(new URL('./road-network-parametrics.ts', import.meta.url), 'utf8')
 
-		expect(source).toContain('label: "Tunnel structure"')
-		expect(source).toContain('component: RoadTunnelEditor')
-		expect(source).toContain('key: "tunnelPortalCutLength"')
+		expect(source).not.toContain('label: "Tunnel"')
+		expect(source).not.toContain('component: RoadTunnelEditor')
+		expect(source).not.toContain('key: "tunnelPortalCutLength"')
 	})
 })
 
