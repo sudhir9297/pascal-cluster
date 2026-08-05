@@ -1,24 +1,51 @@
 import { describe, expect, test } from 'bun:test'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { roadRibbonShadowPolicy, RoadNetworkModel } from './road-network-model'
+import {
+  roadRibbonShadowPolicy,
+  RoadDraftPreviewSurface,
+  RoadNetworkModel,
+} from './road-network-model'
 import { buildRoadNetworkFloorplan } from './road-network-floorplan'
 import { moveRoadTerminal } from './road-network-extension-handles'
 import type { GeometryContext } from '@pascal-app/core'
 import { createEmptyRoadGraph, insertRoadSegment } from './road-network-topology'
 import { RoadNetworkNode } from './schema'
+import { sampleRoadAlignmentPoints } from './road-network-geometry'
+import { DEFAULT_ROAD_STYLE_PRESETS } from './road-style-presets'
 
-function renderRoad(node: RoadNetworkNode): string {
+function renderThree(element: Parameters<typeof renderToStaticMarkup>[0]): string {
   const previousConsoleError = console.error
   console.error = () => {}
   try {
-    return renderToStaticMarkup(createElement(RoadNetworkModel, { node }))
+    return renderToStaticMarkup(element)
   } finally {
     console.error = previousConsoleError
   }
 }
 
+function renderRoad(node: RoadNetworkNode): string {
+  return renderThree(createElement(RoadNetworkModel, { node }))
+}
+
 describe('road network corner rendering', () => {
+  test('submits one continuous carriageway mesh while previewing a spline', () => {
+    const points = sampleRoadAlignmentPoints(
+      [0, 0, 0],
+      [[6, 0, 5]],
+      [12, 0, 0],
+      16,
+    )
+    const markup = renderThree(createElement(RoadDraftPreviewSurface, {
+      points,
+      style: DEFAULT_ROAD_STYLE_PRESETS['local-street'],
+    }))
+
+    expect(points.length).toBeGreaterThan(2)
+    expect(markup.match(/name="road-segment-preview"/g)).toHaveLength(1)
+    expect(markup.match(/name="road-side-[^"]+-preview"/g)).toHaveLength(8)
+  })
+
   test('keeps flat curved ribbons from casting shadow acne onto themselves', () => {
     expect(roadRibbonShadowPolicy(false)).toEqual({
       castShadow: false,

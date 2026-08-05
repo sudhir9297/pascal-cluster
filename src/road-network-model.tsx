@@ -123,8 +123,28 @@ export function RoadSegmentSurface({
   start: readonly [number, number, number]
   style: RoadStylePreset
 }) {
+  return (
+    <RoadPathSurface
+      color={color}
+      ghost={ghost}
+      points={[start, end]}
+      style={style}
+    />
+  )
+}
+
+function RoadPathSurface({
+  color,
+  ghost = false,
+  points,
+  style,
+}: {
+  color?: string
+  ghost?: boolean
+  points: ReadonlyArray<readonly [number, number, number]>
+  style: RoadStylePreset
+}) {
   const crossSection = buildRoadCrossSection(style)
-  const points = [start, end]
   return (
     <>
       <RoadRibbonSurface color={color} ghost={ghost} points={points} style={style} />
@@ -145,6 +165,25 @@ export function RoadSegmentSurface({
         )),
       )}
     </>
+  )
+}
+
+export function RoadDraftPreviewSurface({
+  color,
+  points,
+  style,
+}: {
+  color?: string
+  points: ReadonlyArray<readonly [number, number, number]>
+  style: RoadStylePreset
+}) {
+  return (
+    <RoadPathSurface
+      color={color}
+      ghost
+      points={points}
+      style={style}
+    />
   )
 }
 

@@ -45,7 +45,7 @@ import {
 	type RoadDraftInvalidState,
 } from "./road-draft-validity";
 import { sampleRoadEdgePoints } from "./road-network-geometry";
-import { RoadSegmentSurface } from "./road-network-model";
+import { RoadDraftPreviewSurface } from "./road-network-model";
 import {
 	createEmptyRoadGraph,
 	insertRoadSegment,
@@ -1125,16 +1125,11 @@ export default function RoadNetworkTool() {
 					{draftSnapMode === 'angle' && !snapTarget && start ? (
 						<RoadAngleSnapRay end={cursor} start={start} />
 					) : null}
-					{previewPoints.slice(0, -1).map((point, index) => (
-						<RoadSegmentSurface
-							color={previewColor}
-							end={previewPoints[index + 1]!}
-							ghost
-							key={`${index}:${point[0]}:${point[2]}`}
-							start={point}
-							style={style}
-						/>
-					))}
+					<RoadDraftPreviewSurface
+						color={previewColor}
+						points={previewPoints}
+						style={style}
+					/>
 				</group>
 			) : null}
 			<RoadDraftCursor
