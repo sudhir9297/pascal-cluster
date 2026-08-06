@@ -11,6 +11,8 @@ import { sampleRoadEdgePoints } from './road-network-geometry'
 import { DEFAULT_ROAD_STYLE_PRESETS } from './road-style-presets'
 import { projectRoadPointToEdge } from './road-network-topology'
 import {
+  resolveRoadBarrierLayout,
+  resolveTrafficBollardLayout,
   resolveFireHydrantLayout,
   resolveManholeCoverLayout,
 } from './street-infrastructure-geometry'
@@ -20,6 +22,8 @@ export type RoadAttachmentAssetKind =
   | 'environment:drainage-inlet'
   | 'environment:manhole-cover'
   | 'environment:fire-hydrant'
+  | 'environment:traffic-bollard'
+  | 'environment:road-barrier'
 
 export type RoadAttachmentTransform = {
   position: [number, number, number]
@@ -49,11 +53,12 @@ export type SignalJunctionPlacement = {
 }
 
 const ATTACHMENT_CAPTURE_PADDING = 1.2
-const SIGNAL_SETBACK = 4.5
+const SIGNAL_SETBACK = 7.5
 const MANHOLE_ROAD_CLEARANCE = 0.12
 const ROAD_SURFACE_CLEARANCE = 0.006
 const DRAINAGE_INLET_PLACEMENT_Y = 0.15
 const HYDRANT_CURB_CLEARANCE = 0.05
+const ROADSIDE_ASSET_CLEARANCE = 0.08
 
 function distanceXZ(
   first: readonly [number, number, number],
@@ -206,6 +211,8 @@ function roadSurfaceHeightAtLateralOffset(
 function attachmentAlignmentForKind(kind: RoadAttachmentAssetKind): RoadAttachmentAlignment {
   if (kind === 'environment:drainage-inlet') return 'gutter'
   if (kind === 'environment:fire-hydrant') return 'curb'
+  if (kind === 'environment:traffic-bollard') return 'curb'
+  if (kind === 'environment:road-barrier') return 'curb'
   if (kind === 'environment:manhole-cover') return 'carriageway'
   return 'free'
 }
@@ -288,15 +295,40 @@ export function resolveRoadAttachmentTransform(
   const hydrantLayout = node.type === 'environment:fire-hydrant'
     ? resolveFireHydrantLayout(node)
     : null
+  const bollardLayout = node.type === 'environment:traffic-bollard'
+    ? resolveTrafficBollardLayout(node)
+    : null
+  const barrierLayout = node.type === 'environment:road-barrier'
+    ? resolveRoadBarrierLayout(node)
+    : null
   const curbStrip = crossSection.sides[side].components.find(
     (candidate) => candidate.kind === 'curb',
   )
+  const vergeStrip = crossSection.sides[side].components.find(
+    (candidate) => candidate.kind === 'verge',
+  )
   const lateralOffset = alignment === 'curb' && node.type === 'environment:fire-hydrant'
     ? sign * (
-        (curbStrip?.outerOffset ?? crossSection.sides[side].outerOffset)
-          + hydrantLayout!.barrelRadius
-          + HYDRANT_CURB_CLEARANCE
+        vergeStrip
+          ? Math.abs(vergeStrip.lateralOffset)
+          : (curbStrip?.outerOffset ?? crossSection.sides[side].outerOffset)
+            + hydrantLayout!.barrelRadius
+            + HYDRANT_CURB_CLEARANCE
       )
+    : alignment === 'curb' && node.type === 'environment:traffic-bollard'
+      ? sign * (
+          (curbStrip?.outerOffset ?? crossSection.sides[side].outerOffset)
+            + bollardLayout!.baseRadius
+            + ROADSIDE_ASSET_CLEARANCE
+        )
+      : alignment === 'curb' && node.type === 'environment:road-barrier'
+        ? sign * (
+            vergeStrip
+              ? Math.abs(vergeStrip.lateralOffset)
+              : (curbStrip?.outerOffset ?? crossSection.sides[side].outerOffset)
+                + barrierLayout!.width / 2
+                + ROADSIDE_ASSET_CLEARANCE
+          )
     : component
     ? sign * component.lateralOffset
     : alignment === 'carriageway' && node.type === 'environment:manhole-cover'
@@ -339,6 +371,8 @@ export function resolveRoadAttachmentTransform(
       + (side === 'right' ? Math.PI : 0)
   } else if (alignment === 'curb' && node.type === 'environment:fire-hydrant') {
     rotationY = -Math.atan2(sampled.tangent[1], sampled.tangent[0]) + (side === 'right' ? Math.PI : 0)
+  } else if (alignment === 'curb' && node.type === 'environment:road-barrier') {
+    rotationY = -Math.atan2(sampled.tangent[1], sampled.tangent[0])
   }
   return {
     position,
@@ -445,7 +479,33 @@ function signalRotationForApproach(
   return Math.atan2(-outward[0], -outward[1])
 }
 
-/** Propose one editable post signal on each approach of a signalized junction. */
+function selectSparseSignalSupports(
+  placements: readonly SignalJunctionPlacement[],
+): SignalJunctionPlacement[] {
+  if (placements.length <= 2) return [...placements]
+  let best: readonly [SignalJunctionPlacement, SignalJunctionPlacement] | null = null
+  let bestDistance = -1
+  let bestKey = ''
+  for (let firstIndex = 0; firstIndex < placements.length - 1; firstIndex += 1) {
+    for (let secondIndex = firstIndex + 1; secondIndex < placements.length; secondIndex += 1) {
+      const first = placements[firstIndex]!
+      const second = placements[secondIndex]!
+      const distance = Math.hypot(
+        second.position[0] - first.position[0],
+        second.position[2] - first.position[2],
+      )
+      const key = [first.edgeId, second.edgeId].sort().join(':')
+      if (distance > bestDistance + 1e-6 || (Math.abs(distance - bestDistance) <= 1e-6 && key < bestKey)) {
+        best = [first, second]
+        bestDistance = distance
+        bestKey = key
+      }
+    }
+  }
+  return best ? [...best] : placements.slice(0, 2)
+}
+
+/** Propose a sparse pair of editable mast-arm supports outside the junction surface. */
 export function buildSignalJunctionPlacements(
   network: RoadNetworkNode,
   junctionId: string,
@@ -455,20 +515,24 @@ export function buildSignalJunctionPlacements(
   const edges = Object.values(network.edges)
     .filter((edge) => edge.startNodeId === junctionId || edge.endNodeId === junctionId)
     .sort((first, second) => first.id.localeCompare(second.id))
-  return edges.flatMap((edge) => {
+  const placements = edges.flatMap((edge) => {
     const junctionAtEnd = edge.endNodeId === junctionId
     const { length, points } = edgePathMetrics(network, edge)
     if (length < 1) return []
     const station = junctionAtEnd
-      ? Math.max(0.5, length - Math.min(SIGNAL_SETBACK, length * 0.35))
-      : Math.min(length - 0.5, Math.min(SIGNAL_SETBACK, length * 0.35))
+      ? Math.max(0.5, length - Math.min(SIGNAL_SETBACK, length - 0.5))
+      : Math.min(length - 0.5, Math.min(SIGNAL_SETBACK, length - 0.5))
     const sampled = pointAtStation(points, station)
     const side = signalSideForApproach(network, junctionAtEnd)
     const style = roadStyleForEdge(network, edge)
-    const lateral = sideComponentMetrics(style, side, 'curb').lateralOffset + 0.35
+    const crossSection = buildRoadCrossSection(style)
+    const verge = crossSection.sides[side].components.find((component) => component.kind === 'verge')
+    const curb = crossSection.sides[side].components.find((component) => component.kind === 'curb')
+    const lateral = verge
+      ? Math.abs(verge.lateralOffset)
+      : (curb?.outerOffset ?? crossSection.sides[side].outerOffset) + 0.6
     const signedLateral = sideSign(side) * lateral
     const leftNormal: [number, number] = [-sampled.tangent[1], sampled.tangent[0]]
-    const component = sideComponentMetrics(style, side, 'curb')
     return [{
       edgeId: edge.id,
       lateralOffset: signedLateral,
@@ -476,11 +540,12 @@ export function buildSignalJunctionPlacements(
         sampled.point[0] + leftNormal[0] * signedLateral,
         sampled.point[1],
         sampled.point[2] + leftNormal[1] * signedLateral,
-      ],
+      ] as [number, number, number],
       rotationY: signalRotationForApproach(sampled.tangent, junctionAtEnd),
       side,
       station,
       tangent: sampled.tangent,
     }]
   })
+  return selectSparseSignalSupports(placements)
 }

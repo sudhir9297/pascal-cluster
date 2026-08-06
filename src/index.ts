@@ -35,6 +35,8 @@ import {
   drainageInletDefinition,
   fireHydrantDefinition,
   manholeCoverDefinition,
+  roadBarrierDefinition,
+  trafficBollardDefinition,
   trafficSignalDefinition,
 } from './street-infrastructure-definition'
 
@@ -92,6 +94,8 @@ export const environmentPlugin: Plugin = {
     drainageInletDefinition as unknown as AnyNodeDefinition,
     manholeCoverDefinition as unknown as AnyNodeDefinition,
     fireHydrantDefinition as unknown as AnyNodeDefinition,
+    trafficBollardDefinition as unknown as AnyNodeDefinition,
+    roadBarrierDefinition as unknown as AnyNodeDefinition,
     roadSignDefinition as unknown as AnyNodeDefinition,
   ],
 }
@@ -140,6 +144,8 @@ export {
   DrainageInletNode,
   ManholeCoverNode,
   FireHydrantNode,
+  TrafficBollardNode,
+  RoadBarrierNode,
   RoadSignNode,
   RoadNetworkNode,
   RoadEdgeAttachment,
@@ -182,6 +188,8 @@ export {
   drainageInletDefinition,
   manholeCoverDefinition,
   fireHydrantDefinition,
+  trafficBollardDefinition,
+  roadBarrierDefinition,
 } from './street-infrastructure-definition'
 export { roadSignDefinition } from './road-sign-definition'
 export { roadNetworkDefinition } from './road-network-definition'
@@ -200,6 +208,11 @@ export {
   type RoadPoint,
 } from './road-network-topology'
 export { sampleRoadEdgePoints, type RoadGeometryPoint } from './road-network-geometry'
+export {
+  buildRoadAutoInfrastructure,
+  DEFAULT_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
+  type RoadAutoInfrastructureSettings,
+} from './road-auto-infrastructure'
 export {
   buildSignalJunctionPlacements,
   createRoadAttachmentForPlacement,

@@ -3,10 +3,14 @@ import {
   FireHydrantNode,
   ManholeCoverNode,
   TrafficSignalNode,
+  TrafficBollardNode,
+  RoadBarrierNode,
   type DrainageInletNode as DrainageInletNodeType,
   type FireHydrantNode as FireHydrantNodeType,
   type ManholeCoverNode as ManholeCoverNodeType,
   type TrafficSignalNode as TrafficSignalNodeType,
+  type TrafficBollardNode as TrafficBollardNodeType,
+  type RoadBarrierNode as RoadBarrierNodeType,
 } from './schema'
 
 export const STREET_INFRASTRUCTURE_KINDS = [
@@ -14,6 +18,8 @@ export const STREET_INFRASTRUCTURE_KINDS = [
   'environment:drainage-inlet',
   'environment:manhole-cover',
   'environment:fire-hydrant',
+  'environment:traffic-bollard',
+  'environment:road-barrier',
 ] as const
 
 export type StreetInfrastructureKind = (typeof STREET_INFRASTRUCTURE_KINDS)[number]
@@ -22,18 +28,22 @@ export type StreetInfrastructureNode =
   | DrainageInletNodeType
   | ManholeCoverNodeType
   | FireHydrantNodeType
+  | TrafficBollardNodeType
+  | RoadBarrierNodeType
 
 export type StreetInfrastructureVariant = {
   kind: StreetInfrastructureKind
   label: string
   description: string
-  family: 'Traffic control' | 'Drainage' | 'Fire safety'
+  family: 'Traffic control' | 'Drainage' | 'Fire safety' | 'Traffic safety'
   icon: string
   schema:
     | typeof TrafficSignalNode
     | typeof DrainageInletNode
     | typeof ManholeCoverNode
     | typeof FireHydrantNode
+    | typeof TrafficBollardNode
+    | typeof RoadBarrierNode
 }
 
 export const STREET_INFRASTRUCTURE_VARIANTS: readonly StreetInfrastructureVariant[] = [
@@ -68,6 +78,22 @@ export const STREET_INFRASTRUCTURE_VARIANTS: readonly StreetInfrastructureVarian
     family: 'Fire safety',
     icon: 'lucide:fire-extinguisher',
     schema: FireHydrantNode,
+  },
+  {
+    kind: 'environment:traffic-bollard',
+    label: 'Traffic bollard',
+    description: 'A standalone reflective, steel, or flexible bollard for protected corners and road edges.',
+    family: 'Traffic safety',
+    icon: 'lucide:barrier',
+    schema: TrafficBollardNode,
+  },
+  {
+    kind: 'environment:road-barrier',
+    label: 'Road barrier',
+    description: 'A standalone jersey, guardrail, water-filled, or crowd-control barrier segment.',
+    family: 'Traffic safety',
+    icon: 'lucide:construction',
+    schema: RoadBarrierNode,
   },
 ] as const
 

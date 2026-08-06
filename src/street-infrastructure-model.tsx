@@ -5,6 +5,8 @@ import type {
   FireHydrantNode,
   ManholeCoverNode,
   TrafficSignalNode,
+  TrafficBollardNode,
+  RoadBarrierNode,
 } from './schema'
 import type { StreetInfrastructureNode } from './street-infrastructure-config'
 import {
@@ -12,6 +14,8 @@ import {
   resolveFireHydrantLayout,
   resolveFireHydrantOutletLayout,
   resolveManholeCoverLayout,
+  resolveTrafficBollardLayout,
+  resolveRoadBarrierLayout,
 } from './street-infrastructure-geometry'
 import { TrafficSignalModel } from './traffic-signal-model'
 
@@ -388,6 +392,175 @@ export function FireHydrantModel({
   )
 }
 
+export function TrafficBollardModel({
+  ghost = false,
+  layer = 0,
+  node,
+}: {
+  ghost?: boolean
+  layer?: number
+  node: TrafficBollardNode
+}) {
+  const layout = resolveTrafficBollardLayout(node)
+  const flexible = node.style === 'flexible'
+  return (
+    <group>
+      <mesh castShadow={!ghost} layers={layer} position={[0, layout.baseHeight / 2, 0]}>
+        <cylinderGeometry args={[layout.baseRadius, layout.baseRadius * 1.04, layout.baseHeight, 24]} />
+        <MetalMaterial color={node.baseColor} ghost={ghost} roughness={0.82} />
+      </mesh>
+      <mesh castShadow={!ghost} layers={layer} position={[0, layout.baseHeight + (layout.height - layout.baseHeight) / 2, 0]}>
+        <cylinderGeometry
+          args={[
+            flexible ? layout.radius * 0.92 : layout.radius,
+            flexible ? layout.radius * 1.12 : layout.radius * 1.05,
+            layout.height - layout.baseHeight,
+            20,
+          ]}
+        />
+        <MetalMaterial color={node.bodyColor} ghost={ghost} roughness={flexible ? 0.72 : 0.42} />
+      </mesh>
+      {node.style === 'reflective' || node.style === 'steel' ? (
+        <mesh layers={layer} position={[0, layout.reflectiveBandY, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[layout.radius * 1.01, layout.reflectiveBandHeight / 2, 8, 24]} />
+          <meshStandardMaterial
+            color={node.reflectiveColor}
+            emissive={node.reflectiveColor}
+            emissiveIntensity={ghost ? 0.08 : 0.18}
+            opacity={ghost ? 0.62 : 0.96}
+            roughness={0.38}
+            transparent={ghost}
+          />
+        </mesh>
+      ) : null}
+      <mesh layers={layer} position={[0, layout.collarY, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[layout.radius * 0.96, layout.radius * 0.11, 8, 20]} />
+        <MetalMaterial color={node.baseColor} ghost={ghost} roughness={0.58} />
+      </mesh>
+      <mesh layers={layer} position={[0, layout.height + 0.018, 0]}>
+        <cylinderGeometry args={[layout.radius * 0.88, layout.radius * 0.98, 0.036, 20]} />
+        <MetalMaterial color={node.bodyColor} ghost={ghost} roughness={flexible ? 0.72 : 0.42} />
+      </mesh>
+      {([-1, 1] as const).map((side) => (
+        <mesh
+          key={`bolt:${side}`}
+          layers={layer}
+          position={[side * layout.baseRadius * 0.52, layout.baseHeight + 0.012, 0.02]}
+        >
+          <cylinderGeometry args={[0.018, 0.018, 0.024, 8]} />
+          <MetalMaterial color="#d8ded7" ghost={ghost} roughness={0.5} />
+        </mesh>
+      ))}
+      {flexible ? (
+        <mesh layers={layer} position={[0, layout.height, 0]}>
+          <sphereGeometry args={[layout.radius * 0.94, 16, 10]} />
+          <MetalMaterial color={node.bodyColor} ghost={ghost} roughness={0.72} />
+        </mesh>
+      ) : null}
+    </group>
+  )
+}
+
+export function RoadBarrierModel({
+  ghost = false,
+  layer = 0,
+  node,
+}: {
+  ghost?: boolean
+  layer?: number
+  node: RoadBarrierNode
+}) {
+  const layout = resolveRoadBarrierLayout(node)
+  const halfLength = layout.length / 2
+  const common = { castShadow: !ghost, layers: layer }
+  if (node.barrierType === 'guardrail') {
+    return (
+      <group>
+        {[-halfLength + layout.postRadius, halfLength - layout.postRadius].map((x) => (
+          <mesh {...common} key={`post:${x}`} position={[x, layout.height / 2, 0]}>
+            <cylinderGeometry args={[layout.postRadius, layout.postRadius * 1.1, layout.height, 12]} />
+            <MetalMaterial color={node.metalColor} ghost={ghost} roughness={0.62} />
+          </mesh>
+        ))}
+        <mesh {...common} position={[0, layout.beamY, 0]}>
+          <boxGeometry args={[layout.length, layout.beamHeight, layout.width * 0.7]} />
+          <MetalMaterial color={node.metalColor} ghost={ghost} roughness={0.52} />
+        </mesh>
+        <mesh {...common} position={[0, layout.beamY + layout.beamHeight * 0.9, 0]}>
+          <boxGeometry args={[layout.length * 0.96, layout.beamHeight * 0.32, layout.width * 0.45]} />
+          <MetalMaterial color={node.accentColor} ghost={ghost} roughness={0.66} />
+        </mesh>
+      </group>
+    )
+  }
+  if (node.barrierType === 'crowd-control') {
+    return (
+      <group>
+        {[-halfLength + layout.postRadius, halfLength - layout.postRadius].map((x) => (
+          <group key={`post:${x}`}>
+            <mesh {...common} position={[x, layout.height / 2, 0]}>
+              <cylinderGeometry args={[layout.postRadius, layout.postRadius * 1.1, layout.height, 12]} />
+              <MetalMaterial color={node.metalColor} ghost={ghost} roughness={0.52} />
+            </mesh>
+            <mesh {...common} position={[x, 0.04, 0]}>
+              <cylinderGeometry args={[layout.postRadius * 2.5, layout.postRadius * 2.7, 0.08, 16]} />
+              <MetalMaterial color={node.metalColor} ghost={ghost} roughness={0.72} />
+            </mesh>
+          </group>
+        ))}
+        <mesh {...common} position={[0, layout.beamY, 0]}>
+          <boxGeometry args={[layout.length, layout.beamHeight * 0.7, layout.width * 0.34]} />
+          <MetalMaterial color={node.accentColor} ghost={ghost} roughness={0.58} />
+        </mesh>
+      </group>
+    )
+  }
+  const waterFilled = node.barrierType === 'water-filled'
+  const jersey = node.barrierType === 'jersey'
+  return (
+    <group>
+      {jersey ? (
+        <>
+          <mesh {...common} position={[0, layout.baseHeight * 0.52, 0]}>
+            <boxGeometry args={[layout.length * 1.04, layout.baseHeight, layout.width * 1.12]} />
+            <MetalMaterial color={node.bodyColor} ghost={ghost} roughness={0.88} />
+          </mesh>
+          <mesh {...common} position={[0, layout.baseHeight + (layout.height - layout.baseHeight) * 0.5, 0]}>
+            <boxGeometry args={[layout.length, layout.height - layout.baseHeight, layout.width * 0.84]} />
+            <MetalMaterial color={node.bodyColor} ghost={ghost} roughness={0.88} />
+          </mesh>
+        </>
+      ) : (
+        <mesh {...common} position={[0, layout.height / 2, 0]}>
+          <boxGeometry args={[layout.length, layout.height, layout.width]} />
+          <meshStandardMaterial
+            color={node.bodyColor}
+            opacity={ghost ? 0.62 : waterFilled ? 0.92 : 1}
+            roughness={waterFilled ? 0.7 : 0.86}
+            transparent={ghost || waterFilled}
+          />
+        </mesh>
+      )}
+      <mesh {...common} position={[0, layout.height * 0.62, 0]}>
+        <boxGeometry args={[layout.length * 0.78, layout.height * 0.12, layout.width + 0.012]} />
+        <meshStandardMaterial color={node.accentColor} opacity={ghost ? 0.62 : 0.96} roughness={0.5} transparent={ghost} />
+      </mesh>
+      {jersey ? [-1, 1].map((side) => (
+        <mesh key={`reflector:${side}`} {...common} position={[side * layout.length * 0.32, layout.height * 0.65, layout.width * 0.43]}>
+          <boxGeometry args={[layout.length * 0.08, layout.height * 0.14, 0.018]} />
+          <meshStandardMaterial color={node.accentColor} emissive={node.accentColor} emissiveIntensity={ghost ? 0.05 : 0.12} roughness={0.45} transparent={ghost} opacity={ghost ? 0.62 : 0.98} />
+        </mesh>
+      )) : null}
+      {waterFilled ? (
+        <mesh {...common} position={[0, layout.height + 0.025, 0]}>
+          <boxGeometry args={[layout.length * 0.22, 0.05, layout.width * 0.32]} />
+          <MetalMaterial color={node.bodyColor} ghost={ghost} roughness={0.76} />
+        </mesh>
+      ) : null}
+    </group>
+  )
+}
+
 export function StreetInfrastructureModel({
   ghost = false,
   layer = 0,
@@ -406,6 +579,12 @@ export function StreetInfrastructureModel({
   }
   if (kind === 'environment:manhole-cover') {
     return <ManholeCoverModel ghost={ghost} layer={layer} node={node as ManholeCoverNode} />
+  }
+  if (kind === 'environment:traffic-bollard') {
+    return <TrafficBollardModel ghost={ghost} layer={layer} node={node as TrafficBollardNode} />
+  }
+  if (kind === 'environment:road-barrier') {
+    return <RoadBarrierModel ghost={ghost} layer={layer} node={node as RoadBarrierNode} />
   }
   return <FireHydrantModel ghost={ghost} layer={layer} node={node as FireHydrantNode} />
 }

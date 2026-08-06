@@ -109,6 +109,8 @@ describe('Environment plugin manifest', () => {
       'environment:drainage-inlet',
       'environment:manhole-cover',
       'environment:fire-hydrant',
+      'environment:traffic-bollard',
+      'environment:road-barrier',
       'environment:road-sign',
     ])
   })
@@ -126,7 +128,7 @@ describe('Environment plugin manifest', () => {
     expect(road.applyStyleToAll).toBe(true)
 		expect(road.regionalPack).toBe('right-driving')
 		expect(road.embankmentSlope).toBe(2)
-		expect(road.excavationSlope).toBe(1.5)
+    expect(road.excavationSlope).toBe(1.5)
     expect(roadNetworkDefinition.capabilities.drawTool).toBe(true)
     expect(roadNetworkDefinition.tool).toBeDefined()
     expect(roadNetworkDefinition.renderer).toBeDefined()
@@ -845,6 +847,27 @@ describe('Environment plugin manifest', () => {
     useEnvironmentStore.getState().setPlacementMode('single')
     expect(useEnvironmentStore.getState().placementMode).toBe('single')
     useEnvironmentStore.getState().setPlacementMode('continuous')
+  })
+
+  test('configures automatic road infrastructure from the Environment side menu', () => {
+    const store = useEnvironmentStore.getState()
+    expect(store.roadAutoInfrastructure.enabled).toBe(true)
+    expect(Object.values(store.roadAutoInfrastructure.items).every(Boolean)).toBe(true)
+
+    store.setRoadAutoInfrastructureEnabled(false)
+    expect(useEnvironmentStore.getState().roadAutoInfrastructure.enabled).toBe(false)
+    store.setRoadAutoInfrastructureItem('environment:fire-hydrant', false)
+    expect(
+      useEnvironmentStore.getState().roadAutoInfrastructure.items['environment:fire-hydrant'],
+    ).toBe(false)
+
+    const panel = readFileSync(new URL('./presets-panel.tsx', import.meta.url), 'utf8')
+    expect(panel).toContain('data-road-auto-infrastructure')
+    expect(panel).toContain('Automatic infrastructure')
+    expect(panel).toContain('Add automatically')
+
+    store.setRoadAutoInfrastructureEnabled(true)
+    store.setRoadAutoInfrastructureItem('environment:fire-hydrant', true)
   })
 
   test('separates roads, lighting, signs, and utility assets into panel categories', () => {

@@ -673,6 +673,41 @@ export const FireHydrantNode = BaseNode.extend({
 
 export type FireHydrantNode = z.infer<typeof FireHydrantNode>;
 
+/** A standalone traffic-control bollard for edges, crossings, and protected corners. */
+export const TrafficBollardNode = BaseNode.extend({
+	id: objectId("traffic-bollard"),
+	type: nodeType("environment:traffic-bollard"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	style: z.enum(["steel", "flexible", "reflective"]).default("steel"),
+	height: z.number().min(0.45).max(1.5).default(0.9),
+	radius: z.number().min(0.06).max(0.3).default(0.11),
+	bodyColor: z.string().default("#3c4548"),
+	reflectiveColor: z.string().default("#f4e9b0"),
+	baseColor: z.string().default("#737a78"),
+	roadAttachment: RoadAttachmentRef.optional(),
+});
+
+export type TrafficBollardNode = z.infer<typeof TrafficBollardNode>;
+
+/** A standalone roadside barrier segment with common scene-layout treatments. */
+export const RoadBarrierNode = BaseNode.extend({
+	id: objectId("road-barrier"),
+	type: nodeType("environment:road-barrier"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	barrierType: z.enum(["jersey", "guardrail", "water-filled", "crowd-control"]).default("jersey"),
+	length: z.number().min(0.5).max(8).default(2),
+	height: z.number().min(0.25).max(1.8).default(0.8),
+	width: z.number().min(0.12).max(1.2).default(0.32),
+	bodyColor: z.string().default("#c84b36"),
+	accentColor: z.string().default("#f0e9bf"),
+	metalColor: z.string().default("#5c6668"),
+	roadAttachment: RoadAttachmentRef.optional(),
+});
+
+export type RoadBarrierNode = z.infer<typeof RoadBarrierNode>;
+
 /** A topological point shared by one or more road centerline edges. */
 const RoadGraphNodeSchema = z.object({
 	id: z.string().min(1),

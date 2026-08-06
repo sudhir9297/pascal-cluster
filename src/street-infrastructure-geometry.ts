@@ -3,6 +3,8 @@ import type {
   FireHydrantNode,
   ManholeCoverNode,
   TrafficSignalNode,
+  TrafficBollardNode,
+  RoadBarrierNode,
 } from './schema'
 
 export const TRAFFIC_SIGNAL_DIMENSIONS = {
@@ -23,6 +25,59 @@ export const TRAFFIC_SIGNAL_DIMENSIONS = {
   cabinetHeight: 1.18,
   cabinetDepth: 0.48,
 } as const
+
+export type TrafficBollardLayout = {
+	height: number
+	radius: number
+	baseRadius: number
+	baseHeight: number
+	collarY: number
+	reflectiveBandY: number
+	reflectiveBandHeight: number
+}
+
+export function resolveTrafficBollardLayout(node: TrafficBollardNode): TrafficBollardLayout {
+	const height = Math.max(0.45, Math.min(1.5, node.height))
+	const radius = Math.max(0.06, Math.min(0.3, node.radius))
+	const baseRadius = Math.max(radius * 1.9, 0.16)
+	const baseHeight = Math.min(0.12, height * 0.14)
+	const bandHeight = Math.max(0.08, Math.min(0.16, height * 0.13))
+	return {
+		height,
+		radius,
+		baseRadius,
+		baseHeight,
+		collarY: height * 0.68,
+		reflectiveBandY: height * 0.55,
+		reflectiveBandHeight: bandHeight,
+	}
+}
+
+export type RoadBarrierLayout = {
+	length: number
+	height: number
+	width: number
+	baseHeight: number
+	postRadius: number
+	beamY: number
+	beamHeight: number
+}
+
+export function resolveRoadBarrierLayout(node: RoadBarrierNode): RoadBarrierLayout {
+	const length = Math.max(0.5, Math.min(8, node.length))
+	const height = Math.max(0.25, Math.min(1.8, node.height))
+	const width = Math.max(0.12, Math.min(1.2, node.width))
+	const baseHeight = Math.min(0.22, height * 0.24)
+	return {
+		length,
+		height,
+		width,
+		baseHeight,
+		postRadius: Math.max(0.045, width * 0.2),
+		beamY: baseHeight + (height - baseHeight) * 0.58,
+		beamHeight: Math.max(0.08, Math.min(0.22, height * 0.2)),
+	}
+}
 
 export type TrafficSignalSection = {
   x: number

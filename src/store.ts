@@ -4,7 +4,12 @@ import type { RoadSide, RoadSideComponentWidthKey } from "./road-cross-section";
 import { roadDraftSettingsForPreset } from "./road-draft-style";
 import type { RoadSignId } from "./road-sign-config";
 import type { RoadStylePresetId } from "./road-style-presets";
+import {
+	DEFAULT_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
+	type RoadAutoInfrastructureSettings,
+} from "./road-auto-infrastructure-settings";
 import type { RoadSideComponents, UtilityPoleAssembly } from "./schema";
+import type { StreetInfrastructureKind } from "./street-infrastructure-config";
 import {
 	STANDARD_UTILITY_POLE_CROSSARM_LENGTH_M,
 	STANDARD_UTILITY_POLE_EXPOSED_HEIGHT_M,
@@ -84,6 +89,13 @@ type EnvironmentStore = {
 	) => void;
 	roadJoinMode: RoadJoinMode;
 	setRoadJoinMode: (value: RoadJoinMode) => void;
+	/** Automatic editable assets created with each committed road segment. */
+	roadAutoInfrastructure: RoadAutoInfrastructureSettings;
+	setRoadAutoInfrastructureEnabled: (value: boolean) => void;
+	setRoadAutoInfrastructureItem: (
+		kind: StreetInfrastructureKind,
+		value: boolean,
+	) => void;
 	roadElementSelection: RoadElementSelection | null;
 	setRoadElementSelection: (value: RoadElementSelection | null) => void;
 	/** Height (m) of the next street light. */
@@ -224,6 +236,27 @@ export const useEnvironmentStore = create<EnvironmentStore>((set) => ({
 		})),
 	roadJoinMode: "auto",
 	setRoadJoinMode: (roadJoinMode) => set({ roadJoinMode }),
+	roadAutoInfrastructure: {
+		...DEFAULT_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
+		items: { ...DEFAULT_ROAD_AUTO_INFRASTRUCTURE_SETTINGS.items },
+	},
+	setRoadAutoInfrastructureEnabled: (enabled) =>
+		set((state) => ({
+			roadAutoInfrastructure: {
+				...state.roadAutoInfrastructure,
+				enabled,
+			},
+		})),
+	setRoadAutoInfrastructureItem: (kind, value) =>
+		set((state) => ({
+			roadAutoInfrastructure: {
+				...state.roadAutoInfrastructure,
+				items: {
+					...state.roadAutoInfrastructure.items,
+					[kind]: value,
+				},
+			},
+		})),
 	roadElementSelection: null,
 	setRoadElementSelection: (roadElementSelection) =>
 		set({ roadElementSelection }),

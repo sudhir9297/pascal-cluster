@@ -179,11 +179,58 @@ const fireHydrantParametrics: ParametricDescriptor<any> = {
   ],
 }
 
+const trafficBollardParametrics: ParametricDescriptor<any> = {
+  groups: [
+    {
+      label: 'Bollard',
+      fields: [
+        { key: 'style', kind: 'enum', options: ['steel', 'flexible', 'reflective'], display: 'segmented' },
+        { key: 'height', kind: 'number', unit: 'm', min: 0.45, max: 1.5, step: 0.05 },
+        { key: 'radius', kind: 'number', unit: 'm', min: 0.06, max: 0.3, step: 0.01 },
+      ],
+    },
+    {
+      label: 'Finish',
+      fields: [
+        { key: 'bodyColor', kind: 'color' },
+        { key: 'reflectiveColor', kind: 'color' },
+        { key: 'baseColor', kind: 'color' },
+      ],
+    },
+    { label: 'Position', fields: [{ key: 'position', kind: 'vec3' }] },
+  ],
+}
+
+const roadBarrierParametrics: ParametricDescriptor<any> = {
+  groups: [
+    {
+      label: 'Barrier',
+      fields: [
+        { key: 'barrierType', kind: 'enum', options: ['jersey', 'guardrail', 'water-filled', 'crowd-control'], display: 'select' },
+        { key: 'length', kind: 'number', unit: 'm', min: 0.5, max: 8, step: 0.1 },
+        { key: 'height', kind: 'number', unit: 'm', min: 0.25, max: 1.8, step: 0.05 },
+        { key: 'width', kind: 'number', unit: 'm', min: 0.12, max: 1.2, step: 0.02 },
+      ],
+    },
+    {
+      label: 'Finish',
+      fields: [
+        { key: 'bodyColor', kind: 'color' },
+        { key: 'accentColor', kind: 'color' },
+        { key: 'metalColor', kind: 'color' },
+      ],
+    },
+    { label: 'Position', fields: [{ key: 'position', kind: 'vec3' }] },
+  ],
+}
+
 export function getStreetInfrastructureParametrics(
   kind: string,
 ): ParametricDescriptor<StreetInfrastructureNode> {
   if (kind === 'environment:traffic-signal') return trafficSignalParametrics
   if (kind === 'environment:drainage-inlet') return drainageInletParametrics
   if (kind === 'environment:manhole-cover') return manholeCoverParametrics
-  return fireHydrantParametrics
+  if (kind === 'environment:fire-hydrant') return fireHydrantParametrics
+  if (kind === 'environment:traffic-bollard') return trafficBollardParametrics
+  return roadBarrierParametrics
 }

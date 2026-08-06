@@ -10,6 +10,8 @@ import {
   resolveFireHydrantLayout,
   resolveManholeCoverLayout,
   resolveTrafficSignalLayout,
+  resolveTrafficBollardLayout,
+  resolveRoadBarrierLayout,
 } from './street-infrastructure-geometry'
 import { getStreetInfrastructureParametrics } from './street-infrastructure-parametrics'
 
@@ -39,6 +41,12 @@ function modelHeight(node: StreetInfrastructureNode): number {
     const layout = resolveManholeCoverLayout(node)
     return layout.treadY + layout.treadHeight / 2
   }
+  if (node.type === 'environment:traffic-bollard') {
+    return resolveTrafficBollardLayout(node).height
+  }
+  if (node.type === 'environment:road-barrier') {
+    return resolveRoadBarrierLayout(node).height
+  }
   return resolveFireHydrantLayout(node).height
 }
 
@@ -51,6 +59,12 @@ function elevationHandleOffset(node: StreetInfrastructureNode): number {
   }
   if (node.type === 'environment:fire-hydrant') {
     return resolveFireHydrantLayout(node).padRadius + 0.75
+  }
+  if (node.type === 'environment:traffic-bollard') {
+    return resolveTrafficBollardLayout(node).baseRadius + 0.55
+  }
+  if (node.type === 'environment:road-barrier') {
+    return resolveRoadBarrierLayout(node).length / 2 + 0.55
   }
   return 1.1
 }
@@ -106,6 +120,20 @@ function footprint(input: unknown) {
     const layout = resolveManholeCoverLayout(node as any)
     return {
       dimensions: [layout.frameRadius * 2, 0.1, layout.frameRadius * 2] as [number, number, number],
+      rotation: node.rotation,
+    }
+  }
+  if (kind === 'environment:traffic-bollard') {
+    const layout = resolveTrafficBollardLayout(node as any)
+    return {
+      dimensions: [layout.baseRadius * 2, layout.height, layout.baseRadius * 2] as [number, number, number],
+      rotation: node.rotation,
+    }
+  }
+  if (kind === 'environment:road-barrier') {
+    const layout = resolveRoadBarrierLayout(node as any)
+    return {
+      dimensions: [layout.length, layout.height, layout.width] as [number, number, number],
       rotation: node.rotation,
     }
   }
@@ -175,3 +203,5 @@ export const trafficSignalDefinition = DEFINITIONS.get('environment:traffic-sign
 export const drainageInletDefinition = DEFINITIONS.get('environment:drainage-inlet')!
 export const manholeCoverDefinition = DEFINITIONS.get('environment:manhole-cover')!
 export const fireHydrantDefinition = DEFINITIONS.get('environment:fire-hydrant')!
+export const trafficBollardDefinition = DEFINITIONS.get('environment:traffic-bollard')!
+export const roadBarrierDefinition = DEFINITIONS.get('environment:road-barrier')!

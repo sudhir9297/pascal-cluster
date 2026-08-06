@@ -20,6 +20,8 @@ import {
   resolveDrainageInletLayout,
   resolveFireHydrantLayout,
   resolveManholeCoverLayout,
+  resolveTrafficBollardLayout,
+  resolveRoadBarrierLayout,
 } from './street-infrastructure-geometry'
 import StreetInfrastructurePreview from './street-infrastructure-preview'
 import { useEnvironmentStore } from './store'
@@ -43,7 +45,11 @@ function RoadAttachmentGuide({ node }: { node: StreetInfrastructureNode }) {
         })()
       : node.type === 'environment:traffic-signal'
         ? 0.36
-        : resolveFireHydrantLayout(node).padRadius
+        : node.type === 'environment:traffic-bollard'
+          ? resolveTrafficBollardLayout(node).baseRadius
+          : node.type === 'environment:road-barrier'
+            ? resolveRoadBarrierLayout(node).length / 2
+            : resolveFireHydrantLayout(node).padRadius
   const y = node.type === 'environment:manhole-cover'
     ? (() => {
         const layout = resolveManholeCoverLayout(node)
@@ -54,7 +60,11 @@ function RoadAttachmentGuide({ node }: { node: StreetInfrastructureNode }) {
           const layout = resolveDrainageInletLayout(node)
           return layout.barBottomY + layout.barHeight
         })()
-      : 0.018
+    : node.type === 'environment:traffic-bollard'
+      ? 0.02
+      : node.type === 'environment:road-barrier'
+        ? 0.02
+        : 0.018
   return (
     <mesh
       layers={EDITOR_LAYER}

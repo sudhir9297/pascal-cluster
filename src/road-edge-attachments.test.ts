@@ -112,7 +112,7 @@ describe('road-edge infrastructure attachments', () => {
     )
 
     expect(transform?.side).toBe('right')
-    expect(transform?.position[2]).toBeCloseTo(-4.46, 2)
+    expect(transform?.position[2]).toBeCloseTo(-4.475, 3)
     expect(transform?.position[1]).toBeCloseTo(0.206, 3)
     expect(transform?.rotation[1]).toBeCloseTo(Math.PI, 5)
   })
@@ -183,16 +183,22 @@ describe('road-edge infrastructure attachments', () => {
     expect(right.roadAttachment).toBeUndefined()
   })
 
-  test('proposes one editable signal per approach of a signalized junction', () => {
+  test('proposes two roadside mast-arm support positions beyond a four-way curb return', () => {
     const horizontal = insertRoadSegment(createEmptyRoadGraph(), [-12, 0, 0], [12, 0, 0])
     const plus = insertRoadSegment(horizontal.graph, [0, 0, -12], [0, 0, 12], { tolerance: 0.1 })
     const road = RoadNetworkNode.parse(plus.graph)
     const junctionId = Object.keys(road.junctions)[0]!
     const placements = buildSignalJunctionPlacements(road, junctionId)
 
-    expect(placements).toHaveLength(4)
-    expect(new Set(placements.map((placement) => placement.edgeId)).size).toBe(4)
+    expect(placements).toHaveLength(2)
+    expect(new Set(placements.map((placement) => placement.edgeId)).size).toBe(2)
     expect(placements.every((placement) => Number.isFinite(placement.rotationY))).toBe(true)
-    expect(placements.every((placement) => placement.station > 0)).toBe(true)
+    expect(placements.every((placement) => {
+      const edge = road.edges[placement.edgeId]!
+      const distanceFromJunction = edge.endNodeId === junctionId
+        ? 12 - placement.station
+        : placement.station
+      return distanceFromJunction >= 7
+    })).toBe(true)
   })
 })

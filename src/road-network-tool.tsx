@@ -19,6 +19,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Group } from "three";
 import { buildRoadCrossSection } from "./road-cross-section";
 import {
+	buildRoadAutoInfrastructure,
+	roadAutoInfrastructureAffectedEdgeIds,
+	roadAutoInfrastructureNodeIdsToReplace,
+} from "./road-auto-infrastructure";
+import { applyRoadAutoInfrastructureClearances } from "./road-auto-infrastructure-style";
+import {
 	movingRoadDraftAnchor,
 	roadEndpointAlignmentAnchors,
 	ROAD_DRAFT_ALIGNMENT_ID,
@@ -391,8 +397,12 @@ function commitSegment(
 		shoulderWidth: store.roadShoulderWidth,
 		sides: store.roadSideComponents,
 	});
+	const clearedDraftStyle = applyRoadAutoInfrastructureClearances(
+		draftStyle,
+		store.roadAutoInfrastructure,
+	);
 	graph.activeStyleId = draftStyle.id;
-	graph.stylePresets = { ...graph.stylePresets, [draftStyle.id]: draftStyle };
+	graph.stylePresets = { ...graph.stylePresets, [draftStyle.id]: clearedDraftStyle };
 	const result = insertRoadSegment(graph, start, end, {
 		alignment,
 		bendRadius: store.roadBendRadius,
@@ -490,7 +500,31 @@ function commitSegment(
 	for (const obsolete of existing.slice(components.length)) {
 		scene.deleteNode(obsolete.id as AnyNodeId);
 	}
-	return resolvedNetworks[targetIndex] ?? null;
+	const targetNetwork = resolvedNetworks[targetIndex] ?? null;
+	if (targetNetwork) {
+		const affectedEdgeIds = roadAutoInfrastructureAffectedEdgeIds(
+			targetNetwork,
+			result.createdEdgeIds,
+		);
+		const nodesBeforeReconciliation = Object.values(useScene.getState().nodes);
+		for (const nodeId of roadAutoInfrastructureNodeIdsToReplace({
+			edgeIds: affectedEdgeIds,
+			existingNodes: nodesBeforeReconciliation,
+			network: targetNetwork,
+		})) {
+			scene.deleteNode(nodeId as AnyNodeId);
+		}
+		const generated = buildRoadAutoInfrastructure({
+			edgeIds: affectedEdgeIds,
+			existingNodes: Object.values(useScene.getState().nodes),
+			network: targetNetwork,
+			settings: store.roadAutoInfrastructure,
+		});
+		for (const node of generated) {
+			scene.createNode(node as unknown as AnyNode, levelId as AnyNodeId);
+		}
+	}
+	return targetNetwork;
 }
 
 /** Multi-click centerline drafting for incremental straight legs or one spline. */
@@ -527,6 +561,9 @@ export default function RoadNetworkTool() {
 	const roadSideComponents = useEnvironmentStore(
 		(state) => state.roadSideComponents,
 	);
+	const roadAutoInfrastructure = useEnvironmentStore(
+		(state) => state.roadAutoInfrastructure,
+	);
 	const roadStylePresetId = useEnvironmentStore(
 		(state) => state.roadStylePresetId,
 	);
@@ -536,7 +573,7 @@ export default function RoadNetworkTool() {
 		(state) => state.roadShoulderWidth,
 	);
 	const roadMedianWidth = useEnvironmentStore((state) => state.roadMedianWidth);
-	const style = useMemo(
+	const draftStyle = useMemo(
 		() => buildRoadDraftStyle({
 				laneCount: roadLaneCount,
 				laneWidth: roadLaneWidth,
@@ -544,7 +581,7 @@ export default function RoadNetworkTool() {
 				presetId: roadStylePresetId,
 				shoulderWidth: roadShoulderWidth,
 				sides: roadSideComponents,
-		}),
+			}),
 		[
 			roadLaneCount,
 			roadLaneWidth,
@@ -552,7 +589,12 @@ export default function RoadNetworkTool() {
 			roadShoulderWidth,
 			roadSideComponents,
 			roadStylePresetId,
+			roadAutoInfrastructure,
 		],
+	);
+	const style = useMemo(
+		() => applyRoadAutoInfrastructureClearances(draftStyle, roadAutoInfrastructure),
+		[draftStyle, roadAutoInfrastructure],
 	);
 	const alignmentMode = useEnvironmentStore((state) => state.roadAlignmentMode);
 	const bendRadius = useEnvironmentStore((state) => state.roadBendRadius);

@@ -4,6 +4,8 @@ import type {
   FireHydrantNode,
   ManholeCoverNode,
   TrafficSignalNode,
+  TrafficBollardNode,
+  RoadBarrierNode,
 } from './schema'
 import type { StreetInfrastructureNode } from './street-infrastructure-config'
 import {
@@ -13,6 +15,8 @@ import {
   resolveFireHydrantOutletLayout,
   resolveManholeCoverLayout,
   resolveTrafficSignalLayout,
+  resolveTrafficBollardLayout,
+  resolveRoadBarrierLayout,
 } from './street-infrastructure-geometry'
 
 type Point = readonly [number, number]
@@ -369,6 +373,58 @@ export function buildStreetInfrastructureFloorplan(
     for (const side of [-1, 1]) {
       const slot = localPoint(center, side * layout.radius * 0.58, 0, angle)
       children.push(rectangle(slot, 0.065, 0.024, angle + Math.PI / 2, '#1f2423', stroke))
+    }
+  } else if ((node.type as string) === 'environment:traffic-bollard') {
+    const bollard = node as TrafficBollardNode
+    const layout = resolveTrafficBollardLayout(bollard)
+    children.push({
+      kind: 'circle',
+      cx: x,
+      cy: z,
+      r: layout.baseRadius,
+      fill: bollard.baseColor,
+      fillOpacity: 0.82,
+      stroke,
+      strokeWidth: 0.04,
+    })
+    children.push({
+      kind: 'circle',
+      cx: x,
+      cy: z,
+      r: layout.radius,
+      fill: bollard.bodyColor,
+      fillOpacity: 0.94,
+      stroke,
+      strokeWidth: 0.03,
+    })
+    children.push({
+      kind: 'circle',
+      cx: x,
+      cy: z,
+      r: layout.radius * 0.62,
+      fill: bollard.reflectiveColor,
+      fillOpacity: 0.9,
+      stroke: bollard.reflectiveColor,
+      strokeWidth: 0.02,
+    })
+  } else if ((node.type as string) === 'environment:road-barrier') {
+    const barrier = node as RoadBarrierNode
+    const layout = resolveRoadBarrierLayout(barrier)
+    children.push(rectangle(center, layout.length, layout.width, angle, barrier.bodyColor, stroke))
+    children.push(rectangle(center, layout.length * 0.78, layout.width + 0.012, angle, barrier.accentColor, stroke))
+    if (barrier.barrierType === 'guardrail' || barrier.barrierType === 'crowd-control') {
+      const postRadius = layout.postRadius
+      for (const offset of [-layout.length / 2 + postRadius, layout.length / 2 - postRadius]) {
+        children.push({
+          kind: 'circle',
+          cx: localPoint(center, offset, 0, angle)[0],
+          cy: localPoint(center, offset, 0, angle)[1],
+          r: postRadius,
+          fill: barrier.metalColor,
+          stroke,
+          strokeWidth: 0.025,
+        })
+      }
     }
   } else {
     const hydrant = node as FireHydrantNode

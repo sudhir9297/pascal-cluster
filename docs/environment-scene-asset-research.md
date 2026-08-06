@@ -408,6 +408,8 @@ remain the main bodies of work.
 - [ ] Add pavement text and symbols.
 - [ ] Add hatch zones and colored pavement.
 - [x] Add vehicle traffic signals.
+- [x] Add standalone traffic bollards with reflective, steel, and flexible styles.
+- [x] Add standalone road barriers with jersey, guardrail, water-filled, and crowd-control styles.
 - [ ] Add pedestrian signals.
 - [ ] Add pedestrian push buttons.
 - [ ] Add countdown displays.
@@ -516,10 +518,8 @@ remain the main bodies of work.
 
 - [ ] Add sidewalk-surface generation.
 - [ ] Add frontage, clear-walking, furnishing, and buffer zone controls.
-- [ ] Add curb ramps and blended transitions.
 - [ ] Add level landings.
 - [ ] Add accessible driveway crossings.
-- [ ] Add tactile/detectable warning paving.
 - [ ] Add directional tactile paving.
 - [ ] Connect crosswalks to accessible sidewalk routes.
 - [ ] Add refuge-island cut-throughs.

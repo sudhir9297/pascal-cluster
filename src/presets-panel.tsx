@@ -19,6 +19,8 @@ import {
   DRAINAGE_INLET_THUMBNAIL,
   MANHOLE_COVER_THUMBNAIL,
   FIRE_HYDRANT_THUMBNAIL,
+  TRAFFIC_BOLLARD_THUMBNAIL,
+  ROAD_BARRIER_THUMBNAIL,
   ROAD_SIGN_THUMBNAILS,
   ROAD_NETWORK_THUMBNAIL,
 } from './art'
@@ -28,6 +30,12 @@ import {
   getCatalogLampStyleOptions,
 } from './catalog-lamp-config'
 import { ROAD_SIGN_CATALOG, type RoadSignId } from './road-sign-config'
+import { ROAD_AUTO_INFRASTRUCTURE_OPTIONS } from './road-auto-infrastructure-settings'
+import {
+  applyRoadAutoInfrastructureClearances,
+  AUTO_DRAINAGE_MIN_GUTTER_WIDTH,
+  AUTO_HYDRANT_MIN_VERGE_WIDTH,
+} from './road-auto-infrastructure-style'
 import {
   STREET_INFRASTRUCTURE_VARIANTS,
   type StreetInfrastructureKind,
@@ -66,6 +74,8 @@ const STREET_INFRASTRUCTURE_THUMBNAILS: Record<StreetInfrastructureKind, string>
   'environment:drainage-inlet': DRAINAGE_INLET_THUMBNAIL,
   'environment:manhole-cover': MANHOLE_COVER_THUMBNAIL,
   'environment:fire-hydrant': FIRE_HYDRANT_THUMBNAIL,
+  'environment:traffic-bollard': TRAFFIC_BOLLARD_THUMBNAIL,
+  'environment:road-barrier': ROAD_BARRIER_THUMBNAIL,
 }
 
 function roadSegmentLabel(count: number): string {
@@ -378,6 +388,7 @@ export default function EnvironmentPanel() {
   const roadMedianWidth = useEnvironmentStore((s) => s.roadMedianWidth)
   const roadSideComponents = useEnvironmentStore((s) => s.roadSideComponents)
   const roadJoinMode = useEnvironmentStore((s) => s.roadJoinMode)
+  const roadAutoInfrastructure = useEnvironmentStore((s) => s.roadAutoInfrastructure)
   const activeTool = useEditor((s) => s.tool)
   const streetLightCount = useScene(
     (s) => Object.values(s.nodes).filter((n) => (n.type as string) === STREET_LIGHT_KIND).length,
@@ -512,20 +523,21 @@ export default function EnvironmentPanel() {
         ? utilityPoleCount
           + Object.values(streetInfrastructureCounts).reduce((total, value) => total + value, 0)
         : roadSignCount
-  const roadDraftStyle = useMemo(() => buildRoadDraftStyle({
+  const roadDraftStyle = useMemo(() => applyRoadAutoInfrastructureClearances(buildRoadDraftStyle({
     laneCount: roadLaneCount,
     laneWidth: roadLaneWidth,
     medianWidth: roadMedianWidth,
     presetId: roadStylePresetId,
     shoulderWidth: roadShoulderWidth,
     sides: roadSideComponents,
-  }), [
+  }), roadAutoInfrastructure), [
     roadLaneCount,
     roadLaneWidth,
     roadMedianWidth,
     roadShoulderWidth,
     roadSideComponents,
     roadStylePresetId,
+    roadAutoInfrastructure,
   ])
   const roadCrossSection = useMemo(
     () => buildRoadCrossSection(roadDraftStyle),
@@ -830,7 +842,12 @@ export default function EnvironmentPanel() {
                     restoreOnCommit={false}
                     step={control.step}
                     unit="m"
-                    value={roadSideComponents[selectedRoadSide][control.key]}
+                    value={
+                      (selectedRoadSide === 'left'
+                        ? roadDraftStyle.leftSide
+                        : roadDraftStyle.rightSide)?.[control.key]
+                        ?? roadSideComponents[selectedRoadSide][control.key]
+                    }
                   />
                 ))}
               </>
@@ -880,6 +897,51 @@ export default function EnvironmentPanel() {
               ]}
               value={roadJoinMode}
             />
+          </div>
+
+          <div
+            className="flex flex-col gap-2 rounded-xl border border-sidebar-border bg-sidebar-accent/20 p-3"
+            data-road-auto-infrastructure
+          >
+            <div className="flex flex-col gap-0.5">
+              <span className="font-medium text-sidebar-foreground text-sm">
+                Automatic infrastructure
+              </span>
+              <span className="text-[11px] text-sidebar-foreground/50">
+                Add editable utility assets when each road segment is committed.
+              </span>
+            </div>
+            <ToggleControl
+              checked={roadAutoInfrastructure.enabled}
+              label="Add automatically"
+              onChange={useEnvironmentStore.getState().setRoadAutoInfrastructureEnabled}
+            />
+            {roadAutoInfrastructure.enabled ? (
+              <div className="flex flex-col gap-1.5 border-sidebar-border border-l pl-3">
+                {ROAD_AUTO_INFRASTRUCTURE_OPTIONS.map((option) => (
+                  <div data-road-auto-infrastructure-kind={option.kind} key={option.kind}>
+                    <ToggleControl
+                      checked={roadAutoInfrastructure.items[option.kind]}
+                      label={option.label}
+                      onChange={(checked) =>
+                        useEnvironmentStore
+                          .getState()
+                          .setRoadAutoInfrastructureItem(option.kind, checked)
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            <span className="text-[10px] leading-snug text-sidebar-foreground/45">
+              Items stay independent after placement, so moving or rotating them will not snap them back.
+            </span>
+            {roadAutoInfrastructure.enabled ? (
+              <span className="text-[10px] leading-snug text-sidebar-foreground/45">
+                Drainage reserves {AUTO_DRAINAGE_MIN_GUTTER_WIDTH.toFixed(2)} m gutters; hydrants reserve a{' '}
+                {AUTO_HYDRANT_MIN_VERGE_WIDTH.toFixed(2)} m roadside verge.
+              </span>
+            ) : null}
           </div>
 
           <div className="flex flex-col gap-2 rounded-xl border border-sidebar-border p-3">

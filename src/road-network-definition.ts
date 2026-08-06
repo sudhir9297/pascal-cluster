@@ -527,7 +527,7 @@ export const roadNetworkDefinition: RoadNetworkDefinition = {
 			? {
 					id: "road:place-signal-assets",
 					label: signalAttachments.length > 0 ? "Refresh signal assets" : "Place signal assets",
-					title: "Create editable post signals on each approach of this signalized junction",
+					title: "Create a sparse pair of editable roadside mast-arm signals",
 					icon: { kind: "iconify" as const, name: "lucide:traffic-cone" },
 					history: "single" as const,
 					run: ({
@@ -553,8 +553,8 @@ export const roadNetworkDefinition: RoadNetworkDefinition = {
 								parentId: node.parentId,
 								position: placement.position,
 								rotation: [0, placement.rotationY, 0],
-								mount: "post",
-								headCount: "one",
+								mount: "mast-arm",
+								headCount: "two",
 								signalState: "red",
 								cabinet: false,
 								streetNameSign: false,

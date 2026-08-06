@@ -34,11 +34,13 @@ import speedLimitRoadSignThumbnail from './assets/speed-limit-road-sign-thumbnai
 import stopRoadSignThumbnail from './assets/stop-road-sign-thumbnail.svg'
 import warningRoadSignThumbnail from './assets/warning-road-sign-thumbnail.svg'
 import yieldRoadSignThumbnail from './assets/yield-road-sign-thumbnail.svg'
-import roadNetworkThumbnail from './assets/road-network-thumbnail.svg'
+import roadNetworkThumbnail from './assets/road-network-thumbnail-v2.png'
 import trafficSignalThumbnail from './assets/traffic-signal-thumbnail-v2.png'
 import drainageInletThumbnail from './assets/drainage-inlet-thumbnail-v2.png'
 import manholeCoverThumbnail from './assets/manhole-cover-thumbnail-v2.png'
 import fireHydrantThumbnail from './assets/fire-hydrant-thumbnail-v2.png'
+import trafficBollardThumbnail from './assets/traffic-bollard-thumbnail-v2.png'
+import roadBarrierThumbnail from './assets/road-barrier-thumbnail-v2.png'
 
 /**
  * Bundled preset artwork. Raster assets live in `./assets` and travel with the
@@ -96,6 +98,8 @@ export const TRAFFIC_SIGNAL_THUMBNAIL = url(trafficSignalThumbnail)
 export const DRAINAGE_INLET_THUMBNAIL = url(drainageInletThumbnail)
 export const MANHOLE_COVER_THUMBNAIL = url(manholeCoverThumbnail)
 export const FIRE_HYDRANT_THUMBNAIL = url(fireHydrantThumbnail)
+export const TRAFFIC_BOLLARD_THUMBNAIL = url(trafficBollardThumbnail)
+export const ROAD_BARRIER_THUMBNAIL = url(roadBarrierThumbnail)
 export const ROAD_NETWORK_THUMBNAIL = url(roadNetworkThumbnail)
 export const ROAD_SIGN_THUMBNAILS = {
   directional: url(directionalRoadSignThumbnail),

@@ -7,6 +7,8 @@ import {
   FireHydrantNode,
   ManholeCoverNode,
   TrafficSignalNode,
+  TrafficBollardNode,
+  RoadBarrierNode,
 } from './schema'
 import {
   STREET_INFRASTRUCTURE_VARIANTS,
@@ -16,6 +18,8 @@ import {
   drainageInletDefinition,
   fireHydrantDefinition,
   manholeCoverDefinition,
+  roadBarrierDefinition,
+  trafficBollardDefinition,
   trafficSignalDefinition,
 } from './street-infrastructure-definition'
 import { buildStreetInfrastructureFloorplan } from './street-infrastructure-floorplan'
@@ -27,22 +31,28 @@ import {
   resolveManholeCoverLayout,
   resolveTrafficSignalHeadLayout,
   resolveTrafficSignalLayout,
+  resolveTrafficBollardLayout,
+  resolveRoadBarrierLayout,
 } from './street-infrastructure-geometry'
 import { StreetInfrastructureModel } from './street-infrastructure-model'
 
 describe('street infrastructure catalog', () => {
-  test('registers four stable utility-menu asset families', () => {
+  test('registers six stable utility-menu asset families', () => {
     expect(STREET_INFRASTRUCTURE_VARIANTS.map((variant) => variant.kind)).toEqual([
       'environment:traffic-signal',
       'environment:drainage-inlet',
       'environment:manhole-cover',
       'environment:fire-hydrant',
+      'environment:traffic-bollard',
+      'environment:road-barrier',
     ])
     for (const definition of [
       trafficSignalDefinition,
       drainageInletDefinition,
       manholeCoverDefinition,
       fireHydrantDefinition,
+      trafficBollardDefinition,
+      roadBarrierDefinition,
     ]) {
       expect(definition.renderer).toBeDefined()
       expect(definition.preview).toBeDefined()
@@ -58,6 +68,8 @@ describe('street infrastructure catalog', () => {
       drainageInletDefinition,
       manholeCoverDefinition,
       fireHydrantDefinition,
+      trafficBollardDefinition,
+      roadBarrierDefinition,
     ]) {
       expect(definition.capabilities.movable?.axes).toEqual(['x', 'y', 'z'])
       const handles = Array.isArray(definition.handles) ? definition.handles : []
@@ -118,6 +130,16 @@ describe('street infrastructure catalog', () => {
       outletLayout: 'two-hose-one-pumper',
       height: 1.25,
     })
+    expect(TrafficBollardNode.parse({})).toMatchObject({
+      type: 'environment:traffic-bollard',
+      style: 'steel',
+      height: 0.9,
+    })
+    expect(RoadBarrierNode.parse({})).toMatchObject({
+      type: 'environment:road-barrier',
+      barrierType: 'jersey',
+      length: 2,
+    })
     for (const variant of STREET_INFRASTRUCTURE_VARIANTS) {
       expect(parseStreetInfrastructure(variant.kind, {}).type).toBe(variant.kind)
     }
@@ -161,6 +183,12 @@ describe('street infrastructure catalog', () => {
     expect(hydrant.bonnetTopY + hydrant.stemNutHeight).toBeLessThanOrEqual(hydrant.height)
     expect(hydrant.barrelHeight / (hydrant.barrelRadius * 2)).toBeGreaterThan(2)
     expect(resolveFireHydrantOutletLayout(FireHydrantNode.parse({}))).toHaveLength(3)
+    const bollard = resolveTrafficBollardLayout(TrafficBollardNode.parse({}))
+    expect(bollard.height).toBe(0.9)
+    expect(bollard.baseRadius).toBeGreaterThan(bollard.radius)
+    const barrier = resolveRoadBarrierLayout(RoadBarrierNode.parse({ barrierType: 'guardrail' }))
+    expect(barrier.length).toBe(2)
+    expect(barrier.beamY).toBeGreaterThan(0)
     const wetHydrant = resolveFireHydrantLayout(FireHydrantNode.parse({ barrelType: 'wet-barrel' }))
     expect(wetHydrant.isWetBarrel).toBe(true)
     expect(wetHydrant.bonnetRadius).toBeLessThan(hydrant.bonnetRadius)
@@ -314,6 +342,12 @@ describe('street infrastructure catalog', () => {
           (['two-hose-one-pumper', 'two-hose', 'one-hose'] as const).map((outletLayout) =>
             FireHydrantNode.parse({ barrelType, outletLayout }),
           ),
+        ),
+        ...(['steel', 'flexible', 'reflective'] as const).map((style) =>
+          TrafficBollardNode.parse({ style }),
+        ),
+        ...(['jersey', 'guardrail', 'water-filled', 'crowd-control'] as const).map((barrierType) =>
+          RoadBarrierNode.parse({ barrierType }),
         ),
       ]
       for (const node of nodes) {
