@@ -127,12 +127,6 @@ const manholeCoverParametrics: ParametricDescriptor<any> = {
       label: 'Cover',
       fields: [
         { key: 'diameter', kind: 'number', unit: 'm', min: 0.45, max: 1.2, step: 0.05 },
-        {
-          key: 'utilityLegend',
-          kind: 'enum',
-          options: ['blank', 'storm', 'sanitary', 'water', 'electric'],
-          display: 'select',
-        },
         { key: 'treadPattern', kind: 'enum', options: ['radial', 'grid', 'rings'], display: 'segmented' },
       ],
     },
@@ -154,12 +148,17 @@ const fireHydrantParametrics: ParametricDescriptor<any> = {
       fields: [
         { key: 'height', kind: 'number', unit: 'm', min: 0.65, max: 1.5, step: 0.05 },
         {
+          key: 'barrelType',
+          kind: 'enum',
+          options: ['dry-barrel', 'wet-barrel'],
+          display: 'segmented',
+        },
+        {
           key: 'outletLayout',
           kind: 'enum',
           options: ['two-hose-one-pumper', 'two-hose', 'one-hose'],
           display: 'select',
         },
-        { key: 'protectiveGuards', kind: 'boolean' },
       ],
     },
     {

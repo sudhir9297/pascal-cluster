@@ -271,4 +271,5 @@ export {
   resolveDrainageInletLayout,
   resolveManholeCoverLayout,
   resolveFireHydrantLayout,
+  resolveFireHydrantOutletLayout,
 } from './street-infrastructure-geometry'

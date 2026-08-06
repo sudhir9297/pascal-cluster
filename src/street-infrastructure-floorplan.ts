@@ -10,11 +10,16 @@ import {
   TRAFFIC_SIGNAL_DIMENSIONS,
   resolveDrainageInletLayout,
   resolveFireHydrantLayout,
+  resolveFireHydrantOutletLayout,
   resolveManholeCoverLayout,
   resolveTrafficSignalLayout,
 } from './street-infrastructure-geometry'
 
 type Point = readonly [number, number]
+
+const MANHOLE_RADIAL_ANGLES = Array.from({ length: 24 }, (_, index) => (index * Math.PI * 2) / 24)
+const MANHOLE_GRID_OFFSETS = [-0.72, -0.48, -0.24, 0, 0.24, 0.48, 0.72] as const
+const MANHOLE_RING_FACTORS = [0.84, 0.64, 0.44] as const
 
 function localPoint(origin: Point, x: number, z: number, angle: number): Point {
   return [
@@ -268,8 +273,8 @@ export function buildStreetInfrastructureFloorplan(
       cx: x,
       cy: z,
       r: layout.frameRadius,
-      fill: cover.metalColor,
-      fillOpacity: 0.82,
+      fill: '#343938',
+      fillOpacity: 0.92,
       stroke,
       strokeWidth: 0.04,
     })
@@ -277,14 +282,89 @@ export function buildStreetInfrastructureFloorplan(
       kind: 'circle',
       cx: x,
       cy: z,
-      r: layout.reliefRadius,
-      fill: 'none',
-      stroke: '#262b2a',
+      r: layout.radius * 0.96,
+      fill: cover.metalColor,
+      fillOpacity: 0.94,
+      stroke: '#252a29',
       strokeWidth: 0.025,
     })
+    children.push({
+      kind: 'circle',
+      cx: x,
+      cy: z,
+      r: layout.rimRadius,
+      fill: 'none',
+      stroke: '#272d2b',
+      strokeWidth: 0.035,
+    })
+    if (cover.treadPattern === 'radial') {
+      for (const treadAngle of MANHOLE_RADIAL_ANGLES) {
+        const start = localPoint(center, Math.cos(treadAngle) * layout.radius * 0.16, Math.sin(treadAngle) * layout.radius * 0.16, angle)
+        const end = localPoint(center, Math.cos(treadAngle) * layout.radius * 0.76, Math.sin(treadAngle) * layout.radius * 0.76, angle)
+        children.push({
+          kind: 'line',
+          x1: start[0],
+          y1: start[1],
+          x2: end[0],
+          y2: end[1],
+          stroke: '#303534',
+          strokeWidth: 0.022,
+          strokeLinecap: 'round',
+        })
+      }
+    } else if (cover.treadPattern === 'grid') {
+      for (const offset of MANHOLE_GRID_OFFSETS) {
+        const position = offset * layout.treadRadius
+        const span = Math.sqrt(Math.max(0, layout.treadRadius ** 2 - position ** 2)) * 2
+        const xStart = localPoint(center, position, -span / 2, angle)
+        const xEnd = localPoint(center, position, span / 2, angle)
+        const zStart = localPoint(center, -span / 2, position, angle)
+        const zEnd = localPoint(center, span / 2, position, angle)
+        children.push(
+          { kind: 'line', x1: xStart[0], y1: xStart[1], x2: xEnd[0], y2: xEnd[1], stroke: '#303534', strokeWidth: 0.022 },
+          { kind: 'line', x1: zStart[0], y1: zStart[1], x2: zEnd[0], y2: zEnd[1], stroke: '#303534', strokeWidth: 0.022 },
+        )
+      }
+    } else {
+      for (const factor of MANHOLE_RING_FACTORS) {
+        children.push({
+          kind: 'circle',
+          cx: x,
+          cy: z,
+          r: layout.radius * factor,
+          fill: 'none',
+          stroke: '#303534',
+          strokeWidth: 0.025,
+        })
+      }
+    }
+    children.push({
+      kind: 'circle',
+      cx: x,
+      cy: z,
+      r: layout.centerReliefRadius,
+      fill: '#3b403f',
+      stroke,
+      strokeWidth: 0.018,
+    })
+    for (const side of [-1, 1]) {
+      const slot = localPoint(center, side * layout.radius * 0.58, 0, angle)
+      children.push(rectangle(slot, 0.065, 0.024, angle + Math.PI / 2, '#1f2423', stroke))
+    }
   } else {
     const hydrant = node as FireHydrantNode
     const layout = resolveFireHydrantLayout(hydrant)
+    const outletLayouts = resolveFireHydrantOutletLayout(hydrant, layout)
+    children.push({
+      kind: 'circle',
+      cx: x,
+      cy: z,
+      r: layout.padRadius,
+      fill: '#b7b3aa',
+      fillOpacity: 0.38,
+      stroke,
+      strokeWidth: 0.025,
+    })
     children.push({
       kind: 'circle',
       cx: x,
@@ -295,19 +375,85 @@ export function buildStreetInfrastructureFloorplan(
       stroke,
       strokeWidth: 0.04,
     })
-    if (hydrant.protectiveGuards) {
-      for (const side of [-1, 1]) {
-        const guard = localPoint(center, side * layout.guardOffset, 0.15 * layout.scale, angle)
-        children.push({
-          kind: 'circle',
-          cx: guard[0],
-          cy: guard[1],
-          r: 0.065 * layout.scale,
-          fill: '#e2aa2e',
-          stroke,
-          strokeWidth: 0.025,
-        })
-      }
+    children.push({
+      kind: 'circle',
+      cx: x,
+      cy: z,
+      r: layout.barrelRadius,
+      fill: hydrant.bodyColor,
+      fillOpacity: 0.95,
+      stroke: '#542826',
+      strokeWidth: 0.025,
+    })
+    for (const boltAngle of Array.from({ length: 8 }, (_, index) => (index * Math.PI * 2) / 8)) {
+      const bolt = localPoint(
+        center,
+        Math.cos(boltAngle) * layout.flangeRadius * 0.78,
+        Math.sin(boltAngle) * layout.flangeRadius * 0.78,
+        angle,
+      )
+      children.push({
+        kind: 'circle',
+        cx: bolt[0],
+        cy: bolt[1],
+        r: 0.022 * layout.scale,
+        fill: '#5d2a25',
+        stroke,
+        strokeWidth: 0.012,
+      })
+    }
+    if (!layout.isWetBarrel) {
+      children.push({
+        kind: 'circle',
+        cx: x,
+        cy: z,
+        r: layout.stemNutRadius,
+        fill: hydrant.capColor,
+        stroke,
+        strokeWidth: 0.02,
+      })
+    }
+    for (const outlet of outletLayouts) {
+      const outletCenter = localPoint(
+        center,
+        Math.cos(outlet.angle) * layout.barrelRadius * 1.12,
+        Math.sin(outlet.angle) * layout.barrelRadius * 1.12,
+        angle,
+      )
+      const outletStart = localPoint(
+        center,
+        Math.cos(outlet.angle) * layout.barrelRadius * 0.65,
+        Math.sin(outlet.angle) * layout.barrelRadius * 0.65,
+        angle,
+      )
+      children.push({
+        kind: 'line',
+        x1: outletStart[0],
+        y1: outletStart[1],
+        x2: outletCenter[0],
+        y2: outletCenter[1],
+        stroke: hydrant.bodyColor,
+        strokeWidth: outlet.radius * 1.25,
+        strokeLinecap: 'round',
+      })
+      children.push({
+        kind: 'circle',
+        cx: outletCenter[0],
+        cy: outletCenter[1],
+        r: outlet.radius * 0.82,
+        fill: hydrant.capColor,
+        stroke: hydrant.bodyColor,
+        strokeWidth: 0.028,
+      })
+      children.push({
+        kind: 'circle',
+        cx: outletCenter[0],
+        cy: outletCenter[1],
+        r: outlet.radius * 0.18,
+        fill: '#303738',
+        stroke,
+        strokeWidth: 0.012,
+      })
     }
   }
 

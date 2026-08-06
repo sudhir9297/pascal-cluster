@@ -10,13 +10,16 @@ import type { StreetInfrastructureNode } from './street-infrastructure-config'
 import {
   resolveDrainageInletLayout,
   resolveFireHydrantLayout,
+  resolveFireHydrantOutletLayout,
   resolveManholeCoverLayout,
 } from './street-infrastructure-geometry'
 import { TrafficSignalModel } from './traffic-signal-model'
 
-const RADIAL_TREAD_ANGLES = Array.from({ length: 16 }, (_, index) => (index * Math.PI * 2) / 16)
-const GRID_TREAD_OFFSETS = [-0.2, -0.1, 0, 0.1, 0.2] as const
+const RADIAL_TREAD_ANGLES = Array.from({ length: 24 }, (_, index) => (index * Math.PI * 2) / 24)
+const GRID_TREAD_OFFSETS = [-0.72, -0.48, -0.24, 0, 0.24, 0.48, 0.72] as const
+const RING_TREAD_FACTORS = [0.84, 0.64, 0.44] as const
 const HYDRANT_BOLT_ANGLES = Array.from({ length: 8 }, (_, index) => (index * Math.PI * 2) / 8)
+const HYDRANT_CAP_BOLT_ANGLES = Array.from({ length: 6 }, (_, index) => (index * Math.PI * 2) / 6)
 
 function MetalMaterial({
   color,
@@ -98,57 +101,71 @@ export function ManholeCoverModel({
 }) {
   const layout = resolveManholeCoverLayout(node)
   const roughness = 0.62 - node.wetness * 0.35
-  const ringCount = node.treadPattern === 'rings' ? 3 : 1
   return (
     <group>
-      <mesh layers={layer} position={[0, 0.018, 0]}>
-        <cylinderGeometry args={[layout.frameRadius, layout.frameRadius, 0.055, 40]} />
+      <mesh castShadow={!ghost} layers={layer} position={[0, layout.frameHeight / 2, 0]}>
+        <cylinderGeometry args={[layout.frameRadius, layout.frameRadius * 0.98, layout.frameHeight, 48]} />
         <MetalMaterial color="#343938" ghost={ghost} roughness={roughness} />
       </mesh>
-      <mesh layers={layer} position={[0, 0.051, 0]}>
-        <cylinderGeometry args={[layout.radius, layout.radius, 0.025, 48]} />
+      <mesh layers={layer} position={[0, layout.coverBackingCenterY, 0]}>
+        <cylinderGeometry args={[layout.radius * 0.98, layout.radius * 0.96, layout.coverBackingThickness, 48]} />
+        <MetalMaterial color="#252a29" ghost={ghost} roughness={0.54} />
+      </mesh>
+      <mesh castShadow={!ghost} layers={layer} position={[0, layout.coverCenterY, 0]}>
+        <cylinderGeometry args={[layout.radius * 0.96, layout.radius * 0.94, layout.coverThickness, 48]} />
         <MetalMaterial color={node.metalColor} ghost={ghost} roughness={roughness} />
       </mesh>
-      {Array.from({ length: ringCount }, (_, index) => (
-        <mesh key={`ring:${index}`} layers={layer} position={[0, 0.068, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[layout.reliefRadius * (1 - index * 0.24), 0.012, 6, 36]} />
-          <MetalMaterial color="#2f3433" ghost={ghost} roughness={roughness} />
-        </mesh>
-      ))}
-      {node.treadPattern === 'radial'
-        ? RADIAL_TREAD_ANGLES.map((angle) => (
-            <mesh
-              key={angle}
-              layers={layer}
-              position={[Math.cos(angle) * layout.radius * 0.55, 0.072, Math.sin(angle) * layout.radius * 0.55]}
-              rotation={[0, -angle, 0]}
-            >
-              <boxGeometry args={[layout.diameter * 0.18, 0.018, 0.018]} />
+      <mesh layers={layer} position={[0, layout.rimCenterY, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[layout.rimRadius, layout.rimTubeRadius, 8, 48]} />
+        <MetalMaterial color="#272d2b" ghost={ghost} roughness={0.5} />
+      </mesh>
+      {node.treadPattern === 'rings'
+        ? RING_TREAD_FACTORS.map((factor) => (
+            <mesh key={`ring:${factor}`} layers={layer} position={[0, layout.treadY, 0]} rotation={[Math.PI / 2, 0, 0]}>
+              <torusGeometry args={[layout.radius * factor, 0.012, 8, 48]} />
               <MetalMaterial color="#303534" ghost={ghost} roughness={roughness} />
             </mesh>
           ))
-        : node.treadPattern === 'grid'
-          ? GRID_TREAD_OFFSETS.flatMap((offset) => [
-              <mesh key={`x:${offset}`} layers={layer} position={[offset * layout.diameter, 0.072, 0]}>
-                <boxGeometry args={[0.012, 0.018, layout.diameter * 0.7]} />
+        : null}
+      {node.treadPattern === 'radial'
+        ? RADIAL_TREAD_ANGLES.map((angle) => (
+            <mesh
+              key={`radial:${angle}`}
+              layers={layer}
+              position={[Math.cos(angle) * layout.radius * 0.39, layout.treadY, Math.sin(angle) * layout.radius * 0.39]}
+              rotation={[0, -angle, 0]}
+            >
+              <boxGeometry args={[layout.radius * 0.7, layout.treadHeight, 0.016]} />
+              <MetalMaterial color="#303534" ghost={ghost} roughness={roughness} />
+            </mesh>
+          ))
+        : null}
+      {node.treadPattern === 'grid'
+        ? GRID_TREAD_OFFSETS.flatMap((offset) => {
+            const position = offset * layout.treadRadius
+            const span = Math.sqrt(Math.max(0, layout.treadRadius ** 2 - position ** 2)) * 2
+            return [
+              <mesh key={`grid-x:${offset}`} layers={layer} position={[position, layout.treadY, 0]}>
+                <boxGeometry args={[0.014, layout.treadHeight, span]} />
                 <MetalMaterial color="#303534" ghost={ghost} roughness={roughness} />
               </mesh>,
-              <mesh key={`z:${offset}`} layers={layer} position={[0, 0.072, offset * layout.diameter]}>
-                <boxGeometry args={[layout.diameter * 0.7, 0.018, 0.012]} />
+              <mesh key={`grid-z:${offset}`} layers={layer} position={[0, layout.treadY, position]}>
+                <boxGeometry args={[span, layout.treadHeight, 0.014]} />
                 <MetalMaterial color="#303534" ghost={ghost} roughness={roughness} />
               </mesh>,
-            ])
-          : null}
-      <mesh layers={layer} position={[0, 0.078, 0]}>
-        <cylinderGeometry args={[layout.diameter * 0.16, layout.diameter * 0.16, 0.018, 24]} />
+            ]
+          })
+        : null}
+      <mesh layers={layer} position={[0, layout.treadY + 0.003, 0]}>
+        <cylinderGeometry args={[layout.centerReliefRadius, layout.centerReliefRadius * 0.92, 0.018, 16]} />
         <MetalMaterial color="#3b403f" ghost={ghost} roughness={roughness} />
       </mesh>
-      <mesh layers={layer} position={[-layout.diameter * 0.24, 0.082, 0]}>
-        <boxGeometry args={[0.055, 0.018, 0.025]} />
+      <mesh layers={layer} position={[-layout.radius * 0.58, layout.treadY + 0.004, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <boxGeometry args={[0.065, 0.018, 0.024]} />
         <MetalMaterial color="#1f2423" ghost={ghost} roughness={roughness} />
       </mesh>
-      <mesh layers={layer} position={[layout.diameter * 0.24, 0.082, 0]}>
-        <boxGeometry args={[0.055, 0.018, 0.025]} />
+      <mesh layers={layer} position={[layout.radius * 0.58, layout.treadY + 0.004, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <boxGeometry args={[0.065, 0.018, 0.024]} />
         <MetalMaterial color="#1f2423" ghost={ghost} roughness={roughness} />
       </mesh>
     </group>
@@ -156,6 +173,7 @@ export function ManholeCoverModel({
 }
 
 function HydrantOutlet({
+  bodyColor,
   capColor,
   ghost,
   layer,
@@ -163,6 +181,7 @@ function HydrantOutlet({
   radius,
   rotation,
 }: {
+  bodyColor: string
   capColor: string
   ghost: boolean
   layer: number
@@ -174,11 +193,29 @@ function HydrantOutlet({
     <group position={position} rotation={rotation}>
       <mesh castShadow={!ghost} layers={layer}>
         <cylinderGeometry args={[radius * 0.82, radius, radius * 1.05, 18]} />
-        <MetalMaterial color="#8e2f29" ghost={ghost} roughness={0.42} />
+        <MetalMaterial color={bodyColor} ghost={ghost} roughness={0.42} />
+      </mesh>
+      <mesh layers={layer} position={[0, radius * 0.5, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[radius * 0.82, radius * 0.075, 6, 18]} />
+        <MetalMaterial color="#242a2b" ghost={ghost} roughness={0.5} />
       </mesh>
       <mesh castShadow={!ghost} layers={layer} position={[0, radius * 0.62, 0]}>
         <cylinderGeometry args={[radius, radius * 0.92, radius * 0.3, 8]} />
         <MetalMaterial color={capColor} ghost={ghost} roughness={0.38} />
+      </mesh>
+      {HYDRANT_CAP_BOLT_ANGLES.map((angle) => (
+        <mesh
+          key={angle}
+          layers={layer}
+          position={[Math.cos(angle) * radius * 0.58, radius * 0.81, Math.sin(angle) * radius * 0.58]}
+        >
+          <cylinderGeometry args={[radius * 0.065, radius * 0.065, radius * 0.075, 6]} />
+          <MetalMaterial color="#5e6665" ghost={ghost} roughness={0.42} />
+        </mesh>
+      ))}
+      <mesh layers={layer} position={[0, radius * 0.84, 0]}>
+        <cylinderGeometry args={[radius * 0.16, radius * 0.14, radius * 0.08, 5]} />
+        <MetalMaterial color="#303738" ghost={ghost} roughness={0.34} />
       </mesh>
     </group>
   )
@@ -194,14 +231,21 @@ export function FireHydrantModel({
   node: FireHydrantNode
 }) {
   const layout = resolveFireHydrantLayout(node)
+  const outlets = resolveFireHydrantOutletLayout(node, layout)
   const roughness = 0.38 + node.weathering * 0.35
-  const showBothHoseOutlets = node.outletLayout !== 'one-hose'
-  const showPumper = node.outletLayout === 'two-hose-one-pumper'
   return (
     <group>
-      <mesh castShadow={!ghost} layers={layer} position={[0, 0.055 * layout.scale, 0]}>
-        <cylinderGeometry args={[layout.flangeRadius, layout.flangeRadius * 0.92, 0.11 * layout.scale, 24]} />
+      <mesh castShadow={!ghost} layers={layer} position={[0, 0.018 * layout.scale, 0]}>
+        <cylinderGeometry args={[layout.padRadius, layout.padRadius * 0.98, 0.035 * layout.scale, 32]} />
+        <MetalMaterial color="#b7b3aa" ghost={ghost} roughness={0.84} />
+      </mesh>
+      <mesh castShadow={!ghost} layers={layer} position={[0, layout.flangeHeight / 2, 0]}>
+        <cylinderGeometry args={[layout.flangeRadius, layout.flangeRadius * 0.92, layout.flangeHeight, 24]} />
         <MetalMaterial color={node.bodyColor} ghost={ghost} roughness={roughness} />
+      </mesh>
+      <mesh layers={layer} position={[0, layout.flangeTopY + 0.008 * layout.scale, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[layout.flangeRadius * 0.83, 0.018 * layout.scale, 8, 28]} />
+        <MetalMaterial color="#5d2a25" ghost={ghost} roughness={0.5} />
       </mesh>
       {HYDRANT_BOLT_ANGLES.map((angle) => (
         <mesh
@@ -209,7 +253,7 @@ export function FireHydrantModel({
           layers={layer}
           position={[
             Math.cos(angle) * layout.flangeRadius * 0.78,
-            0.125 * layout.scale,
+            layout.flangeTopY + 0.024 * layout.scale,
             Math.sin(angle) * layout.flangeRadius * 0.78,
           ]}
         >
@@ -221,55 +265,69 @@ export function FireHydrantModel({
         <cylinderGeometry args={[layout.barrelRadius * 0.94, layout.barrelRadius, layout.barrelHeight, 24]} />
         <MetalMaterial color={node.bodyColor} ghost={ghost} roughness={roughness} />
       </mesh>
+      <mesh layers={layer} position={[0, layout.barrelTopY - 0.018 * layout.scale, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[layout.barrelRadius * 0.98, 0.014 * layout.scale, 8, 24]} />
+        <MetalMaterial color="#642b27" ghost={ghost} roughness={0.5} />
+      </mesh>
+      <mesh castShadow={!ghost} layers={layer} position={[0, layout.bonnetFlangeCenterY, 0]}>
+        <cylinderGeometry args={[layout.bonnetFlangeRadius, layout.bonnetFlangeRadius * 0.96, layout.bonnetFlangeHeight, 28]} />
+        <MetalMaterial color={node.bodyColor} ghost={ghost} roughness={roughness} />
+      </mesh>
+      <mesh layers={layer} position={[0, layout.bonnetFlangeCenterY + layout.bonnetFlangeHeight * 0.28, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[layout.bonnetFlangeRadius * 0.9, 0.015 * layout.scale, 8, 28]} />
+        <MetalMaterial color={node.capColor} ghost={ghost} roughness={0.48} />
+      </mesh>
       <mesh castShadow={!ghost} layers={layer} position={[0, layout.bonnetY, 0]}>
-        <sphereGeometry args={[layout.barrelRadius * 1.12, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
+        <sphereGeometry args={[layout.bonnetRadius, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2]} />
         <MetalMaterial color={node.bonnetColor} ghost={ghost} roughness={roughness} />
       </mesh>
-      <mesh layers={layer} position={[0, layout.bonnetY + layout.barrelRadius * 0.98, 0]}>
-        <cylinderGeometry args={[0.045 * layout.scale, 0.052 * layout.scale, 0.075 * layout.scale, 6]} />
-        <MetalMaterial color={node.capColor} ghost={ghost} roughness={0.35} />
-      </mesh>
-      <HydrantOutlet
-        capColor={node.capColor}
-        ghost={ghost}
-        layer={layer}
-        position={[layout.barrelRadius * 1.02, layout.outletY, 0]}
-        radius={layout.hoseRadius}
-        rotation={[0, 0, -Math.PI / 2]}
-      />
-      {showBothHoseOutlets ? (
-        <HydrantOutlet
-          capColor={node.capColor}
-          ghost={ghost}
-          layer={layer}
-          position={[-layout.barrelRadius * 1.02, layout.outletY, 0]}
-          radius={layout.hoseRadius}
-          rotation={[0, 0, Math.PI / 2]}
-        />
-      ) : null}
-      {showPumper ? (
-        <HydrantOutlet
-          capColor={node.capColor}
-          ghost={ghost}
-          layer={layer}
-          position={[0, layout.outletY, -layout.barrelRadius * 1.02]}
-          radius={layout.pumperRadius}
-          rotation={[Math.PI / 2, 0, 0]}
-        />
-      ) : null}
-      {node.protectiveGuards ? (
-        [-1, 1].map((side) => (
-          <group key={side} position={[side * layout.guardOffset, 0, 0.15 * layout.scale]}>
-            <mesh castShadow={!ghost} layers={layer} position={[0, 0.32 * layout.scale, 0]}>
-              <cylinderGeometry args={[0.055 * layout.scale, 0.065 * layout.scale, 0.64 * layout.scale, 14]} />
-              <MetalMaterial color="#e2aa2e" ghost={ghost} roughness={0.5} />
+      {!layout.isWetBarrel ? (
+        <>
+          <mesh layers={layer} position={[0, layout.bonnetTopY + layout.stemNutHeight * 0.16, 0]}>
+            <cylinderGeometry args={[layout.stemNutRadius * 0.92, layout.stemNutRadius, layout.stemNutHeight * 0.42, 12]} />
+            <MetalMaterial color={node.capColor} ghost={ghost} roughness={0.35} />
+          </mesh>
+          <mesh layers={layer} position={[0, layout.stemNutY, 0]}>
+            <cylinderGeometry args={[layout.stemNutRadius, layout.stemNutRadius * 0.88, layout.stemNutHeight, 5]} />
+            <MetalMaterial color={node.capColor} ghost={ghost} roughness={0.35} />
+          </mesh>
+        </>
+      ) : (
+        <mesh layers={layer} position={[0, layout.bonnetTopY - 0.012 * layout.scale, 0]}>
+          <cylinderGeometry args={[layout.bonnetRadius * 0.62, layout.bonnetRadius * 0.72, 0.026 * layout.scale, 20]} />
+          <MetalMaterial color={node.bonnetColor} ghost={ghost} roughness={roughness} />
+        </mesh>
+      )}
+      {outlets.map((outlet) => {
+        const x = Math.cos(outlet.angle) * layout.barrelRadius * 1.02
+        const z = Math.sin(outlet.angle) * layout.barrelRadius * 1.02
+        return (
+          <HydrantOutlet
+            bodyColor={node.bodyColor}
+            capColor={node.capColor}
+            ghost={ghost}
+            key={`${outlet.kind}:${outlet.angle}`}
+            layer={layer}
+            position={[x, layout.outletY, z]}
+            radius={outlet.radius}
+            rotation={[0, -outlet.angle, -Math.PI / 2]}
+          />
+        )
+      })}
+      {!layout.isWetBarrel ? (
+        <>
+          {[-1, 1].map((side) => (
+            <mesh
+              key={`drain:${side}`}
+              layers={layer}
+              position={[side * layout.barrelRadius * 0.83, layout.drainY, 0]}
+              rotation={[0, 0, Math.PI / 2]}
+            >
+              <cylinderGeometry args={[0.018 * layout.scale, 0.018 * layout.scale, 0.035 * layout.scale, 10]} />
+              <MetalMaterial color="#6a302a" ghost={ghost} roughness={0.5} />
             </mesh>
-            <mesh layers={layer} position={[0, 0.64 * layout.scale, 0]}>
-              <sphereGeometry args={[0.055 * layout.scale, 14, 8]} />
-              <MetalMaterial color="#e2aa2e" ghost={ghost} roughness={0.5} />
-            </mesh>
-          </group>
-        ))
+          ))}
+        </>
       ) : null}
     </group>
   )

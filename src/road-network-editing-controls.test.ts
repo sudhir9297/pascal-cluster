@@ -45,18 +45,17 @@ describe('road editing control visibility', () => {
     expect(source).toContain('road-elevation-hit:')
   })
 
-  test('provides visible X/Z axis grips and arrow-key constraint modes', () => {
+  test('uses free XZ plan dragging without side-axis grips', () => {
     const source = readFileSync(
       new URL('./road-network-spline-controls.tsx', import.meta.url),
       'utf8',
     )
-    expect(source).toContain('const X_AXIS_COLOR = "#ef4444"')
-    expect(source).toContain('const Z_AXIS_COLOR = "#10b981"')
-    expect(source).toContain('event.key === "ArrowUp"')
-    expect(source).toContain('event.key === "ArrowRight"')
-    expect(source).toContain('event.key === "ArrowLeft"')
-    expect(source).toContain('road-x-axis-hit:')
-    expect(source).toContain('road-z-axis-hit:')
+    expect(source).toContain('onPointerDown={(event) => beginDrag(event, "plan")}')
+    expect(source).toContain('new Plane(new Vector3(0, 1, 0), -point[1])')
+    expect(source).not.toContain('road-x-axis-hit:')
+    expect(source).not.toContain('road-z-axis-hit:')
+    expect(source).not.toContain('nextPoint.z = originalPoint.z')
+    expect(source).not.toContain('nextPoint.x = originalPoint.x')
   })
 
   test('provides insertion handles, modifier multi-selection, and deletion', () => {

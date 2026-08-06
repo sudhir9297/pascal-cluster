@@ -622,16 +622,13 @@ export const DrainageInletNode = BaseNode.extend({
 
 export type DrainageInletNode = z.infer<typeof DrainageInletNode>;
 
-/** A flush access cover with configurable utility markings and finish. */
+/** A flush access cover with configurable tread patterns and finish. */
 export const ManholeCoverNode = BaseNode.extend({
 	id: objectId("manhole-cover"),
 	type: nodeType("environment:manhole-cover"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	diameter: z.number().min(0.45).max(1.2).default(0.7),
-	utilityLegend: z
-		.enum(["blank", "storm", "sanitary", "water", "electric"])
-		.default("storm"),
 	treadPattern: z.enum(["radial", "grid", "rings"]).default("radial"),
 	metalColor: z.string().default("#4a4d4b"),
 	wetness: z.number().min(0).max(1).default(0),
@@ -639,20 +636,20 @@ export const ManholeCoverNode = BaseNode.extend({
 
 export type ManholeCoverNode = z.infer<typeof ManholeCoverNode>;
 
-/** A configurable above-ground dry-barrel fire hydrant. */
+/** A configurable above-ground fire hydrant with dry- and wet-barrel silhouettes. */
 export const FireHydrantNode = BaseNode.extend({
 	id: objectId("fire-hydrant"),
 	type: nodeType("environment:fire-hydrant"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-	height: z.number().min(0.65).max(1.5).default(0.95),
+	height: z.number().min(0.65).max(1.8).default(1.25),
+	barrelType: z.enum(["dry-barrel", "wet-barrel"]).default("dry-barrel"),
 	outletLayout: z
 		.enum(["two-hose-one-pumper", "two-hose", "one-hose"])
 		.default("two-hose-one-pumper"),
 	bodyColor: z.string().default("#c73c32"),
-	bonnetColor: z.string().default("#f0b63e"),
-	capColor: z.string().default("#f0b63e"),
-	protectiveGuards: z.boolean().default(false),
+	bonnetColor: z.string().default("#b9302b"),
+	capColor: z.string().default("#8f2421"),
 	weathering: z.number().min(0).max(1).default(0.08),
 });
 

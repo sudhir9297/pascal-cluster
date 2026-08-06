@@ -201,28 +201,149 @@ export function resolveDrainageInletLayout(node: DrainageInletNode): DrainageInl
 
 export function resolveManholeCoverLayout(node: ManholeCoverNode) {
   const diameter = Math.max(0.45, Math.min(1.2, node.diameter))
+  const radius = diameter / 2
+  const frameHeight = 0.075
+  const coverThickness = 0.042
+  const coverBackingThickness = 0.026
+  const coverBackingCenterY = 0.066
+  const coverCenterY = 0.104
+  const treadY = 0.152
+  const rimCenterY = 0.143
   return {
     diameter,
-    radius: diameter / 2,
-    frameRadius: diameter / 2 + 0.065,
-    reliefRadius: diameter * 0.36,
+    radius,
+    frameRadius: radius + 0.065,
+    frameHeight,
+    coverBackingThickness,
+    coverBackingCenterY,
+    coverBackingTopY: coverBackingCenterY + coverBackingThickness / 2,
+    coverThickness,
+    coverCenterY,
+    coverBottomY: coverCenterY - coverThickness / 2,
+    coverTopY: coverCenterY + coverThickness / 2,
+    treadY,
+    treadHeight: 0.018,
+    treadBottomY: treadY - 0.009,
+    rimCenterY,
+    rimTubeRadius: 0.014,
+    rimBottomY: rimCenterY - 0.014,
+    treadRadius: radius * 0.84,
+    rimRadius: radius * 0.91,
+    reliefRadius: radius * 0.68,
+    centerReliefRadius: radius * 0.2,
   }
 }
 
-export function resolveFireHydrantLayout(node: FireHydrantNode) {
-  const height = Math.max(0.65, Math.min(1.5, node.height))
-  const scale = height / 0.95
+export type FireHydrantLayout = {
+  height: number
+  scale: number
+  isWetBarrel: boolean
+  barrelRadius: number
+  barrelHeight: number
+  barrelBottomY: number
+  barrelTopY: number
+  barrelCenterY: number
+  flangeRadius: number
+  flangeHeight: number
+  flangeTopY: number
+  bonnetFlangeRadius: number
+  bonnetFlangeHeight: number
+  bonnetFlangeCenterY: number
+  bonnetY: number
+  bonnetRadius: number
+  bonnetTopY: number
+  stemNutY: number
+  stemNutRadius: number
+  stemNutHeight: number
+  outletY: number
+  drainY: number
+  hoseRadius: number
+  pumperRadius: number
+  padRadius: number
+}
+
+export type FireHydrantOutletLayout = {
+  angle: number
+  radius: number
+  kind: 'hose' | 'pumper'
+}
+
+export function resolveFireHydrantLayout(node: FireHydrantNode): FireHydrantLayout {
+  const height = Math.max(0.65, Math.min(1.8, node.height))
+  // Keep the new default tall and serviceable without making the barrel too wide.
+  const scale = height / 1.25
+  const isWetBarrel = node.barrelType === 'wet-barrel'
+  const flangeHeight = 0.11 * scale
+  const barrelBottomY = flangeHeight * 0.9
+  const barrelRadius = 0.16 * scale
+  const bonnetRadius = (isWetBarrel ? 0.13 : 0.17) * scale
+  const bonnetFlangeRadius = (isWetBarrel ? 0.18 : 0.22) * scale
+  const bonnetFlangeHeight = 0.075 * scale
+  const stemNutHeight = (isWetBarrel ? 0 : 0.075) * scale
+  const topClearance = (isWetBarrel ? 0.05 : stemNutHeight + 0.02 * scale)
+  const barrelHeight = Math.max(
+    0.55 * scale,
+    height - barrelBottomY - bonnetFlangeHeight - bonnetRadius - topClearance,
+  )
+  const barrelTopY = barrelBottomY + barrelHeight
+  const bonnetFlangeCenterY = barrelTopY + bonnetFlangeHeight / 2
+  const bonnetY = barrelTopY + bonnetFlangeHeight
+  const bonnetTopY = bonnetY + bonnetRadius
+  const stemNutY = isWetBarrel
+    ? bonnetTopY
+    : bonnetTopY + stemNutHeight / 2 + 0.01 * scale
   return {
     height,
     scale,
-    barrelRadius: 0.18 * scale,
-    barrelHeight: 0.58 * scale,
-    barrelCenterY: 0.36 * scale,
+    isWetBarrel,
+    barrelRadius,
+    barrelHeight,
+    barrelBottomY,
+    barrelTopY,
+    barrelCenterY: barrelBottomY + barrelHeight / 2,
     flangeRadius: 0.29 * scale,
-    bonnetY: 0.72 * scale,
-    outletY: 0.49 * scale,
-    hoseRadius: 0.095 * scale,
-    pumperRadius: 0.135 * scale,
-    guardOffset: 0.52 * scale,
+    flangeHeight,
+    flangeTopY: flangeHeight,
+    bonnetFlangeRadius,
+    bonnetFlangeHeight,
+    bonnetFlangeCenterY,
+    bonnetY,
+    bonnetRadius,
+    bonnetTopY,
+    stemNutY,
+    stemNutRadius: 0.045 * scale,
+    stemNutHeight,
+    outletY: barrelBottomY + barrelHeight * (isWetBarrel ? 0.53 : 0.56),
+    drainY: barrelBottomY + barrelHeight * 0.18,
+    hoseRadius: 0.085 * scale,
+    pumperRadius: 0.12 * scale,
+    padRadius: 0.32 * scale,
   }
+}
+
+export function resolveFireHydrantOutletLayout(
+  node: FireHydrantNode,
+  layout = resolveFireHydrantLayout(node),
+): FireHydrantOutletLayout[] {
+  const outlets: FireHydrantOutletLayout[] = []
+  if (layout.isWetBarrel) {
+    if (node.outletLayout === 'one-hose') {
+      outlets.push({ angle: 0, radius: layout.hoseRadius, kind: 'hose' })
+    } else {
+      outlets.push({ angle: 0, radius: layout.hoseRadius, kind: 'hose' })
+      outlets.push({ angle: (Math.PI * 2) / 3, radius: layout.hoseRadius, kind: 'hose' })
+      if (node.outletLayout === 'two-hose-one-pumper') {
+        outlets.push({ angle: (Math.PI * 4) / 3, radius: layout.pumperRadius, kind: 'pumper' })
+      }
+    }
+    return outlets
+  }
+  outlets.push({ angle: 0, radius: layout.hoseRadius, kind: 'hose' })
+  if (node.outletLayout !== 'one-hose') {
+    outlets.push({ angle: Math.PI, radius: layout.hoseRadius, kind: 'hose' })
+  }
+  if (node.outletLayout === 'two-hose-one-pumper') {
+    outlets.push({ angle: -Math.PI / 2, radius: layout.pumperRadius, kind: 'pumper' })
+  }
+  return outlets
 }

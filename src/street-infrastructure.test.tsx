@@ -22,6 +22,7 @@ import { buildStreetInfrastructureFloorplan } from './street-infrastructure-floo
 import {
   resolveDrainageInletLayout,
   resolveFireHydrantLayout,
+  resolveFireHydrantOutletLayout,
   resolveManholeCoverLayout,
   resolveTrafficSignalHeadLayout,
   resolveTrafficSignalLayout,
@@ -78,13 +79,13 @@ describe('street infrastructure catalog', () => {
     })
     expect(ManholeCoverNode.parse({})).toMatchObject({
       type: 'environment:manhole-cover',
-      utilityLegend: 'storm',
       treadPattern: 'radial',
     })
     expect(FireHydrantNode.parse({})).toMatchObject({
       type: 'environment:fire-hydrant',
+      barrelType: 'dry-barrel',
       outletLayout: 'two-hose-one-pumper',
-      protectiveGuards: false,
+      height: 1.25,
     })
     for (const variant of STREET_INFRASTRUCTURE_VARIANTS) {
       expect(parseStreetInfrastructure(variant.kind, {}).type).toBe(variant.kind)
@@ -121,9 +122,17 @@ describe('street infrastructure catalog', () => {
     }
     const cover = resolveManholeCoverLayout(ManholeCoverNode.parse({ diameter: 0.8 }))
     expect(cover.frameRadius).toBeGreaterThan(cover.radius)
+    expect(cover.rimRadius).toBeLessThan(cover.radius)
+    expect(cover.centerReliefRadius).toBeLessThan(cover.rimRadius)
     const hydrant = resolveFireHydrantLayout(FireHydrantNode.parse({ height: 1.1 }))
     expect(hydrant.height).toBe(1.1)
     expect(hydrant.flangeRadius).toBeGreaterThan(hydrant.barrelRadius)
+    expect(hydrant.bonnetTopY + hydrant.stemNutHeight).toBeLessThanOrEqual(hydrant.height)
+    expect(hydrant.barrelHeight / (hydrant.barrelRadius * 2)).toBeGreaterThan(2)
+    expect(resolveFireHydrantOutletLayout(FireHydrantNode.parse({}))).toHaveLength(3)
+    const wetHydrant = resolveFireHydrantLayout(FireHydrantNode.parse({ barrelType: 'wet-barrel' }))
+    expect(wetHydrant.isWetBarrel).toBe(true)
+    expect(wetHydrant.bonnetRadius).toBeLessThan(hydrant.bonnetRadius)
 
     const trafficPlan = buildStreetInfrastructureFloorplan(
       TrafficSignalNode.parse({ mount: 'mast-arm', signalState: 'red' }),
@@ -135,6 +144,14 @@ describe('street infrastructure catalog', () => {
       expect(trafficPlan.children.filter((child) => child.kind === 'polygon').length).toBeGreaterThanOrEqual(4)
       expect(trafficPlan.children.filter((child) => child.kind === 'circle').length).toBeGreaterThanOrEqual(4)
     }
+  })
+
+  test('keeps manhole cover depth layers apart', () => {
+    const manhole = resolveManholeCoverLayout(ManholeCoverNode.parse({}))
+    expect(manhole.coverBackingTopY).toBeLessThan(manhole.coverBottomY - 0.002)
+    expect(manhole.coverBottomY).toBeGreaterThan(manhole.frameHeight + 0.002)
+    expect(manhole.rimBottomY).toBeGreaterThan(manhole.coverTopY + 0.002)
+    expect(manhole.treadBottomY).toBeGreaterThan(manhole.coverTopY + 0.002)
   })
 
   test('renders every family and its major visual variants', () => {
@@ -163,8 +180,10 @@ describe('street infrastructure catalog', () => {
         ...(['radial', 'grid', 'rings'] as const).map((treadPattern) =>
           ManholeCoverNode.parse({ treadPattern }),
         ),
-        ...(['two-hose-one-pumper', 'two-hose', 'one-hose'] as const).map((outletLayout) =>
-          FireHydrantNode.parse({ outletLayout, protectiveGuards: true }),
+        ...(['dry-barrel', 'wet-barrel'] as const).flatMap((barrelType) =>
+          (['two-hose-one-pumper', 'two-hose', 'one-hose'] as const).map((outletLayout) =>
+            FireHydrantNode.parse({ barrelType, outletLayout }),
+          ),
         ),
       ]
       for (const node of nodes) {
@@ -174,6 +193,16 @@ describe('street infrastructure catalog', () => {
         expect(markup.length).toBeGreaterThan(100)
         const floorplan = buildStreetInfrastructureFloorplan(node, {} as never)
         expect(floorplan.kind).toBe('group')
+      }
+      for (const treadPattern of ['radial', 'grid', 'rings'] as const) {
+        const floorplan = buildStreetInfrastructureFloorplan(
+          ManholeCoverNode.parse({ treadPattern }),
+          {} as never,
+        )
+        expect(floorplan.kind).toBe('group')
+        if (floorplan.kind === 'group') {
+          expect(floorplan.children.some((child) => child.kind === 'line' || child.kind === 'circle')).toBe(true)
+        }
       }
       expect(renderErrors.some((message) => message.includes('Each child in a list'))).toBe(false)
     } finally {

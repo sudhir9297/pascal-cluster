@@ -64,7 +64,7 @@ export const STREET_INFRASTRUCTURE_VARIANTS: readonly StreetInfrastructureVarian
   {
     kind: 'environment:fire-hydrant',
     label: 'Fire hydrant',
-    description: 'A modular dry-barrel hydrant with configurable outlets, colors, and guards.',
+      description: 'A tall, proportioned dry- or wet-barrel hydrant with configurable outlet silhouettes.',
     family: 'Fire safety',
     icon: 'lucide:fire-extinguisher',
     schema: FireHydrantNode,

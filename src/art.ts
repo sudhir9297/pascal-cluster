@@ -37,8 +37,8 @@ import yieldRoadSignThumbnail from './assets/yield-road-sign-thumbnail.svg'
 import roadNetworkThumbnail from './assets/road-network-thumbnail.svg'
 import trafficSignalThumbnail from './assets/traffic-signal-thumbnail-v2.png'
 import drainageInletThumbnail from './assets/drainage-inlet-thumbnail.svg'
-import manholeCoverThumbnail from './assets/manhole-cover-thumbnail.svg'
-import fireHydrantThumbnail from './assets/fire-hydrant-thumbnail.svg'
+import manholeCoverThumbnail from './assets/manhole-cover-thumbnail-v2.png'
+import fireHydrantThumbnail from './assets/fire-hydrant-thumbnail-v2.png'
 
 /**
  * Bundled preset artwork. Raster assets live in `./assets` and travel with the

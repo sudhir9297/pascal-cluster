@@ -52,11 +52,8 @@ function footprint(input: unknown) {
     }
   }
   const layout = resolveFireHydrantLayout(node as any)
-  const width = (node as any).protectiveGuards
-    ? layout.guardOffset * 2 + 0.16
-    : layout.flangeRadius * 2
   return {
-    dimensions: [width, layout.height, layout.flangeRadius * 2] as [number, number, number],
+    dimensions: [layout.flangeRadius * 2, layout.height, layout.flangeRadius * 2] as [number, number, number],
     rotation: node.rotation,
   }
 }

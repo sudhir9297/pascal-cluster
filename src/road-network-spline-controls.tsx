@@ -30,14 +30,10 @@ const HANDLE_OUTLINE_COLOR = "#14532d";
 const ELEVATION_HANDLE_COLOR = "#38bdf8";
 const ELEVATION_HANDLE_HOVER_COLOR = "#7dd3fc";
 const ELEVATION_HANDLE_OUTLINE_COLOR = "#0c4a6e";
-const X_AXIS_COLOR = "#ef4444";
-const X_AXIS_HOVER_COLOR = "#f87171";
-const Z_AXIS_COLOR = "#10b981";
-const Z_AXIS_HOVER_COLOR = "#34d399";
 const INSERT_HANDLE_COLOR = "#d1fae5";
 const INSERT_HANDLE_HOVER_COLOR = "#ffffff";
 
-type SplineDragMode = "plan" | "elevation" | "x" | "z";
+type SplineDragMode = "plan" | "elevation";
 
 function closestAxisParameterToRay(
 	origin: Vector3,
@@ -92,8 +88,6 @@ function RoadSplinePointControl({
 }) {
 	const [hovered, setHovered] = useState(false);
 	const [elevationHovered, setElevationHovered] = useState(false);
-	const [axisHovered, setAxisHovered] = useState<"x" | "z" | null>(null);
-	const [constraintMode, setConstraintMode] = useState<SplineDragMode>("plan");
 	const cleanupRef = useRef<(() => void) | null>(null);
 	const { camera, gl, raycaster } = useThree();
 	const zoom = camera instanceof OrthographicCamera ? 1 / camera.zoom : 1;
@@ -104,35 +98,6 @@ function RoadSplinePointControl({
 			: HANDLE_COLOR;
 
 	useEffect(() => () => cleanupRef.current?.(), []);
-	useEffect(() => {
-		if (!selected) {
-			setConstraintMode("plan");
-			return;
-		}
-		const onConstraintKeyDown = (event: KeyboardEvent) => {
-			if (
-				event.target instanceof HTMLInputElement ||
-				event.target instanceof HTMLTextAreaElement
-			) {
-				return;
-			}
-			const nextMode =
-				event.key === "ArrowUp"
-					? "elevation"
-					: event.key === "ArrowRight"
-						? "x"
-						: event.key === "ArrowLeft"
-							? "z"
-							: event.key === "ArrowDown"
-								? "plan"
-								: null;
-			if (!nextMode || (!planDraggable && nextMode !== "elevation")) return;
-			event.preventDefault();
-			setConstraintMode(nextMode);
-		};
-		window.addEventListener("keydown", onConstraintKeyDown);
-		return () => window.removeEventListener("keydown", onConstraintKeyDown);
-	}, [planDraggable, selected]);
 
 	const beginDrag = (event: ThreeEvent<PointerEvent>, mode: SplineDragMode) => {
 		if (event.button !== 0) return;
@@ -142,10 +107,8 @@ function RoadSplinePointControl({
 			toggleSelection();
 			return;
 		}
-		setConstraintMode(mode);
 		setHovered(false);
 		setElevationHovered(false);
-		setAxisHovered(null);
 		if (!selected) {
 			useEnvironmentStore.getState().setRoadElementSelection({
 				networkId: node.id,
@@ -218,8 +181,6 @@ function RoadSplinePointControl({
 				const intersection = moveRay.intersectPlane(plane!, new Vector3());
 				if (!intersection || !initialIntersection) return;
 				nextPoint.add(intersection.sub(initialIntersection));
-				if (mode === "x") nextPoint.z = originalPoint.z;
-				if (mode === "z") nextPoint.x = originalPoint.x;
 			}
 			const patch = movePoint([nextPoint.x, nextPoint.y, nextPoint.z]);
 			if (!patch) return;
@@ -270,7 +231,7 @@ function RoadSplinePointControl({
 			</mesh>
 			<mesh
 				name={`road-control-hit:${controlKey}`}
-				onPointerDown={(event) => beginDrag(event, constraintMode)}
+				onPointerDown={(event) => beginDrag(event, "plan")}
 				onPointerEnter={() => {
 					if (!cleanupRef.current) document.body.style.cursor = "grab";
 					setHovered(true);
@@ -333,104 +294,6 @@ function RoadSplinePointControl({
 							</mesh>
 						</group>
 					))}
-					{planDraggable ? (
-						<>
-							<group name={`road-x-axis-control:${controlKey}`}>
-								<mesh
-									position={[0.42, 0, 0]}
-									renderOrder={1010}
-									rotation={[0, 0, Math.PI / 2]}
-								>
-									<cylinderGeometry args={[0.03, 0.03, 0.84, 10]} />
-									<meshBasicMaterial
-										color={X_AXIS_COLOR}
-										depthTest={false}
-										depthWrite={false}
-									/>
-								</mesh>
-								<mesh position={[0.84, 0, 0]} renderOrder={1011}>
-									<sphereGeometry
-										args={[constraintMode === "x" ? 0.17 : 0.13, 18, 12]}
-									/>
-									<meshBasicMaterial
-										color={
-											axisHovered === "x" ? X_AXIS_HOVER_COLOR : X_AXIS_COLOR
-										}
-										depthTest={false}
-										depthWrite={false}
-									/>
-								</mesh>
-								<mesh
-									name={`road-x-axis-hit:${controlKey}`}
-									onPointerDown={(event) => beginDrag(event, "x")}
-									onPointerEnter={() => {
-										if (!cleanupRef.current)
-											document.body.style.cursor = "ew-resize";
-										setAxisHovered("x");
-									}}
-									onPointerLeave={() => {
-										if (!cleanupRef.current) document.body.style.cursor = "";
-										setAxisHovered(null);
-									}}
-									position={[0.84, 0, 0]}
-								>
-									<sphereGeometry args={[0.27, 12, 8]} />
-									<meshBasicMaterial
-										depthWrite={false}
-										opacity={0}
-										transparent
-									/>
-								</mesh>
-							</group>
-							<group name={`road-z-axis-control:${controlKey}`}>
-								<mesh
-									position={[0, 0, 0.42]}
-									renderOrder={1010}
-									rotation={[Math.PI / 2, 0, 0]}
-								>
-									<cylinderGeometry args={[0.03, 0.03, 0.84, 10]} />
-									<meshBasicMaterial
-										color={Z_AXIS_COLOR}
-										depthTest={false}
-										depthWrite={false}
-									/>
-								</mesh>
-								<mesh position={[0, 0, 0.84]} renderOrder={1011}>
-									<sphereGeometry
-										args={[constraintMode === "z" ? 0.17 : 0.13, 18, 12]}
-									/>
-									<meshBasicMaterial
-										color={
-											axisHovered === "z" ? Z_AXIS_HOVER_COLOR : Z_AXIS_COLOR
-										}
-										depthTest={false}
-										depthWrite={false}
-									/>
-								</mesh>
-								<mesh
-									name={`road-z-axis-hit:${controlKey}`}
-									onPointerDown={(event) => beginDrag(event, "z")}
-									onPointerEnter={() => {
-										if (!cleanupRef.current)
-											document.body.style.cursor = "ns-resize";
-										setAxisHovered("z");
-									}}
-									onPointerLeave={() => {
-										if (!cleanupRef.current) document.body.style.cursor = "";
-										setAxisHovered(null);
-									}}
-									position={[0, 0, 0.84]}
-								>
-									<sphereGeometry args={[0.27, 12, 8]} />
-									<meshBasicMaterial
-										depthWrite={false}
-										opacity={0}
-										transparent
-									/>
-								</mesh>
-							</group>
-						</>
-					) : null}
 				</group>
 			) : null}
 		</group>
