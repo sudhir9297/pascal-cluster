@@ -276,8 +276,11 @@ Checklist rules:
 
 ### Current implementation summary
 
-The plugin currently registers 24 node kinds: 21 lighting kinds, one reusable
-road-sign kind, one utility-pole kind, and one hidden utility-wire-span kind.
+The plugin currently registers 29 node kinds: 21 lighting kinds, one road
+network, one reusable road-sign kind, one utility-pole kind, one hidden
+utility-wire-span kind, and four visible street-infrastructure kinds. The
+street-infrastructure catalog adds vehicle signals, drainage inlets, manhole
+covers, and fire hydrants inside the existing Utilities side-menu category.
 The road-sign kind supplies eight catalog presets. The utility pole supplies
 four assembly roles and automatically creates or splits conductor spans.
 
@@ -285,7 +288,7 @@ The strongest completed vertical slice is lighting: all 22 lamp archetypes in
 the lamp taxonomy are represented, with the modern side-entry and davit forms
 sharing one node. Supported assets generally include procedural 3D geometry,
 placement tools and previews, parametric editing, selection, and 2D floorplan
-symbols. The current automated baseline passes 135 tests and TypeScript type
+symbols. The current automated baseline passes 338 tests and TypeScript type
 checking.
 
 The wider environment system is not yet implemented. Terrain, roads,
@@ -404,11 +407,11 @@ remain the main bodies of work.
 - [ ] Add pavement arrows.
 - [ ] Add pavement text and symbols.
 - [ ] Add hatch zones and colored pavement.
-- [ ] Add vehicle traffic signals.
+- [x] Add vehicle traffic signals.
 - [ ] Add pedestrian signals.
 - [ ] Add pedestrian push buttons.
 - [ ] Add countdown displays.
-- [ ] Add signal-controller cabinets.
+- [x] Add signal-controller cabinets.
 - [ ] Add traffic-signal phase and timing behavior.
 - [ ] Add traffic cones.
 - [ ] Add temporary barriers and barricades.
@@ -453,12 +456,12 @@ remain the main bodies of work.
 - [ ] Add electrical and telecom cabinets.
 - [ ] Add junction boxes.
 - [ ] Add street-light and traffic-signal control boxes.
-- [ ] Add storm-drain inlets and catch basins.
+- [x] Add storm-drain inlets and catch basins.
 - [ ] Add trench drains and grates.
 - [ ] Add curb outlets.
-- [ ] Add manholes and utility covers.
+- [x] Add manholes and utility covers.
 - [ ] Add valve covers, inspection hatches, and access panels.
-- [ ] Add fire hydrants.
+- [x] Add fire hydrants.
 - [ ] Add water and gas meters.
 - [ ] Add standpipes and hose connections.
 - [ ] Add downspouts.
@@ -706,7 +709,7 @@ remain the main bodies of work.
 - [x] Deliver a starter road-sign catalog.
 - [ ] Deliver traffic and pedestrian signals.
 - [x] Deliver roadway, pedestrian, area, path, structure-mounted, and solar lighting.
-- [ ] Deliver drainage grates and manholes.
+- [x] Deliver drainage grates and manholes.
 - [x] Deliver utility poles, primary conductors, neutral conductors, and optional transformers.
 - [ ] Deliver utility boxes, hydrants, traffic bollards, and barriers.
 - [ ] Deliver trees, shrubs, grass, ground cover, planters, rocks, and scatter rules.

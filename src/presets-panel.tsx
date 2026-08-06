@@ -15,6 +15,10 @@ import {
   TRUSS_ROADWAY_LIGHT_THUMBNAIL,
   TWIN_ARM_MEDIAN_LIGHT_THUMBNAIL,
   UTILITY_POLE_THUMBNAIL,
+  TRAFFIC_SIGNAL_THUMBNAIL,
+  DRAINAGE_INLET_THUMBNAIL,
+  MANHOLE_COVER_THUMBNAIL,
+  FIRE_HYDRANT_THUMBNAIL,
   ROAD_SIGN_THUMBNAILS,
   ROAD_NETWORK_THUMBNAIL,
 } from './art'
@@ -24,6 +28,10 @@ import {
   getCatalogLampStyleOptions,
 } from './catalog-lamp-config'
 import { ROAD_SIGN_CATALOG, type RoadSignId } from './road-sign-config'
+import {
+  STREET_INFRASTRUCTURE_VARIANTS,
+  type StreetInfrastructureKind,
+} from './street-infrastructure-config'
 import { ROAD_ELEVATION_OPTIONS, useEnvironmentStore } from './store'
 import {
   STANDARD_LAMP_HEIGHT_MAX_M,
@@ -52,6 +60,13 @@ const TRUSS_ROADWAY_LIGHT_KIND = 'environment:truss-roadway-light'
 const UTILITY_POLE_KIND = 'environment:utility-pole'
 const ROAD_SIGN_KIND = 'environment:road-sign'
 const ROAD_NETWORK_KIND = 'environment:road-network'
+
+const STREET_INFRASTRUCTURE_THUMBNAILS: Record<StreetInfrastructureKind, string> = {
+  'environment:traffic-signal': TRAFFIC_SIGNAL_THUMBNAIL,
+  'environment:drainage-inlet': DRAINAGE_INLET_THUMBNAIL,
+  'environment:manhole-cover': MANHOLE_COVER_THUMBNAIL,
+  'environment:fire-hydrant': FIRE_HYDRANT_THUMBNAIL,
+}
 
 function roadSegmentLabel(count: number): string {
   return `${count} road segment${count === 1 ? '' : 's'}`
@@ -149,6 +164,12 @@ const activateTrussRoadwayLightTool = () => {
 const activateUtilityPoleTool = () => {
   const setTool = useEditor.getState().setTool as (value: string) => void
   setTool(UTILITY_POLE_KIND)
+  useEditor.getState().setMode('build')
+}
+
+const activateStreetInfrastructureTool = (kind: StreetInfrastructureKind) => {
+  const setTool = useEditor.getState().setTool as (value: string) => void
+  setTool(kind)
   useEditor.getState().setMode('build')
 }
 
@@ -254,6 +275,23 @@ function UtilityPoleArtwork() {
       className="aspect-square w-full rounded-lg object-cover ring-1 ring-black/10"
       draggable={false}
       src={UTILITY_POLE_THUMBNAIL}
+    />
+  )
+}
+
+function StreetInfrastructureArtwork({
+  kind,
+  label,
+}: {
+  kind: StreetInfrastructureKind
+  label: string
+}) {
+  return (
+    <img
+      alt={label}
+      className="aspect-square w-full rounded-lg object-cover ring-1 ring-black/10"
+      draggable={false}
+      src={STREET_INFRASTRUCTURE_THUMBNAILS[kind]}
     />
   )
 }
@@ -399,6 +437,16 @@ export default function EnvironmentPanel() {
   const utilityPoleCount = useScene(
     (s) => Object.values(s.nodes).filter((n) => (n.type as string) === UTILITY_POLE_KIND).length,
   )
+  const streetInfrastructureCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const node of Object.values(sceneNodes)) {
+      const kind = node.type as string
+      if (STREET_INFRASTRUCTURE_VARIANTS.some((variant) => variant.kind === kind)) {
+        counts[kind] = (counts[kind] ?? 0) + 1
+      }
+    }
+    return counts
+  }, [sceneNodes])
   const roadSignCount = useScene(
     (s) => Object.values(s.nodes).filter((n) => (n.type as string) === ROAD_SIGN_KIND).length,
   )
@@ -429,6 +477,9 @@ export default function EnvironmentPanel() {
     ? getCatalogLampStyleOptions(activeCatalogVariant.kind)
     : []
   const utilityPoleArmed = (activeTool as string | null) === UTILITY_POLE_KIND
+  const streetInfrastructureArmed = STREET_INFRASTRUCTURE_VARIANTS.some(
+    (variant) => (activeTool as string | null) === variant.kind,
+  )
   const roadSignArmed = (activeTool as string | null) === ROAD_SIGN_KIND
   const armed =
     panelCategory === 'roads'
@@ -443,7 +494,7 @@ export default function EnvironmentPanel() {
         trussRoadwayLightArmed ||
         catalogLampArmed
       : panelCategory === 'utilities'
-        ? utilityPoleArmed
+        ? utilityPoleArmed || streetInfrastructureArmed
         : roadSignArmed
   const count =
     panelCategory === 'roads'
@@ -459,6 +510,7 @@ export default function EnvironmentPanel() {
         Object.values(catalogLampCounts).reduce((total, value) => total + value, 0)
       : panelCategory === 'utilities'
         ? utilityPoleCount
+          + Object.values(streetInfrastructureCounts).reduce((total, value) => total + value, 0)
         : roadSignCount
   const roadDraftStyle = useMemo(() => buildRoadDraftStyle({
     laneCount: roadLaneCount,
@@ -1140,26 +1192,68 @@ export default function EnvironmentPanel() {
       )}
 
       {panelCategory === 'utilities' && (
-        <button
-          className={`group relative flex flex-col gap-2 rounded-xl border p-2 transition-all ${
-            utilityPoleArmed
-              ? 'border-sidebar-ring bg-sidebar-accent shadow-sm'
-              : 'border-sidebar-border hover:border-sidebar-ring/50 hover:bg-sidebar-accent/40'
-          }`}
-          onClick={activateUtilityPoleTool}
-          type="button"
-        >
-          <div className="transition-transform group-hover:scale-[1.02]">
-            <UtilityPoleArtwork />
+        <div className="grid grid-cols-2 gap-2">
+          <div className="col-span-2 pt-1 font-medium text-sidebar-foreground/55 text-xs uppercase tracking-wide">
+            Utility network
           </div>
-          <span className="flex items-center justify-between gap-1 pl-0.5 font-medium text-xs">
-            Utility pole{' '}
-            <span className="font-normal text-sidebar-foreground/45">{utilityPoleCount}</span>
-          </span>
-          {utilityPoleArmed && (
-            <span className="absolute top-3 right-3 h-2 w-2 rounded-full bg-sidebar-ring ring-2 ring-sidebar-accent" />
-          )}
-        </button>
+          <button
+            className={`group relative flex flex-col gap-2 rounded-xl border p-2 text-left transition-all ${
+              utilityPoleArmed
+                ? 'border-sidebar-ring bg-sidebar-accent shadow-sm'
+                : 'border-sidebar-border hover:border-sidebar-ring/50 hover:bg-sidebar-accent/40'
+            }`}
+            onClick={activateUtilityPoleTool}
+            type="button"
+          >
+            <div className="transition-transform group-hover:scale-[1.02]">
+              <UtilityPoleArtwork />
+            </div>
+            <span className="flex items-center justify-between gap-1 pl-0.5 font-medium text-xs">
+              Utility pole{' '}
+              <span className="font-normal text-sidebar-foreground/45">{utilityPoleCount}</span>
+            </span>
+            {utilityPoleArmed && (
+              <span className="absolute top-3 right-3 h-2 w-2 rounded-full bg-sidebar-ring ring-2 ring-sidebar-accent" />
+            )}
+          </button>
+          {STREET_INFRASTRUCTURE_VARIANTS.map((variant, index) => {
+            const variantArmed = (activeTool as string | null) === variant.kind
+            const previous = STREET_INFRASTRUCTURE_VARIANTS[index - 1]
+            const showFamilyHeading = !previous || previous.family !== variant.family
+            return (
+              <Fragment key={variant.kind}>
+                {showFamilyHeading ? (
+                  <div className="col-span-2 pt-2 font-medium text-sidebar-foreground/55 text-xs uppercase tracking-wide">
+                    {variant.family}
+                  </div>
+                ) : null}
+                <button
+                  className={`group relative flex flex-col gap-2 rounded-xl border p-2 text-left transition-all ${
+                    variantArmed
+                      ? 'border-sidebar-ring bg-sidebar-accent shadow-sm'
+                      : 'border-sidebar-border hover:border-sidebar-ring/50 hover:bg-sidebar-accent/40'
+                  }`}
+                  onClick={() => activateStreetInfrastructureTool(variant.kind)}
+                  title={variant.description}
+                  type="button"
+                >
+                  <div className="transition-transform group-hover:scale-[1.02]">
+                    <StreetInfrastructureArtwork kind={variant.kind} label={variant.label} />
+                  </div>
+                  <span className="flex items-center justify-between gap-1 pl-0.5 font-medium text-xs">
+                    {variant.label}{' '}
+                    <span className="font-normal text-sidebar-foreground/45">
+                      {streetInfrastructureCounts[variant.kind] ?? 0}
+                    </span>
+                  </span>
+                  {variantArmed ? (
+                    <span className="absolute top-3 right-3 h-2 w-2 rounded-full bg-sidebar-ring ring-2 ring-sidebar-accent" />
+                  ) : null}
+                </button>
+              </Fragment>
+            )
+          })}
+        </div>
       )}
 
       {panelCategory === 'signs' && (

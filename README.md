@@ -67,6 +67,25 @@ to a third-party plugin.
   pole is inserted into a nearby through-span or connects to the nearest
   same-level pole within the 45.72 m urban connection limit, allowing shared-pole
   T-junctions.
+- **`environment:traffic-signal`** — a field-detailed modular vehicle signal
+  with post, rigid mast-arm, or span-wire mounting; one or two heads; three-
+  section, protected-turn, four-section, and five-section face layouts;
+  circular and directional indications; cap/tunnel/no-visor options; reflective
+  backplates, street-name sign, controller cabinet, configurable finishes,
+  placement preview, and matching 2D floorplan symbol.
+- **`environment:drainage-inlet`** — a shallow road inlet with grate-only or
+  curb-opening combination construction and bicycle-safe, reticuline,
+  parallel-bar, or curved-vane surface patterns.
+- **`environment:manhole-cover`** — a flush round cast-metal access cover with
+  adjustable diameter, radial/grid/ring tread patterns, utility designation,
+  wetness, placement preview, and floorplan representation.
+- **`environment:fire-hydrant`** — a modular dry-barrel hydrant with one-,
+  two-, or three-outlet layouts, independent body/bonnet/cap finishes,
+  optional protective guards, weathering, placement preview, and floorplan
+  footprint.
+- **Expanded Utilities catalog** — utility poles, vehicle signals, drainage
+  grates, manhole covers, and hydrants share the existing Utilities side-menu
+  category and remain grouped by function.
 - **Categorized placement panel** — separate Lighting, Signs, and Utilities
   catalogs, including reusable road-sign placement tools.
 - **Placement settings** — light height/arm/lamp state and utility-pole

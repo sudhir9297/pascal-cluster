@@ -31,6 +31,12 @@ import { utilityPoleDefinition } from './utility-pole-definition'
 import { utilityWireDefinition } from './utility-wire-definition'
 import { roadSignDefinition } from './road-sign-definition'
 import { roadNetworkDefinition } from './road-network-definition'
+import {
+  drainageInletDefinition,
+  fireHydrantDefinition,
+  manholeCoverDefinition,
+  trafficSignalDefinition,
+} from './street-infrastructure-definition'
 
 type PluginHostPanel = {
   id: string
@@ -82,6 +88,10 @@ export const environmentPlugin: Plugin = {
     solarStreetLightDefinition as unknown as AnyNodeDefinition,
     utilityPoleDefinition as unknown as AnyNodeDefinition,
     utilityWireDefinition as unknown as AnyNodeDefinition,
+    trafficSignalDefinition as unknown as AnyNodeDefinition,
+    drainageInletDefinition as unknown as AnyNodeDefinition,
+    manholeCoverDefinition as unknown as AnyNodeDefinition,
+    fireHydrantDefinition as unknown as AnyNodeDefinition,
     roadSignDefinition as unknown as AnyNodeDefinition,
   ],
 }
@@ -126,6 +136,10 @@ export {
   UtilityPoleNode,
   UtilityPoleAssembly,
   UtilityWireSpanNode,
+  TrafficSignalNode,
+  DrainageInletNode,
+  ManholeCoverNode,
+  FireHydrantNode,
   RoadSignNode,
   RoadNetworkNode,
   RoadEdgeAttachment,
@@ -161,6 +175,12 @@ export {
 } from './catalog-lamp-definition'
 export { utilityPoleDefinition } from './utility-pole-definition'
 export { utilityWireDefinition } from './utility-wire-definition'
+export {
+  trafficSignalDefinition,
+  drainageInletDefinition,
+  manholeCoverDefinition,
+  fireHydrantDefinition,
+} from './street-infrastructure-definition'
 export { roadSignDefinition } from './road-sign-definition'
 export { roadNetworkDefinition } from './road-network-definition'
 export {
@@ -235,3 +255,20 @@ export {
   STANDARD_UTILITY_POLE_TOTAL_LENGTH_M,
   type UtilityPoleWireAttachment,
 } from './utility-pole-geometry'
+export {
+  STREET_INFRASTRUCTURE_KINDS,
+  STREET_INFRASTRUCTURE_VARIANTS,
+  getStreetInfrastructureVariant,
+  isStreetInfrastructureKind,
+  parseStreetInfrastructure,
+  type StreetInfrastructureKind,
+  type StreetInfrastructureNode,
+  type StreetInfrastructureVariant,
+} from './street-infrastructure-config'
+export {
+  TRAFFIC_SIGNAL_DIMENSIONS,
+  resolveTrafficSignalLayout,
+  resolveDrainageInletLayout,
+  resolveManholeCoverLayout,
+  resolveFireHydrantLayout,
+} from './street-infrastructure-geometry'

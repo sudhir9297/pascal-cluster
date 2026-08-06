@@ -105,6 +105,10 @@ describe('Environment plugin manifest', () => {
       'environment:solar-street-light',
       'environment:utility-pole',
       'environment:utility-wire-span',
+      'environment:traffic-signal',
+      'environment:drainage-inlet',
+      'environment:manhole-cover',
+      'environment:fire-hydrant',
       'environment:road-sign',
     ])
   })

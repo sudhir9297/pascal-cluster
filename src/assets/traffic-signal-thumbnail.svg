@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#d8edf2"/>
+      <stop offset="1" stop-color="#f5eee1"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#424b50"/>
+      <stop offset=".48" stop-color="#899397"/>
+      <stop offset="1" stop-color="#384146"/>
+    </linearGradient>
+    <radialGradient id="redLens" cx="38%" cy="30%" r="68%">
+      <stop stop-color="#ff7b67"/>
+      <stop offset=".45" stop-color="#ef4035"/>
+      <stop offset="1" stop-color="#981f1c"/>
+    </radialGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-opacity=".26"/>
+    </filter>
+    <g id="head">
+      <rect x="-52" y="0" width="104" height="244" rx="15" fill="#ffd84a"/>
+      <rect x="-43" y="9" width="86" height="226" rx="11" fill="#090c0d"/>
+      <g fill="#252a2c" stroke="#111516" stroke-width="3">
+        <rect x="-34" y="18" width="68" height="68" rx="7"/>
+        <rect x="-34" y="87" width="68" height="68" rx="7"/>
+        <rect x="-34" y="156" width="68" height="68" rx="7"/>
+      </g>
+      <g stroke="#0b0e0f" stroke-width="11">
+        <circle cy="52" r="23" fill="url(#redLens)"/>
+        <circle cy="121" r="23" fill="#493616"/>
+        <circle cy="190" r="23" fill="#183b28"/>
+      </g>
+      <g fill="none" stroke="#101415" stroke-width="12" stroke-linecap="round">
+        <path d="M-27 45Q0 20 27 45"/>
+        <path d="M-27 114Q0 89 27 114"/>
+        <path d="M-27 183Q0 158 27 183"/>
+      </g>
+      <g fill="#0d1112">
+        <rect x="-37" y="57" width="6" height="18" rx="2"/>
+        <rect x="-37" y="126" width="6" height="18" rx="2"/>
+        <rect x="-37" y="195" width="6" height="18" rx="2"/>
+      </g>
+    </g>
+  </defs>
+  <rect width="640" height="640" rx="56" fill="url(#sky)"/>
+  <path d="M0 486L640 392V640H0Z" fill="#6d7475"/>
+  <path d="M0 541L640 447" stroke="#f3d466" stroke-width="12" stroke-dasharray="58 32" opacity=".86"/>
+  <g filter="url(#shadow)">
+    <rect x="104" y="123" width="28" height="430" rx="14" fill="url(#metal)"/>
+    <ellipse cx="118" cy="550" rx="39" ry="15" fill="#41494d"/>
+    <path d="M118 139H538" stroke="url(#metal)" stroke-width="28" stroke-linecap="round"/>
+    <path d="M119 181L206 139" stroke="#626d72" stroke-width="12" stroke-linecap="round"/>
+    <rect x="151" y="157" width="152" height="45" rx="5" fill="#17633f" stroke="#f1f3e9" stroke-width="6"/>
+    <path d="M184 180H271" stroke="#f1f3e9" stroke-width="8" stroke-linecap="round" opacity=".82"/>
+    <g stroke="#414a4e" stroke-width="9">
+      <path d="M320 139V188"/>
+      <path d="M480 139V188"/>
+    </g>
+    <g transform="translate(320 180) scale(.7)"><use href="#head"/></g>
+    <g transform="translate(480 180) scale(.7)"><use href="#head"/></g>
+    <rect x="43" y="419" width="105" height="137" rx="8" fill="#929b9b"/>
+    <rect x="53" y="433" width="84" height="106" rx="4" fill="#7b8586" stroke="#aeb5b5" stroke-width="3"/>
+    <g stroke="#505a5c" stroke-width="5">
+      <path d="M67 455V481"/><path d="M79 455V481"/><path d="M91 455V481"/><path d="M103 455V481"/><path d="M115 455V481"/>
+    </g>
+    <rect x="119" y="488" width="7" height="22" rx="3" fill="#30383a"/>
+  </g>
+</svg>

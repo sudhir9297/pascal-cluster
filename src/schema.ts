@@ -573,6 +573,91 @@ export const UtilityWireSpanNode = BaseNode.extend({
 
 export type UtilityWireSpanNode = z.infer<typeof UtilityWireSpanNode>;
 
+/** A modular vehicle signal with field-realistic head layouts and support hardware. */
+export const TrafficSignalNode = BaseNode.extend({
+	id: objectId("traffic-signal"),
+	type: nodeType("environment:traffic-signal"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, Math.PI, 0]),
+	mount: z.enum(["post", "mast-arm", "span-wire"]).default("mast-arm"),
+	headLayout: z
+		.enum(["three-section", "three-section-turn", "four-section-turn", "five-section-cluster"])
+		.default("three-section"),
+	signalState: z
+		.enum(["dark", "red", "yellow", "flashing-yellow", "green", "green-arrow"])
+		.default("red"),
+	headCount: z.enum(["one", "two"]).default("two"),
+	visorStyle: z.enum(["cap", "tunnel", "none"]).default("tunnel"),
+	supportHeight: z.number().min(2.4).max(8).default(5.8),
+	armReach: z.number().min(1).max(12).default(5.8),
+	backplate: z.boolean().default(true),
+	reflectiveBorder: z.boolean().default(true),
+	cabinet: z.boolean().default(true),
+	streetNameSign: z.boolean().default(true),
+	poleColor: z.string().default("#596268"),
+	housingColor: z.string().default("#23282a"),
+	redColor: z.string().default("#f13b32"),
+	yellowColor: z.string().default("#ffc338"),
+	greenColor: z.string().default("#35c76d"),
+});
+
+export type TrafficSignalNode = z.infer<typeof TrafficSignalNode>;
+
+/** A shallow road-drainage inlet with interchangeable grate patterns. */
+export const DrainageInletNode = BaseNode.extend({
+	id: objectId("drainage-inlet"),
+	type: nodeType("environment:drainage-inlet"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	inletType: z.enum(["grate", "combination"]).default("combination"),
+	gratePattern: z
+		.enum(["bicycle-safe", "reticuline", "parallel", "curved-vane"])
+		.default("bicycle-safe"),
+	width: z.number().min(0.3).max(1.5).default(0.62),
+	length: z.number().min(0.5).max(2.5).default(1.05),
+	curbHeight: z.number().min(0.08).max(0.3).default(0.15),
+	metalColor: z.string().default("#41484a"),
+	wetness: z.number().min(0).max(1).default(0),
+});
+
+export type DrainageInletNode = z.infer<typeof DrainageInletNode>;
+
+/** A flush access cover with configurable utility markings and finish. */
+export const ManholeCoverNode = BaseNode.extend({
+	id: objectId("manhole-cover"),
+	type: nodeType("environment:manhole-cover"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	diameter: z.number().min(0.45).max(1.2).default(0.7),
+	utilityLegend: z
+		.enum(["blank", "storm", "sanitary", "water", "electric"])
+		.default("storm"),
+	treadPattern: z.enum(["radial", "grid", "rings"]).default("radial"),
+	metalColor: z.string().default("#4a4d4b"),
+	wetness: z.number().min(0).max(1).default(0),
+});
+
+export type ManholeCoverNode = z.infer<typeof ManholeCoverNode>;
+
+/** A configurable above-ground dry-barrel fire hydrant. */
+export const FireHydrantNode = BaseNode.extend({
+	id: objectId("fire-hydrant"),
+	type: nodeType("environment:fire-hydrant"),
+	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+	height: z.number().min(0.65).max(1.5).default(0.95),
+	outletLayout: z
+		.enum(["two-hose-one-pumper", "two-hose", "one-hose"])
+		.default("two-hose-one-pumper"),
+	bodyColor: z.string().default("#c73c32"),
+	bonnetColor: z.string().default("#f0b63e"),
+	capColor: z.string().default("#f0b63e"),
+	protectiveGuards: z.boolean().default(false),
+	weathering: z.number().min(0).max(1).default(0.08),
+});
+
+export type FireHydrantNode = z.infer<typeof FireHydrantNode>;
+
 /** A topological point shared by one or more road centerline edges. */
 const RoadGraphNodeSchema = z.object({
 	id: z.string().min(1),

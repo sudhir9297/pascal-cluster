@@ -35,6 +35,10 @@ import stopRoadSignThumbnail from './assets/stop-road-sign-thumbnail.svg'
 import warningRoadSignThumbnail from './assets/warning-road-sign-thumbnail.svg'
 import yieldRoadSignThumbnail from './assets/yield-road-sign-thumbnail.svg'
 import roadNetworkThumbnail from './assets/road-network-thumbnail.svg'
+import trafficSignalThumbnail from './assets/traffic-signal-thumbnail-v2.png'
+import drainageInletThumbnail from './assets/drainage-inlet-thumbnail.svg'
+import manholeCoverThumbnail from './assets/manhole-cover-thumbnail.svg'
+import fireHydrantThumbnail from './assets/fire-hydrant-thumbnail.svg'
 
 /**
  * Bundled preset artwork. Raster assets live in `./assets` and travel with the
@@ -88,6 +92,10 @@ export const CATALOG_LAMP_THUMBNAILS = Object.fromEntries(
 /** Backwards-compatible default artwork for consumers that do not pick a projection. */
 export const CATALOG_LAMP_THUMBNAIL = CATALOG_LAMP_THUMBNAILS.shoebox
 export const UTILITY_POLE_THUMBNAIL = url(utilityPoleThumbnail)
+export const TRAFFIC_SIGNAL_THUMBNAIL = url(trafficSignalThumbnail)
+export const DRAINAGE_INLET_THUMBNAIL = url(drainageInletThumbnail)
+export const MANHOLE_COVER_THUMBNAIL = url(manholeCoverThumbnail)
+export const FIRE_HYDRANT_THUMBNAIL = url(fireHydrantThumbnail)
 export const ROAD_NETWORK_THUMBNAIL = url(roadNetworkThumbnail)
 export const ROAD_SIGN_THUMBNAILS = {
   directional: url(directionalRoadSignThumbnail),
