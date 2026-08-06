@@ -573,6 +573,18 @@ export const UtilityWireSpanNode = BaseNode.extend({
 
 export type UtilityWireSpanNode = z.infer<typeof UtilityWireSpanNode>;
 
+/** A reverse reference from a placeable asset back to its road-edge anchor. */
+export const RoadAttachmentAlignment = z.enum(["free", "carriageway", "gutter", "curb", "junction"]);
+export type RoadAttachmentAlignment = z.infer<typeof RoadAttachmentAlignment>;
+
+export const RoadAttachmentRef = z.object({
+	networkNodeId: z.string().min(1),
+	attachmentId: z.string().min(1),
+	/** The authored road side lets two-sided assets mirror their curb hardware. */
+	side: z.enum(["left", "right"]).optional(),
+});
+export type RoadAttachmentRef = z.infer<typeof RoadAttachmentRef>;
+
 /** A modular vehicle signal with field-realistic head layouts and support hardware. */
 export const TrafficSignalNode = BaseNode.extend({
 	id: objectId("traffic-signal"),
@@ -599,6 +611,7 @@ export const TrafficSignalNode = BaseNode.extend({
 	redColor: z.string().default("#f13b32"),
 	yellowColor: z.string().default("#ffc338"),
 	greenColor: z.string().default("#35c76d"),
+	roadAttachment: RoadAttachmentRef.optional(),
 });
 
 export type TrafficSignalNode = z.infer<typeof TrafficSignalNode>;
@@ -620,6 +633,7 @@ export const DrainageInletNode = BaseNode.extend({
 	curbHeight: z.number().min(0.08).max(0.3).default(0.15),
 	metalColor: z.string().default("#41484a"),
 	wetness: z.number().min(0).max(1).default(0),
+	roadAttachment: RoadAttachmentRef.optional(),
 });
 
 export type DrainageInletNode = z.infer<typeof DrainageInletNode>;
@@ -634,6 +648,7 @@ export const ManholeCoverNode = BaseNode.extend({
 	treadPattern: z.enum(["radial", "grid", "rings"]).default("radial"),
 	metalColor: z.string().default("#4a4d4b"),
 	wetness: z.number().min(0).max(1).default(0),
+	roadAttachment: RoadAttachmentRef.optional(),
 });
 
 export type ManholeCoverNode = z.infer<typeof ManholeCoverNode>;
@@ -653,6 +668,7 @@ export const FireHydrantNode = BaseNode.extend({
 	bonnetColor: z.string().default("#b9302b"),
 	capColor: z.string().default("#8f2421"),
 	weathering: z.number().min(0).max(1).default(0.08),
+	roadAttachment: RoadAttachmentRef.optional(),
 });
 
 export type FireHydrantNode = z.infer<typeof FireHydrantNode>;
@@ -797,6 +813,10 @@ export const RoadEdgeAttachment = z.object({
 	station: z.number().min(0).default(0),
 	lateralOffset: z.number().default(0),
 	verticalOffset: z.number().default(0),
+	alignment: RoadAttachmentAlignment.default("free"),
+	side: z.enum(["left", "right"]).optional(),
+	/** Junction-originated signal assets are kept grouped for idempotent actions. */
+	junctionId: z.string().min(1).optional(),
 });
 
 export type RoadEdgeAttachment = z.infer<typeof RoadEdgeAttachment>;

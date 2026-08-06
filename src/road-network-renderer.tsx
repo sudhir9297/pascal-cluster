@@ -20,8 +20,10 @@ import {
 } from './roadside-decoration-rules'
 import { RoadNetworkModel } from './road-network-model'
 import { RoadNetworkSplineControls } from './road-network-spline-controls'
+import { resolveRoadAttachmentTransform } from './road-edge-attachments'
 import { splitRoadGraphComponents } from './road-network-topology'
 import { RoadNetworkNode } from './schema'
+import type { StreetInfrastructureNode } from './street-infrastructure-config'
 import { useEnvironmentStore, type RoadElementSelection } from './store'
 import { decodeTerrainField } from './terrain-field-compat'
 import { roadRuntimeDefaultsPatch } from './road-network-runtime-defaults'
@@ -31,6 +33,7 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
   const normalizedSignatureRef = useRef<string | null>(null)
   const roadsideSyncSignatureRef = useRef<string | null>(null)
   const runtimeDefaultsSignatureRef = useRef<string | null>(null)
+  const attachmentSyncSignatureRef = useRef<string | null>(null)
   const handlers = useNodeEvents(storeNode as never, 'environment:road-network' as never)
   const roadToolActive = useEditor(
     (state) => state.mode === 'build' && (state.tool as string | null) === 'environment:road-network',
@@ -103,6 +106,100 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
     () => RoadNetworkNode.parse(override ? { ...storeNode, ...override } : storeNode),
     [override, storeNode],
   )
+  const attachmentAssetSignature = useMemo(
+    () => Object.values(node.attachments ?? {}).map((attachment) => {
+      const asset = Object.values(sceneNodes).find(
+        (candidate) => (candidate.id as string) === attachment.assetNodeId,
+      ) as unknown as {
+        diameter?: number
+        height?: number
+        id?: string
+        length?: number
+        position?: [number, number, number]
+        rotation?: [number, number, number]
+        supportHeight?: number
+        type?: string
+        width?: number
+      } | undefined
+      return [
+        attachment.assetNodeId,
+        asset?.type,
+        asset?.position,
+        asset?.rotation,
+        asset?.diameter,
+        asset?.height,
+        asset?.length,
+        asset?.supportHeight,
+        asset?.width,
+      ]
+    }),
+    [node.attachments, sceneNodes],
+  )
+  const attachmentSyncSignature = useMemo(
+    () => JSON.stringify({
+      activeStyleId: node.activeStyleId,
+      applyStyleToAll: node.applyStyleToAll,
+      attachmentAssets: attachmentAssetSignature,
+      attachments: node.attachments,
+      edges: node.edges,
+      graphNodes: node.graphNodes,
+      stylePresets: node.stylePresets,
+    }),
+    [
+      node.activeStyleId,
+      node.applyStyleToAll,
+      attachmentAssetSignature,
+      node.attachments,
+      node.edges,
+      node.graphNodes,
+      node.stylePresets,
+    ],
+  )
+  useEffect(() => {
+    if (attachmentSyncSignatureRef.current === attachmentSyncSignature) return
+    attachmentSyncSignatureRef.current = attachmentSyncSignature
+    const scene = useScene.getState()
+    const attachmentIds = new Set(Object.keys(node.attachments ?? {}))
+    for (const [attachmentId, attachment] of Object.entries(node.attachments ?? {})) {
+      const asset = Object.values(scene.nodes).find(
+        (candidate) => candidate.id === attachment.assetNodeId,
+      ) as unknown as StreetInfrastructureNode & {
+        id: string
+        roadAttachment?: { networkNodeId: string; attachmentId: string; side?: 'left' | 'right' }
+      } | undefined
+      if (!asset || asset.roadAttachment?.networkNodeId !== node.id || asset.roadAttachment.attachmentId !== attachmentId) {
+        continue
+      }
+      const transform = resolveRoadAttachmentTransform(node, attachment, asset)
+      if (!transform) continue
+      if (asset.roadAttachment?.side !== attachment.side) {
+        scene.updateNode(asset.id as AnyNodeId, {
+          roadAttachment: {
+            networkNodeId: node.id,
+            attachmentId,
+            side: attachment.side,
+          },
+        } as Partial<AnyNode>)
+      }
+      const positionChanged = !asset.position || asset.position.some((value, index) => Math.abs(value - transform.position[index]!) > 1e-4)
+      const rotationChanged = !asset.rotation || asset.rotation.some((value, index) => Math.abs(value - transform.rotation[index]!) > 1e-4)
+      if (positionChanged || rotationChanged) {
+        scene.updateNode(asset.id as AnyNodeId, {
+          position: transform.position,
+          rotation: transform.rotation,
+        } as Partial<AnyNode>)
+      }
+    }
+    for (const candidate of Object.values(scene.nodes)) {
+      const asset = candidate as unknown as {
+        id: string
+        roadAttachment?: { networkNodeId: string; attachmentId: string }
+      }
+      const ref = asset.roadAttachment
+      if (ref?.networkNodeId !== node.id || attachmentIds.has(ref.attachmentId)) continue
+      scene.updateNode(asset.id as AnyNodeId, { roadAttachment: undefined } as Partial<AnyNode>)
+    }
+  }, [attachmentSyncSignature, node])
   useEffect(() => {
     const patch = roadRuntimeDefaultsPatch(storeNode, node)
     const missingKeys = Object.keys(patch)
@@ -170,12 +267,35 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
     normalizedSignatureRef.current = signature
     const scene = useScene.getState()
     const first = storedComponents[0]!
+    const rebindAttachments = (component: typeof first, networkId: string) => {
+      for (const attachment of Object.values(component.attachments ?? {})) {
+        const asset = Object.values(scene.nodes).find(
+          (candidate) => candidate.id === attachment.assetNodeId,
+        ) as unknown as {
+          id: string
+          roadAttachment?: { networkNodeId: string; attachmentId: string }
+        } | undefined
+        if (
+          !asset ||
+          asset.roadAttachment?.attachmentId !== attachment.id ||
+          asset.roadAttachment.networkNodeId === networkId
+        ) continue
+        scene.updateNode(asset.id as AnyNodeId, {
+          roadAttachment: {
+            networkNodeId: networkId,
+            attachmentId: attachment.id,
+            side: attachment.side,
+          },
+        } as Partial<AnyNode>)
+      }
+    }
     scene.updateNode(storeNode.id as AnyNodeId, {
       graphNodes: first.graphNodes,
       edges: first.edges,
       attachments: first.attachments,
       junctions: first.junctions,
     } as Partial<AnyNode>)
+    rebindAttachments(first, storeNode.id)
     for (const component of storedComponents.slice(1)) {
       const separated = RoadNetworkNode.parse({
         ...storeNode,
@@ -189,6 +309,7 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
         separated as unknown as AnyNode,
         storeNode.parentId as AnyNodeId,
       )
+      rebindAttachments(component, separated.id)
     }
   }, [storeNode, storedComponents])
   useEffect(() => {

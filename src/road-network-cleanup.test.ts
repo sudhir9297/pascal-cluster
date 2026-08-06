@@ -137,9 +137,10 @@ describe("planRoadGraphCleanup", () => {
 			edgeId: "tiny",
 			assetNodeId: "lamp",
 			kind: "lamp",
-			station: 0,
-			lateralOffset: 0,
-			verticalOffset: 0,
+				station: 0,
+				lateralOffset: 0,
+				verticalOffset: 0,
+				alignment: "free",
 		};
 		const plan = planRoadGraphCleanup(source);
 

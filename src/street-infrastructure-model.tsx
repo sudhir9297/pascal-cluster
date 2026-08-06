@@ -52,6 +52,9 @@ export function DrainageInletModel({
 }) {
   const layout = resolveDrainageInletLayout(node)
   const roughness = 0.62 - node.wetness * 0.35
+  // Curb openings are side-specific. Without mirroring this assembly, a
+  // right-side inlet leaves its curb block on the opposite side of the road.
+  const curbSide = node.roadAttachment?.side === 'right' ? -1 : 1
   return (
     <group>
       {layout.hasSurfaceGrate ? (
@@ -123,7 +126,7 @@ export function DrainageInletModel({
         </>
       ) : null}
       {layout.hasCurbOpening ? (
-        <group position={[layout.curbOpeningOffsetX, node.curbHeight / 2, layout.curbCenterZ]}>
+        <group position={[layout.curbOpeningOffsetX, node.curbHeight / 2, curbSide * layout.curbCenterZ]}>
           <mesh castShadow={!ghost} layers={layer}>
             <boxGeometry args={[layout.curbOpeningLength + layout.curbDepth, node.curbHeight, layout.curbDepth]} />
             <MetalMaterial color="#8b8c87" ghost={ghost} roughness={0.82} />

@@ -27,6 +27,54 @@ const rotateHandle: HandleDescriptor<any> = {
   decoration: { kind: 'ring', radius: () => 0.48, y: () => 0.15 },
 }
 
+function modelHeight(node: StreetInfrastructureNode): number {
+  if (node.type === 'environment:traffic-signal') {
+    return resolveTrafficSignalLayout(node).supportHeight
+  }
+  if (node.type === 'environment:drainage-inlet') {
+    const layout = resolveDrainageInletLayout(node)
+    return Math.max(node.curbHeight, layout.barCenterY + layout.barHeight / 2)
+  }
+  if (node.type === 'environment:manhole-cover') {
+    const layout = resolveManholeCoverLayout(node)
+    return layout.treadY + layout.treadHeight / 2
+  }
+  return resolveFireHydrantLayout(node).height
+}
+
+function elevationHandleOffset(node: StreetInfrastructureNode): number {
+  if (node.type === 'environment:drainage-inlet') {
+    return resolveDrainageInletLayout(node).length / 2 + 0.65
+  }
+  if (node.type === 'environment:manhole-cover') {
+    return resolveManholeCoverLayout(node).frameRadius + 0.8
+  }
+  if (node.type === 'environment:fire-hydrant') {
+    return resolveFireHydrantLayout(node).padRadius + 0.75
+  }
+  return 1.1
+}
+
+const elevationHandle: HandleDescriptor<any> = {
+  kind: 'linear-resize',
+  axis: 'y',
+  anchor: 'min',
+  currentValue: (node: StreetInfrastructureNode) => node.position?.[1] ?? 0,
+  apply: (node: StreetInfrastructureNode, elevation: number) => ({
+    position: [node.position?.[0] ?? 0, elevation, node.position?.[2] ?? 0],
+    roadAttachment: undefined,
+  }),
+  placement: {
+    position: (node: StreetInfrastructureNode) => [
+      -elevationHandleOffset(node),
+      modelHeight(node) + 0.3,
+      0,
+    ],
+  },
+  measureLabel: 'Elevation',
+  shape: 'tracker',
+}
+
 function footprint(input: unknown) {
   const node = input as StreetInfrastructureNode
   const kind = node.type as string
@@ -83,7 +131,7 @@ function makeStreetInfrastructureDefinition(
       return defaults
     },
     capabilities: {
-      movable: { axes: ['x', 'z'], gridSnap: true },
+      movable: { axes: ['x', 'y', 'z'], gridSnap: true },
       rotatable: {
         axes: ['y'],
         snapAngles: Array.from({ length: 8 }, (_, index) => (index * Math.PI) / 4),
@@ -97,7 +145,7 @@ function makeStreetInfrastructureDefinition(
     },
     parametrics: getStreetInfrastructureParametrics(variant.kind),
     floorplan: buildStreetInfrastructureFloorplan,
-    handles: [rotateHandle],
+    handles: [elevationHandle, rotateHandle],
     renderer: { kind: 'parametric', module: () => import('./street-infrastructure-renderer') },
     preview: () => import('./street-infrastructure-preview'),
     tool: () => import('./street-infrastructure-tool'),

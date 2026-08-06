@@ -143,6 +143,8 @@ export {
   RoadSignNode,
   RoadNetworkNode,
   RoadEdgeAttachment,
+  RoadAttachmentRef,
+  RoadAttachmentAlignment,
   RoadGraphNode,
   RoadGraphEdge,
   RoadStylePreset,
@@ -198,6 +200,16 @@ export {
   type RoadPoint,
 } from './road-network-topology'
 export { sampleRoadEdgePoints, type RoadGeometryPoint } from './road-network-geometry'
+export {
+  buildSignalJunctionPlacements,
+  createRoadAttachmentForPlacement,
+  findRoadAttachmentTarget,
+  resolveRoadAttachmentTransform,
+  type RoadAttachmentAssetKind,
+  type RoadAttachmentTarget,
+  type RoadAttachmentTransform,
+  type SignalJunctionPlacement,
+} from './road-edge-attachments'
 export { validateRoadGraph, type RoadValidationIssue } from './road-network-validation'
 export {
   ROAD_SIGN_CATALOG,

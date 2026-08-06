@@ -171,15 +171,18 @@ describe('road network topology', () => {
     base.attachments = {
       before: {
         id: 'before', edgeId: originalEdgeId, assetNodeId: 'sign-before', kind: 'sign',
-        station: 4, lateralOffset: 5, verticalOffset: 0,
+		station: 4, lateralOffset: 5, verticalOffset: 0,
+		alignment: 'free',
       },
       atSplit: {
         id: 'atSplit', edgeId: originalEdgeId, assetNodeId: 'lamp-at-split', kind: 'lamp',
-        station: 10, lateralOffset: -5, verticalOffset: 0,
+		station: 10, lateralOffset: -5, verticalOffset: 0,
+		alignment: 'free',
       },
       after: {
         id: 'after', edgeId: originalEdgeId, assetNodeId: 'asset-after', kind: 'asset',
-        station: 16, lateralOffset: 3, verticalOffset: 0.5,
+		station: 16, lateralOffset: 3, verticalOffset: 0.5,
+		alignment: 'free',
       },
     }
 
@@ -214,7 +217,8 @@ describe('road network topology', () => {
     const splitStation = planLength(points.slice(0, 25))
     base.attachments.curveAsset = {
       id: 'curveAsset', edgeId: originalEdge.id, assetNodeId: 'curve-sign', kind: 'sign',
-      station: splitStation + 1.5, lateralOffset: 4, verticalOffset: 0,
+		station: splitStation + 1.5, lateralOffset: 4, verticalOffset: 0,
+		alignment: 'free',
     }
 
     const result = insertRoadSegment(base, [5, 0, -5], [5, 0, 5], { tolerance: 0.01 })
@@ -233,11 +237,13 @@ describe('road network topology', () => {
     const rightEdgeId = Object.keys(right.edges)[0]!
     left.attachments.shared = {
       id: 'shared', edgeId: leftEdgeId, assetNodeId: 'left-sign', kind: 'sign',
-      station: 2, lateralOffset: 4, verticalOffset: 0,
+		station: 2, lateralOffset: 4, verticalOffset: 0,
+		alignment: 'free',
     }
     right.attachments.shared = {
       id: 'shared', edgeId: rightEdgeId, assetNodeId: 'right-lamp', kind: 'lamp',
-      station: 7, lateralOffset: -4, verticalOffset: 0,
+		station: 7, lateralOffset: -4, verticalOffset: 0,
+		alignment: 'free',
     }
 
     const merged = mergeRoadGraphs([left, right])

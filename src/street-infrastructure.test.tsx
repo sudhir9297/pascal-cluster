@@ -52,6 +52,36 @@ describe('street infrastructure catalog', () => {
     }
   })
 
+  test('lets every placed utility move freely in plan and along elevation', () => {
+    for (const definition of [
+      trafficSignalDefinition,
+      drainageInletDefinition,
+      manholeCoverDefinition,
+      fireHydrantDefinition,
+    ]) {
+      expect(definition.capabilities.movable?.axes).toEqual(['x', 'y', 'z'])
+      const handles = Array.isArray(definition.handles) ? definition.handles : []
+      const elevation = handles.find(
+        (handle) => handle.kind === 'linear-resize' && handle.axis === 'y',
+      )
+      expect(elevation?.kind).toBe('linear-resize')
+      if (elevation?.kind !== 'linear-resize') continue
+      const node = definition.schema.parse({
+        position: [1, 0.25, 3],
+        roadAttachment: {
+          networkNodeId: 'road-network_test',
+          attachmentId: 'utility:road',
+          side: 'left',
+        },
+      })
+      expect(elevation.currentValue(node)).toBe(0.25)
+      expect(elevation.apply(node, 1.5, {} as never)).toMatchObject({
+        position: [1, 1.5, 3],
+        roadAttachment: undefined,
+      })
+    }
+  })
+
   test('keeps all new cards inside the existing Utilities category', () => {
     const panel = readFileSync(new URL('./presets-panel.tsx', import.meta.url), 'utf8')
     expect(panel).toContain("panelCategory === 'utilities'")
@@ -216,8 +246,36 @@ describe('street infrastructure catalog', () => {
     expect(curbInnerEdge).toBeCloseTo(grateOuterEdge, 5)
   })
 
+  test('mirrors curb openings to the attached road side', () => {
+    const left = buildStreetInfrastructureFloorplan(
+      DrainageInletNode.parse({ inletType: 'combination' }),
+      {} as never,
+    )
+    const right = buildStreetInfrastructureFloorplan(
+      DrainageInletNode.parse({
+        inletType: 'combination',
+        roadAttachment: {
+          networkNodeId: 'road-network_test',
+          attachmentId: 'drainage_test:road',
+          side: 'right',
+        },
+      }),
+      {} as never,
+    )
+    const curbCenter = (floorplan: typeof left) => {
+      if (floorplan.kind !== 'group') return 0
+      const polygon = floorplan.children.at(-2)
+      if (!polygon || polygon.kind !== 'polygon') return 0
+      return polygon.points.reduce((sum, point) => sum + point[1], 0) / polygon.points.length
+    }
+    expect(curbCenter(left)).toBeGreaterThan(0)
+    expect(curbCenter(right)).toBeLessThan(0)
+  })
+
   test('keeps manhole cover depth layers apart', () => {
     const manhole = resolveManholeCoverLayout(ManholeCoverNode.parse({}))
+    expect(manhole.frameHeight).toBeLessThan(0.06)
+    expect(manhole.treadY + manhole.treadHeight / 2).toBeCloseTo(0.106, 3)
     expect(manhole.coverBackingTopY).toBeLessThan(manhole.coverBottomY - 0.002)
     expect(manhole.coverBottomY).toBeGreaterThan(manhole.frameHeight + 0.002)
     expect(manhole.rimBottomY).toBeGreaterThan(manhole.coverTopY + 0.002)

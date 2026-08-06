@@ -186,18 +186,21 @@ export function resolveDrainageInletLayout(node: DrainageInletNode): DrainageInl
   const curbOpeningOffsetX = node.inletType === 'sweeper-combination'
     ? -Math.min(0.35, length * 0.18)
     : 0
-  const surroundHeight = 0.024
-  const frameHeight = 0.06
+  // Keep the inlet stack shallow enough to sit in the road surface instead of
+  // reading as a box buried below it. The visible bars still rise above the
+  // frame for a crisp grate silhouette.
+  const surroundHeight = 0.016
+  const frameHeight = 0.04
   const frameCenterY = surroundHeight + frameHeight / 2
   const frameTopY = frameCenterY + frameHeight / 2
-  const voidDepth = 0.022
-  const voidCenterY = surroundHeight + 0.012
+  const voidDepth = 0.014
+  const voidCenterY = surroundHeight + 0.007
   const voidTopY = voidCenterY + voidDepth / 2
-  const seatHeight = 0.018
-  const seatCenterY = frameTopY + seatHeight / 2 + 0.004
+  const seatHeight = 0.012
+  const seatCenterY = frameTopY + seatHeight / 2 + 0.003
   const seatTopY = seatCenterY + seatHeight / 2
-  const barHeight = 0.03
-  const barCenterY = seatTopY + barHeight / 2 + 0.004
+  const barHeight = 0.02
+  const barCenterY = seatTopY + barHeight / 2 + 0.003
   const bars: GrateBar[] = []
   if (hasSurfaceGrate && (node.gratePattern === 'parallel' || node.gratePattern === 'bicycle-safe' || node.gratePattern === 'curved-vane')) {
     const spacing = node.gratePattern === 'bicycle-safe' ? 0.09 : node.gratePattern === 'parallel' ? 0.14 : 0.17
@@ -286,13 +289,16 @@ export function resolveDrainageInletLayout(node: DrainageInletNode): DrainageInl
 export function resolveManholeCoverLayout(node: ManholeCoverNode) {
   const diameter = Math.max(0.45, Math.min(1.2, node.diameter))
   const radius = diameter / 2
-  const frameHeight = 0.075
-  const coverThickness = 0.042
-  const coverBackingThickness = 0.026
-  const coverBackingCenterY = 0.066
-  const coverCenterY = 0.104
-  const treadY = 0.152
-  const rimCenterY = 0.143
+  // A flush utility cover is a shallow layered casting. Keeping the tread
+  // close to the frame reduces the vertical extrusion that made attached
+  // covers look like they were sitting inside the road slab.
+  const frameHeight = 0.045
+  const coverThickness = 0.028
+  const coverBackingThickness = 0.016
+  const coverBackingCenterY = 0.034
+  const coverCenterY = 0.062
+  const treadY = 0.1
+  const rimCenterY = 0.09
   return {
     diameter,
     radius,
@@ -306,11 +312,11 @@ export function resolveManholeCoverLayout(node: ManholeCoverNode) {
     coverBottomY: coverCenterY - coverThickness / 2,
     coverTopY: coverCenterY + coverThickness / 2,
     treadY,
-    treadHeight: 0.018,
-    treadBottomY: treadY - 0.009,
+    treadHeight: 0.012,
+    treadBottomY: treadY - 0.006,
     rimCenterY,
-    rimTubeRadius: 0.014,
-    rimBottomY: rimCenterY - 0.014,
+    rimTubeRadius: 0.01,
+    rimBottomY: rimCenterY - 0.01,
     treadRadius: radius * 0.84,
     rimRadius: radius * 0.91,
     reliefRadius: radius * 0.68,

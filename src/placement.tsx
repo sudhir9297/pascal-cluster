@@ -24,6 +24,11 @@ import { resolvePlacementPosition } from './placement-position'
 
 const worldVec = new Vector3()
 
+export type PlacementPreviewTransform = {
+  position: [number, number, number]
+  rotation: [number, number, number]
+}
+
 /** Finish a point placement according to the Environment panel's active mode. */
 export function finishEnvironmentPlacement(mode: EnvironmentPlacementMode): void {
   if (mode === 'single') useEditor.getState().setMode('select')
@@ -72,12 +77,24 @@ export function toLevelLocal(
 export function usePlacement(
   activeLevelId: string | null,
   onCommit: (levelLocalPosition: [number, number, number]) => void,
-  { preserveY = false }: { preserveY?: boolean } = {},
+  {
+    onPreview,
+    preserveY = false,
+    resolvePreview,
+  }: {
+    onPreview?: (transform: PlacementPreviewTransform | null) => void
+    preserveY?: boolean
+    resolvePreview?: (position: [number, number, number]) => PlacementPreviewTransform | null
+  } = {},
 ) {
   const cursorRef = useRef<Group>(null)
   const [cursorVisible, setCursorVisible] = useState(false)
   const commitRef = useRef(onCommit)
   commitRef.current = onCommit
+  const onPreviewRef = useRef(onPreview)
+  onPreviewRef.current = onPreview
+  const resolvePreviewRef = useRef(resolvePreview)
+  resolvePreviewRef.current = resolvePreview
 
   useEffect(() => {
     if (!activeLevelId) return
@@ -91,7 +108,16 @@ export function usePlacement(
         : event.localPosition
       const [snappedX, snappedZ] = snapXZ(local[0], local[2])
       const [sx, sy, sz] = resolvePlacementPosition([snappedX, local[1], snappedZ], preserveY)
-      cursorRef.current?.position.set(sx, sy, sz)
+      const position: [number, number, number] = [sx, sy, sz]
+      const preview = resolvePreviewRef.current?.(position) ?? null
+      if (preview) {
+        cursorRef.current?.position.set(...preview.position)
+        cursorRef.current?.rotation.set(...preview.rotation)
+      } else {
+        cursorRef.current?.position.set(sx, sy, sz)
+        cursorRef.current?.rotation.set(0, 0, 0)
+      }
+      onPreviewRef.current?.(preview)
       lastWorld = event.position
     }
 

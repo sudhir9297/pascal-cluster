@@ -17,8 +17,9 @@ import {
 	reconcileRoadJunctions,
 	roadJunctionPrimaryCandidates,
 } from "./road-network-topology";
+import { buildSignalJunctionPlacements } from "./road-edge-attachments";
 import { DEFAULT_ROAD_STYLE_PRESETS } from "./road-style-presets";
-import { RoadNetworkNode } from "./schema";
+import { RoadNetworkNode, TrafficSignalNode } from "./schema";
 import { useEnvironmentStore } from "./store";
 
 const defaultStyle = createDefaultRoadStyle();
@@ -514,8 +515,97 @@ export const roadNetworkDefinition: RoadNetworkDefinition = {
 			);
 			return { selectedIds: [node.id as AnyNodeId] };
 		};
+		const signalized =
+			junctionRecord.treatment === "signal" ||
+			Object.values(junctionRecord.approachControls ?? {}).some(
+				(control) => control === "signal",
+			);
+		const signalAttachments = Object.values(node.attachments ?? {}).filter(
+			(attachment) => attachment.junctionId === junctionId,
+		);
+		const placeSignalAssetsAction = signalized
+			? {
+					id: "road:place-signal-assets",
+					label: signalAttachments.length > 0 ? "Refresh signal assets" : "Place signal assets",
+					title: "Create editable post signals on each approach of this signalized junction",
+					icon: { kind: "iconify" as const, name: "lucide:traffic-cone" },
+					history: "single" as const,
+					run: ({
+						sceneApi,
+					}: {
+						sceneApi: {
+							nodes: () => Record<AnyNodeId, AnyNode>;
+							upsert: (node: AnyNode, parentId?: AnyNodeId) => AnyNodeId;
+							update: (id: AnyNodeId, patch: Partial<AnyNode>) => void;
+						};
+					}) => {
+						const placements = buildSignalJunctionPlacements(node, junctionId);
+						const occupiedIds = new Set(Object.keys(sceneApi.nodes()));
+						const nextAttachments = { ...node.attachments };
+						const existingByEdge = new Set(
+							signalAttachments.map((attachment) => attachment.edgeId),
+						);
+						const createdIds: AnyNodeId[] = [];
+						const createdSignals: TrafficSignalNode[] = [];
+						for (const placement of placements) {
+							if (existingByEdge.has(placement.edgeId)) continue;
+							let signal = TrafficSignalNode.parse({
+								parentId: node.parentId,
+								position: placement.position,
+								rotation: [0, placement.rotationY, 0],
+								mount: "post",
+								headCount: "one",
+								signalState: "red",
+								cabinet: false,
+								streetNameSign: false,
+							});
+							while (occupiedIds.has(signal.id)) {
+								signal = TrafficSignalNode.parse({
+									...signal,
+									id: undefined,
+								});
+							}
+							const attachmentId = `${signal.id}:junction:${junctionId}`;
+							const attachment = {
+								id: attachmentId,
+								edgeId: placement.edgeId,
+								assetNodeId: signal.id,
+								kind: "asset" as const,
+								station: placement.station,
+								lateralOffset: placement.lateralOffset,
+								verticalOffset: 0,
+								alignment: "junction" as const,
+								side: placement.side,
+								junctionId,
+							};
+							signal = TrafficSignalNode.parse({
+								...signal,
+								roadAttachment: {
+									networkNodeId: node.id,
+									attachmentId,
+									side: placement.side,
+								},
+							});
+							nextAttachments[attachmentId] = attachment;
+							occupiedIds.add(signal.id);
+							createdIds.push(signal.id as AnyNodeId);
+							createdSignals.push(signal);
+						}
+						if (createdIds.length > 0) {
+							sceneApi.update(node.id as AnyNodeId, {
+								attachments: nextAttachments,
+							} as Partial<AnyNode>);
+							for (const signal of createdSignals) {
+								sceneApi.upsert(signal as unknown as AnyNode, node.parentId as AnyNodeId);
+							}
+						}
+						return { selectedIds: createdIds.length > 0 ? createdIds : [node.id as AnyNodeId] };
+					},
+				}
+			: null;
 		return [
 			...editingActions,
+			...(placeSignalAssetsAction ? [placeSignalAssetsAction] : []),
 			{
 				id: "road:toggle-roundabout",
 				label: roundabout ? "Standard junction" : "Roundabout",

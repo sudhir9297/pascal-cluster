@@ -432,6 +432,7 @@ function commitSegment(
 				{
 					graphNodes: component.graphNodes,
 					edges: component.edges,
+					attachments: component.attachments,
 					junctions: component.junctions,
 					stylePresets: component.stylePresets,
 					activeStyleId,
@@ -442,6 +443,7 @@ function commitSegment(
 				...current,
 				graphNodes: component.graphNodes,
 				edges: component.edges,
+				attachments: component.attachments,
 				junctions: component.junctions,
 				stylePresets: component.stylePresets,
 				activeStyleId,
@@ -453,6 +455,7 @@ function commitSegment(
 			parentId: levelId,
 			graphNodes: component.graphNodes,
 			edges: component.edges,
+			attachments: component.attachments,
 			junctions: component.junctions,
 			stylePresets: component.stylePresets,
 			activeStyleId,
@@ -461,6 +464,28 @@ function commitSegment(
 		});
 		scene.createNode(network as unknown as AnyNode, levelId as AnyNodeId);
 		resolvedNetworks.push(network);
+	}
+	for (const network of resolvedNetworks) {
+		for (const attachment of Object.values(network.attachments ?? {})) {
+			const asset = Object.values(scene.nodes).find(
+				(candidate) => candidate.id === attachment.assetNodeId,
+			) as unknown as {
+				id: string
+				roadAttachment?: { networkNodeId: string; attachmentId: string }
+			} | undefined;
+			if (!asset) continue;
+			if (
+				asset.roadAttachment?.networkNodeId === network.id &&
+				asset.roadAttachment.attachmentId === attachment.id
+			) continue;
+			scene.updateNode(asset.id as AnyNodeId, {
+				roadAttachment: {
+					networkNodeId: network.id,
+					attachmentId: attachment.id,
+					side: attachment.side,
+				},
+			} as Partial<AnyNode>);
+		}
 	}
 	for (const obsolete of existing.slice(components.length)) {
 		scene.deleteNode(obsolete.id as AnyNodeId);
