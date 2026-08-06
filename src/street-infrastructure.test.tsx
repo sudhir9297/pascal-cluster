@@ -19,6 +19,7 @@ import {
   trafficSignalDefinition,
 } from './street-infrastructure-definition'
 import { buildStreetInfrastructureFloorplan } from './street-infrastructure-floorplan'
+import { getStreetInfrastructureParametrics } from './street-infrastructure-parametrics'
 import {
   resolveDrainageInletLayout,
   resolveFireHydrantLayout,
@@ -146,6 +147,75 @@ describe('street infrastructure catalog', () => {
     }
   })
 
+  test('keeps every drainage side-menu setting wired to the resolver and renderer', () => {
+    const descriptor = getStreetInfrastructureParametrics('environment:drainage-inlet')
+    const fields = descriptor.groups.flatMap((group) => group.fields)
+    expect(fields.map((field) => field.key)).toEqual([
+      'inletType',
+      'gratePattern',
+      'width',
+      'length',
+      'curbHeight',
+      'metalColor',
+      'wetness',
+      'position',
+    ])
+    const inletType = fields.find((field) => field.key === 'inletType')
+    expect(inletType?.kind).toBe('enum')
+    if (inletType?.kind === 'enum') {
+      expect(inletType.options).toEqual(['grate', 'curb-opening', 'combination', 'sweeper-combination'])
+    }
+    const curbHeight = fields.find((field) => field.key === 'curbHeight')
+    expect(curbHeight?.visibleIf?.(DrainageInletNode.parse({ inletType: 'grate' }))).toBe(false)
+    expect(curbHeight?.visibleIf?.(DrainageInletNode.parse({ inletType: 'curb-opening' }))).toBe(true)
+  })
+
+  test('keeps enlarged and clamped inlet variants inside their selection footprints', () => {
+    for (const inletType of ['grate', 'curb-opening', 'combination', 'sweeper-combination'] as const) {
+      for (const [width, length] of [[0.3, 0.5], [0.82, 1.2], [1.5, 2.5]] as const) {
+        const node = DrainageInletNode.parse({ inletType, width, length, curbHeight: 0.3 })
+        const layout = resolveDrainageInletLayout(node)
+        const footprint = (drainageInletDefinition.capabilities.floorPlaced as any).footprint(node as any)
+        const outerSurfaceHalfLength = (layout.length + 0.16) / 2
+        const outerSurfaceHalfWidth = (layout.width + 0.16) / 2
+        const outerCurbHalfLength = layout.curbOpeningLength / 2 + layout.curbDepth / 2
+        const outerCurbHalfDepth = layout.curbDepth / 2
+
+        expect(footprint.dimensions[0]).toBeGreaterThanOrEqual(
+          2 * Math.max(outerSurfaceHalfLength, layout.hasCurbOpening
+            ? Math.abs(layout.curbOpeningOffsetX) + outerCurbHalfLength
+            : 0),
+        )
+        expect(footprint.dimensions[2]).toBeGreaterThanOrEqual(
+          2 * Math.max(outerSurfaceHalfWidth, layout.hasCurbOpening
+            ? layout.curbCenterZ + outerCurbHalfDepth
+            : 0),
+        )
+        const floorplan = buildStreetInfrastructureFloorplan(node, {} as never)
+        if (floorplan.kind === 'group') {
+          const points = floorplan.children
+            .filter((child) => child.kind === 'polygon')
+            .flatMap((child) => child.points)
+          expect(Math.max(...points.map(([x]) => Math.abs(x)))).toBeLessThanOrEqual(
+            footprint.dimensions[0] / 2 + 0.0001,
+          )
+          expect(Math.max(...points.map(([, z]) => Math.abs(z)))).toBeLessThanOrEqual(
+            footprint.dimensions[2] / 2 + 0.0001,
+          )
+        }
+      }
+    }
+  })
+
+  test('seats the curb opening against the grate surround edge', () => {
+    const node = DrainageInletNode.parse({ inletType: 'combination', width: 1.2, length: 1.8 })
+    const layout = resolveDrainageInletLayout(node)
+    const grateOuterEdge = layout.width / 2 + layout.surroundOverhang
+    const curbInnerEdge = layout.curbCenterZ - layout.curbDepth / 2
+
+    expect(curbInnerEdge).toBeCloseTo(grateOuterEdge, 5)
+  })
+
   test('keeps manhole cover depth layers apart', () => {
     const manhole = resolveManholeCoverLayout(ManholeCoverNode.parse({}))
     expect(manhole.coverBackingTopY).toBeLessThan(manhole.coverBottomY - 0.002)
@@ -174,8 +244,10 @@ describe('street infrastructure catalog', () => {
             }),
           ),
         ),
-        ...(['bicycle-safe', 'reticuline', 'parallel', 'curved-vane'] as const).map(
-          (gratePattern) => DrainageInletNode.parse({ gratePattern }),
+        ...(['grate', 'curb-opening', 'combination', 'sweeper-combination'] as const).flatMap((inletType) =>
+          (['bicycle-safe', 'reticuline', 'parallel', 'curved-vane'] as const).map((gratePattern) =>
+            DrainageInletNode.parse({ inletType, gratePattern, width: 0.82, length: 1.2, curbHeight: 0.18, wetness: 0.8 }),
+          ),
         ),
         ...(['radial', 'grid', 'rings'] as const).map((treadPattern) =>
           ManholeCoverNode.parse({ treadPattern }),
@@ -193,6 +265,18 @@ describe('street infrastructure catalog', () => {
         expect(markup.length).toBeGreaterThan(100)
         const floorplan = buildStreetInfrastructureFloorplan(node, {} as never)
         expect(floorplan.kind).toBe('group')
+      }
+      for (const inletType of ['grate', 'curb-opening', 'combination', 'sweeper-combination'] as const) {
+        for (const gratePattern of ['bicycle-safe', 'reticuline', 'parallel', 'curved-vane'] as const) {
+          const node = DrainageInletNode.parse({ inletType, gratePattern, width: 0.82, length: 1.2, curbHeight: 0.18 })
+          const layout = resolveDrainageInletLayout(node)
+          for (const bar of layout.bars) {
+            const halfX = Math.abs(Math.cos(bar.rotationY)) * bar.width / 2 + Math.abs(Math.sin(bar.rotationY)) * bar.length / 2
+            const halfZ = Math.abs(Math.sin(bar.rotationY)) * bar.width / 2 + Math.abs(Math.cos(bar.rotationY)) * bar.length / 2
+            expect(Math.abs(bar.x) + halfX).toBeLessThanOrEqual(node.length / 2 + 0.0001)
+            expect(Math.abs(bar.z) + halfZ).toBeLessThanOrEqual(node.width / 2 + 0.0001)
+          }
+        }
       }
       for (const treadPattern of ['radial', 'grid', 'rings'] as const) {
         const floorplan = buildStreetInfrastructureFloorplan(

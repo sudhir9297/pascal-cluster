@@ -48,7 +48,7 @@ export const STREET_INFRASTRUCTURE_VARIANTS: readonly StreetInfrastructureVarian
   {
     kind: 'environment:drainage-inlet',
     label: 'Drainage grate',
-    description: 'A configurable road inlet with bicycle-safe and decorative grate patterns.',
+    description: 'A framed road, curb, or sweeper inlet with bicycle-safe and decorative grate patterns.',
     family: 'Drainage',
     icon: 'lucide:rows-3',
     schema: DrainageInletNode,

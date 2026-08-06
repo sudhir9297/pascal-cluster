@@ -609,7 +609,9 @@ export const DrainageInletNode = BaseNode.extend({
 	type: nodeType("environment:drainage-inlet"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
-	inletType: z.enum(["grate", "combination"]).default("combination"),
+	inletType: z
+		.enum(["grate", "curb-opening", "combination", "sweeper-combination"])
+		.default("combination"),
 	gratePattern: z
 		.enum(["bicycle-safe", "reticuline", "parallel", "curved-vane"])
 		.default("bicycle-safe"),

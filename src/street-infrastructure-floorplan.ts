@@ -260,10 +260,28 @@ export function buildStreetInfrastructureFloorplan(
   } else if ((node.type as string) === 'environment:drainage-inlet') {
     const inlet = node as DrainageInletNode
     const layout = resolveDrainageInletLayout(inlet)
-    children.push(rectangle(center, layout.length + 0.09, layout.width + 0.09, angle, inlet.metalColor, stroke))
-    for (const bar of layout.bars) {
-      const barCenter = localPoint(center, bar.x, bar.z, angle)
-      children.push(rectangle(barCenter, bar.width, bar.length, angle + bar.rotationY, '#252b2c', stroke))
+    if (layout.hasSurfaceGrate) {
+      children.push(rectangle(center, layout.length + 0.16, layout.width + 0.16, angle, '#767b76', stroke))
+      children.push(rectangle(center, layout.length, layout.width, angle, inlet.metalColor, stroke))
+      children.push(rectangle(center, layout.innerLength, layout.innerWidth, angle, '#111718', stroke))
+      for (const bar of layout.bars) {
+        const barCenter = localPoint(center, bar.x, bar.z, angle)
+        children.push(rectangle(barCenter, bar.width, bar.length, angle + bar.rotationY, '#252b2c', stroke))
+      }
+    }
+    if (layout.hasCurbOpening) {
+      const curbCenter = localPoint(center, layout.curbOpeningOffsetX, layout.curbCenterZ, angle)
+      children.push(rectangle(curbCenter, layout.curbOpeningLength + layout.curbDepth, layout.curbDepth, angle, '#8b8c87', stroke))
+      children.push(
+        rectangle(
+          localPoint(center, layout.curbOpeningOffsetX, layout.curbCenterZ - layout.curbDepth / 2 - 0.006, angle),
+          layout.curbOpeningLength,
+          0.032,
+          angle,
+          '#141a1b',
+          stroke,
+        ),
+      )
     }
   } else if ((node.type as string) === 'environment:manhole-cover') {
     const cover = node as ManholeCoverNode

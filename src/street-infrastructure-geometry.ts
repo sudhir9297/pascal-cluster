@@ -145,47 +145,110 @@ export type DrainageInletLayout = {
   width: number
   length: number
   frameWidth: number
+  surroundOverhang: number
+  curbDepth: number
+  innerWidth: number
+  innerLength: number
+  surroundHeight: number
+  frameHeight: number
+  frameCenterY: number
+  frameTopY: number
+  voidDepth: number
+  voidCenterY: number
+  voidTopY: number
+  seatHeight: number
+  seatCenterY: number
+  seatTopY: number
+  barHeight: number
+  barCenterY: number
+  barBottomY: number
   bars: readonly GrateBar[]
   curbCenterZ: number
+  curbOpeningLength: number
+  curbOpeningOffsetX: number
+  hasSurfaceGrate: boolean
+  hasCurbOpening: boolean
 }
 
 export function resolveDrainageInletLayout(node: DrainageInletNode): DrainageInletLayout {
   const width = Math.max(0.3, Math.min(1.5, node.width))
   const length = Math.max(0.5, Math.min(2.5, node.length))
-  const frameWidth = 0.055
+  const frameWidth = 0.065
+  const surroundOverhang = 0.08
+  const curbDepth = 0.18
+  const innerWidth = Math.max(0.16, width - frameWidth * 2)
+  const innerLength = Math.max(0.24, length - frameWidth * 2)
+  const hasSurfaceGrate = node.inletType !== 'curb-opening'
+  const hasCurbOpening = node.inletType !== 'grate'
+  const curbOpeningLength = node.inletType === 'sweeper-combination'
+    ? Math.min(2.5, length * 1.42)
+    : length
+  const curbOpeningOffsetX = node.inletType === 'sweeper-combination'
+    ? -Math.min(0.35, length * 0.18)
+    : 0
+  const surroundHeight = 0.024
+  const frameHeight = 0.06
+  const frameCenterY = surroundHeight + frameHeight / 2
+  const frameTopY = frameCenterY + frameHeight / 2
+  const voidDepth = 0.022
+  const voidCenterY = surroundHeight + 0.012
+  const voidTopY = voidCenterY + voidDepth / 2
+  const seatHeight = 0.018
+  const seatCenterY = frameTopY + seatHeight / 2 + 0.004
+  const seatTopY = seatCenterY + seatHeight / 2
+  const barHeight = 0.03
+  const barCenterY = seatTopY + barHeight / 2 + 0.004
   const bars: GrateBar[] = []
-  if (node.gratePattern === 'parallel') {
-    const count = Math.max(4, Math.round(width / 0.1))
-    for (let index = 0; index < count; index += 1) {
-      bars.push({
-        x: -length / 2 + frameWidth + ((index + 0.5) / count) * (length - frameWidth * 2),
-        z: 0,
-        width: 0.025,
-        length: width - frameWidth * 2,
-        rotationY: 0,
-      })
-    }
-  } else {
-    const count = Math.max(5, Math.round(length / 0.11))
+  if (hasSurfaceGrate && (node.gratePattern === 'parallel' || node.gratePattern === 'bicycle-safe' || node.gratePattern === 'curved-vane')) {
+    const spacing = node.gratePattern === 'bicycle-safe' ? 0.09 : node.gratePattern === 'parallel' ? 0.14 : 0.17
+    const count = Math.max(4, Math.round(innerLength / spacing))
     for (let index = 0; index < count; index += 1) {
       const x = -length / 2 + frameWidth + ((index + 0.5) / count) * (length - frameWidth * 2)
+      const normalized = count === 1 ? 0 : (index / (count - 1)) * 2 - 1
+      const rotationY = node.gratePattern === 'curved-vane' ? Math.sin(normalized * Math.PI / 2) * 0.22 : 0
+      const z = node.gratePattern === 'curved-vane' ? Math.sin(normalized * Math.PI / 2) * innerWidth * 0.08 : 0
+      const barWidth = node.gratePattern === 'bicycle-safe' ? 0.022 : 0.028
+      const desiredLength = node.gratePattern === 'curved-vane' ? innerWidth * 0.86 : innerWidth
+      const maxLengthX = Math.abs(Math.sin(rotationY)) > 0.001
+        ? (2 * (length / 2 - Math.abs(x)) - Math.abs(Math.cos(rotationY)) * barWidth) / Math.abs(Math.sin(rotationY))
+        : Number.POSITIVE_INFINITY
+      const maxLengthZ = Math.abs(Math.cos(rotationY)) > 0.001
+        ? (2 * (width / 2 - Math.abs(z)) - Math.abs(Math.sin(rotationY)) * barWidth) / Math.abs(Math.cos(rotationY))
+        : Number.POSITIVE_INFINITY
       bars.push({
         x,
-        z: node.gratePattern === 'curved-vane' ? Math.sin(index * 0.9) * width * 0.035 : 0,
-        width: 0.026,
-        length: width - frameWidth * 2,
-        rotationY: node.gratePattern === 'curved-vane' ? Math.sin(index * 0.8) * 0.16 : Math.PI / 2,
+        z,
+        width: barWidth,
+        length: Math.max(0.04, Math.min(desiredLength, maxLengthX, maxLengthZ)),
+        rotationY,
       })
     }
-    if (node.gratePattern === 'reticuline') {
-      const crossCount = Math.max(3, Math.round(width / 0.13))
-      for (let index = 0; index < crossCount; index += 1) {
+    if (node.gratePattern === 'bicycle-safe') {
+      const strapCount = Math.max(3, Math.round(innerWidth / 0.16))
+      for (let index = 0; index < strapCount; index += 1) {
         bars.push({
           x: 0,
-          z: -width / 2 + frameWidth + ((index + 0.5) / crossCount) * (width - frameWidth * 2),
+          z: -innerWidth / 2 + ((index + 0.5) / strapCount) * innerWidth,
+          width: 0.018,
+          length: innerLength,
+          rotationY: Math.PI / 2,
+        })
+      }
+    }
+  } else if (hasSurfaceGrate && node.gratePattern === 'reticuline') {
+    const diagonalLength = Math.min(innerLength, innerWidth) * 0.78
+    const diagonalHalfExtent = diagonalLength * Math.SQRT1_2 / 2
+    const usableLength = Math.max(0.12, innerLength - diagonalHalfExtent * 2)
+    const count = Math.max(3, Math.round(usableLength / 0.18))
+    for (let index = 0; index < count; index += 1) {
+      const x = -usableLength / 2 + ((index + 0.5) / count) * usableLength
+      for (const rotationY of [-Math.PI / 4, Math.PI / 4]) {
+        bars.push({
+          x,
+          z: 0,
           width: 0.022,
-          length: length - frameWidth * 2,
-          rotationY: 0,
+          length: diagonalLength,
+          rotationY,
         })
       }
     }
@@ -194,8 +257,29 @@ export function resolveDrainageInletLayout(node: DrainageInletNode): DrainageInl
     width,
     length,
     frameWidth,
+    innerWidth,
+    innerLength,
+    surroundHeight,
+    frameHeight,
+    frameCenterY,
+    frameTopY,
+    voidDepth,
+    voidCenterY,
+    voidTopY,
+    seatHeight,
+    seatCenterY,
+    seatTopY,
+    barHeight,
+    barCenterY,
+    barBottomY: barCenterY - barHeight / 2,
     bars,
-    curbCenterZ: width / 2 + 0.075,
+    curbCenterZ: width / 2 + surroundOverhang + curbDepth / 2,
+    curbOpeningLength,
+    curbOpeningOffsetX,
+    hasSurfaceGrate,
+    hasCurbOpening,
+    surroundOverhang,
+    curbDepth,
   }
 }
 

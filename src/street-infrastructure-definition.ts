@@ -39,8 +39,18 @@ function footprint(input: unknown) {
   }
   if (kind === 'environment:drainage-inlet') {
     const layout = resolveDrainageInletLayout(node as any)
+    const surfaceHalfLength = (layout.length + 0.16) / 2
+    const surfaceHalfWidth = (layout.width + 0.16) / 2
+    const curbHalfLength = layout.hasCurbOpening
+      ? Math.abs(layout.curbOpeningOffsetX) + layout.curbOpeningLength / 2 + layout.curbDepth / 2
+      : 0
+    const curbHalfWidth = layout.hasCurbOpening ? layout.curbCenterZ + layout.curbDepth / 2 : 0
     return {
-      dimensions: [layout.length + 0.09, 0.3, layout.width + 0.24] as [number, number, number],
+      dimensions: [
+        2 * Math.max(surfaceHalfLength, curbHalfLength),
+        Math.max(0.3, (node as any).curbHeight ?? 0),
+        2 * Math.max(surfaceHalfWidth, curbHalfWidth),
+      ] as [number, number, number],
       rotation: node.rotation,
     }
   }

@@ -54,35 +54,87 @@ export function DrainageInletModel({
   const roughness = 0.62 - node.wetness * 0.35
   return (
     <group>
-      <mesh layers={layer} position={[0, 0.012, 0]}>
-        <boxGeometry args={[layout.length + 0.09, 0.045, layout.width + 0.09]} />
-        <MetalMaterial color={node.metalColor} ghost={ghost} roughness={roughness} />
-      </mesh>
-      <mesh layers={layer} position={[0, 0.038, 0]}>
-        <boxGeometry args={[layout.length - 0.06, 0.025, layout.width - 0.06]} />
-        <meshStandardMaterial color="#111718" opacity={ghost ? 0.55 : 1} roughness={0.3} transparent={ghost} />
-      </mesh>
-      {layout.bars.map((bar, index) => (
-        <mesh
-          castShadow={!ghost}
-          key={`${bar.x}:${bar.z}:${index}`}
-          layers={layer}
-          position={[bar.x, 0.065, bar.z]}
-          rotation={[0, bar.rotationY, 0]}
-        >
-          <boxGeometry args={[bar.width, 0.035, bar.length]} />
-          <MetalMaterial color={node.metalColor} ghost={ghost} roughness={roughness} />
-        </mesh>
-      ))}
-      {node.inletType === 'combination' ? (
-        <group position={[0, node.curbHeight / 2, layout.curbCenterZ]}>
-          <mesh castShadow={!ghost} layers={layer}>
-            <boxGeometry args={[layout.length + 0.16, node.curbHeight, 0.15]} />
-            <meshStandardMaterial color="#8b8c87" opacity={ghost ? 0.58 : 1} roughness={0.82} transparent={ghost} />
+      {layout.hasSurfaceGrate ? (
+        <>
+          <mesh castShadow={!ghost} layers={layer} position={[0, layout.surroundHeight / 2, 0]}>
+            <boxGeometry args={[layout.length + 0.16, layout.surroundHeight, layout.width + 0.16]} />
+            <MetalMaterial color="#767b76" ghost={ghost} roughness={0.86} />
           </mesh>
-          <mesh layers={layer} position={[0, -node.curbHeight * 0.05, -0.081]}>
-            <boxGeometry args={[layout.length * 0.7, node.curbHeight * 0.48, 0.025]} />
+          <mesh layers={layer} position={[0, layout.voidCenterY, 0]}>
+            <boxGeometry args={[layout.innerLength, layout.voidDepth, layout.innerWidth]} />
+            <meshStandardMaterial color="#111718" opacity={ghost ? 0.58 : 1} roughness={0.34} transparent={ghost} />
+          </mesh>
+          {node.wetness > 0.01 ? (
+            <mesh layers={layer} position={[0, layout.voidTopY + 0.003, 0]}>
+              <boxGeometry args={[layout.innerLength * 0.92, 0.006, layout.innerWidth * 0.92]} />
+              <meshStandardMaterial
+                color="#29434a"
+                metalness={0.28}
+                opacity={ghost ? 0.3 : 0.22 + node.wetness * 0.38}
+                roughness={0.18}
+                transparent
+              />
+            </mesh>
+          ) : null}
+          <mesh castShadow={!ghost} layers={layer} position={[0, layout.frameCenterY, layout.width / 2 - layout.frameWidth / 2]}>
+            <boxGeometry args={[layout.length, layout.frameHeight, layout.frameWidth]} />
+            <MetalMaterial color={node.metalColor} ghost={ghost} roughness={roughness} />
+          </mesh>
+          <mesh castShadow={!ghost} layers={layer} position={[0, layout.frameCenterY, -layout.width / 2 + layout.frameWidth / 2]}>
+            <boxGeometry args={[layout.length, layout.frameHeight, layout.frameWidth]} />
+            <MetalMaterial color={node.metalColor} ghost={ghost} roughness={roughness} />
+          </mesh>
+          <mesh castShadow={!ghost} layers={layer} position={[layout.length / 2 - layout.frameWidth / 2, layout.frameCenterY, 0]}>
+            <boxGeometry args={[layout.frameWidth, layout.frameHeight, layout.innerWidth]} />
+            <MetalMaterial color={node.metalColor} ghost={ghost} roughness={roughness} />
+          </mesh>
+          <mesh castShadow={!ghost} layers={layer} position={[-layout.length / 2 + layout.frameWidth / 2, layout.frameCenterY, 0]}>
+            <boxGeometry args={[layout.frameWidth, layout.frameHeight, layout.innerWidth]} />
+            <MetalMaterial color={node.metalColor} ghost={ghost} roughness={roughness} />
+          </mesh>
+          <mesh layers={layer} position={[0, layout.seatCenterY, layout.width / 2 - layout.frameWidth - 0.012]}>
+            <boxGeometry args={[layout.innerLength, layout.seatHeight, 0.024]} />
+            <MetalMaterial color="#252b2c" ghost={ghost} roughness={0.48} />
+          </mesh>
+          <mesh layers={layer} position={[0, layout.seatCenterY, -layout.width / 2 + layout.frameWidth + 0.012]}>
+            <boxGeometry args={[layout.innerLength, layout.seatHeight, 0.024]} />
+            <MetalMaterial color="#252b2c" ghost={ghost} roughness={0.48} />
+          </mesh>
+          <mesh layers={layer} position={[layout.length / 2 - layout.frameWidth - 0.012, layout.seatCenterY, 0]}>
+            <boxGeometry args={[0.024, layout.seatHeight, layout.innerWidth]} />
+            <MetalMaterial color="#252b2c" ghost={ghost} roughness={0.48} />
+          </mesh>
+          <mesh layers={layer} position={[-layout.length / 2 + layout.frameWidth + 0.012, layout.seatCenterY, 0]}>
+            <boxGeometry args={[0.024, layout.seatHeight, layout.innerWidth]} />
+            <MetalMaterial color="#252b2c" ghost={ghost} roughness={0.48} />
+          </mesh>
+          {layout.bars.map((bar, index) => (
+            <mesh
+              castShadow={!ghost}
+              key={`${bar.x}:${bar.z}:${bar.rotationY}:${index}`}
+              layers={layer}
+              position={[bar.x, layout.barCenterY, bar.z]}
+              rotation={[0, bar.rotationY, 0]}
+            >
+              <boxGeometry args={[bar.width, layout.barHeight, bar.length]} />
+              <MetalMaterial color={node.metalColor} ghost={ghost} roughness={roughness} />
+            </mesh>
+          ))}
+        </>
+      ) : null}
+      {layout.hasCurbOpening ? (
+        <group position={[layout.curbOpeningOffsetX, node.curbHeight / 2, layout.curbCenterZ]}>
+          <mesh castShadow={!ghost} layers={layer}>
+            <boxGeometry args={[layout.curbOpeningLength + layout.curbDepth, node.curbHeight, layout.curbDepth]} />
+            <MetalMaterial color="#8b8c87" ghost={ghost} roughness={0.82} />
+          </mesh>
+          <mesh layers={layer} position={[0, -node.curbHeight * 0.04, -layout.curbDepth / 2 - 0.006]}>
+            <boxGeometry args={[layout.curbOpeningLength, node.curbHeight * 0.58, 0.032]} />
             <meshStandardMaterial color="#141a1b" opacity={ghost ? 0.55 : 1} roughness={0.4} transparent={ghost} />
+          </mesh>
+          <mesh layers={layer} position={[0, -node.curbHeight * 0.38, -layout.curbDepth / 2 + 0.012]}>
+            <boxGeometry args={[layout.curbOpeningLength + 0.08, 0.04, 0.11]} />
+            <MetalMaterial color="#686d68" ghost={ghost} roughness={0.86} />
           </mesh>
         </group>
       ) : null}

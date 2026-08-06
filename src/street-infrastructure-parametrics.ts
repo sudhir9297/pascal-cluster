@@ -90,7 +90,12 @@ const drainageInletParametrics: ParametricDescriptor<any> = {
     {
       label: 'Inlet',
       fields: [
-        { key: 'inletType', kind: 'enum', options: ['grate', 'combination'], display: 'segmented' },
+        {
+          key: 'inletType',
+          kind: 'enum',
+          options: ['grate', 'curb-opening', 'combination', 'sweeper-combination'],
+          display: 'select',
+        },
         {
           key: 'gratePattern',
           kind: 'enum',
@@ -106,7 +111,7 @@ const drainageInletParametrics: ParametricDescriptor<any> = {
           min: 0.08,
           max: 0.3,
           step: 0.01,
-          visibleIf: (node: any) => node.inletType === 'combination',
+          visibleIf: (node: any) => node.inletType !== 'grate',
         },
       ],
     },
