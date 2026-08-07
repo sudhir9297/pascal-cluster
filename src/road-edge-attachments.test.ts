@@ -3,8 +3,10 @@ import {
   buildSignalJunctionPlacements,
   createRoadAttachmentForPlacement,
   findRoadAttachmentTarget,
+  reanchorRoadAttachment,
   resolveFreeRoadPlacement,
   resolveRoadAttachmentTransform,
+  synchronizeRoadAttachmentOpening,
 } from './road-edge-attachments'
 import {
   createEmptyRoadGraph,
@@ -12,6 +14,7 @@ import {
 } from './road-network-topology'
 import {
   DrainageInletNode,
+  DrivewayNode,
   FireHydrantNode,
   ManholeCoverNode,
   RoadNetworkNode,
@@ -91,6 +94,102 @@ describe('road-edge infrastructure attachments', () => {
     expect(transform?.rotation).toEqual([0.1, 0.2, 0.3])
   })
 
+  test('snaps either end of a driveway flush to the carriageway edge', () => {
+    const road = straightRoad()
+    const driveway = DrivewayNode.parse({ length: 5.5 })
+    const left = createRoadAttachmentForPlacement({
+      assetNodeId: 'driveway_left',
+      id: 'driveway_left:road',
+      kind: 'environment:driveway',
+      node: driveway,
+      networks: [road],
+      point: [0, 0, 5],
+    })
+    const right = createRoadAttachmentForPlacement({
+      assetNodeId: 'driveway_right',
+      id: 'driveway_right:road',
+      kind: 'environment:driveway',
+      node: driveway,
+      networks: [road],
+      point: [0, 0, -5],
+    })
+
+    expect(left).not.toBeNull()
+    expect(right).not.toBeNull()
+    expect(left!.attachment.roadOpeningWidth).toBe(driveway.width)
+    expect(right!.attachment.roadOpeningWidth).toBe(driveway.width)
+    // The default local street has a 7.5 m carriageway. Each road-facing
+    // driveway edge should land exactly on its 3.75 m half-width, regardless
+    // of where inside the capture zone the user clicked.
+    expect(left!.transform.position[2] - driveway.length / 2).toBeCloseTo(3.75, 5)
+    expect(right!.transform.position[2] + driveway.length / 2).toBeCloseTo(-3.75, 5)
+    expect(left!.transform.position[1]).toBeCloseTo(0, 5)
+    expect(right!.transform.position[1]).toBeCloseTo(0, 5)
+    expect(left!.transform.rotation[1]).toBeCloseTo(0, 5)
+    expect(Math.abs(right!.transform.rotation[1])).toBeCloseTo(Math.PI, 5)
+  })
+
+  test('centers curved-left and curved-right road openings on their shifted mouths', () => {
+    const road = straightRoad()
+    const curvedLeft = createRoadAttachmentForPlacement({
+      assetNodeId: 'driveway_curve_left',
+      id: 'driveway_curve_left:road',
+      kind: 'environment:driveway',
+      node: DrivewayNode.parse({ drivewayShape: 'curved-left', curveAmount: 2.5 }),
+      networks: [road],
+      point: [0, 0, 5],
+    })
+    const curvedRight = createRoadAttachmentForPlacement({
+      assetNodeId: 'driveway_curve_right',
+      id: 'driveway_curve_right:road',
+      kind: 'environment:driveway',
+      node: DrivewayNode.parse({ drivewayShape: 'curved-right', curveAmount: 2.5 }),
+      networks: [road],
+      point: [0, 0, 5],
+    })
+    const curvedLeftOnRightSide = createRoadAttachmentForPlacement({
+      assetNodeId: 'driveway_curve_left_right_side',
+      id: 'driveway_curve_left_right_side:road',
+      kind: 'environment:driveway',
+      node: DrivewayNode.parse({ drivewayShape: 'curved-left', curveAmount: 2.5 }),
+      networks: [road],
+      point: [0, 0, -5],
+    })
+
+    expect(curvedLeft).not.toBeNull()
+    expect(curvedRight).not.toBeNull()
+    expect(curvedLeftOnRightSide).not.toBeNull()
+    // Curved driveways keep shifting while they cross the gutter, curb, verge,
+    // and sidewalk. The opening must cover that complete roadside corridor,
+    // not only the 3.2 m mouth at the carriageway edge.
+    expect(curvedLeft!.attachment.roadOpeningOffset).toBeCloseTo(1.132808, 5)
+    expect(curvedRight!.attachment.roadOpeningOffset).toBeCloseTo(-1.132808, 5)
+    expect(curvedLeftOnRightSide!.attachment.roadOpeningOffset).toBeCloseTo(-1.132808, 5)
+    expect(curvedLeft!.attachment.roadOpeningWidth).toBeCloseTo(3.434384, 5)
+    expect(curvedRight!.attachment.roadOpeningWidth).toBeCloseTo(3.434384, 5)
+    const leftProfile = curvedLeft!.attachment.roadOpeningProfile
+    const rightProfile = curvedRight!.attachment.roadOpeningProfile
+    expect(leftProfile?.length).toBeGreaterThan(8)
+    expect(rightProfile?.length).toBeGreaterThan(8)
+    expect(leftProfile?.[0]).toEqual({
+      outwardOffset: 0,
+      startOffset: -0.35,
+      endOffset: 2.85,
+    })
+    expect(leftProfile?.at(-1)?.startOffset).toBeCloseTo(-0.584384, 5)
+    expect(leftProfile?.at(-1)?.endOffset).toBeCloseTo(2.711147, 5)
+    expect(rightProfile?.at(-1)?.startOffset).toBeCloseTo(-2.711147, 5)
+    expect(rightProfile?.at(-1)?.endOffset).toBeCloseTo(0.584384, 5)
+
+    const editedShape = synchronizeRoadAttachmentOpening(
+      road,
+      { ...curvedRight!.attachment, roadOpeningOffset: 0 },
+      DrivewayNode.parse({ drivewayShape: 'curved-left', curveAmount: 4 }),
+    )
+    expect(editedShape.roadOpeningOffset).toBeCloseTo(1.77163, 5)
+    expect(editedShape.roadOpeningWidth).toBeCloseTo(3.65674, 5)
+  })
+
   test('turns curb-facing hydrants toward the selected curb side', () => {
     const road = straightRoad()
     const edgeId = Object.keys(road.edges)[0]!
@@ -130,6 +229,46 @@ describe('road-edge infrastructure attachments', () => {
 
     expect(attached).not.toBeNull()
     expect(attached?.transform.position[1]).toBeCloseTo(0.146, 3)
+  })
+
+  test('stores an edited pose as road-relative offsets and follows a reshaped road', () => {
+    const road = straightRoad()
+    const edgeId = Object.keys(road.edges)[0]!
+    const source = FireHydrantNode.parse({
+      position: [2, 1.25, 6],
+      rotation: [0, Math.PI / 3, 0],
+    })
+    const adjusted = reanchorRoadAttachment(road, {
+      id: 'hydrant:adjusted',
+      edgeId,
+      assetNodeId: source.id,
+      kind: 'asset',
+      station: 10,
+      lateralOffset: 0,
+      verticalOffset: 0,
+      alignment: 'curb',
+      side: 'left',
+    }, source)
+
+    expect(adjusted?.placementMode).toBe('adjusted')
+    expect(adjusted?.alignment).toBe('free')
+    const originalPose = resolveRoadAttachmentTransform(road, adjusted!, source)
+    expect(originalPose?.position[0]).toBeCloseTo(source.position[0], 3)
+    expect(originalPose?.position[1]).toBeCloseTo(source.position[1], 3)
+    expect(originalPose?.position[2]).toBeCloseTo(source.position[2], 3)
+    expect(originalPose?.rotation[1]).toBeCloseTo(source.rotation[1], 5)
+
+    const movedRoad = RoadNetworkNode.parse({
+      ...road,
+      graphNodes: Object.fromEntries(Object.entries(road.graphNodes).map(([id, graphNode]) => [
+        id,
+        { ...graphNode, position: [graphNode.position[0], graphNode.position[1], graphNode.position[2] + 4] },
+      ])),
+    })
+    const movedPose = resolveRoadAttachmentTransform(movedRoad, adjusted!, source)
+    expect(movedPose?.position[0]).toBeCloseTo(source.position[0], 3)
+    expect(movedPose?.position[2]).toBeCloseTo(source.position[2] + 4, 3)
+    expect(movedPose?.rotation[1]).toBeCloseTo(source.rotation[1], 5)
   })
 
   test('uses road snapping only for the initial pose and leaves the placed node free', () => {

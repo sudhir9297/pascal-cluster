@@ -20,6 +20,9 @@ import {
   buildManualRoadJunctionBand,
   buildManualRoadJunctionBoundary,
 } from './road-junction-boundary-editor'
+import {
+  buildRoadsideComponentSurfacePolygons,
+} from './roadside-openings'
 
 type PlanPoint = readonly [number, number]
 
@@ -82,27 +85,6 @@ export function buildRoadNetworkFloorplan(
         strokeWidth: selected ? 0.09 : 0.04,
         strokeLinejoin: 'round',
       })
-      for (const side of ['left', 'right'] as const) {
-        for (const spec of ROAD_SIDE_COMPONENT_SPECS) {
-          const startBounds = start.components[side][spec.kind]
-          const endBounds = end.components[side][spec.kind]
-          if (startBounds.width <= 1e-4 && endBounds.width <= 1e-4) continue
-          const sign = side === 'left' ? 1 : -1
-          children.push({
-            kind: 'polygon',
-            points: [
-              profileOffsetPoint(samples, index, sign * startBounds.outerOffset),
-              profileOffsetPoint(samples, index + 1, sign * endBounds.outerOffset),
-              profileOffsetPoint(samples, index + 1, sign * endBounds.innerOffset),
-              profileOffsetPoint(samples, index, sign * startBounds.innerOffset),
-            ],
-            fill: spec.color,
-            stroke: spec.color,
-            strokeWidth: 0,
-            strokeLinejoin: 'round',
-          })
-        }
-      }
       children.push({
         kind: 'hit-line',
         x1: start.point[0],
@@ -111,6 +93,51 @@ export function buildRoadNetworkFloorplan(
         y2: end.point[2],
         strokeWidthPx: 16,
       })
+    }
+    for (const side of ['left', 'right'] as const) {
+      for (const spec of ROAD_SIDE_COMPONENT_SPECS) {
+        const shapedPolygons = buildRoadsideComponentSurfacePolygons(
+          node,
+          profile,
+          side,
+          spec.kind,
+          spec.elevationOffset,
+        )
+        if (shapedPolygons) {
+          for (const polygon of shapedPolygons) {
+            children.push({
+              kind: 'polygon',
+              points: polygon.points.map((point) => [point[0], point[2]]),
+              fill: spec.color,
+              stroke: spec.color,
+              strokeWidth: 0,
+              strokeLinejoin: 'round',
+            })
+          }
+          continue
+        }
+        for (let index = 0; index < samples.length - 1; index++) {
+          const start = samples[index]!
+          const end = samples[index + 1]!
+            const startBounds = start.components[side][spec.kind]
+            const endBounds = end.components[side][spec.kind]
+            if (startBounds.width <= 1e-4 && endBounds.width <= 1e-4) continue
+            const sign = side === 'left' ? 1 : -1
+            children.push({
+              kind: 'polygon',
+              points: [
+                profileOffsetPoint(samples, index, sign * startBounds.outerOffset),
+                profileOffsetPoint(samples, index + 1, sign * endBounds.outerOffset),
+                profileOffsetPoint(samples, index + 1, sign * endBounds.innerOffset),
+                profileOffsetPoint(samples, index, sign * startBounds.innerOffset),
+              ],
+              fill: spec.color,
+              stroke: spec.color,
+              strokeWidth: 0,
+              strokeLinejoin: 'round',
+            })
+        }
+      }
     }
   }
   for (const graphNode of Object.values(node.graphNodes)) {

@@ -1,8 +1,8 @@
 'use client'
 
-import { type AnyNode, type AnyNodeId, useLiveNodeOverrides, useLiveTransforms, useRegistry, useScene } from '@pascal-app/core'
+import { type AnyNodeId, useLiveNodeOverrides, useLiveTransforms, useRegistry, useScene } from '@pascal-app/core'
 import { useNodeEvents } from '@pascal-app/viewer'
-import { useEffect, useMemo, useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import type { Group } from 'three'
 import type { StreetInfrastructureNode } from './street-infrastructure-config'
 import { resolveRoadAttachmentTransform } from './road-edge-attachments'
@@ -26,7 +26,7 @@ export default function StreetInfrastructureRenderer({
     : storeNode
   const sceneNodes = useScene((state) => state.nodes)
   const attachmentRef = node.roadAttachment
-  const legacyAttachment = useMemo(() => {
+  const roadAttachment = useMemo(() => {
     if (!attachmentRef) return null
     const host = Object.values(sceneNodes).find(
       (candidate) => (candidate.id as string) === attachmentRef.networkNodeId,
@@ -39,29 +39,7 @@ export default function StreetInfrastructureRenderer({
       : null
     return { host: road, transform }
   }, [attachmentRef, node, sceneNodes])
-  useEffect(() => {
-    if (!attachmentRef) return
-    const data = {
-      ...(legacyAttachment?.transform
-        ? {
-            position: legacyAttachment.transform.position,
-            rotation: legacyAttachment.transform.rotation,
-          }
-        : null),
-      roadAttachment: undefined,
-    } as unknown as Partial<AnyNode>
-    const updates = [{ id: storeNode.id as AnyNodeId, data }]
-    if (legacyAttachment?.host.attachments?.[attachmentRef.attachmentId]) {
-      const { [attachmentRef.attachmentId]: _released, ...attachments } =
-        legacyAttachment.host.attachments
-      updates.push({
-        id: legacyAttachment.host.id as AnyNodeId,
-        data: { attachments } as Partial<AnyNode>,
-      })
-    }
-    useScene.getState().updateNodes(updates)
-  }, [attachmentRef, legacyAttachment, storeNode.id])
-  const roadAttachmentTransform = legacyAttachment?.transform ?? null
+  const roadAttachmentTransform = roadAttachment?.transform ?? null
   const position = liveTransform?.position ?? roadAttachmentTransform?.position ?? node.position ?? [0, 0, 0]
   const baseRotation = node.rotation ?? [0, 0, 0]
   const rotation: [number, number, number] = liveTransform

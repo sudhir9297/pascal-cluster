@@ -1,11 +1,16 @@
-import { buildSignalJunctionPlacements, resolveRoadAttachmentTransform } from './road-edge-attachments'
+import {
+  buildSignalJunctionPlacements,
+  reanchorRoadAttachment,
+  resolveRoadAttachmentTransform,
+} from './road-edge-attachments'
 export {
   DEFAULT_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
+  FULL_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
   type RoadAutoInfrastructureSettings,
 } from './road-auto-infrastructure-settings'
 import type { RoadAutoInfrastructureSettings } from './road-auto-infrastructure-settings'
 import { sampleRoadEdgePoints } from './road-network-geometry'
-import type { RoadGraphEdge, RoadNetworkNode } from './schema'
+import type { RoadEdgeAttachment, RoadGraphEdge, RoadNetworkNode } from './schema'
 import {
   parseStreetInfrastructure,
   type StreetInfrastructureKind,
@@ -24,6 +29,24 @@ type ExistingNode = {
   position?: unknown
   rotation?: unknown
   metadata?: unknown
+}
+
+export type RoadAutoInfrastructurePlan = {
+  attachments: Record<string, RoadEdgeAttachment>
+  nodes: StreetInfrastructureNode[]
+}
+
+export type RoadAutoInfrastructureAttachmentMigrationPlan = {
+  attachments: Record<string, RoadEdgeAttachment>
+  nodeUpdates: Array<{
+    id: string
+    roadAttachment: NonNullable<StreetInfrastructureNode['roadAttachment']>
+  }>
+}
+
+type GeneratedPlacement = {
+  attachment: RoadEdgeAttachment
+  node: StreetInfrastructureNode
 }
 
 const INITIAL_POSITION_KEY = 'roadAutoInfrastructureInitialPosition'
@@ -62,6 +85,70 @@ function metadataRecord(metadata: unknown): Record<string, unknown> | null {
     : null
 }
 
+/** Attach legacy generated nodes without changing their current visible pose. */
+export function planRoadAutoInfrastructureAttachmentMigration({
+  network,
+  nodes,
+}: {
+  network: RoadNetworkNode
+  nodes: readonly StreetInfrastructureNode[]
+}): RoadAutoInfrastructureAttachmentMigrationPlan {
+  const attachments: Record<string, RoadEdgeAttachment> = {}
+  const nodeUpdates: RoadAutoInfrastructureAttachmentMigrationPlan['nodeUpdates'] = []
+  const fallbackEdgeId = Object.keys(network.edges)[0]
+  if (!fallbackEdgeId) return { attachments, nodeUpdates }
+  for (const node of nodes) {
+    const metadata = metadataRecord(node.metadata)
+    if (
+      node.roadAttachment
+      || metadata?.generatedBy !== 'road-auto-infrastructure'
+      || metadata.roadNetworkId !== network.id
+    ) continue
+    const generatedKey = generatedKeyFromMetadata(metadata)
+    const edgeId = typeof metadata.roadEdgeId === 'string' && network.edges[metadata.roadEdgeId]
+      ? metadata.roadEdgeId
+      : fallbackEdgeId
+    const attachmentId = `${node.id}:road`
+    const provisional: RoadEdgeAttachment = {
+      id: attachmentId,
+      edgeId,
+      assetNodeId: node.id,
+      kind: 'asset',
+      station: typeof metadata.roadStation === 'number' ? metadata.roadStation : 0,
+      lateralOffset: 0,
+      verticalOffset: 0,
+      alignment: 'free',
+      placementMode: equalPosePart(node.position, metadata[INITIAL_POSITION_KEY])
+        && equalPosePart(node.rotation, metadata[INITIAL_ROTATION_KEY])
+        ? 'generated'
+        : 'adjusted',
+      ...(generatedKey ? { generatedKey } : null),
+    }
+    const reanchored = reanchorRoadAttachment(network, provisional, node)
+    if (!reanchored) continue
+    const attachment = {
+      ...reanchored,
+      placementMode: provisional.placementMode,
+      ...(generatedKey ? { generatedKey } : null),
+    }
+    attachments[attachmentId] = attachment
+    nodeUpdates.push({
+      id: node.id,
+      roadAttachment: {
+        networkNodeId: network.id,
+        attachmentId,
+        side: attachment.side,
+      },
+    })
+  }
+  return { attachments, nodeUpdates }
+}
+
+function generatedKeyFromMetadata(metadata: Record<string, unknown>): string | null {
+  const key = metadata.roadAutoInfrastructureKey
+  return typeof key === 'string' ? key : null
+}
+
 function equalPosePart(current: unknown, initial: unknown): boolean {
   if (!Array.isArray(current) || !Array.isArray(initial) || current.length !== initial.length) return false
   return current.every((value, index) => (
@@ -92,7 +179,7 @@ function freeNodeAtStation({
   network: RoadNetworkNode
   side: 'left' | 'right'
   station: number
-}): StreetInfrastructureNode | null {
+}): GeneratedPlacement | null {
   const key = infrastructureKey(kind, edge.id, station.toFixed(2), side)
 	const node = parseStreetInfrastructure(kind, {
 		parentId: network.parentId,
@@ -115,10 +202,8 @@ function freeNodeAtStation({
   const lateralOffset = kind === 'environment:manhole-cover'
     ? 0
     : side === 'left' ? 1 : -1
-  const transform = resolveRoadAttachmentTransform(
-    network,
-    {
-      id: `${node.id}:auto-road-pose`,
+  const attachment: RoadEdgeAttachment = {
+      id: `${node.id}:road`,
       edgeId: edge.id,
       assetNodeId: node.id,
       kind: 'asset',
@@ -127,11 +212,12 @@ function freeNodeAtStation({
       verticalOffset: 0,
       alignment,
       side,
-    },
-    node,
-  )
+      placementMode: 'generated',
+      generatedKey: key,
+    }
+  const transform = resolveRoadAttachmentTransform(network, attachment, node)
   if (!transform) return null
-  return parseStreetInfrastructure(kind, {
+  const attachedNode = parseStreetInfrastructure(kind, {
     ...node,
     position: transform.position,
     rotation: transform.rotation,
@@ -140,8 +226,13 @@ function freeNodeAtStation({
       [INITIAL_POSITION_KEY]: transform.position,
       [INITIAL_ROTATION_KEY]: transform.rotation,
     },
-    roadAttachment: undefined,
+    roadAttachment: {
+      networkNodeId: network.id,
+      attachmentId: attachment.id,
+      side,
+    },
   })
+  return { attachment, node: attachedNode }
 }
 
 function touchedJunctionIds(network: RoadNetworkNode, edgeIds: readonly string[]): string[] {
@@ -190,7 +281,7 @@ export function roadAutoInfrastructureNodeIdsToReplace({
   })
 }
 
-export function buildRoadAutoInfrastructure({
+export function buildRoadAutoInfrastructurePlan({
   edgeIds,
   existingNodes = [],
   network,
@@ -200,20 +291,20 @@ export function buildRoadAutoInfrastructure({
   existingNodes?: readonly ExistingNode[]
   network: RoadNetworkNode
   settings: RoadAutoInfrastructureSettings
-}): StreetInfrastructureNode[] {
-  if (!settings.enabled) return []
+}): RoadAutoInfrastructurePlan {
+  if (!settings.enabled) return { attachments: {}, nodes: [] }
   const existingKeys = new Set(existingNodes.flatMap((node) => {
     const key = generatedKey(node.metadata)
     return key ? [key] : []
   }))
   const createdKeys = new Set<string>()
-  const result: StreetInfrastructureNode[] = []
-  const add = (node: StreetInfrastructureNode | null) => {
-    if (!node) return
-    const key = generatedKey(node.metadata)
-    if (!key || existingKeys.has(key) || createdKeys.has(key)) return
+  const result: GeneratedPlacement[] = []
+  const add = (placement: GeneratedPlacement | null) => {
+    if (!placement) return
+    const key = generatedKey(placement.node.metadata)
+    if (!key || network.roadsideItemSuppressed?.[key] === true || existingKeys.has(key) || createdKeys.has(key)) return
     createdKeys.add(key)
-    result.push(node)
+    result.push(placement)
   }
 
   for (const edgeId of [...edgeIds].sort()) {
@@ -284,7 +375,7 @@ export function buildRoadAutoInfrastructure({
         const key = infrastructureKey(kind, junctionId, placement.edgeId, placement.side)
         const position = placement.position
         const rotation: [number, number, number] = [0, placement.rotationY, 0]
-		add(parseStreetInfrastructure(kind, {
+        const signal = parseStreetInfrastructure(kind, {
 			parentId: network.parentId,
 			visible: network.roadsideItemVisibility?.[kind] === true,
 			position,
@@ -304,10 +395,44 @@ export function buildRoadAutoInfrastructure({
             [INITIAL_POSITION_KEY]: position,
             [INITIAL_ROTATION_KEY]: rotation,
           },
-        }))
+        })
+        const attachment: RoadEdgeAttachment = {
+          id: `${signal.id}:road`,
+          edgeId: placement.edgeId,
+          assetNodeId: signal.id,
+          kind: 'asset',
+          station: placement.station,
+          lateralOffset: placement.lateralOffset,
+          verticalOffset: 0,
+          alignment: 'junction',
+          side: placement.side,
+          junctionId,
+          placementMode: 'generated',
+          generatedKey: key,
+        }
+        add({
+          attachment,
+          node: parseStreetInfrastructure(kind, {
+            ...signal,
+            roadAttachment: {
+              networkNodeId: network.id,
+              attachmentId: attachment.id,
+              side: placement.side,
+            },
+          }),
+        })
       }
     }
   }
 
-  return result
+  return {
+    attachments: Object.fromEntries(result.map(({ attachment }) => [attachment.id, attachment])),
+    nodes: result.map(({ node }) => node),
+  }
+}
+
+export function buildRoadAutoInfrastructure(
+  input: Parameters<typeof buildRoadAutoInfrastructurePlan>[0],
+): StreetInfrastructureNode[] {
+  return buildRoadAutoInfrastructurePlan(input).nodes
 }

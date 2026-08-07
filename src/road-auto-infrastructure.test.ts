@@ -1,12 +1,15 @@
 import { describe, expect, test } from 'bun:test'
 import {
   buildRoadAutoInfrastructure,
+  buildRoadAutoInfrastructurePlan,
   DEFAULT_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
   roadAutoInfrastructureAffectedEdgeIds,
   roadAutoInfrastructureNodeIdsToReplace,
+  planRoadAutoInfrastructureAttachmentMigration,
   type RoadAutoInfrastructureSettings,
 } from './road-auto-infrastructure'
 import { applyRoadAutoInfrastructureClearances } from './road-auto-infrastructure-style'
+import { resolveRoadAttachmentTransform } from './road-edge-attachments'
 import { createEmptyRoadGraph, insertRoadSegment } from './road-network-topology'
 import { RoadNetworkNode } from './schema'
 
@@ -57,7 +60,7 @@ describe('automatic road infrastructure', () => {
     expect(nodes.filter((node) => node.type === 'environment:road-barrier')).toHaveLength(1)
     expect(nodes.some((node) => node.type === 'environment:traffic-signal')).toBe(false)
     expect(nodes.every((node) => node.parentId === 'level_test')).toBe(true)
-    expect(nodes.every((node) => node.roadAttachment === undefined)).toBe(true)
+    expect(nodes.every((node) => node.roadAttachment?.networkNodeId === network.id)).toBe(true)
     expect(
       nodes
         .filter((node) => node.type === 'environment:drainage-inlet')
@@ -93,7 +96,48 @@ describe('automatic road infrastructure', () => {
     expect(signals).toHaveLength(2)
     expect(signals.every((node) => node.mount === 'mast-arm')).toBe(true)
     expect(signals.every((node) => node.headCount === 'two')).toBe(true)
-    expect(signals.every((node) => node.roadAttachment === undefined)).toBe(true)
+    expect(signals.every((node) => node.roadAttachment?.networkNodeId === network.id)).toBe(true)
+  })
+
+  test('returns matching persistent attachments for every generated node', () => {
+    const { edgeIds, network } = straightRoad()
+    const plan = buildRoadAutoInfrastructurePlan({
+      edgeIds,
+      network,
+      settings: ENABLED_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
+    })
+
+    expect(Object.keys(plan.attachments)).toHaveLength(plan.nodes.length)
+    for (const node of plan.nodes) {
+      const ref = node.roadAttachment
+      expect(ref).toBeDefined()
+      expect(plan.attachments[ref!.attachmentId]?.assetNodeId).toBe(node.id)
+      expect(plan.attachments[ref!.attachmentId]?.placementMode).toBe('generated')
+    }
+  })
+
+  test('migrates legacy generated nodes without losing adjusted poses', () => {
+    const { edgeIds, network } = straightRoad()
+    const generated = buildRoadAutoInfrastructure({
+      edgeIds,
+      network,
+      settings: ENABLED_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
+    })
+    const legacy = generated.slice(0, 2).map((node, index) => ({
+      ...node,
+      roadAttachment: undefined,
+      ...(index === 1 ? { position: [99, 2, 99] as [number, number, number] } : null),
+    }))
+    const migration = planRoadAutoInfrastructureAttachmentMigration({ network, nodes: legacy })
+
+    expect(migration.nodeUpdates).toHaveLength(2)
+    expect(Object.values(migration.attachments)).toHaveLength(2)
+    expect(Object.values(migration.attachments).map((attachment) => attachment.placementMode))
+      .toEqual(['generated', 'adjusted'])
+    const adjusted = Object.values(migration.attachments)[1]!
+    const adjustedPose = resolveRoadAttachmentTransform(network, adjusted, legacy[1]!)
+    expect(adjustedPose?.position[0]).toBeCloseTo(99, 3)
+    expect(adjustedPose?.position[2]).toBeCloseTo(99, 3)
   })
 
   test('honors the master switch and every per-item switch', () => {

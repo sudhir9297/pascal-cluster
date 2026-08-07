@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useRef } from 'react'
+import { useLayoutEffect, useMemo, useRef } from 'react'
 import type { ThreeEvent } from '@react-three/fiber'
-import { BufferGeometry, DoubleSide, Float32BufferAttribute } from 'three'
+import { BufferGeometry, DoubleSide, Float32BufferAttribute, ShapeUtils, Vector2 } from 'three'
 import {
   buildJunctionBoundaryGeometry,
   buildJunctionBoundarySidewalkGeometry,
@@ -47,10 +47,74 @@ import { RoadNetworkEarthworks } from './road-network-earthworks-model'
 import type { TerrainField } from './terrain-field-compat'
 import { StreetLightModel } from './street-light-model'
 import { RoadSignModel } from './road-sign-model'
+import {
+  buildRoadsideComponentSurfacePolygons,
+  type RoadsideSurfacePolygon,
+} from './roadside-openings'
 
 const NO_RAYCAST = () => undefined
 const ROADSIDE_STREET_LIGHT = StreetLightNode.parse({ lightOn: false })
 const ROADSIDE_ROAD_SIGN = RoadSignNode.parse({ signId: 'stop' })
+let pageIsUnloading = false
+type RoadGeometryLifecycle = {
+  disposeImmediately: () => void
+  pendingDisposal?: ReturnType<typeof setTimeout>
+  retained: boolean
+}
+const roadGeometryLifecycles = new WeakMap<BufferGeometry, RoadGeometryLifecycle>()
+
+if (typeof window !== 'undefined') {
+  const markPageAsUnloading = () => {
+    pageIsUnloading = true
+  }
+  window.addEventListener('beforeunload', markPageAsUnloading, { once: true })
+  window.addEventListener('pagehide', markPageAsUnloading, { once: true })
+}
+
+/**
+ * WebGPU may still have the previous frame queued when React detaches a road
+ * surface. Retire its buffer shortly afterwards instead of letting R3F dispose
+ * it synchronously during unmount. The regular `geometry` mesh prop preserves
+ * the renderer's existing buffer-binding path while only changing retirement.
+ */
+export function createRoadGeometry() {
+  const geometry = new BufferGeometry()
+  const lifecycle: RoadGeometryLifecycle = {
+    disposeImmediately: geometry.dispose.bind(geometry),
+    retained: false,
+  }
+  roadGeometryLifecycles.set(geometry, lifecycle)
+  geometry.dispose = () => {
+    // The browser releases the whole WebGPU device during navigation. Calling
+    // dispose while its final command buffer is still being submitted is both
+    // unnecessary and produces a validation-error cascade on refresh.
+    if (pageIsUnloading || lifecycle.retained) return
+    if (lifecycle.pendingDisposal !== undefined) clearTimeout(lifecycle.pendingDisposal)
+    lifecycle.pendingDisposal = setTimeout(() => {
+      lifecycle.pendingDisposal = undefined
+      if (lifecycle.retained || pageIsUnloading) return
+      lifecycle.disposeImmediately()
+    }, 500)
+  }
+  return geometry
+}
+
+export function setRoadGeometryRetained(geometry: BufferGeometry, retained: boolean) {
+  const lifecycle = roadGeometryLifecycles.get(geometry)
+  if (!lifecycle) return
+  lifecycle.retained = retained
+  if (retained && lifecycle.pendingDisposal !== undefined) {
+    clearTimeout(lifecycle.pendingDisposal)
+    lifecycle.pendingDisposal = undefined
+  }
+}
+
+function useRoadGeometryLifecycle(geometry: BufferGeometry) {
+  useLayoutEffect(() => {
+    setRoadGeometryRetained(geometry, true)
+    return () => setRoadGeometryRetained(geometry, false)
+  }, [geometry])
+}
 
 function resolveStyle(node: RoadNetworkNode, edge: RoadGraphEdge): RoadStylePreset | undefined {
   const styleId = node.applyStyleToAll ? node.activeStyleId : edge.styleId
@@ -214,7 +278,7 @@ export function RoadRibbonSurface({
   width?: number
 }) {
   const geometry = useMemo(() => {
-    const result = new BufferGeometry()
+    const result = createRoadGeometry()
     const mesh = buildRoadRibbonGeometry(points, {
       elevationOffset,
       lateralOffset,
@@ -229,7 +293,7 @@ export function RoadRibbonSurface({
     result.computeBoundingSphere()
     return result
   }, [elevationOffset, lateralOffset, points, style, width])
-  useEffect(() => () => geometry.dispose(), [geometry])
+  useRoadGeometryLifecycle(geometry)
   if (points.length < 2) return null
   const shadowPolicy = roadRibbonShadowPolicy(ghost)
   const resolvedOpacity = opacity ?? (ghost ? 0.48 : 1)
@@ -282,7 +346,7 @@ function RoadVariableRibbonSurface({
   samples: RoadVariableRibbonSample[]
 }) {
   const geometry = useMemo(() => {
-    const result = new BufferGeometry()
+    const result = createRoadGeometry()
     if (samples.length < 2) return result
     const positions: number[] = []
     for (let index = 0; index < samples.length; index++) {
@@ -319,7 +383,7 @@ function RoadVariableRibbonSurface({
     result.computeBoundingSphere()
     return result
   }, [elevationOffset, samples])
-  useEffect(() => () => geometry.dispose(), [geometry])
+  useRoadGeometryLifecycle(geometry)
   if (samples.length < 2) return null
   const shadowPolicy = roadRibbonShadowPolicy(ghost)
   return (
@@ -328,6 +392,58 @@ function RoadVariableRibbonSurface({
       geometry={geometry}
       name={name}
       raycast={ghost || nonInteractive ? NO_RAYCAST : undefined}
+      receiveShadow={shadowPolicy.receiveShadow}
+    >
+      <meshStandardMaterial
+        color={color}
+        depthWrite={!ghost}
+        metalness={0.02}
+        opacity={ghost ? 0.48 : 1}
+        polygonOffset
+        polygonOffsetFactor={-1}
+        roughness={0.94}
+        side={DoubleSide}
+        transparent={ghost}
+      />
+    </mesh>
+  )
+}
+
+function RoadPolygonSurface({
+  color,
+  ghost = false,
+  name,
+  polygon,
+}: {
+  color: string
+  ghost?: boolean
+  name: string
+  polygon: RoadsideSurfacePolygon
+}) {
+  const geometry = useMemo(() => {
+    const result = createRoadGeometry()
+    if (polygon.points.length < 3) return result
+    const positions = polygon.points.flatMap((point) => point)
+    const triangles = ShapeUtils.triangulateShape(
+      polygon.points.map((point) => new Vector2(point[0], point[2])),
+      [],
+    )
+    result.setAttribute('position', new Float32BufferAttribute(positions, 3))
+    result.setIndex(triangles.flatMap((triangle) => triangle))
+    result.computeVertexNormals()
+    result.computeBoundingBox()
+    result.computeBoundingSphere()
+    return result
+  }, [polygon])
+  useRoadGeometryLifecycle(geometry)
+  if (polygon.points.length < 3) return null
+  const shadowPolicy = roadRibbonShadowPolicy(ghost)
+  return (
+    <mesh
+      castShadow={shadowPolicy.castShadow}
+      geometry={geometry}
+      name={name}
+      raycast={NO_RAYCAST}
       receiveShadow={shadowPolicy.receiveShadow}
     >
       <meshStandardMaterial
@@ -365,7 +481,7 @@ function RoadJunctionSurface({
   surfaceY: number
 }) {
   const geometry = useMemo(() => {
-    const result = new BufferGeometry()
+    const result = createRoadGeometry()
     result.setAttribute('position', new Float32BufferAttribute(solution.positions, 3))
     result.setIndex(solution.indices)
     result.computeVertexNormals()
@@ -373,7 +489,7 @@ function RoadJunctionSurface({
     result.computeBoundingSphere()
     return result
   }, [solution])
-  useEffect(() => () => geometry.dispose(), [geometry])
+  useRoadGeometryLifecycle(geometry)
   if ((geometry.getAttribute('position')?.count ?? 0) === 0) return null
   return (
     <mesh
@@ -419,7 +535,7 @@ function RoadJunctionSideBand({
     [band.outerWidth, band.width, manualBoundary, solution],
   )
   const geometry = useMemo(() => {
-    const result = new BufferGeometry()
+    const result = createRoadGeometry()
     result.setAttribute('position', new Float32BufferAttribute(surface.positions, 3))
     result.setIndex(surface.indices)
     result.computeVertexNormals()
@@ -427,7 +543,7 @@ function RoadJunctionSideBand({
     result.computeBoundingSphere()
     return result
   }, [surface])
-  useEffect(() => () => geometry.dispose(), [geometry])
+  useRoadGeometryLifecycle(geometry)
   if ((geometry.getAttribute('position')?.count ?? 0) === 0) return null
   return (
     <mesh
@@ -458,7 +574,7 @@ function RoadMarkingSurface({
   polygons: RoadMarkingPolygon[]
 }) {
   const geometry = useMemo(() => {
-    const result = new BufferGeometry()
+    const result = createRoadGeometry()
     const positions: number[] = []
     const indices: number[] = []
     for (const polygon of polygons) {
@@ -475,7 +591,7 @@ function RoadMarkingSurface({
     result.computeBoundingSphere()
     return result
   }, [polygons])
-  useEffect(() => () => geometry.dispose(), [geometry])
+  useRoadGeometryLifecycle(geometry)
   if ((geometry.getAttribute('position')?.count ?? 0) === 0) return null
   return (
     <mesh geometry={geometry} name={name} raycast={NO_RAYCAST}>
@@ -652,7 +768,8 @@ export function RoadNetworkModel({
 		)) : null}
       {!ghost ? <RoadNetworkBridgeStructures node={node} /> : null}
 		{!ghost ? <RoadNetworkEarthworks node={node} terrain={terrain} /> : null}
-      {edgeSurfaces.map(({ decorativeProfile, profile }) => (
+      {edgeSurfaces.map(({ decorativeProfile, profile }) => {
+        return (
         <group key={profile.key}>
           <RoadVariableRibbonSurface
             color={profile.style.surfaceColor}
@@ -670,24 +787,41 @@ export function RoadNetworkModel({
               if (!decorativeProfile.samples.some(
                 (sample) => sample.components[side][spec.kind].width > 1e-4,
               )) return null
-              return (
-                <RoadVariableRibbonSurface
-                  color={spec.color}
-                  elevationOffset={spec.elevationOffset}
-                  ghost={ghost}
-                  key={`${side}:${spec.kind}`}
-                  name={`road-side-${side}-${spec.kind}`}
-                  nonInteractive
-                  samples={decorativeProfile.samples.map((sample) => {
-                    const bounds = sample.components[side][spec.kind]
-                    return {
-                      ...sample,
-                      leftOffset: side === 'left' ? bounds.outerOffset : -bounds.innerOffset,
-                      rightOffset: side === 'left' ? bounds.innerOffset : -bounds.outerOffset,
-                    }
-                  })}
-                />
+              const shapedPolygons = buildRoadsideComponentSurfacePolygons(
+                node,
+                decorativeProfile,
+                side,
+                spec.kind,
+                spec.elevationOffset,
               )
+              return shapedPolygons
+                ? shapedPolygons.map((polygon, polygonIndex) => (
+                    <RoadPolygonSurface
+                      color={spec.color}
+                      ghost={ghost}
+                      key={`${side}:${spec.kind}:shape:${polygonIndex}`}
+                      name={`road-side-${side}-${spec.kind}`}
+                      polygon={polygon}
+                    />
+                  ))
+                : [(
+                  <RoadVariableRibbonSurface
+                    color={spec.color}
+                    elevationOffset={spec.elevationOffset}
+                    ghost={ghost}
+                    key={`${side}:${spec.kind}:full`}
+                    name={`road-side-${side}-${spec.kind}`}
+                    nonInteractive
+                    samples={decorativeProfile.samples.map((sample) => {
+                      const bounds = sample.components[side][spec.kind]
+                      return {
+                        ...sample,
+                        leftOffset: side === 'left' ? bounds.outerOffset : -bounds.innerOffset,
+                        rightOffset: side === 'left' ? bounds.innerOffset : -bounds.outerOffset,
+                      }
+                    })}
+                  />
+                )]
             }),
           )}
           {!ghost && decorativeProfile.samples.some((sample) => sample.medianWidth > 1e-4) ? (
@@ -704,7 +838,8 @@ export function RoadNetworkModel({
             />
           ) : null}
         </group>
-      ))}
+        )
+      })}
       {!ghost
         ? markingGroups.map((group) => (
             <RoadMarkingSurface

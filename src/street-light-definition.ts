@@ -77,6 +77,7 @@ export const streetLightDefinition: StreetLightDefinition = {
     lightOn: false,
     lightColor: '#ffd9a3',
     intensity: 1200,
+    roadAttachment: undefined,
   }),
 
   capabilities: {

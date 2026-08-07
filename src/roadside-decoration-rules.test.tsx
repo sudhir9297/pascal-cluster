@@ -16,10 +16,12 @@ import {
 	buildRoadsideDecorationPreviews,
 	buildRoadsideDecorations,
 	ensureRoadsideLampVerge,
+	materializeRoadsideDecorationSelection,
 	ROADSIDE_LAMP_MIN_VERGE_WIDTH,
 	ROADSIDE_SIGN_LAMP_MIN_SEPARATION,
 	RoadsideDecorationInspector,
 } from "./roadside-decoration-rules";
+import { roadSignParametrics } from "./road-sign-parametrics";
 import { RoadNetworkNode } from "./schema";
 import {
 	createEmptyRoadGraph,
@@ -48,6 +50,59 @@ function tJunctionRoad() {
 }
 
 describe("semantic roadside decoration rules", () => {
+	test("materializes a clicked roadside lamp as the only selected scene node", () => {
+		const network = longRoad();
+		const lamp = Object.values(network.roadsideDecorations).find(
+			(decoration) => decoration.kind === "lamp",
+		)!;
+
+		const result = materializeRoadsideDecorationSelection(network, lamp.id, []);
+
+		expect(result).not.toBeNull();
+		if (!result) throw new Error("Expected the roadside lamp to materialize");
+		expect(result.selection.selectedIds).toEqual([result.node.id]);
+		expect(result.selection.selectedIds).not.toContain(network.id);
+		expect(result.node.type).toBe("environment:street-light");
+		expect(result.node.roadAttachment?.networkNodeId).toBe(network.id);
+		expect(result.networkPatch.roadsideDecorationSuppressed?.[lamp.id]).toBe(true);
+		expect(result.networkPatch.attachments?.[result.attachment.id]).toEqual(
+			result.attachment,
+		);
+	});
+
+	test("materializes a clicked roadside sign as the only selected scene node", () => {
+		const network = longRoad();
+		const sign = Object.values(network.roadsideDecorations).find(
+			(decoration) => decoration.kind === "sign",
+		)!;
+
+		const result = materializeRoadsideDecorationSelection(network, sign.id, []);
+
+		expect(result).not.toBeNull();
+		if (!result) throw new Error("Expected the roadside sign to materialize");
+		expect(result.selection.selectedIds).toEqual([result.node.id]);
+		expect(result.selection.selectedIds).not.toContain(network.id);
+		expect(result.node.type).toBe("environment:road-sign");
+		expect(result.node.roadAttachment?.networkNodeId).toBe(network.id);
+		expect(result.networkPatch.roadsideDecorationSuppressed?.[sign.id]).toBe(true);
+		expect(result.networkPatch.attachments?.[result.attachment.id]).toEqual(
+			result.attachment,
+		);
+
+		const updatedRoad = RoadNetworkNode.parse({ ...network, ...result.networkPatch });
+		const deletionPatches = roadSignParametrics.onDelete?.(
+			result.node as never,
+			{ [updatedRoad.id]: updatedRoad, [result.node.id]: result.node } as never,
+		) ?? [];
+		expect(deletionPatches).toHaveLength(1);
+		expect(String(deletionPatches[0]!.id)).toBe(String(network.id));
+		expect(deletionPatches[0]!.data).toMatchObject({
+			roadsideDecorationSuppressed: { [sign.id]: true },
+		});
+		expect((deletionPatches[0]!.data as { attachments: Record<string, unknown> }).attachments)
+			.not.toHaveProperty(result.attachment.id);
+	});
+
 	test("derives stable lamps and terminal signs only", () => {
 		const node = longRoad();
 		const items = Object.values(node.roadsideDecorations);
@@ -762,6 +817,8 @@ describe("semantic roadside decoration rules", () => {
 		expect(markup).toContain('aria-label="Roadside item visibility"');
 		expect(markup).toContain('aria-label="Roadside lamp sides"');
 		expect(markup).toContain('aria-label="Roadside decoration spacing"');
+		expect(markup).toContain('aria-label="Auto-fill roadside"');
+		expect(markup).toContain("Auto-fill roadside");
 		expect(markup).toContain("Roadside lamps");
 		expect(markup).toContain("Traffic signals");
 		expect(markup).toContain("Lamps on both sides");

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import { CatmullRomCurve3, Color, CubicBezierCurve3, Object3D, Vector3 } from 'three'
 import type { StreetLightNode } from './schema'
 import {
@@ -81,14 +81,6 @@ export function StreetLightModel({
       ),
     [],
   )
-  useEffect(
-    () => () => {
-      housingGeometry.dispose()
-      lensGeometry.dispose()
-    },
-    [housingGeometry, lensGeometry],
-  )
-
   return (
     <group layers={layer} name="street-light-roadway-led">
       <LampBase baseRadius={0.25} color={poleColor} ghost={ghost} layer={layer} boltOffset={0.14} baseTopRadius={0.88} />

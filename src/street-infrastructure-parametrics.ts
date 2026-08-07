@@ -1,7 +1,9 @@
-import type { ParametricDescriptor } from '@pascal-app/core'
+import type { AnyNode, AnyNodeId, ParametricDescriptor } from '@pascal-app/core'
 import type { StreetInfrastructureNode } from './street-infrastructure-config'
+import type { RoadNetworkNode } from './schema'
 import ParcelBoxOpenControl from './parcel-box-open-control'
 import DrivewayGateOpenControl from './driveway-gate-open-control'
+import MailboxOpenControl from './mailbox-open-control'
 
 const trafficSignalParametrics: ParametricDescriptor<any> = {
   groups: [
@@ -290,6 +292,22 @@ const parcelBoxParametrics: ParametricDescriptor<any> = {
   ],
 }
 
+const mailboxParametrics: ParametricDescriptor<any> = {
+  groups: [
+    {
+      label: 'Open Animation',
+      fields: [
+        {
+          key: 'open',
+          kind: 'custom',
+          component: MailboxOpenControl,
+        },
+      ],
+    },
+    ...residentialRoadAssetParametrics.groups,
+  ],
+}
+
 const drivewayGateParametrics: ParametricDescriptor<any> = {
   groups: [
     {
@@ -309,14 +327,40 @@ const drivewayGateParametrics: ParametricDescriptor<any> = {
 export function getStreetInfrastructureParametrics(
   kind: string,
 ): ParametricDescriptor<StreetInfrastructureNode> {
-  if (kind === 'environment:traffic-signal') return trafficSignalParametrics
-  if (kind === 'environment:drainage-inlet') return drainageInletParametrics
-  if (kind === 'environment:manhole-cover') return manholeCoverParametrics
-  if (kind === 'environment:fire-hydrant') return fireHydrantParametrics
-  if (kind === 'environment:traffic-bollard') return trafficBollardParametrics
-  if (kind === 'environment:road-barrier') return roadBarrierParametrics
-  if (kind === 'environment:driveway') return drivewayParametrics
-  if (kind === 'environment:parcel-box') return parcelBoxParametrics
-  if (kind === 'environment:residential-gate') return drivewayGateParametrics
-  return residentialRoadAssetParametrics
+  const descriptor = kind === 'environment:traffic-signal' ? trafficSignalParametrics
+    : kind === 'environment:drainage-inlet' ? drainageInletParametrics
+    : kind === 'environment:manhole-cover' ? manholeCoverParametrics
+    : kind === 'environment:fire-hydrant' ? fireHydrantParametrics
+    : kind === 'environment:traffic-bollard' ? trafficBollardParametrics
+    : kind === 'environment:road-barrier' ? roadBarrierParametrics
+    : kind === 'environment:driveway' ? drivewayParametrics
+    : kind === 'environment:mailbox' ? mailboxParametrics
+    : kind === 'environment:parcel-box' ? parcelBoxParametrics
+    : kind === 'environment:residential-gate' ? drivewayGateParametrics
+    : residentialRoadAssetParametrics
+  return {
+    ...descriptor,
+    onDelete: (node, nodes) => {
+      const ref = node.roadAttachment
+      if (!ref) return []
+      const road = nodes[ref.networkNodeId as AnyNodeId] as unknown as RoadNetworkNode | undefined
+      const attachment = road?.attachments?.[ref.attachmentId]
+      if (!road || !attachment) return []
+      const { [ref.attachmentId]: _removed, ...attachments } = road.attachments
+      return [{
+        id: road.id as AnyNodeId,
+        data: {
+          attachments,
+          ...(attachment.generatedKey
+            ? {
+                roadsideItemSuppressed: {
+                  ...(road.roadsideItemSuppressed ?? {}),
+                  [attachment.generatedKey]: true,
+                },
+              }
+            : null),
+        } as Partial<AnyNode>,
+      }]
+    },
+  }
 }

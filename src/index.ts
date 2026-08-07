@@ -238,14 +238,20 @@ export {
 export { sampleRoadEdgePoints, type RoadGeometryPoint } from './road-network-geometry'
 export {
   buildRoadAutoInfrastructure,
+  buildRoadAutoInfrastructurePlan,
+  planRoadAutoInfrastructureAttachmentMigration,
   DEFAULT_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
+  FULL_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
   type RoadAutoInfrastructureSettings,
+  type RoadAutoInfrastructurePlan,
+  type RoadAutoInfrastructureAttachmentMigrationPlan,
 } from './road-auto-infrastructure'
 export {
   buildSignalJunctionPlacements,
   createRoadAttachmentForPlacement,
   findRoadAttachmentTarget,
   resolveRoadAttachmentTransform,
+  reanchorRoadAttachment,
   type RoadAttachmentAssetKind,
   type RoadAttachmentTarget,
   type RoadAttachmentTransform,

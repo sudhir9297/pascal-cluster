@@ -53,7 +53,7 @@ type ResidentialRoadDimensions = {
 
 const RESIDENTIAL_ROAD_DEFAULTS: Record<ResidentialRoadAssetNode['type'], ResidentialRoadDimensions> = {
   'environment:driveway': { width: 3.2, length: 5.5, height: 0.12, depth: 0.12 },
-  'environment:mailbox': { width: 0.46, length: 0.32, height: 1.18, depth: 0.12 },
+  'environment:mailbox': { width: 0.4, length: 0.5, height: 1.65, depth: 0.12 },
   'environment:parcel-box': { width: 0.7, length: 0.48, height: 1.22, depth: 0.12 },
   'environment:trash-bin': { width: 1.35, length: 0.86, height: 1.2, depth: 0.06 },
   'environment:recycling-bin': { width: 0.58, length: 0.66, height: 1.05, depth: 0.06 },
@@ -139,7 +139,25 @@ export function resolveResidentialRoadAssetLayout(
     && node.height === 0.11
     && node.bodyColor === '#5a5b58'
     && node.accentColor === '#e7dfb9'
-  const useCurrentDefaults = untouchedLegacyTrashBin || untouchedLegacySpeedHump
+  const untouchedLegacyMailbox = node.type === 'environment:mailbox'
+    && node.height === 1.18
+    && (
+      (
+        node.width === 0.46
+        && node.length === 0.32
+        && node.bodyColor === '#263b32'
+        && node.accentColor === '#bd4336'
+      )
+      || (
+        node.width === 0.42
+        && (node.length === 0.62 || node.length === 0.78)
+        && node.bodyColor === '#17191a'
+        && node.accentColor === '#e23a31'
+      )
+    )
+  const useCurrentDefaults = untouchedLegacyTrashBin
+    || untouchedLegacySpeedHump
+    || untouchedLegacyMailbox
   const width = clampFinite(useCurrentDefaults ? defaults.width : node.width, defaults.width, 0.1, 20)
   const length = clampFinite(useCurrentDefaults ? defaults.length : node.length, defaults.length, 0.1, 20)
   const height = clampFinite(useCurrentDefaults ? defaults.height : node.height, defaults.height, 0.05, 4)

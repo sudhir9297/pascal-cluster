@@ -1,5 +1,5 @@
-import type { ParametricDescriptor } from '@pascal-app/core'
-import type { StreetLightNode } from './schema'
+import type { AnyNode, AnyNodeId, ParametricDescriptor } from '@pascal-app/core'
+import type { RoadNetworkNode, StreetLightNode } from './schema'
 
 export const streetLightParametrics: ParametricDescriptor<StreetLightNode> = {
   groups: [
@@ -31,4 +31,26 @@ export const streetLightParametrics: ParametricDescriptor<StreetLightNode> = {
       fields: [{ key: 'position', kind: 'vec3' }],
     },
   ],
+  onDelete: (node, nodes) => {
+    const ref = node.roadAttachment
+    if (!ref) return []
+    const road = nodes[ref.networkNodeId as AnyNodeId] as unknown as RoadNetworkNode | undefined
+    const attachment = road?.attachments?.[ref.attachmentId]
+    if (!road || !attachment) return []
+    const { [ref.attachmentId]: _removed, ...attachments } = road.attachments
+    return [{
+      id: road.id as AnyNodeId,
+      data: {
+        attachments,
+        ...(attachment.generatedKey
+          ? {
+              roadsideDecorationSuppressed: {
+                ...(road.roadsideDecorationSuppressed ?? {}),
+                [attachment.generatedKey]: true,
+              },
+            }
+          : null),
+      } as Partial<AnyNode>,
+    }]
+  },
 }

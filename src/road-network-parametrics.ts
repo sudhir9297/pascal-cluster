@@ -1,4 +1,5 @@
 import type { ParametricDescriptor } from "@pascal-app/core";
+import type { AnyNodeId } from "@pascal-app/core";
 import { RoadCrossSectionInspector } from "./road-network-cross-section-inspector";
 import { RoadJunctionInspector } from "./road-network-junction-inspector";
 import { RoadsideDecorationInspector } from "./roadside-decoration-rules";
@@ -8,6 +9,8 @@ import { RoadTerrainEditor } from "./road-network-terrain-inspector";
 import type { RoadNetworkNode } from "./schema";
 
 export const roadNetworkParametrics: ParametricDescriptor<RoadNetworkNode> = {
+	onDeleteCascade: (node) => Object.values(node.attachments ?? {})
+		.map((attachment) => attachment.assetNodeId as AnyNodeId),
 	groups: [
 		{
 			label: "Style",

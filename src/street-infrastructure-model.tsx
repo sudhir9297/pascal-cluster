@@ -64,6 +64,15 @@ export function resolveParcelBoxOpenPose(operationState: number) {
   }
 }
 
+/** Fold the mailbox's bottom-hinged front door outward. */
+export function resolveMailboxOpenPose(operationState: number) {
+  const doorProgress = clamp01(operationState)
+  return {
+    doorAngle: -doorProgress * Math.PI * 0.48,
+    doorProgress,
+  }
+}
+
 function roundedRectangleRing(
   width: number,
   depth: number,
@@ -879,6 +888,212 @@ type ResidentialRoadAssetModelProps = {
     | SpeedHumpNode
 }
 
+function buildMailboxProfileGeometry(
+  width: number,
+  height: number,
+  length: number,
+  bevel = 0.008,
+  wallThickness = 0,
+): BufferGeometry {
+  const roofRadius = width / 2
+  const shoulderY = Math.max(height * 0.36, height - roofRadius)
+  const shape = new Shape()
+  shape.moveTo(-width / 2, 0)
+  shape.lineTo(-width / 2, shoulderY)
+  shape.absarc(0, shoulderY, roofRadius, Math.PI, 0, true)
+  shape.lineTo(width / 2, 0)
+  shape.closePath()
+
+  if (wallThickness > 0) {
+    const innerRadius = roofRadius - wallThickness
+    const inner = new Shape()
+    inner.moveTo(-width / 2 + wallThickness, wallThickness)
+    inner.lineTo(width / 2 - wallThickness, wallThickness)
+    inner.lineTo(width / 2 - wallThickness, shoulderY)
+    inner.absarc(0, shoulderY, innerRadius, 0, Math.PI, false)
+    inner.closePath()
+    shape.holes.push(inner)
+  }
+
+  const geometry = new ExtrudeGeometry(shape, {
+    bevelEnabled: bevel > 0,
+    bevelSegments: 3,
+    bevelSize: bevel,
+    bevelThickness: bevel,
+    curveSegments: 16,
+    depth: length,
+    steps: 1,
+  })
+  geometry.translate(0, 0, -length / 2)
+  geometry.computeVertexNormals()
+  geometry.computeBoundingBox()
+  geometry.computeBoundingSphere()
+  return geometry
+}
+
+function CurbsideMailboxModel({
+  ghost,
+  layer,
+  layout,
+  node,
+}: {
+  ghost: boolean
+  layer: number
+  layout: ReturnType<typeof resolveResidentialRoadAssetLayout>
+  node: MailboxNode
+}) {
+  const bodyHeight = Math.min(layout.height * 0.31, layout.width * 0.88)
+  const bodyBottom = layout.height - bodyHeight
+  const bodyColor = node.bodyColor === '#263b32' ? '#17191a' : node.bodyColor
+  const flagColor = node.accentColor === '#bd4336' ? '#e23a31' : node.accentColor
+  const shellGeometry = useMemo(
+    () => buildMailboxProfileGeometry(
+      layout.width,
+      bodyHeight,
+      layout.length,
+      0.008,
+      Math.max(0.012, layout.width * 0.032),
+    ),
+    [bodyHeight, layout.length, layout.width],
+  )
+  const doorGeometry = useMemo(
+    () => buildMailboxProfileGeometry(layout.width * 0.91, bodyHeight * 0.91, 0.012, 0.003),
+    [bodyHeight, layout.width],
+  )
+  useEffect(() => () => {
+    shellGeometry.dispose()
+    doorGeometry.dispose()
+  }, [doorGeometry, shellGeometry])
+
+  const common = { castShadow: !ghost, layers: layer, receiveShadow: true }
+  const metal = (color: string, roughness = 0.48, metalness = 0.48) => (
+    <meshStandardMaterial
+      color={color}
+      metalness={metalness}
+      opacity={ghost ? 0.62 : 1}
+      roughness={roughness}
+      transparent={ghost}
+    />
+  )
+  const postRadius = Math.max(0.027, layout.width * 0.065)
+  const frontZ = -layout.length / 2
+  const flagX = layout.width / 2 + 0.014
+  const pivotY = bodyBottom + bodyHeight * 0.45
+  const flagTop = layout.height + bodyHeight * 0.34
+  const flagArmHeight = flagTop - pivotY
+  const pose = resolveMailboxOpenPose(node.operationState)
+
+  return (
+    <group name="reference-curbside-mailbox">
+      <mesh {...common} name="mailbox-post" position={[0, bodyBottom / 2, 0]}>
+        <cylinderGeometry args={[postRadius, postRadius * 1.04, bodyBottom, 20]} />
+        {metal(bodyColor, 0.58, 0.36)}
+      </mesh>
+      <mesh {...common} name="mailbox-post-cap" position={[0, bodyBottom - 0.035, 0]}>
+        <cylinderGeometry args={[postRadius * 1.45, postRadius * 1.45, 0.07, 20]} />
+        {metal(bodyColor, 0.52, 0.4)}
+      </mesh>
+
+      <mesh
+        {...common}
+        geometry={shellGeometry}
+        name="mailbox-arched-shell"
+        position={[0, bodyBottom, 0]}
+      >
+        {metal(bodyColor, 0.38, 0.58)}
+      </mesh>
+      <mesh
+        {...common}
+        geometry={doorGeometry}
+        name="mailbox-rear-panel"
+        position={[0, bodyBottom + bodyHeight * 0.045, layout.length / 2 + 0.006]}
+      >
+        {metal(bodyColor, 0.44, 0.5)}
+      </mesh>
+
+      <group
+        name="mailbox-hinged-front-door"
+        position={[0, bodyBottom, frontZ]}
+        rotation={[pose.doorAngle, 0, 0]}
+      >
+        <mesh
+          {...common}
+          geometry={doorGeometry}
+          name="mailbox-front-door"
+          position={[0, bodyHeight * 0.045, -0.012]}
+        >
+          {metal(bodyColor, 0.44, 0.5)}
+        </mesh>
+        <mesh
+          {...common}
+          name="mailbox-door-handle"
+          position={[0, bodyHeight * 0.58, -0.034]}
+        >
+          <boxGeometry args={[layout.width * 0.38, bodyHeight * 0.045, 0.035]} />
+          {metal('#242728', 0.3, 0.72)}
+        </mesh>
+        {([-1, 1] as const).map((side) => (
+          <mesh
+            {...common}
+            key={`mailbox-handle-mount:${side}`}
+            name="mailbox-door-handle-mount"
+            position={[side * layout.width * 0.17, bodyHeight * 0.55, -0.025]}
+          >
+            <boxGeometry args={[layout.width * 0.045, bodyHeight * 0.11, 0.026]} />
+            {metal('#242728', 0.32, 0.7)}
+          </mesh>
+        ))}
+        <mesh
+          {...common}
+          name="mailbox-door-lock-bezel"
+          position={[0, bodyHeight * 0.28, -0.032]}
+          rotation={[Math.PI / 2, 0, 0]}
+        >
+          <cylinderGeometry args={[bodyHeight * 0.04, bodyHeight * 0.04, 0.018, 20]} />
+          {metal('#b8bcba', 0.24, 0.86)}
+        </mesh>
+        <mesh
+          {...common}
+          name="mailbox-door-lock-core"
+          position={[0, bodyHeight * 0.28, -0.044]}
+          rotation={[Math.PI / 2, 0, 0]}
+        >
+          <cylinderGeometry args={[bodyHeight * 0.018, bodyHeight * 0.018, 0.01, 16]} />
+          {metal('#35393a', 0.25, 0.78)}
+        </mesh>
+      </group>
+
+      <group name="mailbox-raised-flag" position={[0, 0, -layout.length * 0.28]}>
+        <mesh
+          {...common}
+          name="mailbox-flag-pivot"
+          position={[flagX, pivotY, 0]}
+          rotation={[0, 0, Math.PI / 2]}
+        >
+          <cylinderGeometry args={[bodyHeight * 0.055, bodyHeight * 0.055, 0.035, 18]} />
+          {metal(flagColor, 0.4, 0.25)}
+        </mesh>
+        <mesh
+          {...common}
+          name="mailbox-flag-arm"
+          position={[flagX, pivotY + flagArmHeight / 2, 0]}
+        >
+          <boxGeometry args={[0.025, flagArmHeight, 0.025]} />
+          {metal(flagColor, 0.42, 0.18)}
+        </mesh>
+        <mesh
+          {...common}
+          name="mailbox-flag-tab"
+          position={[flagX, flagTop - bodyHeight * 0.05, layout.length * 0.07]}
+        >
+          <boxGeometry args={[0.027, bodyHeight * 0.15, layout.length * 0.22]} />
+          {metal(flagColor, 0.42, 0.18)}
+        </mesh>
+      </group>
+    </group>
+  )
+}
+
 function DrivewaySurface({
   color,
   ghost,
@@ -1567,64 +1782,7 @@ export function ResidentialRoadAssetModel({
   }
 
   if (kind === 'environment:mailbox') {
-    const boxHeight = layout.height * 0.34
-    const postHeight = Math.max(0.25, layout.height - boxHeight)
-    return (
-      <group name="reference-curbside-mailbox">
-        <mesh {...common} name="mailbox-post" position={[0, postHeight / 2, 0]}>
-          <boxGeometry args={[Math.max(0.09, layout.width * 0.18), postHeight, Math.max(0.09, layout.width * 0.15)]} />
-          {material(node.bodyColor, 0.72)}
-        </mesh>
-        <mesh {...common} name="mailbox-post-crossbar" position={[0, postHeight * 0.08, 0]}>
-          <boxGeometry args={[layout.width * 1.55, 0.08, layout.length * 0.72]} />
-          {material(node.bodyColor, 0.72)}
-        </mesh>
-        <mesh {...common} name="mailbox-body" position={[0, postHeight + boxHeight / 2, 0]}>
-          <boxGeometry args={[layout.width, boxHeight * 0.68, layout.length]} />
-          {material(node.bodyColor, 0.56)}
-        </mesh>
-        <mesh {...common} name="mailbox-tunnel-top" position={[0, postHeight + boxHeight * 0.82, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <cylinderGeometry args={[layout.width / 2, layout.width / 2, layout.length, 16, 1, false, 0, Math.PI]} />
-          {material(node.bodyColor, 0.52)}
-        </mesh>
-        {[-1, 1].map((side) => (
-          <group key={`mailbox-door:${side}`} name={`mailbox-access-door-${side === -1 ? 'front' : 'rear'}`}>
-            <mesh {...common} name="mailbox-door-panel" position={[0, postHeight + boxHeight * 0.53, side * (layout.length / 2 + 0.008)]}>
-              <boxGeometry args={[layout.width * 0.92, boxHeight * 0.46, 0.018]} />
-              {material(node.bodyColor, 0.5)}
-            </mesh>
-            <mesh {...common} name="mailbox-door-handle" position={[0, postHeight + boxHeight * 0.52, side * (layout.length / 2 + 0.021)]}>
-              <boxGeometry args={[layout.width * 0.42, boxHeight * 0.1, 0.012]} />
-              {material(node.accentColor, 0.42)}
-            </mesh>
-            <mesh {...common} name="mailbox-door-arch" position={[0, postHeight + boxHeight * 0.74, side * (layout.length / 2 + 0.021)]} rotation={[Math.PI / 2, 0, 0]}>
-              <cylinderGeometry args={[layout.width * 0.46, layout.width * 0.46, 0.018, 16, 1, false, 0, Math.PI]} />
-              {material(node.bodyColor, 0.5)}
-            </mesh>
-            <mesh {...common} name="mailbox-door-lock" position={[0, postHeight + boxHeight * 0.3, side * (layout.length / 2 + 0.022)]}>
-              <boxGeometry args={[layout.width * 0.2, boxHeight * 0.055, 0.014]} />
-              {material(node.accentColor, 0.38)}
-            </mesh>
-          </group>
-        ))}
-        {[-1, 1].map((side) => (
-          <group key={`mailbox-flag:${side}`} name={`mailbox-flag-${side === -1 ? 'left' : 'right'}`}>
-            <mesh {...common} name="mailbox-flag-arm" position={[side * (layout.width / 2 + 0.014), postHeight + boxHeight * 0.52, 0]}>
-              <boxGeometry args={[0.025, boxHeight * 0.38, 0.025]} />
-              {material(node.accentColor, 0.42)}
-            </mesh>
-            <mesh {...common} name="mailbox-flag-tab" position={[side * (layout.width / 2 + 0.014), postHeight + boxHeight * 0.7, 0]}>
-              <boxGeometry args={[0.025, 0.025, boxHeight * 0.18]} />
-              {material(node.accentColor, 0.42)}
-            </mesh>
-            <mesh {...common} name="mailbox-flag-pivot" position={[side * (layout.width / 2 + 0.03), postHeight + boxHeight * 0.38, 0]} rotation={[0, 0, Math.PI / 2]}>
-              <cylinderGeometry args={[0.018, 0.018, 0.06, 10]} />
-              {material(node.accentColor, 0.38)}
-            </mesh>
-          </group>
-        ))}
-      </group>
-    )
+    return <CurbsideMailboxModel ghost={ghost} layer={layer} layout={layout} node={node} />
   }
 
   if (kind === 'environment:recycling-bin') {

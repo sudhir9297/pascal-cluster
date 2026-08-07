@@ -2,17 +2,23 @@ import { describe, expect, test } from 'bun:test'
 import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import {
+  createRoadGeometry,
   roadRibbonShadowPolicy,
   RoadDraftPreviewSurface,
   RoadNetworkModel,
+  setRoadGeometryRetained,
 } from './road-network-model'
 import { buildRoadNetworkFloorplan } from './road-network-floorplan'
 import { moveRoadTerminal } from './road-network-extension-handles'
 import type { GeometryContext } from '@pascal-app/core'
 import { createEmptyRoadGraph, insertRoadSegment } from './road-network-topology'
-import { RoadNetworkNode } from './schema'
+import { DrivewayNode, RoadNetworkNode } from './schema'
 import { sampleRoadAlignmentPoints } from './road-network-geometry'
 import { DEFAULT_ROAD_STYLE_PRESETS } from './road-style-presets'
+import {
+  createRoadAttachmentForPlacement,
+  pruneOrphanedRoadAttachments,
+} from './road-edge-attachments'
 
 function renderThree(element: Parameters<typeof renderToStaticMarkup>[0]): string {
   const previousConsoleError = console.error
@@ -26,6 +32,24 @@ function renderThree(element: Parameters<typeof renderToStaticMarkup>[0]): strin
 
 function renderRoad(node: RoadNetworkNode): string {
   return renderThree(createElement(RoadNetworkModel, { node }))
+}
+
+function polygonContains(
+  points: readonly (readonly [number, number])[],
+  target: readonly [number, number],
+): boolean {
+  let inside = false
+  for (let index = 0, previous = points.length - 1; index < points.length; previous = index, index += 1) {
+    const [x1, y1] = points[index]!
+    const [x2, y2] = points[previous]!
+    if (
+      (y1 > target[1]) !== (y2 > target[1])
+      && target[0] < ((x2 - x1) * (target[1] - y1)) / (y2 - y1) + x1
+    ) {
+      inside = !inside
+    }
+  }
+  return inside
 }
 
 describe('road network corner rendering', () => {
@@ -122,6 +146,123 @@ describe('road network corner rendering', () => {
     expect(polygons.some((polygon) => polygon.fill === '#44484c')).toBe(true)
     expect(polygons.some((polygon) => polygon.fill === '#517665')).toBe(true)
     expect(polygons.some((polygon) => polygon.fill === '#85888a')).toBe(true)
+  })
+
+  test('cuts every roadside band across an attached driveway mouth', () => {
+    const result = insertRoadSegment(createEmptyRoadGraph(), [-10, 0, 0], [10, 0, 0])
+    const edgeId = result.createdEdgeIds[0]!
+    const node = RoadNetworkNode.parse({
+      ...result.graph,
+      attachments: {
+        'driveway_1:road': {
+          id: 'driveway_1:road',
+          edgeId,
+          assetNodeId: 'driveway_1',
+          kind: 'asset',
+          station: 10,
+          lateralOffset: 6.5,
+          verticalOffset: 0,
+          alignment: 'carriageway',
+          side: 'left',
+          roadOpeningWidth: 3.2,
+        },
+      },
+    })
+
+    expect(node.attachments['driveway_1:road']?.roadOpeningWidth).toBe(3.2)
+    const markup = renderRoad(node)
+    for (const kind of ['gutter', 'curb', 'verge', 'sidewalk']) {
+      expect(markup.match(new RegExp(`name="road-side-left-${kind}`, 'g'))).toHaveLength(2)
+      expect(markup.match(new RegExp(`name="road-side-right-${kind}`, 'g'))).toHaveLength(1)
+    }
+
+    const floorplan = buildRoadNetworkFloorplan(node, {} as GeometryContext)
+    expect(floorplan.kind).toBe('group')
+    if (floorplan.kind !== 'group') return
+    const coversDrivewayMouth = floorplan.children.some((child) => {
+      if (child.kind !== 'polygon' || child.fill !== '#748166') return false
+      let inside = false
+      for (let index = 0, previous = child.points.length - 1; index < child.points.length; previous = index, index += 1) {
+        const [x1, y1] = child.points[index]!
+        const [x2, y2] = child.points[previous]!
+        if ((y1 > 4.475) !== (y2 > 4.475) && 0 < ((x2 - x1) * (4.475 - y1)) / (y2 - y1) + x1) {
+          inside = !inside
+        }
+      }
+      return inside
+    })
+    expect(coversDrivewayMouth).toBe(false)
+  })
+
+  test('shifts the roadside opening to match curved-left and curved-right mouths', () => {
+    const result = insertRoadSegment(createEmptyRoadGraph(), [-10, 0, 0], [10, 0, 0])
+    const road = RoadNetworkNode.parse(result.graph)
+    for (const [shape, curvedEdgeX] of [
+      ['curved-left', -0.41],
+      ['curved-right', 0.41],
+    ] as const) {
+      const attached = createRoadAttachmentForPlacement({
+        assetNodeId: `driveway_${shape}`,
+        id: `driveway_${shape}:road`,
+        kind: 'environment:driveway',
+        node: DrivewayNode.parse({ drivewayShape: shape, curveAmount: 2.5 }),
+        networks: [road],
+        point: [0, 0, 5],
+      })
+      expect(attached).not.toBeNull()
+      const node = RoadNetworkNode.parse({
+        ...road,
+        attachments: { [attached!.attachment.id]: attached!.attachment },
+      })
+      const floorplan = buildRoadNetworkFloorplan(node, {} as GeometryContext)
+      expect(floorplan.kind).toBe('group')
+      if (floorplan.kind !== 'group') continue
+      const vergeCovers = (point: readonly [number, number]) => floorplan.children.some(
+        (child) => child.kind === 'polygon'
+          && child.fill === '#748166'
+          && polygonContains(child.points, point),
+      )
+      expect(vergeCovers([curvedEdgeX, 4.26])).toBe(true)
+      expect(vergeCovers([curvedEdgeX, 4.65])).toBe(false)
+    }
+  })
+
+  test('restores continuous roadside bands when the driveway asset is deleted', () => {
+    const result = insertRoadSegment(createEmptyRoadGraph(), [-10, 0, 0], [10, 0, 0])
+    const edgeId = result.createdEdgeIds[0]!
+    const attachments = RoadNetworkNode.parse({
+      ...result.graph,
+      attachments: {
+        driveway_deleted: {
+          id: 'driveway_deleted',
+          edgeId,
+          assetNodeId: 'driveway_deleted',
+          kind: 'asset',
+          station: 10,
+          lateralOffset: 6.5,
+          verticalOffset: 0,
+          alignment: 'carriageway',
+          side: 'left',
+          roadOpeningWidth: 3.2,
+        },
+      },
+    }).attachments
+
+    expect(pruneOrphanedRoadAttachments(attachments, new Set(['driveway_deleted']))).toBe(attachments)
+    const pruned = pruneOrphanedRoadAttachments(attachments, new Set())
+    expect(pruned).toEqual({})
+    const node = RoadNetworkNode.parse({ ...result.graph, attachments: pruned })
+    const markup = renderRoad(node)
+    expect(markup.match(/name="road-side-left-verge"/g)).toHaveLength(1)
+
+    const floorplan = buildRoadNetworkFloorplan(node, {} as GeometryContext)
+    expect(floorplan.kind).toBe('group')
+    if (floorplan.kind !== 'group') return
+    expect(floorplan.children.some(
+      (child) => child.kind === 'polygon'
+        && child.fill === '#748166'
+        && polygonContains(child.points, [0, 4.475]),
+    )).toBe(true)
   })
 
   test('renders topology-driven centerlines, arrows, stop lines, and crosswalks', () => {
@@ -321,5 +462,32 @@ describe('road network corner rendering', () => {
     const emptyPositionAttribute = 'count="0"'
 
     expect(markup).not.toContain(emptyPositionAttribute)
+  })
+})
+
+describe('road WebGPU resource lifecycle', () => {
+  test('does not dispose a geometry that is mounted or remounted before retirement', async () => {
+    const geometry = createRoadGeometry()
+    let disposeCount = 0
+    geometry.addEventListener('dispose', () => {
+      disposeCount += 1
+    })
+
+    setRoadGeometryRetained(geometry, true)
+    geometry.dispose()
+    await Bun.sleep(550)
+    expect(disposeCount).toBe(0)
+
+    setRoadGeometryRetained(geometry, false)
+    geometry.dispose()
+    await Bun.sleep(250)
+    setRoadGeometryRetained(geometry, true)
+    await Bun.sleep(300)
+    expect(disposeCount).toBe(0)
+
+    setRoadGeometryRetained(geometry, false)
+    geometry.dispose()
+    await Bun.sleep(550)
+    expect(disposeCount).toBe(1)
   })
 })

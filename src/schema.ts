@@ -17,6 +17,18 @@ import {
 } from "./utility-pole-geometry";
 import { WALL_ARM_LIGHT_DIMENSIONS } from "./wall-arm-light-geometry";
 
+/** A reverse reference from a placeable asset back to its road-edge anchor. */
+export const RoadAttachmentAlignment = z.enum(["free", "carriageway", "gutter", "curb", "junction"]);
+export type RoadAttachmentAlignment = z.infer<typeof RoadAttachmentAlignment>;
+
+export const RoadAttachmentRef = z.object({
+	networkNodeId: z.string().min(1),
+	attachmentId: z.string().min(1),
+	/** The authored road side lets two-sided assets mirror their curb hardware. */
+	side: z.enum(["left", "right"]).optional(),
+});
+export type RoadAttachmentRef = z.infer<typeof RoadAttachmentRef>;
+
 /** A catalog-driven roadside sign with a reusable plate, graphic, and post. */
 export const RoadSignNode = BaseNode.extend({
 	id: objectId("road-sign"),
@@ -30,6 +42,7 @@ export const RoadSignNode = BaseNode.extend({
 	text: z.string().max(32).default(""),
 	postColor: z.string().default("#687177"),
 	backColor: z.string().default("#747d83"),
+	roadAttachment: RoadAttachmentRef.optional(),
 });
 
 export type RoadSignNode = z.infer<typeof RoadSignNode>;
@@ -85,6 +98,7 @@ export const StreetLightNode = BaseNode.extend({
 	lightOn: z.boolean().default(false),
 	lightColor: z.string().default("#ffd9a3"),
 	intensity: z.number().min(0).max(5000).default(1200),
+	roadAttachment: RoadAttachmentRef.optional(),
 });
 
 export type StreetLightNode = z.infer<typeof StreetLightNode>;
@@ -573,18 +587,6 @@ export const UtilityWireSpanNode = BaseNode.extend({
 
 export type UtilityWireSpanNode = z.infer<typeof UtilityWireSpanNode>;
 
-/** A reverse reference from a placeable asset back to its road-edge anchor. */
-export const RoadAttachmentAlignment = z.enum(["free", "carriageway", "gutter", "curb", "junction"]);
-export type RoadAttachmentAlignment = z.infer<typeof RoadAttachmentAlignment>;
-
-export const RoadAttachmentRef = z.object({
-	networkNodeId: z.string().min(1),
-	attachmentId: z.string().min(1),
-	/** The authored road side lets two-sided assets mirror their curb hardware. */
-	side: z.enum(["left", "right"]).optional(),
-});
-export type RoadAttachmentRef = z.infer<typeof RoadAttachmentRef>;
-
 /** A modular vehicle signal with field-realistic head layouts and support hardware. */
 export const TrafficSignalNode = BaseNode.extend({
 	id: objectId("traffic-signal"),
@@ -747,8 +749,11 @@ export type DrivewayNode = z.infer<typeof DrivewayNode>;
 export const MailboxNode = residentialRoadAssetSchema(
 	"mailbox",
 	"environment:mailbox",
-  { width: 0.46, length: 0.32, height: 1.18, depth: 0.12, bodyColor: "#263b32", accentColor: "#bd4336" },
-);
+  { width: 0.4, length: 0.5, height: 1.65, depth: 0.12, bodyColor: "#17191a", accentColor: "#e23a31" },
+).extend({
+	/** Front-door animation position: 0 is closed and 1 is folded fully open. */
+	operationState: z.number().min(0).max(1).default(0),
+});
 export type MailboxNode = z.infer<typeof MailboxNode>;
 
 /** A larger curbside parcel-delivery box. */
@@ -910,6 +915,15 @@ export const RoadsideDecoration = z.object({
 
 export type RoadsideDecoration = z.infer<typeof RoadsideDecoration>;
 
+const RoadOpeningProfileSample = z.object({
+	/** Distance out from the carriageway edge through the roadside bands. */
+	outwardOffset: z.number().min(0).max(20),
+	/** First driveway edge, measured along the directed road from the attachment station. */
+	startOffset: z.number().min(-20).max(20),
+	/** Second driveway edge, measured along the directed road from the attachment station. */
+	endOffset: z.number().min(-20).max(20),
+});
+
 const RoadsideDecorations = z.preprocess(
 	(value) => {
 		if (!(value && typeof value === "object") || Array.isArray(value)) return value;
@@ -935,10 +949,24 @@ export const RoadEdgeAttachment = z.object({
 	assetNodeId: z.string().min(1),
 	kind: z.enum(["sign", "lamp", "asset"]).default("asset"),
 	station: z.number().min(0).default(0),
+	/** Signed distance beyond the projected station, primarily for adjusted endpoint items. */
+	longitudinalOffset: z.number().optional(),
 	lateralOffset: z.number().default(0),
 	verticalOffset: z.number().default(0),
+	/** Width of a real opening cut through roadside bands for this attachment. */
+	roadOpeningWidth: z.number().min(0.1).max(20).optional(),
+	/** Signed road-chainage shift from the asset anchor to the opening mouth. */
+	roadOpeningOffset: z.number().min(-20).max(20).optional(),
+	/** Sampled driveway edges used to cut a shape-following opening through roadside bands. */
+	roadOpeningProfile: z.array(RoadOpeningProfileSample).min(2).max(65).optional(),
+	/** Yaw relative to the directed road tangent. */
+	headingOffset: z.number().optional(),
 	alignment: RoadAttachmentAlignment.default("free"),
 	side: z.enum(["left", "right"]).optional(),
+	/** Generated anchors may reflow; adjusted anchors preserve user-authored offsets. */
+	placementMode: z.enum(["generated", "adjusted"]).optional(),
+	/** Stable identity used to reconcile an automatically generated asset. */
+	generatedKey: z.string().min(1).optional(),
 	/** Junction-originated signal assets are kept grouped for idempotent actions. */
 	junctionId: z.string().min(1).optional(),
 });
@@ -985,6 +1013,10 @@ export const RoadNetworkNode = BaseNode.extend({
 	roadsideItemVisibility: z.record(z.string(), z.boolean()).default({}),
 	/** Individual generated lamp/sign IDs removed by the user. */
 	roadsideDecorationSuppressed: z.record(z.string(), z.boolean()).default({}),
+	/** Whether this road should keep its generated roadside inventory reconciled. */
+	roadsideAutoFillEnabled: z.boolean().default(false),
+	/** Generated scene-asset keys explicitly removed by the user. */
+	roadsideItemSuppressed: z.record(z.string(), z.boolean()).default({}),
 	attachments: z.record(z.string(), RoadEdgeAttachment).default({}),
 	junctions: z.record(z.string(), RoadJunction).default({}),
 	stylePresets: z.record(z.string(), RoadStylePreset).default({

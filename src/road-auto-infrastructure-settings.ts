@@ -19,6 +19,18 @@ export const DEFAULT_ROAD_AUTO_INFRASTRUCTURE_SETTINGS: RoadAutoInfrastructureSe
   },
 }
 
+export const FULL_ROAD_AUTO_INFRASTRUCTURE_SETTINGS: RoadAutoInfrastructureSettings = {
+  enabled: true,
+  items: {
+    'environment:traffic-signal': true,
+    'environment:drainage-inlet': true,
+    'environment:manhole-cover': true,
+    'environment:fire-hydrant': true,
+    'environment:traffic-bollard': true,
+    'environment:road-barrier': true,
+  },
+}
+
 export const ROAD_AUTO_INFRASTRUCTURE_OPTIONS: ReadonlyArray<{
   kind: RoadAutoInfrastructureKind
   label: string

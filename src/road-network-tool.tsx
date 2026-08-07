@@ -19,11 +19,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Group } from "three";
 import { buildRoadCrossSection } from "./road-cross-section";
 import {
-	buildRoadAutoInfrastructure,
+	buildRoadAutoInfrastructurePlan,
 	roadAutoInfrastructureAffectedEdgeIds,
 	roadAutoInfrastructureNodeIdsToReplace,
 } from "./road-auto-infrastructure";
 import { applyRoadAutoInfrastructureClearances } from "./road-auto-infrastructure-style";
+import { FULL_ROAD_AUTO_INFRASTRUCTURE_SETTINGS } from "./road-auto-infrastructure-settings";
 import {
 	movingRoadDraftAnchor,
 	roadEndpointAlignmentAnchors,
@@ -397,9 +398,12 @@ function commitSegment(
 		shoulderWidth: store.roadShoulderWidth,
 		sides: store.roadSideComponents,
 	});
+	const autoInfrastructureSettings = existing.some((network) => network.roadsideAutoFillEnabled)
+		? FULL_ROAD_AUTO_INFRASTRUCTURE_SETTINGS
+		: store.roadAutoInfrastructure;
 	const clearedDraftStyle = applyRoadAutoInfrastructureClearances(
 		draftStyle,
-		store.roadAutoInfrastructure,
+		autoInfrastructureSettings,
 	);
 	graph.activeStyleId = draftStyle.id;
 	graph.stylePresets = { ...graph.stylePresets, [draftStyle.id]: clearedDraftStyle };
@@ -507,21 +511,39 @@ function commitSegment(
 			result.createdEdgeIds,
 		);
 		const nodesBeforeReconciliation = Object.values(useScene.getState().nodes);
-		for (const nodeId of roadAutoInfrastructureNodeIdsToReplace({
+		const nodeIdsToReplace = roadAutoInfrastructureNodeIdsToReplace({
 			edgeIds: affectedEdgeIds,
 			existingNodes: nodesBeforeReconciliation,
 			network: targetNetwork,
-		})) {
-			scene.deleteNode(nodeId as AnyNodeId);
-		}
-		const generated = buildRoadAutoInfrastructure({
-			edgeIds: affectedEdgeIds,
-			existingNodes: Object.values(useScene.getState().nodes),
-			network: targetNetwork,
-			settings: store.roadAutoInfrastructure,
 		});
-		for (const node of generated) {
-			scene.createNode(node as unknown as AnyNode, levelId as AnyNodeId);
+		const removedIds = new Set(nodeIdsToReplace);
+		const generated = buildRoadAutoInfrastructurePlan({
+			edgeIds: affectedEdgeIds,
+			existingNodes: nodesBeforeReconciliation.filter((candidate) => !removedIds.has(candidate.id)),
+			network: targetNetwork,
+			settings: targetNetwork.roadsideAutoFillEnabled
+				? FULL_ROAD_AUTO_INFRASTRUCTURE_SETTINGS
+				: store.roadAutoInfrastructure,
+		});
+		const attachments = Object.fromEntries([
+			...Object.entries(targetNetwork.attachments ?? {}).filter(([, attachment]) =>
+				!removedIds.has(attachment.assetNodeId),
+			),
+			...Object.entries(generated.attachments),
+		]);
+		if (generated.nodes.length > 0 || removedIds.size > 0) {
+			scene.applyNodeChanges({
+				delete: nodeIdsToReplace as AnyNodeId[],
+				update: [{
+					id: targetNetwork.id as AnyNodeId,
+					data: { attachments } as Partial<AnyNode>,
+				}],
+				create: generated.nodes.map((node) => ({
+					node: node as unknown as AnyNode,
+					parentId: levelId as AnyNodeId,
+				})),
+			});
+			targetNetwork.attachments = attachments;
 		}
 	}
 	return targetNetwork;
@@ -747,7 +769,10 @@ export default function RoadNetworkTool() {
 			cursorPointRef.current = point;
 			unconstrainedCursorRef.current = unconstrainedPoint;
 			setCursor([...point]);
-			cursorRef.current?.position.set(point[0], point[1], point[2]);
+			// The shared tool may briefly remain mounted while the floorplan host
+			// switches from Road to another environment tool. Its ref is then a DOM
+			// group rather than a Three group, so only update a Three position.
+			cursorRef.current?.position?.set(point[0], point[1], point[2]);
 		};
 		const resetSegmentNumeric = () => {
 			updateDirectionConstraints({

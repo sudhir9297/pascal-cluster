@@ -6,11 +6,13 @@ import {
   DrainageInletNode,
   DrivewayNode,
   FireHydrantNode,
+  MailboxNode,
   ManholeCoverNode,
   ParcelBoxNode,
   TrafficSignalNode,
   TrafficBollardNode,
   RoadBarrierNode,
+  RoadNetworkNode,
   RecyclingBinNode,
   ResidentialGateNode,
   SpeedHumpNode,
@@ -24,6 +26,7 @@ import {
   drainageInletDefinition,
   drivewayDefinition,
   fireHydrantDefinition,
+  mailboxDefinition,
   manholeCoverDefinition,
   roadBarrierDefinition,
   parcelBoxDefinition,
@@ -34,6 +37,7 @@ import {
 } from './street-infrastructure-definition'
 import { buildStreetInfrastructureFloorplan } from './street-infrastructure-floorplan'
 import { getStreetInfrastructureParametrics } from './street-infrastructure-parametrics'
+import { roadNetworkParametrics } from './road-network-parametrics'
 import {
   buildDrivewayPlan,
   resolveDrainageInletLayout,
@@ -47,12 +51,49 @@ import {
   resolveResidentialRoadAssetLayout,
 } from './street-infrastructure-geometry'
 import {
+  resolveMailboxOpenPose,
   resolveParcelBoxOpenPose,
   StreetInfrastructureModel,
 } from './street-infrastructure-model'
 import { resolveDrivewayGateOpenPose } from './driveway-gate-operation'
 
 describe('street infrastructure catalog', () => {
+
+  test('removes and suppresses a generated attachment when its asset is deleted', () => {
+    const asset = FireHydrantNode.parse({
+      roadAttachment: {
+        networkNodeId: 'road-network_test',
+        attachmentId: 'hydrant:road',
+      },
+    })
+    const road = RoadNetworkNode.parse({
+      id: 'road-network_test',
+      attachments: {
+        'hydrant:road': {
+          id: 'hydrant:road',
+          edgeId: 'edge_1',
+          assetNodeId: asset.id,
+          kind: 'asset',
+          station: 4,
+          lateralOffset: 3,
+          verticalOffset: 0,
+          alignment: 'curb',
+          generatedKey: 'auto:hydrant:1',
+        },
+      },
+    })
+    const descriptor = getStreetInfrastructureParametrics(asset.type)
+    const patches = descriptor.onDelete?.(asset, {
+      [road.id]: road,
+      [asset.id]: asset,
+    } as never) ?? []
+
+    expect(patches).toHaveLength(1)
+    expect((patches[0]!.data as any).attachments).toEqual({})
+    expect((patches[0]!.data as any).roadsideItemSuppressed['auto:hydrant:1']).toBe(true)
+    expect(roadNetworkParametrics.onDeleteCascade?.(road, {} as never, new Set()) as unknown)
+      .toEqual([asset.id as string])
+  })
   test('registers six stable utility-menu asset families', () => {
     expect(STREET_INFRASTRUCTURE_VARIANTS.map((variant) => variant.kind)).toEqual([
       'environment:traffic-signal',
@@ -306,6 +347,51 @@ describe('street infrastructure catalog', () => {
     expect(thumbnail.byteLength).toBeGreaterThan(10_000)
     const panel = readFileSync(new URL('./presets-panel.tsx', import.meta.url), 'utf8')
     expect(panel).toContain("'environment:speed-hump': SPEED_HUMP_THUMBNAIL")
+  })
+
+  test('renders the mailbox as a black arched box with one raised red flag', () => {
+    const node = MailboxNode.parse({})
+    expect(node).toMatchObject({
+      width: 0.4,
+      length: 0.5,
+      height: 1.65,
+      bodyColor: '#17191a',
+      accentColor: '#e23a31',
+      operationState: 0,
+    })
+
+    const markup = renderToStaticMarkup(createElement(StreetInfrastructureModel, { node }))
+    expect(markup).toContain('name="mailbox-arched-shell"')
+    expect(markup).toContain('name="mailbox-front-door"')
+    expect(markup).toContain('name="mailbox-raised-flag"')
+    expect(markup.match(/name="mailbox-flag-arm"/g)).toHaveLength(1)
+    expect(markup).not.toContain('name="mailbox-post-crossbar"')
+
+    const descriptor = getStreetInfrastructureParametrics('environment:mailbox')
+    expect(descriptor.groups[0]?.label).toBe('Open Animation')
+    expect(descriptor.groups[0]?.fields[0]).toMatchObject({ key: 'open', kind: 'custom' })
+    const keyboardAction = mailboxDefinition.keyboardActions?.e
+    expect(keyboardAction?.appliesTo(node as never)).toBe(true)
+    expect(keyboardAction?.appliesTo(DrivewayNode.parse({}) as never)).toBe(false)
+
+    expect(resolveMailboxOpenPose(0).doorAngle).toBe(-0)
+    expect(resolveMailboxOpenPose(1).doorAngle).toBeLessThan(-1.5)
+    const openMarkup = renderToStaticMarkup(createElement(StreetInfrastructureModel, {
+      node: MailboxNode.parse({ operationState: 1 }),
+    }))
+    expect(openMarkup).not.toBe(markup)
+
+    const legacyLayout = resolveResidentialRoadAssetLayout(MailboxNode.parse({
+      width: 0.46,
+      length: 0.32,
+      height: 1.18,
+      bodyColor: '#263b32',
+      accentColor: '#bd4336',
+    }))
+    expect(legacyLayout.width).toBe(0.4)
+    expect(legacyLayout.length).toBe(0.5)
+    expect(legacyLayout.height).toBe(1.65)
+    expect(legacyLayout.footprintDepth).toBe(0.5)
   })
 
   test('resizes the speed hump width from either outer-end arrow', () => {

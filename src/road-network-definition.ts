@@ -29,7 +29,7 @@ type RoadNetworkDefinition = NodeDefinition<typeof RoadNetworkNode> &
 
 export const roadNetworkDefinition: RoadNetworkDefinition = {
 	kind: "environment:road-network",
-	schemaVersion: 32,
+	schemaVersion: 33,
 	schema: RoadNetworkNode,
 	category: "structure",
 	snapProfile: "structural",
@@ -400,6 +400,14 @@ export const roadNetworkDefinition: RoadNetworkDefinition = {
 				roadsideDecorationSuppressed: {},
 			};
 		},
+		32: (old: unknown) => {
+			if (!(old && typeof old === "object")) return old;
+			return {
+				...(old as Record<string, unknown>),
+				roadsideAutoFillEnabled: false,
+				roadsideItemSuppressed: {},
+			};
+		},
 	},
 	defaults: () => ({
 		object: "node",
@@ -414,6 +422,8 @@ export const roadNetworkDefinition: RoadNetworkDefinition = {
 		showRoadsideDecorations: false,
 		roadsideItemVisibility: {},
 		roadsideDecorationSuppressed: {},
+		roadsideAutoFillEnabled: false,
+		roadsideItemSuppressed: {},
 		attachments: {},
 		junctions: {},
 		stylePresets: { ...DEFAULT_ROAD_STYLE_PRESETS },

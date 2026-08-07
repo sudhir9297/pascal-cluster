@@ -67,6 +67,12 @@ describe('road drafting cursor', () => {
     expect(source).not.toContain('previewPoints.slice(0, -1).map')
   })
 
+  test('does not update a stale 3D cursor ref while switching floorplan tools', () => {
+    const source = readFileSync(new URL('./road-network-tool.tsx', import.meta.url), 'utf8')
+
+    expect(source).toContain('cursorRef.current?.position?.set(')
+  })
+
   test('offers and cycles only ground and bridge drafting modes', () => {
     expect(ROAD_ELEVATION_OPTIONS.map((option) => option.value)).toEqual([
       'ground',

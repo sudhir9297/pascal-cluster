@@ -12,7 +12,7 @@ import {
 } from './street-infrastructure-config'
 import {
   createRoadAttachmentForPlacement,
-  resolveFreeRoadPlacement,
+  reanchorRoadAttachment,
   type RoadAttachmentAssetKind,
 } from './road-edge-attachments'
 import type { RoadNetworkNode } from './schema'
@@ -130,15 +130,26 @@ export default function StreetInfrastructureTool() {
       rotation: [0, 0, 0],
     })
     const roadNetworks = roadNetworksForLevel(activeLevelId)
-    const attachmentId = `${node.id}:road`
-    const roadAlignedNode = resolveFreeRoadPlacement({
+    const attached = createRoadAttachmentForPlacement({
       assetNodeId: node.id,
-      id: attachmentId,
+      id: `${node.id}:road`,
       kind: kind as RoadAttachmentAssetKind,
       node,
       networks: roadNetworks,
       point: position,
     })
+    const roadAlignedNode = attached
+      ? {
+          ...node,
+          position: attached.transform.position,
+          rotation: attached.transform.rotation,
+          roadAttachment: {
+            networkNodeId: attached.network.id,
+            attachmentId: attached.attachment.id,
+            side: attached.attachment.side,
+          },
+        }
+      : node
     const finalNode = {
       ...roadAlignedNode,
       rotation: [
@@ -148,7 +159,23 @@ export default function StreetInfrastructureTool() {
       ],
     } as StreetInfrastructureNode
     const scene = useScene.getState()
-    scene.createNode(finalNode as unknown as AnyNode, activeLevelId as AnyNodeId)
+    const finalAttachment = attached
+      ? reanchorRoadAttachment(attached.network, attached.attachment, finalNode)
+      : null
+    scene.applyNodeChanges({
+      update: finalAttachment && attached
+        ? [{
+            id: attached.network.id as AnyNodeId,
+            data: {
+              attachments: {
+                ...attached.network.attachments,
+                [finalAttachment.id]: finalAttachment,
+              },
+            } as Partial<AnyNode>,
+          }]
+        : undefined,
+      create: [{ node: finalNode as unknown as AnyNode, parentId: activeLevelId as AnyNodeId }],
+    })
     useViewer.getState().setSelection({ selectedIds: [finalNode.id as AnyNodeId] })
     triggerSFX('sfx:item-place')
     finishEnvironmentPlacement(useEnvironmentStore.getState().placementMode)

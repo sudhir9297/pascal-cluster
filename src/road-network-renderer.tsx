@@ -17,13 +17,23 @@ import { deleteRoadEdge } from './road-network-graph-editing'
 import {
   buildRoadsideDecorations,
   ensureRoadsideLampVerge,
+  materializeRoadsideDecorationSelection,
 } from './roadside-decoration-rules'
 import { RoadNetworkModel } from './road-network-model'
 import { RoadNetworkSplineControls } from './road-network-spline-controls'
-import { resolveRoadAttachmentTransform } from './road-edge-attachments'
+import {
+  pruneOrphanedRoadAttachments,
+  reanchorRoadAttachment,
+  resolveRoadAttachmentTransform,
+  synchronizeRoadAttachmentOpening,
+} from './road-edge-attachments'
 import { splitRoadGraphComponents } from './road-network-topology'
 import { RoadNetworkNode } from './schema'
-import type { StreetInfrastructureNode } from './street-infrastructure-config'
+import {
+  isStreetInfrastructureKind,
+  type StreetInfrastructureNode,
+} from './street-infrastructure-config'
+import { planRoadAutoInfrastructureAttachmentMigration } from './road-auto-infrastructure'
 import { useEnvironmentStore, type RoadElementSelection } from './store'
 import { decodeTerrainField } from './terrain-field-compat'
 import { roadRuntimeDefaultsPatch } from './road-network-runtime-defaults'
@@ -34,6 +44,7 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
   const roadsideSyncSignatureRef = useRef<string | null>(null)
   const runtimeDefaultsSignatureRef = useRef<string | null>(null)
   const attachmentSyncSignatureRef = useRef<string | null>(null)
+  const attachmentRoadSignatureRef = useRef<string | null>(null)
   const handlers = useNodeEvents(storeNode as never, 'environment:road-network' as never)
   const roadToolActive = useEditor(
     (state) => state.mode === 'build' && (state.tool as string | null) === 'environment:road-network',
@@ -99,12 +110,6 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
     },
     [networkSelected, storeNode.id],
   )
-  const onSelectRoadsideDecoration = useCallback(
-    (id: string, event: { stopPropagation: () => void }) => {
-      onSelectElement({ kind: 'decoration', id }, event)
-    },
-    [onSelectElement],
-  )
   useRegistry(storeNode.id as AnyNodeId, storeNode.type, ref)
   const override = useLiveNodeOverrides(
     (state) => state.get(storeNode.id as AnyNodeId) as Partial<RoadNetworkNode> | undefined,
@@ -116,12 +121,69 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
     () => RoadNetworkNode.parse(override ? { ...storeNode, ...override } : storeNode),
     [override, storeNode],
   )
+  const onSelectRoadsideDecoration = useCallback(
+    (id: string, event: { stopPropagation: () => void }) => {
+      event.stopPropagation()
+      const scene = useScene.getState()
+      const materialized = materializeRoadsideDecorationSelection(
+        node,
+        id,
+        Object.keys(scene.nodes),
+      )
+      if (!materialized) {
+        onSelectElement({ kind: 'decoration', id }, event)
+        return
+      }
+      scene.applyNodeChanges({
+        update: [{
+          id: node.id as AnyNodeId,
+          data: materialized.networkPatch as Partial<AnyNode>,
+        }],
+        create: [{
+          node: materialized.node as unknown as AnyNode,
+          parentId: node.parentId as AnyNodeId,
+        }],
+      })
+      useEnvironmentStore.getState().setRoadElementSelection(null)
+      useViewer.getState().setSelection({
+        selectedIds: materialized.selection.selectedIds as AnyNodeId[],
+      })
+    },
+    [node, onSelectElement],
+  )
+  useEffect(() => {
+    const migration = planRoadAutoInfrastructureAttachmentMigration({
+      network: node,
+      nodes: Object.values(sceneNodes).flatMap((candidate) =>
+        isStreetInfrastructureKind(candidate.type as string)
+          ? [candidate as unknown as StreetInfrastructureNode]
+          : [],
+      ),
+    })
+    if (migration.nodeUpdates.length === 0) return
+    useScene.getState().applyNodeChanges({
+      update: [
+        {
+          id: node.id as AnyNodeId,
+          data: {
+            attachments: { ...node.attachments, ...migration.attachments },
+          } as Partial<AnyNode>,
+        },
+        ...migration.nodeUpdates.map((update) => ({
+          id: update.id as AnyNodeId,
+          data: { roadAttachment: update.roadAttachment } as Partial<AnyNode>,
+        })),
+      ],
+    })
+  }, [node, sceneNodes])
   const attachmentAssetSignature = useMemo(
     () => Object.values(node.attachments ?? {}).map((attachment) => {
       const asset = Object.values(sceneNodes).find(
         (candidate) => (candidate.id as string) === attachment.assetNodeId,
       ) as unknown as {
         diameter?: number
+        curveAmount?: number
+        drivewayShape?: string
         height?: number
         id?: string
         length?: number
@@ -137,6 +199,8 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
         asset?.position,
         asset?.rotation,
         asset?.diameter,
+        asset?.curveAmount,
+        asset?.drivewayShape,
         asset?.height,
         asset?.length,
         asset?.supportHeight,
@@ -165,12 +229,29 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
       node.stylePresets,
     ],
   )
+  const attachmentRoadSignature = useMemo(
+    () => JSON.stringify({
+      activeStyleId: node.activeStyleId,
+      applyStyleToAll: node.applyStyleToAll,
+      edges: node.edges,
+      graphNodes: node.graphNodes,
+      stylePresets: node.stylePresets,
+    }),
+    [node.activeStyleId, node.applyStyleToAll, node.edges, node.graphNodes, node.stylePresets],
+  )
   useEffect(() => {
     if (attachmentSyncSignatureRef.current === attachmentSyncSignature) return
     attachmentSyncSignatureRef.current = attachmentSyncSignature
     const scene = useScene.getState()
-    const attachmentIds = new Set(Object.keys(node.attachments ?? {}))
-    for (const [attachmentId, attachment] of Object.entries(node.attachments ?? {})) {
+    const roadChanged = attachmentRoadSignatureRef.current === null
+      || attachmentRoadSignatureRef.current !== attachmentRoadSignature
+    attachmentRoadSignatureRef.current = attachmentRoadSignature
+    let nextAttachments = pruneOrphanedRoadAttachments(
+      node.attachments,
+      new Set(Object.values(scene.nodes).map((candidate) => candidate.id as string)),
+    )
+    const attachmentIds = new Set(Object.keys(nextAttachments))
+    for (const [attachmentId, attachment] of Object.entries(nextAttachments)) {
       const asset = Object.values(scene.nodes).find(
         (candidate) => candidate.id === attachment.assetNodeId,
       ) as unknown as StreetInfrastructureNode & {
@@ -180,7 +261,16 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
       if (!asset || asset.roadAttachment?.networkNodeId !== node.id || asset.roadAttachment.attachmentId !== attachmentId) {
         continue
       }
-      const transform = resolveRoadAttachmentTransform(node, attachment, asset)
+      const syncedAttachment = synchronizeRoadAttachmentOpening(node, attachment, asset)
+      if (
+        syncedAttachment.roadOpeningOffset !== attachment.roadOpeningOffset
+        || syncedAttachment.roadOpeningWidth !== attachment.roadOpeningWidth
+        || JSON.stringify(syncedAttachment.roadOpeningProfile)
+          !== JSON.stringify(attachment.roadOpeningProfile)
+      ) {
+        nextAttachments = { ...nextAttachments, [attachmentId]: syncedAttachment }
+      }
+      const transform = resolveRoadAttachmentTransform(node, syncedAttachment, asset)
       if (!transform) continue
       if (asset.roadAttachment?.side !== attachment.side) {
         scene.updateNode(asset.id as AnyNodeId, {
@@ -193,12 +283,33 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
       }
       const positionChanged = !asset.position || asset.position.some((value, index) => Math.abs(value - transform.position[index]!) > 1e-4)
       const rotationChanged = !asset.rotation || asset.rotation.some((value, index) => Math.abs(value - transform.rotation[index]!) > 1e-4)
-      if (positionChanged || rotationChanged) {
+      if ((positionChanged || rotationChanged) && !roadChanged) {
+        const adjusted = reanchorRoadAttachment(node, syncedAttachment, asset)
+        if (adjusted) {
+          nextAttachments = { ...nextAttachments, [attachmentId]: adjusted }
+          continue
+        }
+      }
+      if ((positionChanged || rotationChanged) && roadChanged) {
         scene.updateNode(asset.id as AnyNodeId, {
           position: transform.position,
           rotation: transform.rotation,
+		  ...(attachment.generatedKey && attachment.placementMode !== 'adjusted'
+			? {
+				metadata: {
+					...((asset.metadata && typeof asset.metadata === 'object' && !Array.isArray(asset.metadata))
+						? asset.metadata as Record<string, unknown>
+						: {}),
+					roadAutoInfrastructureInitialPosition: transform.position,
+					roadAutoInfrastructureInitialRotation: transform.rotation,
+				},
+			}
+			: null),
         } as Partial<AnyNode>)
       }
+    }
+    if (nextAttachments !== node.attachments) {
+      scene.updateNode(node.id as AnyNodeId, { attachments: nextAttachments } as Partial<AnyNode>)
     }
     for (const candidate of Object.values(scene.nodes)) {
       const asset = candidate as unknown as {
@@ -209,7 +320,7 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
       if (ref?.networkNodeId !== node.id || attachmentIds.has(ref.attachmentId)) continue
       scene.updateNode(asset.id as AnyNodeId, { roadAttachment: undefined } as Partial<AnyNode>)
     }
-  }, [attachmentSyncSignature, node])
+  }, [attachmentRoadSignature, attachmentSyncSignature, node])
   useEffect(() => {
     const patch = roadRuntimeDefaultsPatch(storeNode, node)
     const missingKeys = Object.keys(patch)
@@ -235,7 +346,10 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
       if (values.generatedBy !== 'road-auto-infrastructure' || values.roadNetworkId !== node.id) {
         continue
       }
-      const visible = visibility[candidate.type as string] === true
+      const visibilityKey = typeof values.roadsideItemKind === 'string'
+        ? values.roadsideItemKind
+        : candidate.type as string
+      const visible = visibility[visibilityKey] === true
       if (candidate.visible === visible) continue
       scene.updateNode(candidate.id as AnyNodeId, { visible } as Partial<AnyNode>)
     }

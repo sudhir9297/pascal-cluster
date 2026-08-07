@@ -1,5 +1,6 @@
 "use client";
 
+import { type AnyNode, type AnyNodeId, useScene } from "@pascal-app/core";
 import { SliderControl, ToggleControl } from "@pascal-app/editor";
 import {
 	buildRoadCrossSection,
@@ -14,8 +15,15 @@ import {
 	type JunctionBoundaryApproach,
 } from "./road-network-geometry";
 import { DEFAULT_ROAD_STYLE_PRESETS } from "./road-style-presets";
-import { ROAD_AUTO_INFRASTRUCTURE_OPTIONS } from "./road-auto-infrastructure-settings";
-import type { RoadGraphEdge, RoadNetworkNode, RoadsideDecoration, RoadStylePreset } from "./schema";
+import {
+	ROAD_AUTO_INFRASTRUCTURE_OPTIONS,
+	FULL_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
+} from "./road-auto-infrastructure-settings";
+import { buildRoadAutoInfrastructurePlan } from "./road-auto-infrastructure";
+import { applyRoadAutoInfrastructureClearances } from "./road-auto-infrastructure-style";
+import { reanchorRoadAttachment } from "./road-edge-attachments";
+import type { RoadEdgeAttachment, RoadGraphEdge, RoadNetworkNode, RoadsideDecoration, RoadStylePreset } from "./schema";
+import { createRoadSignNode, RoadNetworkNode as RoadNetworkNodeSchema, RoadSignNode, StreetLightNode } from "./schema";
 
 function edgeStyle(node: RoadNetworkNode, edge: RoadGraphEdge): RoadStylePreset {
 	const styleId = node.applyStyleToAll ? node.activeStyleId : edge.styleId;
@@ -492,6 +500,95 @@ export function buildRoadsideDecorationPreviews(node: RoadNetworkNode): Roadside
 	});
 }
 
+export type MaterializedRoadsideDecorationSelection = {
+	attachment: RoadEdgeAttachment;
+	networkPatch: Partial<RoadNetworkNode>;
+	node: StreetLightNode | RoadSignNode;
+	selection: { selectedIds: [string] };
+};
+
+/** Promote an embedded decoration to a normal scene node so selection targets only that item. */
+export function materializeRoadsideDecorationSelection(
+	network: RoadNetworkNode,
+	decorationId: string,
+	occupiedIds: Iterable<string>,
+): MaterializedRoadsideDecorationSelection | null {
+	const decoration = network.roadsideDecorations?.[decorationId];
+	if (!decoration) return null;
+	const preview = buildRoadsideDecorationPreviews(network).find(
+		(candidate) => candidate.id === decorationId,
+	);
+	if (!preview) return null;
+
+	const occupied = new Set(occupiedIds);
+	const sharedNode = {
+		parentId: network.parentId,
+		position: [...preview.position] as [number, number, number],
+		rotation: [0, preview.rotationY, 0] as [number, number, number],
+		visible: network.showRoadsideDecorations
+			? network.roadsideItemVisibility?.[decoration.kind] !== false
+			: network.roadsideItemVisibility?.[decoration.kind] === true,
+		metadata: {
+			generatedBy: "road-auto-infrastructure",
+			roadAutoInfrastructureKey: decorationId,
+			roadEdgeId: decoration.edgeId,
+			roadNetworkId: network.id,
+			roadStation: decoration.station,
+			roadsideItemKind: decoration.kind,
+		},
+	};
+	let node: StreetLightNode | RoadSignNode;
+	if (decoration.kind === "lamp") {
+		let lamp = StreetLightNode.parse(sharedNode);
+		while (occupied.has(lamp.id)) lamp = StreetLightNode.parse({ ...lamp, id: undefined });
+		node = lamp;
+	} else {
+		node = createRoadSignNode({ ...sharedNode, signId: "stop" }, occupied);
+	}
+
+	const attachmentId = `${node.id}:road`;
+	const provisional: RoadEdgeAttachment = {
+		id: attachmentId,
+		edgeId: decoration.edgeId,
+		assetNodeId: node.id,
+		kind: decoration.kind,
+		station: decoration.station,
+		lateralOffset: decoration.lateralOffset,
+		verticalOffset: 0,
+		alignment: "free",
+		side: decoration.side,
+		placementMode: "generated",
+		generatedKey: decorationId,
+	};
+	const attachment = reanchorRoadAttachment(network, provisional, node);
+	if (!attachment) return null;
+	const roadAttachment = {
+		networkNodeId: network.id,
+		attachmentId,
+		side: attachment.side,
+	};
+	node = decoration.kind === "lamp"
+		? StreetLightNode.parse({ ...node, roadAttachment })
+		: RoadSignNode.parse({ ...node, roadAttachment });
+	const { [decorationId]: _selected, ...roadsideDecorations } = network.roadsideDecorations;
+	return {
+		attachment,
+		networkPatch: {
+			attachments: { ...network.attachments, [attachmentId]: attachment },
+			roadsideDecorations,
+			roadsideDecorationSuppressed: {
+				...(network.roadsideDecorationSuppressed ?? {}),
+				[decorationId]: true,
+			},
+		},
+		node,
+		selection: { selectedIds: [node.id] },
+	};
+}
+
+/** @deprecated Use materializeRoadsideDecorationSelection. */
+export const materializeRoadsideLampSelection = materializeRoadsideDecorationSelection;
+
 /** Preserve sign visibility while keeping a nearby fixture wherever the road has room. */
 function resolveLampSignCollisions(
 	node: RoadNetworkNode,
@@ -577,6 +674,12 @@ export function RoadsideDecorationInspector({
 }) {
 	const spacing = resolvedRoadsideDecorationSpacing(node.roadsideDecorationSpacing);
 	const itemVisibility = node.roadsideItemVisibility ?? {};
+	const generatedCount = useScene((state) => Object.values(state.nodes).filter((candidate) => {
+		const metadata = candidate.metadata;
+		return metadata && typeof metadata === "object" && !Array.isArray(metadata)
+			&& (metadata as Record<string, unknown>).generatedBy === "road-auto-infrastructure"
+			&& (metadata as Record<string, unknown>).roadNetworkId === node.id;
+	}).length);
 	const visibilityOptions = [
 		{ key: "lamp", label: "Roadside lamps" },
 		{ key: "sign", label: "Roadside signs" },
@@ -585,8 +688,64 @@ export function RoadsideDecorationInspector({
 			label: option.label,
 		})),
 	];
+	const autoFill = () => {
+		const scene = useScene.getState();
+		const allEnabled = FULL_ROAD_AUTO_INFRASTRUCTURE_SETTINGS;
+		const roadsideItemVisibility = Object.fromEntries(
+			visibilityOptions.map((option) => [
+				option.key,
+				itemVisibility[option.key] ?? true,
+			]),
+		);
+		const stylePresets = Object.fromEntries(
+			Object.entries(node.stylePresets).map(([id, style]) => [
+				id,
+				applyRoadAutoInfrastructureClearances(style, allEnabled),
+			]),
+		);
+		const network = RoadNetworkNodeSchema.parse({
+			...node,
+			roadsideAutoFillEnabled: true,
+			roadsideItemVisibility,
+			stylePresets,
+		});
+		const plan = buildRoadAutoInfrastructurePlan({
+			edgeIds: Object.keys(network.edges),
+			existingNodes: Object.values(scene.nodes),
+			network,
+			settings: allEnabled,
+		});
+		scene.applyNodeChanges({
+			update: [{
+				id: node.id as AnyNodeId,
+				data: {
+					attachments: { ...network.attachments, ...plan.attachments },
+					roadsideAutoFillEnabled: true,
+					roadsideItemVisibility,
+					stylePresets,
+				} as Partial<AnyNode>,
+			}],
+			create: plan.nodes.map((generated) => ({
+				node: generated as unknown as AnyNode,
+				parentId: node.parentId as AnyNodeId,
+			})),
+		});
+	};
 	return (
 		<div aria-label="Roadside decorations" className="flex flex-col gap-2">
+			<button
+				aria-label="Auto-fill roadside"
+				className="rounded-md border border-sidebar-border bg-sidebar-accent px-2.5 py-2 font-medium text-sidebar-foreground text-xs transition-colors hover:bg-sidebar-accent/70"
+				onClick={autoFill}
+				type="button"
+			>
+				{generatedCount > 0 ? "Refresh auto-fill" : "Auto-fill roadside"}
+			</button>
+			<span className="text-[10px] leading-snug text-sidebar-foreground/50">
+				{generatedCount > 0
+					? `${generatedCount} generated items stay aligned with this road.`
+					: "Generate roadside items and keep them aligned as the road changes."}
+			</span>
 			<div aria-label="Roadside item visibility" className="flex flex-col gap-1">
 				{visibilityOptions.map((option) => (
 					<ToggleControl

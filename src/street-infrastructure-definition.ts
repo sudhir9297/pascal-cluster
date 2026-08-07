@@ -20,6 +20,7 @@ import { isResidentialRoadAssetKind } from './street-infrastructure-config'
 import { getStreetInfrastructureParametrics } from './street-infrastructure-parametrics'
 import { toggleParcelBoxOperationState } from './parcel-box-interaction'
 import { toggleDrivewayGateOperationState } from './driveway-gate-interaction'
+import { toggleMailboxOperationState } from './mailbox-interaction'
 
 type GenericDefinition = NodeDefinition<any> & Record<string, unknown>
 
@@ -308,13 +309,17 @@ function makeStreetInfrastructureDefinition(
       floorPlaced: { footprint, collides: false },
     },
     parametrics: getStreetInfrastructureParametrics(variant.kind),
-    ...(variant.kind === 'environment:parcel-box' || variant.kind === 'environment:residential-gate'
+    ...(variant.kind === 'environment:mailbox'
+      || variant.kind === 'environment:parcel-box'
+      || variant.kind === 'environment:residential-gate'
       ? {
           keyboardActions: {
             e: {
               appliesTo: (node: AnyNode) => (node.type as string) === variant.kind,
               run: (node: AnyNode) => {
-                if (variant.kind === 'environment:parcel-box') {
+                if (variant.kind === 'environment:mailbox') {
+                  toggleMailboxOperationState(node.id as AnyNodeId)
+                } else if (variant.kind === 'environment:parcel-box') {
                   toggleParcelBoxOperationState(node.id as AnyNodeId)
                 } else {
                   toggleDrivewayGateOperationState(node.id as AnyNodeId)

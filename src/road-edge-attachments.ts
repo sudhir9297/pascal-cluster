@@ -3,7 +3,9 @@ import type {
   RoadEdgeAttachment,
   RoadGraphEdge,
   RoadNetworkNode,
+  RoadSignNode,
   RoadStylePreset,
+  StreetLightNode,
 } from './schema'
 import type { StreetInfrastructureNode } from './street-infrastructure-config'
 import { buildRoadCrossSection, type RoadSide } from './road-cross-section'
@@ -11,6 +13,7 @@ import { sampleRoadEdgePoints } from './road-network-geometry'
 import { DEFAULT_ROAD_STYLE_PRESETS } from './road-style-presets'
 import { projectRoadPointToEdge } from './road-network-topology'
 import {
+  buildDrivewayPlan,
   resolveRoadBarrierLayout,
   resolveTrafficBollardLayout,
   resolveFireHydrantLayout,
@@ -19,6 +22,8 @@ import {
 } from './street-infrastructure-geometry'
 
 export type RoadAttachmentAssetKind =
+  | 'environment:street-light'
+  | 'environment:road-sign'
   | 'environment:traffic-signal'
   | 'environment:drainage-inlet'
   | 'environment:manhole-cover'
@@ -33,12 +38,19 @@ export type RoadAttachmentAssetKind =
   | 'environment:residential-gate'
   | 'environment:speed-hump'
 
+type RoadAttachmentPoseNode = StreetInfrastructureNode | StreetLightNode | RoadSignNode
+
 export type RoadAttachmentTransform = {
   position: [number, number, number]
   rotation: [number, number, number]
   tangent: [number, number]
   side: RoadSide
 }
+
+type RoadAttachmentOpening = Pick<
+  RoadEdgeAttachment,
+  'roadOpeningOffset' | 'roadOpeningProfile' | 'roadOpeningWidth'
+>
 
 export type RoadAttachmentTarget = {
   distance: number
@@ -58,6 +70,20 @@ export type SignalJunctionPlacement = {
   side: RoadSide
   station: number
   tangent: [number, number]
+}
+
+/** Remove attachment records whose scene asset no longer exists. */
+export function pruneOrphanedRoadAttachments(
+  attachments: RoadNetworkNode['attachments'],
+  existingAssetIds: ReadonlySet<string>,
+): RoadNetworkNode['attachments'] {
+  let result = attachments
+  for (const [attachmentId, attachment] of Object.entries(attachments)) {
+    if (existingAssetIds.has(attachment.assetNodeId)) continue
+    if (result === attachments) result = { ...attachments }
+    delete result[attachmentId]
+  }
+  return result
 }
 
 const ATTACHMENT_CAPTURE_PADDING = 1.2
@@ -237,6 +263,7 @@ function nearestEdgeTarget(
   networks: readonly RoadNetworkNode[],
   point: readonly [number, number, number],
   kind: RoadAttachmentAssetKind,
+  captureOnly = true,
 ): RoadAttachmentTarget & { network: RoadNetworkNode } | null {
   let best: (RoadAttachmentTarget & { network: RoadNetworkNode }) | null = null
   for (const network of networks) {
@@ -249,7 +276,7 @@ function nearestEdgeTarget(
       const style = roadStyleForEdge(network, edge)
       const crossSection = buildRoadCrossSection(style)
       const maxDistance = crossSection.sides[side].outerOffset + ATTACHMENT_CAPTURE_PADDING
-      if (projection.distance > maxDistance) continue
+      if (captureOnly && projection.distance > maxDistance) continue
       const candidate = {
         network,
         distance: projection.distance,
@@ -283,7 +310,7 @@ export function findRoadAttachmentTarget(
 export function resolveRoadAttachmentTransform(
   network: RoadNetworkNode,
   attachment: RoadEdgeAttachment,
-  node: StreetInfrastructureNode,
+  node: RoadAttachmentPoseNode,
 ): RoadAttachmentTransform | null {
   const edge = network.edges[attachment.edgeId]
   if (!edge) return null
@@ -317,8 +344,15 @@ export function resolveRoadAttachmentTransform(
   const barrierLayout = node.type === 'environment:road-barrier'
     ? resolveRoadBarrierLayout(node)
     : null
-  const residentialLayout = node.type.startsWith('environment:') &&
-    !['environment:traffic-signal', 'environment:drainage-inlet', 'environment:manhole-cover', 'environment:fire-hydrant', 'environment:traffic-bollard', 'environment:road-barrier'].includes(node.type)
+  const residentialLayout = [
+    'environment:driveway',
+    'environment:mailbox',
+    'environment:parcel-box',
+    'environment:trash-bin',
+    'environment:recycling-bin',
+    'environment:residential-gate',
+    'environment:speed-hump',
+  ].includes(node.type)
     ? resolveResidentialRoadAssetLayout(node as never)
     : null
   const curbStrip = crossSection.sides[side].components.find(
@@ -351,6 +385,8 @@ export function resolveRoadAttachmentTransform(
           )
     : alignment === 'curb' && residentialLayout
       ? sign * ((curbStrip?.outerOffset ?? crossSection.sides[side].outerOffset) + residentialLayout.length / 2 + ROADSIDE_ASSET_CLEARANCE)
+    : alignment === 'carriageway' && node.type === 'environment:driveway'
+      ? sign * (crossSection.carriagewayWidth / 2 + residentialLayout!.length / 2)
     : component
     ? sign * component.lateralOffset
     : alignment === 'carriageway' && node.type === 'environment:manhole-cover'
@@ -382,23 +418,30 @@ export function resolveRoadAttachmentTransform(
         : 0
   const baseY = sampled.point[1] + geometryBaseOffset + attachment.verticalOffset
   const position: [number, number, number] = [
-    sampled.point[0] + leftNormal[0] * lateralOffset,
+    sampled.point[0] + sampled.tangent[0] * (attachment.longitudinalOffset ?? 0) + leftNormal[0] * lateralOffset,
     baseY,
-    sampled.point[2] + leftNormal[1] * lateralOffset,
+    sampled.point[2] + sampled.tangent[1] * (attachment.longitudinalOffset ?? 0) + leftNormal[1] * lateralOffset,
   ]
   const currentRotation = node.rotation ?? [0, 0, 0]
   let rotationY = currentRotation[1] ?? 0
-  if (alignment === 'gutter') {
-    rotationY = -Math.atan2(sampled.tangent[1], sampled.tangent[0])
+  const tangentRotationY = -Math.atan2(sampled.tangent[1], sampled.tangent[0])
+  if (attachment.headingOffset !== undefined) {
+    rotationY = tangentRotationY + attachment.headingOffset
+  } else if (alignment === 'gutter') {
+    rotationY = tangentRotationY
       + (side === 'right' ? Math.PI : 0)
   } else if (alignment === 'curb' && node.type === 'environment:fire-hydrant') {
-    rotationY = -Math.atan2(sampled.tangent[1], sampled.tangent[0]) + (side === 'right' ? Math.PI : 0)
+    rotationY = tangentRotationY + (side === 'right' ? Math.PI : 0)
   } else if (alignment === 'curb' && node.type === 'environment:road-barrier') {
-    rotationY = -Math.atan2(sampled.tangent[1], sampled.tangent[0])
+    rotationY = tangentRotationY
   } else if (alignment === 'curb' && residentialLayout) {
-    rotationY = -Math.atan2(sampled.tangent[1], sampled.tangent[0]) + (side === 'right' ? Math.PI : 0)
+    rotationY = tangentRotationY + (side === 'right' ? Math.PI : 0)
+  } else if (alignment === 'carriageway' && node.type === 'environment:driveway') {
+    // A driveway's local -Z end is its road-facing mouth. Mirror the right
+    // side so that mouth always meets the carriageway instead of pointing out.
+    rotationY = tangentRotationY + (side === 'right' ? Math.PI : 0)
   } else if (alignment === 'carriageway' && residentialLayout) {
-    rotationY = -Math.atan2(sampled.tangent[1], sampled.tangent[0])
+    rotationY = tangentRotationY
   }
   return {
     position,
@@ -406,6 +449,152 @@ export function resolveRoadAttachmentTransform(
     tangent: sampled.tangent,
     side,
   }
+}
+
+function drivewayOpeningForPose(
+  node: RoadAttachmentPoseNode,
+  rotationY: number,
+  tangent: readonly [number, number],
+  side: RoadSide,
+  roadsideDepth: number,
+  longitudinalOffset = 0,
+): RoadAttachmentOpening | null {
+  if (node.type !== 'environment:driveway') return null
+  const plan = buildDrivewayPlan(node)
+  const mouth = [plan.leftEdge[0], plan.rightEdge[0]].filter(
+    (point): point is NonNullable<typeof point> => point !== undefined,
+  )
+  if (mouth.length !== 2) return null
+  const cosine = Math.cos(rotationY)
+  const sine = Math.sin(rotationY)
+  const toRoadCoordinates = ([x, z]: readonly [number, number]): [number, number] => {
+    const worldX = cosine * x + sine * z
+    const worldZ = -sine * x + cosine * z
+    const chainage = worldX * tangent[0] + worldZ * tangent[1]
+    const leftOffset = -worldX * tangent[1] + worldZ * tangent[0]
+    return [chainage, (side === 'left' ? 1 : -1) * leftOffset]
+  }
+  const mouthCoordinates = mouth.map(toRoadCoordinates)
+  const mouthOutward = (mouthCoordinates[0]![1] + mouthCoordinates[1]![1]) / 2
+  let corridorPolygon = plan.outline.map((point) => {
+    const [chainage, outward] = toRoadCoordinates(point)
+    return [chainage, outward - mouthOutward] as [number, number]
+  })
+  const clipAtOutward = (boundary: number, keepGreater: boolean) => {
+    const clipped: [number, number][] = []
+    for (let index = 0; index < corridorPolygon.length; index += 1) {
+      const current = corridorPolygon[index]!
+      const previous = corridorPolygon[(index + corridorPolygon.length - 1) % corridorPolygon.length]!
+      const currentInside = keepGreater ? current[1] >= boundary : current[1] <= boundary
+      const previousInside = keepGreater ? previous[1] >= boundary : previous[1] <= boundary
+      if (currentInside !== previousInside) {
+        const ratio = (boundary - previous[1]) / (current[1] - previous[1])
+        clipped.push([
+          previous[0] + (current[0] - previous[0]) * ratio,
+          boundary,
+        ])
+      }
+      if (currentInside) clipped.push(current)
+    }
+    corridorPolygon = clipped
+  }
+  clipAtOutward(0, true)
+  clipAtOutward(Math.max(0.001, roadsideDepth), false)
+  if (corridorPolygon.length === 0) return null
+  const projections = corridorPolygon.map(([chainage]) => chainage)
+  const start = Math.min(...projections)
+  const end = Math.max(...projections)
+  const sampleCount = 24
+  const clean = (value: number) => Math.round(value * 1e12) / 1e12
+  const roadOpeningProfile = Array.from({ length: sampleCount + 1 }, (_, index) => {
+    const outwardOffset = Math.max(0.001, roadsideDepth) * index / sampleCount
+    const intersections: number[] = []
+    for (let edgeIndex = 0; edgeIndex < corridorPolygon.length; edgeIndex += 1) {
+      const first = corridorPolygon[edgeIndex]!
+      const second = corridorPolygon[(edgeIndex + 1) % corridorPolygon.length]!
+      if (Math.abs(first[1] - second[1]) <= 1e-8) {
+        if (Math.abs(outwardOffset - first[1]) <= 1e-8) {
+          intersections.push(first[0], second[0])
+        }
+        continue
+      }
+      if (outwardOffset < Math.min(first[1], second[1]) - 1e-8
+        || outwardOffset > Math.max(first[1], second[1]) + 1e-8) continue
+      const ratio = (outwardOffset - first[1]) / (second[1] - first[1])
+      intersections.push(first[0] + (second[0] - first[0]) * ratio)
+    }
+    const sampleStart = Math.min(...intersections)
+    const sampleEnd = Math.max(...intersections)
+    return {
+      outwardOffset: clean(outwardOffset),
+      startOffset: clean(longitudinalOffset + sampleStart),
+      endOffset: clean(longitudinalOffset + sampleEnd),
+    }
+  }).filter((sample) => Number.isFinite(sample.startOffset) && Number.isFinite(sample.endOffset))
+  return {
+    roadOpeningOffset: longitudinalOffset + (start + end) / 2,
+    roadOpeningProfile,
+    roadOpeningWidth: Math.max(0.1, end - start),
+  }
+}
+
+/** Keep the road cutout aligned with the actual road-facing edge of a driveway. */
+export function synchronizeRoadAttachmentOpening(
+  network: RoadNetworkNode,
+  attachment: RoadEdgeAttachment,
+  node: RoadAttachmentPoseNode,
+): RoadEdgeAttachment {
+  const transform = resolveRoadAttachmentTransform(network, attachment, node)
+  const edge = network.edges[attachment.edgeId]
+  const crossSection = edge ? buildRoadCrossSection(roadStyleForEdge(network, edge)) : null
+  const roadsideDepth = crossSection
+    ? crossSection.sides[transform?.side ?? attachment.side ?? 'left'].outerOffset
+      - crossSection.carriagewayWidth / 2
+    : 0
+  const opening = transform
+    ? drivewayOpeningForPose(
+        node,
+        transform.rotation[1],
+        transform.tangent,
+        transform.side,
+        roadsideDepth,
+        attachment.longitudinalOffset ?? 0,
+      )
+    : null
+  return opening ? { ...attachment, ...opening } : attachment
+}
+
+/** Convert an edited world pose back into an anchor on the same road network. */
+export function reanchorRoadAttachment(
+  network: RoadNetworkNode,
+  attachment: RoadEdgeAttachment,
+  node: RoadAttachmentPoseNode,
+): RoadEdgeAttachment | null {
+  const position = node.position
+  if (!position) return null
+  const kind = node.type as RoadAttachmentAssetKind
+  const target = nearestEdgeTarget([network], position, kind, false)
+  if (!target) return null
+  const rotation = node.rotation ?? [0, 0, 0]
+  const tangentRotationY = -Math.atan2(target.tangent[1], target.tangent[0])
+  const provisional: RoadEdgeAttachment = {
+    ...attachment,
+    edgeId: target.edgeId,
+    station: target.station,
+    longitudinalOffset:
+      (position[0] - target.point[0]) * target.tangent[0]
+      + (position[2] - target.point[2]) * target.tangent[1],
+    lateralOffset: target.lateralOffset,
+    verticalOffset: 0,
+    headingOffset: (rotation[1] ?? 0) - tangentRotationY,
+    alignment: 'free',
+    side: target.side,
+    placementMode: 'adjusted',
+  }
+  const base = resolveRoadAttachmentTransform(network, provisional, node)
+  if (!base) return null
+  const reanchored = { ...provisional, verticalOffset: position[1] - base.position[1] }
+  return synchronizeRoadAttachmentOpening(network, reanchored, node)
 }
 
 export function createRoadAttachmentForPlacement({
@@ -439,12 +628,21 @@ export function createRoadAttachmentForPlacement({
     station: target.station,
     lateralOffset: target.lateralOffset,
     verticalOffset: point[1] - target.point[1],
+    roadOpeningWidth: kind === 'environment:driveway'
+      ? resolveResidentialRoadAssetLayout(node as never).width
+      : undefined,
     alignment,
     side: target.side,
+    placementMode: 'adjusted' as const,
   }
   const transform = resolveRoadAttachmentTransform(target.network, attachment, node)
   if (!transform) return null
-  return { attachment, network: target.network, target, transform }
+  return {
+    attachment: synchronizeRoadAttachmentOpening(target.network, attachment, node),
+    network: target.network,
+    target,
+    transform,
+  }
 }
 
 /**
