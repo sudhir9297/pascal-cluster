@@ -105,6 +105,7 @@ export const trussRoadwayLightDefinition: TrussRoadwayLightDefinition = {
   tool: () => import('./truss-roadway-light-tool'),
   toolHints: [
     { key: 'Left click', label: 'Place truss roadway light' },
+    { key: 'R', label: 'Rotate 45°' },
     { key: 'Esc', label: 'Stop' },
   ],
 

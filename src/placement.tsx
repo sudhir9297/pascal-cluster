@@ -23,6 +23,21 @@ import {
 import { resolvePlacementPosition } from './placement-position'
 
 const worldVec = new Vector3()
+export const PLACEMENT_ROTATION_STEP = Math.PI / 4
+
+/** Advance a placement preview by one 45-degree turn. Shift+R reverses it. */
+export function advancePlacementRotation(rotationY: number, reverse = false): number {
+  return rotationY + (reverse ? -PLACEMENT_ROTATION_STEP : PLACEMENT_ROTATION_STEP)
+}
+
+function isTypingTarget(target: EventTarget | null): boolean {
+  return target instanceof HTMLElement && (
+    target.isContentEditable
+    || target.tagName === 'INPUT'
+    || target.tagName === 'TEXTAREA'
+    || target.tagName === 'SELECT'
+  )
+}
 
 export type PlacementPreviewTransform = {
   position: [number, number, number]
@@ -76,7 +91,7 @@ export function toLevelLocal(
  */
 export function usePlacement(
   activeLevelId: string | null,
-  onCommit: (levelLocalPosition: [number, number, number]) => void,
+  onCommit: (levelLocalPosition: [number, number, number], rotationY: number) => void,
   {
     onPreview,
     preserveY = false,
@@ -95,10 +110,14 @@ export function usePlacement(
   onPreviewRef.current = onPreview
   const resolvePreviewRef = useRef(resolvePreview)
   resolvePreviewRef.current = resolvePreview
+  const rotationRef = useRef(0)
+  const previewBaseRotationYRef = useRef(0)
 
   useEffect(() => {
     if (!activeLevelId) return
     setCursorVisible(false)
+    rotationRef.current = 0
+    previewBaseRotationYRef.current = 0
     let lastWorld: [number, number, number] | null = null
 
     const onMove = (event: GridEvent) => {
@@ -110,12 +129,17 @@ export function usePlacement(
       const [sx, sy, sz] = resolvePlacementPosition([snappedX, local[1], snappedZ], preserveY)
       const position: [number, number, number] = [sx, sy, sz]
       const preview = resolvePreviewRef.current?.(position) ?? null
+      previewBaseRotationYRef.current = preview?.rotation[1] ?? 0
       if (preview) {
         cursorRef.current?.position.set(...preview.position)
-        cursorRef.current?.rotation.set(...preview.rotation)
+        cursorRef.current?.rotation.set(
+          preview.rotation[0],
+          preview.rotation[1] + rotationRef.current,
+          preview.rotation[2],
+        )
       } else {
         cursorRef.current?.position.set(sx, sy, sz)
-        cursorRef.current?.rotation.set(0, 0, 0)
+        cursorRef.current?.rotation.set(0, rotationRef.current, 0)
       }
       onPreviewRef.current?.(preview)
       lastWorld = event.position
@@ -125,14 +149,29 @@ export function usePlacement(
       const world = lastWorld ?? event.position
       const local = toLevelLocal(activeLevelId, world, preserveY)
       const [snappedX, snappedZ] = snapXZ(local[0], local[2])
-      commitRef.current(resolvePlacementPosition([snappedX, local[1], snappedZ], preserveY))
+      commitRef.current(
+        resolvePlacementPosition([snappedX, local[1], snappedZ], preserveY),
+        rotationRef.current,
+      )
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.repeat || event.key.toLowerCase() !== 'r' || isTypingTarget(event.target)) return
+      event.preventDefault()
+      event.stopPropagation()
+      rotationRef.current = advancePlacementRotation(rotationRef.current, event.shiftKey)
+      if (cursorRef.current) {
+        cursorRef.current.rotation.y = previewBaseRotationYRef.current + rotationRef.current
+      }
     }
 
     emitter.on('grid:move', onMove)
     emitter.on('grid:click', onClick)
+    window.addEventListener('keydown', onKeyDown, true)
     return () => {
       emitter.off('grid:move', onMove)
       emitter.off('grid:click', onClick)
+      window.removeEventListener('keydown', onKeyDown, true)
     }
   }, [activeLevelId, preserveY])
 
@@ -151,6 +190,7 @@ export function useCeilingPlacement(
   onCommit: (placement: {
     ceilingId: AnyNodeId
     position: [number, number, number]
+    rotationY: number
   }) => void,
 ) {
   const cursorRef = useRef<Group>(null)
@@ -158,11 +198,13 @@ export function useCeilingPlacement(
   const [ceilingId, setCeilingId] = useState<AnyNodeId | null>(null)
   const commitRef = useRef(onCommit)
   commitRef.current = onCommit
+  const rotationRef = useRef(0)
 
   useEffect(() => {
     if (!activeLevelId) return
     setCursorVisible(false)
     setCeilingId(null)
+    rotationRef.current = 0
 
     const resolve = (event: GridEvent) => {
       const [localX, , localZ] = event.localPosition
@@ -180,20 +222,37 @@ export function useCeilingPlacement(
       const { target, x, z } = resolve(event)
       setCeilingId(target?.id ?? null)
       setCursorVisible(Boolean(target))
-      if (target) cursorRef.current?.position.set(x, target.height, z)
+      if (target) {
+        cursorRef.current?.position.set(x, target.height, z)
+        cursorRef.current?.rotation.set(0, rotationRef.current, 0)
+      }
     }
 
     const onClick = (event: GridEvent) => {
       const { target, x, z } = resolve(event)
       if (!target) return
-      commitRef.current({ ceilingId: target.id, position: [x, 0, z] })
+      commitRef.current({
+        ceilingId: target.id,
+        position: [x, 0, z],
+        rotationY: rotationRef.current,
+      })
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.repeat || event.key.toLowerCase() !== 'r' || isTypingTarget(event.target)) return
+      event.preventDefault()
+      event.stopPropagation()
+      rotationRef.current = advancePlacementRotation(rotationRef.current, event.shiftKey)
+      if (cursorRef.current) cursorRef.current.rotation.y = rotationRef.current
     }
 
     emitter.on('grid:move', onMove)
     emitter.on('grid:click', onClick)
+    window.addEventListener('keydown', onKeyDown, true)
     return () => {
       emitter.off('grid:move', onMove)
       emitter.off('grid:click', onClick)
+      window.removeEventListener('keydown', onKeyDown, true)
     }
   }, [activeLevelId])
 

@@ -4,11 +4,17 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import {
   DrainageInletNode,
+  DrivewayNode,
   FireHydrantNode,
   ManholeCoverNode,
+  ParcelBoxNode,
   TrafficSignalNode,
   TrafficBollardNode,
   RoadBarrierNode,
+  RecyclingBinNode,
+  ResidentialGateNode,
+  SpeedHumpNode,
+  TrashBinNode,
 } from './schema'
 import {
   STREET_INFRASTRUCTURE_VARIANTS,
@@ -16,15 +22,20 @@ import {
 } from './street-infrastructure-config'
 import {
   drainageInletDefinition,
+  drivewayDefinition,
   fireHydrantDefinition,
   manholeCoverDefinition,
   roadBarrierDefinition,
+  parcelBoxDefinition,
+  residentialGateDefinition,
+  speedHumpDefinition,
   trafficBollardDefinition,
   trafficSignalDefinition,
 } from './street-infrastructure-definition'
 import { buildStreetInfrastructureFloorplan } from './street-infrastructure-floorplan'
 import { getStreetInfrastructureParametrics } from './street-infrastructure-parametrics'
 import {
+  buildDrivewayPlan,
   resolveDrainageInletLayout,
   resolveFireHydrantLayout,
   resolveFireHydrantOutletLayout,
@@ -33,8 +44,13 @@ import {
   resolveTrafficSignalLayout,
   resolveTrafficBollardLayout,
   resolveRoadBarrierLayout,
+  resolveResidentialRoadAssetLayout,
 } from './street-infrastructure-geometry'
-import { StreetInfrastructureModel } from './street-infrastructure-model'
+import {
+  resolveParcelBoxOpenPose,
+  StreetInfrastructureModel,
+} from './street-infrastructure-model'
+import { resolveDrivewayGateOpenPose } from './driveway-gate-operation'
 
 describe('street infrastructure catalog', () => {
   test('registers six stable utility-menu asset families', () => {
@@ -45,6 +61,13 @@ describe('street infrastructure catalog', () => {
       'environment:fire-hydrant',
       'environment:traffic-bollard',
       'environment:road-barrier',
+      'environment:driveway',
+      'environment:mailbox',
+      'environment:parcel-box',
+      'environment:trash-bin',
+      'environment:recycling-bin',
+      'environment:residential-gate',
+      'environment:speed-hump',
     ])
     for (const definition of [
       trafficSignalDefinition,
@@ -94,6 +117,99 @@ describe('street infrastructure catalog', () => {
     }
   })
 
+  test('extends a driveway from either end and centers its elevation tracker', () => {
+    const handles = Array.isArray(drivewayDefinition.handles)
+      ? drivewayDefinition.handles
+      : []
+    const lengthHandles = handles.filter(
+      (handle) => handle.kind === 'linear-resize' && handle.axis === 'z',
+    )
+    expect(lengthHandles).toHaveLength(2)
+
+    const start = lengthHandles.find(
+      (handle) => handle.kind === 'linear-resize' && handle.anchor === 'max',
+    )
+    const end = lengthHandles.find(
+      (handle) => handle.kind === 'linear-resize' && handle.anchor === 'min',
+    )
+    expect(start?.kind).toBe('linear-resize')
+    expect(end?.kind).toBe('linear-resize')
+    if (start?.kind !== 'linear-resize' || end?.kind !== 'linear-resize') return
+
+    const node = DrivewayNode.parse({
+      length: 6,
+      position: [10, 0.4, 20],
+      rotation: [0, Math.PI / 2, 0],
+      roadAttachment: {
+        networkNodeId: 'road-network_test',
+        attachmentId: 'driveway_test:road',
+        side: 'left',
+      },
+    })
+    expect(start.apply(node, 8, {} as never)).toMatchObject({
+      length: 8,
+      position: [9, 0.4, 20],
+      roadAttachment: undefined,
+    })
+    expect(end.apply(node, 8, {} as never)).toMatchObject({
+      length: 8,
+      position: [11, 0.4, 20],
+      roadAttachment: undefined,
+    })
+    expect(start.placement.position(node, {} as never)[2]).toBeLessThan(-node.length / 2)
+    expect(end.placement.position(node, {} as never)[2]).toBeGreaterThan(node.length / 2)
+
+    const elevation = handles.find(
+      (handle) => handle.kind === 'linear-resize' && handle.axis === 'y',
+    )
+    expect(elevation?.kind).toBe('linear-resize')
+    if (elevation?.kind !== 'linear-resize') return
+    const elevationPosition = elevation.placement.position(node, {} as never)
+    expect(elevationPosition[0]).toBe(0)
+    expect(elevationPosition[2]).toBe(0)
+    expect(elevation.apply(node, 1.25, {} as never)).toMatchObject({
+      position: [10, 1.25, 20],
+      roadAttachment: undefined,
+    })
+
+    const curvedRight = DrivewayNode.parse({
+      drivewayShape: 'curved-right',
+      curveAmount: 3,
+      length: 6,
+    })
+    const rightPlan = buildDrivewayPlan(curvedRight)
+    const rightEndPoint = rightPlan.centerline.at(-1)!
+    const rightArrowPoint = end.placement.position(curvedRight, {} as never)
+    expect(rightArrowPoint[0]).toBeGreaterThan(rightEndPoint[0])
+    expect(rightArrowPoint[2]).toBeGreaterThan(rightEndPoint[1])
+    expect(end.placement.rotationY?.(curvedRight, {} as never)).toBeGreaterThan(0)
+    expect(end.apply(curvedRight, 8, {} as never)).toMatchObject({
+      curveAmount: 5,
+      length: 8,
+      position: [1, 0, 1],
+    })
+
+    const curvedLeft = DrivewayNode.parse({
+      drivewayShape: 'curved-left',
+      curveAmount: 3,
+      length: 6,
+    })
+    const leftPlan = buildDrivewayPlan(curvedLeft)
+    const leftEndPoint = leftPlan.centerline.at(-1)!
+    const leftArrowPoint = end.placement.position(curvedLeft, {} as never)
+    expect(leftArrowPoint[0]).toBeLessThan(leftEndPoint[0])
+    expect(leftArrowPoint[2]).toBeGreaterThan(leftEndPoint[1])
+    expect(end.placement.rotationY?.(curvedLeft, {} as never)).toBeLessThan(0)
+
+    const straight = DrivewayNode.parse({ drivewayShape: 'straight', length: 6 })
+    expect(end.placement.rotationY?.(straight, {} as never)).toBe(0)
+    expect(end.apply(straight, 8, {} as never)).toMatchObject({
+      curveAmount: 2.5,
+      length: 8,
+      position: [0, 0, 1],
+    })
+  })
+
   test('keeps all new cards inside the existing Utilities category', () => {
     const panel = readFileSync(new URL('./presets-panel.tsx', import.meta.url), 'utf8')
     expect(panel).toContain("panelCategory === 'utilities'")
@@ -140,9 +256,94 @@ describe('street infrastructure catalog', () => {
       barrierType: 'jersey',
       length: 2,
     })
+    expect(DrivewayNode.parse({})).toMatchObject({
+      type: 'environment:driveway',
+      drivewayShape: 'straight',
+      curveAmount: 2.5,
+    })
+    expect(ParcelBoxNode.parse({})).toMatchObject({
+      type: 'environment:parcel-box',
+      operationState: 0,
+      bodyColor: '#242829',
+    })
+    expect(SpeedHumpNode.parse({})).toMatchObject({
+      type: 'environment:speed-hump',
+      width: 5.8,
+      length: 0.5,
+      height: 0.07,
+      bodyColor: '#25282b',
+      accentColor: '#f2b632',
+    })
     for (const variant of STREET_INFRASTRUCTURE_VARIANTS) {
       expect(parseStreetInfrastructure(variant.kind, {}).type).toBe(variant.kind)
     }
+  })
+
+  test('renders the speed hump as a narrow alternating modular rubber strip', () => {
+    const node = SpeedHumpNode.parse({})
+    const layout = resolveResidentialRoadAssetLayout(node)
+    expect(layout.footprintDepth).toBe(0.5)
+    expect(layout.footprintWidth).toBe(5.8)
+
+    const markup = renderToStaticMarkup(createElement(StreetInfrastructureModel, { node }))
+    expect(markup).toContain('name="modular-rubber-speed-hump"')
+    expect(markup.match(/name="speed-hump-module"/g)?.length).toBeGreaterThanOrEqual(10)
+    expect(markup).not.toContain('name="speed-hump-chevron-tread"')
+    expect(markup).not.toContain('name="speed-hump-white-reflector"')
+    expect(markup).not.toContain('name="speed-hump-bolt-recess"')
+
+    const floorplan = buildStreetInfrastructureFloorplan(node, {} as never)
+    expect(floorplan.kind).toBe('group')
+    if (floorplan.kind !== 'group') return
+    const fills = floorplan.children
+      .filter((child) => child.kind === 'polygon')
+      .map((child) => child.kind === 'polygon' ? child.fill : undefined)
+    expect(fills).toContain('#25282b')
+    expect(fills).toContain('#f2b632')
+
+    const thumbnail = readFileSync(new URL('./assets/speed-hump-thumbnail-v2.png', import.meta.url))
+    expect(thumbnail.subarray(1, 4).toString()).toBe('PNG')
+    expect(thumbnail.byteLength).toBeGreaterThan(10_000)
+    const panel = readFileSync(new URL('./presets-panel.tsx', import.meta.url), 'utf8')
+    expect(panel).toContain("'environment:speed-hump': SPEED_HUMP_THUMBNAIL")
+  })
+
+  test('resizes the speed hump width from either outer-end arrow', () => {
+    const handles = Array.isArray(speedHumpDefinition.handles)
+      ? speedHumpDefinition.handles
+      : []
+    const widthHandles = handles.filter(
+      (handle) => handle.kind === 'linear-resize' && handle.axis === 'x',
+    )
+    expect(widthHandles).toHaveLength(2)
+
+    const left = widthHandles.find(
+      (handle) => handle.kind === 'linear-resize' && handle.anchor === 'max',
+    )
+    const right = widthHandles.find(
+      (handle) => handle.kind === 'linear-resize' && handle.anchor === 'min',
+    )
+    expect(left?.kind).toBe('linear-resize')
+    expect(right?.kind).toBe('linear-resize')
+    if (left?.kind !== 'linear-resize' || right?.kind !== 'linear-resize') return
+
+    const node = SpeedHumpNode.parse({ position: [10, 0, 20], width: 6 })
+    expect(left.placement.position(node, {} as never)[0]).toBeLessThan(-node.width / 2)
+    expect(right.placement.position(node, {} as never)[0]).toBeGreaterThan(node.width / 2)
+    expect(left.placement.position(node, {} as never)[1]).toBe(node.height / 2)
+    expect(right.placement.position(node, {} as never)[1]).toBe(node.height / 2)
+    expect(left.placement.rotationY?.(node, {} as never)).toBe(Math.PI)
+    expect(right.placement.rotationY?.(node, {} as never)).toBe(0)
+    expect(left.apply(node, 8, {} as never)).toMatchObject({
+      width: 8,
+      position: [9, 0, 20],
+      roadAttachment: undefined,
+    })
+    expect(right.apply(node, 8, {} as never)).toMatchObject({
+      width: 8,
+      position: [11, 0, 20],
+      roadAttachment: undefined,
+    })
   })
 
   test('resolves finite layouts for all visible variants', () => {
@@ -205,6 +406,66 @@ describe('street infrastructure catalog', () => {
     }
   })
 
+  test('sanitizes legacy residential nodes before building buffer geometry', () => {
+    const legacyDriveway = {
+      type: 'environment:driveway',
+      position: [0, 0, 0],
+      rotation: [0, 0, 0],
+      bodyColor: '#777b78',
+      accentColor: '#b7b2a6',
+    } as unknown as DrivewayNode
+
+    const layout = resolveResidentialRoadAssetLayout(legacyDriveway)
+    expect([layout.width, layout.length, layout.height, layout.depth, layout.footprintWidth, layout.footprintDepth].every(Number.isFinite)).toBe(true)
+
+    const plan = buildDrivewayPlan(legacyDriveway)
+    expect(plan.outline.flat().every(Number.isFinite)).toBe(true)
+
+    expect(() => renderToStaticMarkup(createElement(StreetInfrastructureModel, { node: legacyDriveway }))).not.toThrow()
+
+    const legacyParcelBox = {
+      type: 'environment:parcel-box',
+      position: [0, 0, 0],
+      rotation: [0, 0, 0],
+      width: 0.7,
+      length: 0.48,
+      height: 1.22,
+      depth: 0.12,
+      bodyColor: '#242829',
+      accentColor: '#d9d0b5',
+    } as unknown as ParcelBoxNode
+    const parcelMarkup = renderToStaticMarkup(createElement(StreetInfrastructureModel, { node: legacyParcelBox }))
+    expect(parcelMarkup).not.toContain('NaN')
+  })
+
+  test('keeps parcel cabinet side-wall list items keyed at the list boundary', () => {
+    const modelSource = readFileSync(new URL('./street-infrastructure-model.tsx', import.meta.url), 'utf8')
+    for (const keyExpression of [
+      '<group key={`parcel-side-wall:${side}`',
+      '<group key={`parcel-front-side-rail:${side}`',
+      '<group key={`parcel-reveal-horizontal:${vertical}`',
+      '<group key={`parcel-reveal-vertical:${horizontal}`',
+      '<group key={`parcel-lid-hinge:${side}`',
+    ]) {
+      expect(modelSource).toContain(keyExpression)
+    }
+  })
+
+  test('keeps commercial trash-bin detail lists keyed at their list boundaries', () => {
+    const modelSource = readFileSync(new URL('./street-infrastructure-model.tsx', import.meta.url), 'utf8')
+    for (const keyExpression of [
+      '<group key={`commercial-bin-gusset:${face}:${offset}`',
+      '<group key={`commercial-bin-front-rib:${offset}`',
+      '<group key={`commercial-bin-side-rib:${side}`',
+      '<group key={`commercial-bin-lid-rib:${offset}`',
+      '<group key={`commercial-bin-hinge:${offset}`',
+      '<group key={`commercial-bin-handle-post:${side}:${end}`',
+      '<group key={`commercial-bin-caster-fork:${fork}`',
+    ]) {
+      expect(modelSource).toContain(keyExpression)
+    }
+  })
+
   test('keeps every drainage side-menu setting wired to the resolver and renderer', () => {
     const descriptor = getStreetInfrastructureParametrics('environment:drainage-inlet')
     const fields = descriptor.groups.flatMap((group) => group.fields)
@@ -226,6 +487,207 @@ describe('street infrastructure catalog', () => {
     const curbHeight = fields.find((field) => field.key === 'curbHeight')
     expect(curbHeight?.visibleIf?.(DrainageInletNode.parse({ inletType: 'grate' }))).toBe(false)
     expect(curbHeight?.visibleIf?.(DrainageInletNode.parse({ inletType: 'curb-opening' }))).toBe(true)
+  })
+
+  test('offers straight and adjustable curved driveway shapes', () => {
+    const descriptor = getStreetInfrastructureParametrics('environment:driveway')
+    const fields = descriptor.groups.flatMap((group) => group.fields)
+    const shape = fields.find((field) => field.key === 'drivewayShape')
+    const curveAmount = fields.find((field) => field.key === 'curveAmount')
+    expect(shape?.kind).toBe('enum')
+    if (shape?.kind === 'enum') {
+      expect(shape.options).toEqual(['straight', 'curved-left', 'curved-right'])
+    }
+    expect(curveAmount?.visibleIf?.(DrivewayNode.parse({ drivewayShape: 'straight' }))).toBe(false)
+    expect(curveAmount?.visibleIf?.(DrivewayNode.parse({ drivewayShape: 'curved-left' }))).toBe(true)
+
+    const straight = buildDrivewayPlan(DrivewayNode.parse({ drivewayShape: 'straight' }))
+    const left = buildDrivewayPlan(DrivewayNode.parse({ drivewayShape: 'curved-left', curveAmount: 3 }))
+    const right = buildDrivewayPlan(DrivewayNode.parse({ drivewayShape: 'curved-right', curveAmount: 3 }))
+    expect(straight.outline).toHaveLength(4)
+    expect(left.outline.length).toBeGreaterThan(20)
+    expect(left.centerline.at(-1)?.[0]).toBeCloseTo(-right.centerline.at(-1)![0])
+    expect(left.centerline.at(-1)?.[0]).toBeLessThan(left.centerline[0]![0])
+    expect(right.centerline.at(-1)?.[0]).toBeGreaterThan(right.centerline[0]![0])
+
+    const layout = resolveResidentialRoadAssetLayout(
+      DrivewayNode.parse({ drivewayShape: 'curved-right', curveAmount: 3 }),
+    )
+    expect(layout.footprintWidth).toBeGreaterThan(layout.width)
+  })
+
+  test('exposes one scrubbed parcel-box animation through the side menu and E key', () => {
+    const descriptor = getStreetInfrastructureParametrics('environment:parcel-box')
+    expect(descriptor.groups[0]?.label).toBe('Open Animation')
+    expect(descriptor.groups[0]?.fields[0]).toMatchObject({ key: 'open', kind: 'custom' })
+
+    const keyboardAction = parcelBoxDefinition.keyboardActions?.e
+    const parcelBox = ParcelBoxNode.parse({})
+    expect(keyboardAction?.appliesTo(parcelBox as never)).toBe(true)
+    expect(keyboardAction?.appliesTo(DrivewayNode.parse({}) as never)).toBe(false)
+
+    expect(resolveParcelBoxOpenPose(0)).toMatchObject({
+      accessDoorAngle: -0,
+      lidAngle: 0,
+    })
+    const partlyOpenPose = resolveParcelBoxOpenPose(0.42)
+    expect(partlyOpenPose.lidProgress).toBeGreaterThan(0.7)
+    expect(partlyOpenPose.accessDoorProgress).toBeGreaterThan(0)
+    const openPose = resolveParcelBoxOpenPose(1)
+    expect(openPose.lidProgress).toBe(1)
+    expect(openPose.accessDoorProgress).toBe(1)
+
+    const closedMarkup = renderToStaticMarkup(
+      createElement(StreetInfrastructureModel, { node: parcelBox }),
+    )
+    const openMarkup = renderToStaticMarkup(
+      createElement(StreetInfrastructureModel, {
+        node: ParcelBoxNode.parse({ operationState: 1 }),
+      }),
+    )
+    expect(closedMarkup).toContain('name="parcel-cabinet-shell"')
+    expect(closedMarkup).toContain('name="parcel-top-lid"')
+    expect(closedMarkup).toContain('name="parcel-access-door"')
+    expect(closedMarkup).toContain('name="parcel-door-lock-bezel"')
+    expect(closedMarkup).not.toContain('parcel-intake-side')
+    expect(openMarkup).not.toBe(closedMarkup)
+  })
+
+  test('uses the curved driveway outline in floorplan and 3D views', () => {
+    const node = DrivewayNode.parse({ drivewayShape: 'curved-right', curveAmount: 3 })
+    const floorplan = buildStreetInfrastructureFloorplan(node, {} as never)
+    expect(floorplan.kind).toBe('group')
+    if (floorplan.kind === 'group') {
+      const surface = floorplan.children.find((child) => child.kind === 'polygon')
+      expect(surface?.kind).toBe('polygon')
+      if (surface?.kind === 'polygon') expect(surface.points.length).toBeGreaterThan(20)
+    }
+    const markup = renderToStaticMarkup(createElement(StreetInfrastructureModel, { node }))
+    expect(markup).toContain('name="driveway-base"')
+    expect(markup).toContain('name="driveway-finish"')
+  })
+
+  test('renders the driveway gate as two framed, cross-braced timber leaves', () => {
+    const node = ResidentialGateNode.parse({})
+    expect(node).toMatchObject({
+      width: 3.6,
+      height: 1.65,
+      bodyColor: '#8a4f2b',
+      accentColor: '#202326',
+      operationState: 0,
+    })
+
+    const markup = renderToStaticMarkup(createElement(StreetInfrastructureModel, { node }))
+    expect(markup).toContain('name="timber-driveway-gate"')
+    expect(markup).toContain('name="gate-left-leaf"')
+    expect(markup).toContain('name="gate-right-leaf"')
+    expect(markup).toContain('name="gate-center-latch"')
+
+    const floorplan = buildStreetInfrastructureFloorplan(node, {} as never)
+    expect(floorplan.kind).toBe('group')
+    if (floorplan.kind === 'group') {
+      expect(floorplan.children.filter((child) => child.kind === 'line')).toHaveLength(2)
+      expect(floorplan.children.filter((child) => child.kind === 'circle')).toHaveLength(3)
+    }
+  })
+
+  test('animates both driveway-gate leaves through the inspector and E key', () => {
+    const descriptor = getStreetInfrastructureParametrics('environment:residential-gate')
+    expect(descriptor.groups[0]?.label).toBe('Open Animation')
+    expect(descriptor.groups[0]?.fields[0]).toMatchObject({ key: 'open', kind: 'custom' })
+
+    const keyboardAction = residentialGateDefinition.keyboardActions?.e
+    const closedGate = ResidentialGateNode.parse({})
+    expect(keyboardAction?.appliesTo(closedGate as never)).toBe(true)
+    expect(keyboardAction?.appliesTo(DrivewayNode.parse({}) as never)).toBe(false)
+
+    const closedPose = resolveDrivewayGateOpenPose(0)
+    const openPose = resolveDrivewayGateOpenPose(1)
+    expect(closedPose).toMatchObject({ leftLeafAngle: 0, rightLeafAngle: -0 })
+    expect(openPose.leftLeafAngle).toBeGreaterThan(1.5)
+    expect(openPose.rightLeafAngle).toBeLessThan(-1.5)
+
+    const closedMarkup = renderToStaticMarkup(
+      createElement(StreetInfrastructureModel, { node: closedGate }),
+    )
+    const openGate = ResidentialGateNode.parse({ operationState: 1 })
+    const openMarkup = renderToStaticMarkup(
+      createElement(StreetInfrastructureModel, { node: openGate }),
+    )
+    expect(openMarkup).not.toBe(closedMarkup)
+
+    const closedFloorplan = buildStreetInfrastructureFloorplan(closedGate, {} as never)
+    const openFloorplan = buildStreetInfrastructureFloorplan(openGate, {} as never)
+    expect(openFloorplan).not.toEqual(closedFloorplan)
+    expect(resolveResidentialRoadAssetLayout(openGate).footprintDepth).toBeGreaterThan(
+      resolveResidentialRoadAssetLayout(closedGate).footprintDepth,
+    )
+  })
+
+  test('matches the reference green wheelie-bin silhouette for recycling', () => {
+    const recycling = RecyclingBinNode.parse({})
+    expect(recycling.bodyColor).toBe('#087345')
+    expect(recycling.accentColor).toBe('#0a6b42')
+
+    const recyclingMarkup = renderToStaticMarkup(createElement(StreetInfrastructureModel, { node: recycling }))
+    for (const feature of [
+      'reference-green-wheelie-bin',
+      'bin-tapered-body',
+      'bin-moulded-collar',
+      'bin-hinged-lid',
+      'bin-lid-raised-panel',
+      'bin-rubber-wheel',
+      'bin-rear-handle',
+    ]) {
+      expect(recyclingMarkup).toContain(feature)
+    }
+    expect(recyclingMarkup).toContain('bin-recycling-marking')
+
+    const floorplan = buildStreetInfrastructureFloorplan(recycling, {} as never)
+    expect(floorplan.kind).toBe('group')
+    if (floorplan.kind === 'group') {
+      expect(floorplan.children.filter((child) => child.kind === 'circle')).toHaveLength(2)
+    }
+
+    const thumbnail = readFileSync(new URL('./assets/recycling-bin-thumbnail-v2.png', import.meta.url))
+    expect(thumbnail.subarray(1, 4).toString()).toBe('PNG')
+    expect(thumbnail.byteLength).toBeGreaterThan(10_000)
+  })
+
+  test('renders the trash bin as a wide four-caster commercial container', () => {
+    const trash = TrashBinNode.parse({})
+    const recycling = RecyclingBinNode.parse({})
+    const legacyTrash = TrashBinNode.parse({
+      width: 0.58,
+      length: 0.66,
+      height: 1.05,
+      bodyColor: '#087345',
+      accentColor: '#0a6b42',
+    })
+    const trashMarkup = renderToStaticMarkup(createElement(StreetInfrastructureModel, { node: trash }))
+    const recyclingMarkup = renderToStaticMarkup(createElement(StreetInfrastructureModel, { node: recycling }))
+    const legacyTrashMarkup = renderToStaticMarkup(createElement(StreetInfrastructureModel, { node: legacyTrash }))
+
+    expect(trash.width).toBeGreaterThan(recycling.width * 2)
+    expect(resolveResidentialRoadAssetLayout(legacyTrash).width).toBe(trash.width)
+    expect(trashMarkup).toContain('name="commercial-trash-bin"')
+    expect(legacyTrashMarkup).toContain('name="commercial-trash-bin"')
+    expect(trashMarkup.match(/name="trash-bin-caster"/g)).toHaveLength(4)
+    expect(recyclingMarkup).toContain('name="reference-green-wheelie-bin"')
+    expect(recyclingMarkup).not.toContain('name="commercial-trash-bin"')
+
+    const floorplan = buildStreetInfrastructureFloorplan(trash, {} as never)
+    expect(floorplan.kind).toBe('group')
+    if (floorplan.kind === 'group') {
+      expect(floorplan.children.filter((child) => child.kind === 'circle')).toHaveLength(4)
+    }
+
+    const thumbnail = readFileSync(new URL('./assets/commercial-trash-bin-thumbnail.svg', import.meta.url), 'utf8')
+    expect(thumbnail).toContain('Commercial four-caster trash bin')
+    expect(thumbnail).toContain('#2f713b')
+    const panel = readFileSync(new URL('./presets-panel.tsx', import.meta.url), 'utf8')
+    expect(panel).toContain("'environment:trash-bin': COMMERCIAL_TRASH_BIN_THUMBNAIL")
+    expect(panel).toContain("'environment:recycling-bin': RECYCLING_BIN_THUMBNAIL")
   })
 
   test('keeps enlarged and clamped inlet variants inside their selection footprints', () => {

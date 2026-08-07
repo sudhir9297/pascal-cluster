@@ -41,6 +41,13 @@ import manholeCoverThumbnail from './assets/manhole-cover-thumbnail-v2.png'
 import fireHydrantThumbnail from './assets/fire-hydrant-thumbnail-v2.png'
 import trafficBollardThumbnail from './assets/traffic-bollard-thumbnail-v2.png'
 import roadBarrierThumbnail from './assets/road-barrier-thumbnail-v2.png'
+import drivewayThumbnail from './assets/driveway-thumbnail-v2.png'
+import mailboxThumbnail from './assets/mailbox-thumbnail.png'
+import parcelBoxThumbnail from './assets/parcel-box-thumbnail.png'
+import commercialTrashBinThumbnail from './assets/commercial-trash-bin-thumbnail.png'
+import recyclingBinThumbnail from './assets/recycling-bin-thumbnail-v2.png'
+import drivewayGateThumbnail from './assets/driveway-gate-thumbnail-v2.png'
+import speedHumpThumbnail from './assets/speed-hump-thumbnail-v2.png'
 
 /**
  * Bundled preset artwork. Raster assets live in `./assets` and travel with the
@@ -100,7 +107,16 @@ export const MANHOLE_COVER_THUMBNAIL = url(manholeCoverThumbnail)
 export const FIRE_HYDRANT_THUMBNAIL = url(fireHydrantThumbnail)
 export const TRAFFIC_BOLLARD_THUMBNAIL = url(trafficBollardThumbnail)
 export const ROAD_BARRIER_THUMBNAIL = url(roadBarrierThumbnail)
+export const DRIVEWAY_THUMBNAIL = url(drivewayThumbnail)
+export const MAILBOX_THUMBNAIL = url(mailboxThumbnail)
+export const PARCEL_BOX_THUMBNAIL = url(parcelBoxThumbnail)
+export const COMMERCIAL_TRASH_BIN_THUMBNAIL = url(commercialTrashBinThumbnail)
+export const RECYCLING_BIN_THUMBNAIL = url(recyclingBinThumbnail)
+export const DRIVEWAY_GATE_THUMBNAIL = url(drivewayGateThumbnail)
+export const SPEED_HUMP_THUMBNAIL = url(speedHumpThumbnail)
 export const ROAD_NETWORK_THUMBNAIL = url(roadNetworkThumbnail)
+/** Intentionally blank artwork for new residential-road assets awaiting thumbnails. */
+export const BLANK_THUMBNAIL = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"%3E%3Crect width="640" height="640" fill="%23eef0ef"/%3E%3C/svg%3E'
 export const ROAD_SIGN_THUMBNAILS = {
   directional: url(directionalRoadSignThumbnail),
   'no-entry': url(noEntryRoadSignThumbnail),

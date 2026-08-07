@@ -18,6 +18,18 @@ function straightRoad(length = 40) {
   }
 }
 
+const ENABLED_ROAD_AUTO_INFRASTRUCTURE_SETTINGS: RoadAutoInfrastructureSettings = {
+  enabled: true,
+  items: {
+    'environment:traffic-signal': true,
+    'environment:drainage-inlet': true,
+    'environment:manhole-cover': true,
+    'environment:fire-hydrant': true,
+    'environment:traffic-bollard': true,
+    'environment:road-barrier': true,
+  },
+}
+
 describe('automatic road infrastructure', () => {
   test('creates every enabled editable infrastructure kind for a new ground road', () => {
     const { edgeIds, network: sourceNetwork } = straightRoad()
@@ -28,14 +40,14 @@ describe('automatic road infrastructure', () => {
         ...sourceNetwork.stylePresets,
         [sourceNetwork.activeStyleId]: applyRoadAutoInfrastructureClearances(
           activeStyle,
-          DEFAULT_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
+          ENABLED_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
         ),
       },
     })
     const nodes = buildRoadAutoInfrastructure({
       edgeIds,
       network,
-      settings: DEFAULT_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
+      settings: ENABLED_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
     })
 
     expect(nodes.filter((node) => node.type === 'environment:drainage-inlet')).toHaveLength(2)
@@ -74,7 +86,7 @@ describe('automatic road infrastructure', () => {
     const nodes = buildRoadAutoInfrastructure({
       edgeIds: crossed.createdEdgeIds,
       network,
-      settings: DEFAULT_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
+      settings: ENABLED_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
     })
 
     const signals = nodes.filter((node) => node.type === 'environment:traffic-signal')
@@ -107,18 +119,35 @@ describe('automatic road infrastructure', () => {
     expect(nodes.map((node) => node.type)).toEqual(['environment:manhole-cover'])
   })
 
+  test('honors per-road visibility overrides', () => {
+    const { edgeIds, network: sourceNetwork } = straightRoad()
+    const network = RoadNetworkNode.parse({
+      ...sourceNetwork,
+      roadsideItemVisibility: { 'environment:manhole-cover': false },
+    })
+    const nodes = buildRoadAutoInfrastructure({
+      edgeIds,
+      network,
+      settings: ENABLED_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
+    })
+
+    expect(nodes.some((node) => node.type === 'environment:fire-hydrant')).toBe(true)
+    expect(nodes.filter((node) => node.type === 'environment:manhole-cover')).toHaveLength(1)
+    expect(nodes.find((node) => node.type === 'environment:manhole-cover')?.visible).toBe(false)
+  })
+
   test('does not recreate infrastructure that was already generated for an edge', () => {
     const { edgeIds, network } = straightRoad()
     const first = buildRoadAutoInfrastructure({
       edgeIds,
       network,
-      settings: DEFAULT_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
+      settings: ENABLED_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
     })
     const second = buildRoadAutoInfrastructure({
       edgeIds,
       existingNodes: first,
       network,
-      settings: DEFAULT_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
+      settings: ENABLED_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
     })
 
     expect(first.length).toBeGreaterThan(0)
@@ -131,7 +160,7 @@ describe('automatic road infrastructure', () => {
     const original = buildRoadAutoInfrastructure({
       edgeIds: horizontal.createdEdgeIds,
       network: originalNetwork,
-      settings: DEFAULT_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
+      settings: ENABLED_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
     })
     const crossed = insertRoadSegment(horizontal.graph, [0, 0, -20], [0, 0, 20], { tolerance: 0.1 })
     const network = RoadNetworkNode.parse({

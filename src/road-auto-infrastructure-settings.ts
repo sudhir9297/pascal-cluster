@@ -1,24 +1,26 @@
-import type { StreetInfrastructureKind } from './street-infrastructure-config'
+import type { ResidentialRoadAssetKind, StreetInfrastructureKind } from './street-infrastructure-config'
+
+export type RoadAutoInfrastructureKind = Exclude<StreetInfrastructureKind, ResidentialRoadAssetKind>
 
 export type RoadAutoInfrastructureSettings = {
   enabled: boolean
-  items: Record<StreetInfrastructureKind, boolean>
+  items: Record<RoadAutoInfrastructureKind, boolean>
 }
 
 export const DEFAULT_ROAD_AUTO_INFRASTRUCTURE_SETTINGS: RoadAutoInfrastructureSettings = {
-  enabled: true,
+  enabled: false,
   items: {
-    'environment:traffic-signal': true,
-    'environment:drainage-inlet': true,
-    'environment:manhole-cover': true,
-    'environment:fire-hydrant': true,
-    'environment:traffic-bollard': true,
-    'environment:road-barrier': true,
+    'environment:traffic-signal': false,
+    'environment:drainage-inlet': false,
+    'environment:manhole-cover': false,
+    'environment:fire-hydrant': false,
+    'environment:traffic-bollard': false,
+    'environment:road-barrier': false,
   },
 }
 
 export const ROAD_AUTO_INFRASTRUCTURE_OPTIONS: ReadonlyArray<{
-  kind: StreetInfrastructureKind
+  kind: RoadAutoInfrastructureKind
   label: string
 }> = [
   { kind: 'environment:traffic-signal', label: 'Traffic signals' },

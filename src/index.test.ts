@@ -111,8 +111,47 @@ describe('Environment plugin manifest', () => {
       'environment:fire-hydrant',
       'environment:traffic-bollard',
       'environment:road-barrier',
+      'environment:driveway',
+      'environment:mailbox',
+      'environment:parcel-box',
+    'environment:trash-bin',
+    'environment:recycling-bin',
+    'environment:residential-gate',
+      'environment:speed-hump',
       'environment:road-sign',
     ])
+  })
+
+  test('centers every vertical resize tracker over its environment asset', () => {
+    let trackerCount = 0
+
+    for (const definition of environmentPlugin.nodes ?? []) {
+      if (!definition.handles) continue
+      const node = definition.schema.parse({})
+      const handles = typeof definition.handles === 'function'
+        ? definition.handles(node)
+        : definition.handles ?? []
+
+      for (const handle of handles) {
+        if (handle.kind !== 'linear-resize' || handle.axis !== 'y') continue
+        const position = handle.placement.position(node, {} as never)
+        expect([position[0], position[2]]).toEqual([0, 0])
+        trackerCount += 1
+      }
+    }
+
+    expect(trackerCount).toBeGreaterThan(0)
+  })
+
+  test('advertises placement-time rotation for every movable environment asset', () => {
+    const placeableDefinitions = (environmentPlugin.nodes ?? []).filter(
+      (definition) => definition.capabilities.movable && definition.tool,
+    )
+
+    expect(placeableDefinitions.length).toBeGreaterThan(0)
+    for (const definition of placeableDefinitions) {
+      expect(definition.toolHints?.some((hint) => hint.key === 'R')).toBe(true)
+    }
   })
 
   test('registers a drawn road network with stable graph defaults', () => {
@@ -851,8 +890,8 @@ describe('Environment plugin manifest', () => {
 
   test('configures automatic road infrastructure from the Environment side menu', () => {
     const store = useEnvironmentStore.getState()
-    expect(store.roadAutoInfrastructure.enabled).toBe(true)
-    expect(Object.values(store.roadAutoInfrastructure.items).every(Boolean)).toBe(true)
+    expect(store.roadAutoInfrastructure.enabled).toBe(false)
+    expect(Object.values(store.roadAutoInfrastructure.items).every((value) => !value)).toBe(true)
 
     store.setRoadAutoInfrastructureEnabled(false)
     expect(useEnvironmentStore.getState().roadAutoInfrastructure.enabled).toBe(false)
@@ -865,6 +904,12 @@ describe('Environment plugin manifest', () => {
     expect(panel).toContain('data-road-auto-infrastructure')
     expect(panel).toContain('Automatic infrastructure')
     expect(panel).toContain('Add automatically')
+    const roadsideInspector = readFileSync(new URL('./roadside-decoration-rules.tsx', import.meta.url), 'utf8')
+    expect(panel).not.toContain('Selected road items')
+    expect(panel).not.toContain('data-roadside-item-delete')
+    expect(roadsideInspector).toContain('Roadside item visibility')
+    expect(roadsideInspector).toContain('ROAD_AUTO_INFRASTRUCTURE_OPTIONS.map')
+    expect(roadsideInspector).not.toContain('Show lamps and signs')
 
     store.setRoadAutoInfrastructureEnabled(true)
     store.setRoadAutoInfrastructureItem('environment:fire-hydrant', true)

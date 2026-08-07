@@ -701,12 +701,101 @@ export const RoadBarrierNode = BaseNode.extend({
 	height: z.number().min(0.25).max(1.8).default(0.8),
 	width: z.number().min(0.12).max(1.2).default(0.32),
 	bodyColor: z.string().default("#c84b36"),
-	accentColor: z.string().default("#f0e9bf"),
+	accentColor: z.string().default("#ffffff"),
 	metalColor: z.string().default("#5c6668"),
 	roadAttachment: RoadAttachmentRef.optional(),
 });
 
 export type RoadBarrierNode = z.infer<typeof RoadBarrierNode>;
+
+/** Shared shape for small residential frontage and road-edge assets. */
+function residentialRoadAssetSchema<Prefix extends string, Type extends string>(
+	prefix: Prefix,
+	type: Type,
+	defaults: { width: number; length: number; height: number; depth: number; bodyColor: string; accentColor: string },
+) {
+	return BaseNode.extend({
+		id: objectId(prefix),
+		type: nodeType(type),
+		position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+		rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
+		width: z.number().min(0.1).max(20).default(defaults.width),
+		length: z.number().min(0.1).max(20).default(defaults.length),
+		height: z.number().min(0.05).max(4).default(defaults.height),
+		depth: z.number().min(0.05).max(4).default(defaults.depth),
+		bodyColor: z.string().default(defaults.bodyColor),
+		accentColor: z.string().default(defaults.accentColor),
+		roadAttachment: RoadAttachmentRef.optional(),
+	});
+}
+
+/** A paved residential driveway / parking apron. */
+export const DrivewayNode = residentialRoadAssetSchema(
+	"driveway",
+	"environment:driveway",
+	{ width: 3.2, length: 5.5, height: 0.12, depth: 0.12, bodyColor: "#777b78", accentColor: "#b7b2a6" },
+).extend({
+	drivewayShape: z
+		.enum(["straight", "curved-left", "curved-right"])
+		.default("straight"),
+	/** Lateral displacement between the road end and the far end of a curved driveway. */
+	curveAmount: z.number().min(0.25).max(20).default(2.5),
+});
+export type DrivewayNode = z.infer<typeof DrivewayNode>;
+
+/** A curbside post mailbox. */
+export const MailboxNode = residentialRoadAssetSchema(
+	"mailbox",
+	"environment:mailbox",
+  { width: 0.46, length: 0.32, height: 1.18, depth: 0.12, bodyColor: "#263b32", accentColor: "#bd4336" },
+);
+export type MailboxNode = z.infer<typeof MailboxNode>;
+
+/** A larger curbside parcel-delivery box. */
+export const ParcelBoxNode = residentialRoadAssetSchema(
+	"parcel-box",
+	"environment:parcel-box",
+	{ width: 0.72, length: 0.58, height: 1.28, depth: 0.12, bodyColor: "#242829", accentColor: "#777d7b" },
+).extend({
+	/** Shared top-lid and front-access-door animation position. */
+	operationState: z.number().min(0).max(1).default(0),
+});
+export type ParcelBoxNode = z.infer<typeof ParcelBoxNode>;
+
+/** A reinforced four-caster commercial refuse container. */
+export const TrashBinNode = residentialRoadAssetSchema(
+	"trash-bin",
+	"environment:trash-bin",
+	{ width: 1.35, length: 0.86, height: 1.2, depth: 0.06, bodyColor: "#2f713b", accentColor: "#367f43" },
+);
+export type TrashBinNode = z.infer<typeof TrashBinNode>;
+
+/** A wheeled household recycling bin. */
+export const RecyclingBinNode = residentialRoadAssetSchema(
+	"recycling-bin",
+	"environment:recycling-bin",
+	{ width: 0.58, length: 0.66, height: 1.05, depth: 0.06, bodyColor: "#087345", accentColor: "#0a6b42" },
+);
+export type RecyclingBinNode = z.infer<typeof RecyclingBinNode>;
+
+/** A framed, double-leaf timber driveway gate with dark metal hardware. */
+export const ResidentialGateNode = residentialRoadAssetSchema(
+	"residential-gate",
+	"environment:residential-gate",
+	{ width: 3.6, length: 0.16, height: 1.65, depth: 0.1, bodyColor: "#8a4f2b", accentColor: "#202326" },
+).extend({
+	/** Shared open position for the two swing leaves. */
+	operationState: z.number().min(0).max(1).default(0),
+});
+export type ResidentialGateNode = z.infer<typeof ResidentialGateNode>;
+
+/** A narrow modular rubber speed hump spanning the carriageway. */
+export const SpeedHumpNode = residentialRoadAssetSchema(
+	"speed-hump",
+	"environment:speed-hump",
+	{ width: 5.8, length: 0.5, height: 0.07, depth: 0.02, bodyColor: "#25282b", accentColor: "#f2b632" },
+);
+export type SpeedHumpNode = z.infer<typeof SpeedHumpNode>;
 
 /** A topological point shared by one or more road centerline edges. */
 const RoadGraphNodeSchema = z.object({
@@ -892,6 +981,10 @@ export const RoadNetworkNode = BaseNode.extend({
 	roadsideDecorationSpacing: z.number().min(10).max(100).default(30),
 	roadsideLampsBothSides: z.boolean().default(false),
 	showRoadsideDecorations: z.boolean().default(false),
+	/** Per-road visibility for generated roadside decorations/assets. */
+	roadsideItemVisibility: z.record(z.string(), z.boolean()).default({}),
+	/** Individual generated lamp/sign IDs removed by the user. */
+	roadsideDecorationSuppressed: z.record(z.string(), z.boolean()).default({}),
 	attachments: z.record(z.string(), RoadEdgeAttachment).default({}),
 	junctions: z.record(z.string(), RoadJunction).default({}),
 	stylePresets: z.record(z.string(), RoadStylePreset).default({

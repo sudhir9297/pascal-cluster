@@ -101,6 +101,7 @@ export const streetLightDefinition: StreetLightDefinition = {
   tool: () => import('./street-light-tool'),
   toolHints: [
     { key: 'Left click', label: 'Place roadway light' },
+    { key: 'R', label: 'Rotate 45°' },
     { key: 'Esc', label: 'Stop' },
   ],
 

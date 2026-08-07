@@ -105,6 +105,7 @@ export const multiHeadAreaLightDefinition: MultiHeadAreaLightDefinition = {
   tool: () => import('./multi-head-area-light-tool'),
   toolHints: [
     { key: 'Left click', label: 'Place multi-head area pole' },
+    { key: 'R', label: 'Rotate 45°' },
     { key: 'Esc', label: 'Stop' },
   ],
 

@@ -49,7 +49,7 @@ export default function CatalogLampTool() {
     })
   }, [config, isWallHosted, kind, lightOn, safeArmLength, safeHeight, style])
 
-  const floorPlacement = usePlacement(isWallHosted || isCeilingHosted ? null : activeLevelId, (position) => {
+  const floorPlacement = usePlacement(isWallHosted || isCeilingHosted ? null : activeLevelId, (position, rotationY) => {
     if (!activeLevelId || !config) return
     const brush = useEnvironmentStore.getState()
     const lamp = parseCatalogLamp(kind, {
@@ -58,7 +58,7 @@ export default function CatalogLampTool() {
       visualStyle: resolveCatalogLampProjection(kind, brush.catalogLampVisualStyle) ?? config.projection,
       lightOn: brush.catalogLampLightOn,
       position,
-      rotation: [0, 0, 0],
+      rotation: [0, rotationY, 0],
     })
     useScene.getState().createNode(lamp as unknown as AnyNode, activeLevelId as AnyNodeId)
     useViewer.getState().setSelection({ selectedIds: [lamp.id as AnyNodeId] })
@@ -107,7 +107,7 @@ export default function CatalogLampTool() {
 
   const ceilingPlacement = useCeilingPlacement(
     isCeilingHosted ? activeLevelId : null,
-    ({ ceilingId, position }) => {
+    ({ ceilingId, position, rotationY }) => {
       if (!config) return
       const brush = useEnvironmentStore.getState()
       const lamp = parseCatalogLamp(kind, {
@@ -118,7 +118,7 @@ export default function CatalogLampTool() {
         visualStyle: resolveCatalogLampProjection(kind, brush.catalogLampVisualStyle) ?? config.projection,
         lightOn: brush.catalogLampLightOn,
         position,
-        rotation: [0, 0, 0],
+        rotation: [0, rotationY, 0],
       })
       useScene.getState().createNode(lamp as unknown as AnyNode, ceilingId)
       useViewer.getState().setSelection({ selectedIds: [lamp.id as AnyNodeId] })

@@ -109,6 +109,7 @@ export const heritageCrookLightDefinition: HeritageCrookLightDefinition = {
   tool: () => import('./heritage-crook-light-tool'),
   toolHints: [
     { key: 'Left click', label: "Place Bishop's Crook light" },
+    { key: 'R', label: 'Rotate 45°' },
     { key: 'Esc', label: 'Stop' },
   ],
 

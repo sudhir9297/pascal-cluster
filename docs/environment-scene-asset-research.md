@@ -51,7 +51,7 @@ shape, color, wording, placement, and driving side vary by jurisdiction.
 ### 4. Sidewalks and accessible pedestrian routes
 
 - Sidewalk surfaces, frontage zones, clear walking zones, and furnishing zones
-- Curb ramps or blended transitions, level landings, and driveway crossings
+- Curb ramps or blended transitions and level landings
 - Tactile/detectable warning paving and directional tactile paving where used locally
 - Crosswalk connections, refuge-island cut-throughs, and accessible parking connections
 - Stairs, pedestrian ramps, handrails, guardrails, and pedestrian bridges
@@ -519,7 +519,6 @@ remain the main bodies of work.
 - [ ] Add sidewalk-surface generation.
 - [ ] Add frontage, clear-walking, furnishing, and buffer zone controls.
 - [ ] Add level landings.
-- [ ] Add accessible driveway crossings.
 - [ ] Add directional tactile paving.
 - [ ] Connect crosswalks to accessible sidewalk routes.
 - [ ] Add refuge-island cut-throughs.

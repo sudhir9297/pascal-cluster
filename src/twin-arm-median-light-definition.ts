@@ -107,6 +107,7 @@ export const twinArmMedianLightDefinition: TwinArmMedianLightDefinition = {
   tool: () => import('./twin-arm-median-light-tool'),
   toolHints: [
     { key: 'Left click', label: 'Place twin-arm median light' },
+    { key: 'R', label: 'Rotate 45°' },
     { key: 'Esc', label: 'Stop' },
   ],
 

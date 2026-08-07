@@ -14,6 +14,7 @@ import {
 	type JunctionBoundaryApproach,
 } from "./road-network-geometry";
 import { DEFAULT_ROAD_STYLE_PRESETS } from "./road-style-presets";
+import { ROAD_AUTO_INFRASTRUCTURE_OPTIONS } from "./road-auto-infrastructure-settings";
 import type { RoadGraphEdge, RoadNetworkNode, RoadsideDecoration, RoadStylePreset } from "./schema";
 
 function edgeStyle(node: RoadNetworkNode, edge: RoadGraphEdge): RoadStylePreset {
@@ -290,10 +291,11 @@ function addJunctionLighting(
 					`roadside:${ruleId}`,
 					graphNode.id,
 					path.fromEdgeId,
-					path.toEdgeId,
-					index,
-				].join(":");
-				decorations[id] = {
+						path.toEdgeId,
+						index,
+					].join(":");
+					if (node.roadsideDecorationSuppressed?.[id] === true) continue;
+					decorations[id] = {
 					edgeId: path.fromEdgeId,
 					id,
 					kind: "lamp",
@@ -336,6 +338,7 @@ export function buildRoadsideDecorations(node: RoadNetworkNode): RoadNetworkNode
 			facing?: RoadsideDecoration["facing"],
 		) => {
 			const id = `roadside:${ruleId}:${edge.id}:${side}:${station.toFixed(2)}`;
+			if (node.roadsideDecorationSuppressed?.[id] === true) return;
 			decorations[id] = {
 				edgeId: edge.id,
 				...(facing ? { facing } : {}),
@@ -573,22 +576,37 @@ export function RoadsideDecorationInspector({
 	onUpdate: (patch: Partial<RoadNetworkNode>) => void;
 }) {
 	const spacing = resolvedRoadsideDecorationSpacing(node.roadsideDecorationSpacing);
+	const itemVisibility = node.roadsideItemVisibility ?? {};
+	const visibilityOptions = [
+		{ key: "lamp", label: "Roadside lamps" },
+		{ key: "sign", label: "Roadside signs" },
+		...ROAD_AUTO_INFRASTRUCTURE_OPTIONS.map((option) => ({
+			key: option.kind,
+			label: option.label,
+		})),
+	];
 	return (
 		<div aria-label="Roadside decorations" className="flex flex-col gap-2">
-			<div aria-label="Roadside decoration visibility">
-				<ToggleControl
-					checked={node.showRoadsideDecorations}
-					label="Show lamps and signs"
-					onChange={(showRoadsideDecorations) => {
-						const stylePresets = showRoadsideDecorations
-							? ensureRoadsideLampVerge(node)
-							: null;
-						onUpdate({
-							showRoadsideDecorations,
-							...(stylePresets ? { stylePresets } : {}),
-						});
-					}}
-				/>
+			<div aria-label="Roadside item visibility" className="flex flex-col gap-1">
+				{visibilityOptions.map((option) => (
+					<ToggleControl
+						checked={itemVisibility[option.key] === true}
+						key={option.key}
+						label={option.label}
+						onChange={(visible) => {
+							const stylePresets = visible && (option.key === "lamp" || option.key === "sign")
+								? ensureRoadsideLampVerge(node)
+								: null;
+							onUpdate({
+								roadsideItemVisibility: {
+									...itemVisibility,
+									[option.key]: visible,
+								},
+								...(stylePresets ? { stylePresets } : {}),
+							});
+						}}
+					/>
+				))}
 			</div>
 			<div aria-label="Roadside lamp sides">
 				<ToggleControl

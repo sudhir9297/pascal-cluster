@@ -15,6 +15,8 @@ const ROAD_RUNTIME_DEFAULT_KEYS = [
 	"roadsideDecorationSpacing",
 	"roadsideLampsBothSides",
 	"showRoadsideDecorations",
+	"roadsideItemVisibility",
+	"roadsideDecorationSuppressed",
 ] as const satisfies ReadonlyArray<keyof RoadNetworkNode>;
 
 /** Fill fields added after a local scene's road node was already mounted. */

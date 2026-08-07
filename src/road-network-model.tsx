@@ -497,6 +497,7 @@ export function RoadNetworkModel({
   nonInteractive = false,
   node,
   onSelectElement,
+	onSelectRoadsideDecoration,
 	terrain = null,
 }: {
 	clearancePeers?: RoadNetworkNode[]
@@ -508,6 +509,10 @@ export function RoadNetworkModel({
     selection: Omit<RoadElementSelection, 'networkId'>,
     event: ThreeEvent<PointerEvent>,
   ) => void
+	onSelectRoadsideDecoration?: (
+		id: string,
+		event: ThreeEvent<PointerEvent>,
+	) => void
 	terrain?: TerrainField | null
 }) {
   const transitionProfileCache = useRef(createRoadTransitionProfileCache())
@@ -611,7 +616,15 @@ export function RoadNetworkModel({
     }))
   }, [node])
   const roadsideDecorationPreviews = useMemo(
-    () => node.showRoadsideDecorations ? buildRoadsideDecorationPreviews(node) : [],
+    () => (node.showRoadsideDecorations
+      || node.roadsideItemVisibility?.lamp === true
+      || node.roadsideItemVisibility?.sign === true)
+      ? buildRoadsideDecorationPreviews(node).filter((decoration) =>
+          node.showRoadsideDecorations
+            ? node.roadsideItemVisibility?.[decoration.kind] !== false
+            : node.roadsideItemVisibility?.[decoration.kind] === true,
+        )
+      : [],
     [node],
   )
 
@@ -621,9 +634,15 @@ export function RoadNetworkModel({
 			<group
 				key={decoration.id}
 				name={`roadside-${decoration.kind}:${decoration.id}`}
-				position={decoration.position}
-				rotation={[0, decoration.rotationY, 0]}
-			>
+					position={decoration.position}
+					rotation={[0, decoration.rotationY, 0]}
+					onPointerDown={onSelectRoadsideDecoration
+					? (event) => {
+							event.stopPropagation()
+							onSelectRoadsideDecoration(decoration.id, event)
+						}
+					: undefined}
+				>
 				{decoration.kind === 'lamp' ? (
 					<StreetLightModel node={ROADSIDE_STREET_LIGHT} />
 				) : (

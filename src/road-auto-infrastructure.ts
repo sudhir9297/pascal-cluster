@@ -94,9 +94,10 @@ function freeNodeAtStation({
   station: number
 }): StreetInfrastructureNode | null {
   const key = infrastructureKey(kind, edge.id, station.toFixed(2), side)
-  const node = parseStreetInfrastructure(kind, {
-    parentId: network.parentId,
-    position: [0, 0, 0],
+	const node = parseStreetInfrastructure(kind, {
+		parentId: network.parentId,
+		visible: network.roadsideItemVisibility?.[kind] === true,
+		position: [0, 0, 0],
     rotation: [0, 0, 0],
     metadata: {
       generatedBy: 'road-auto-infrastructure',
@@ -283,9 +284,10 @@ export function buildRoadAutoInfrastructure({
         const key = infrastructureKey(kind, junctionId, placement.edgeId, placement.side)
         const position = placement.position
         const rotation: [number, number, number] = [0, placement.rotationY, 0]
-        add(parseStreetInfrastructure(kind, {
-          parentId: network.parentId,
-          position,
+		add(parseStreetInfrastructure(kind, {
+			parentId: network.parentId,
+			visible: network.roadsideItemVisibility?.[kind] === true,
+			position,
           rotation,
           mount: 'mast-arm',
           headCount: 'two',

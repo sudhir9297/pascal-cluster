@@ -29,7 +29,7 @@ export default function TrussRoadwayLightTool() {
     [armLength, braceDepth, height, lightOn],
   )
 
-  const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position) => {
+  const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position, rotationY) => {
     if (!activeLevelId) return
     const brush = useEnvironmentStore.getState()
     const trussLight = TrussRoadwayLightNode.parse({
@@ -38,7 +38,7 @@ export default function TrussRoadwayLightTool() {
       braceDepth: brush.trussRoadwayBraceDepth,
       lightOn: brush.trussRoadwayLightOn,
       position,
-      rotation: [0, 0, 0],
+      rotation: [0, rotationY, 0],
     })
     useScene
       .getState()

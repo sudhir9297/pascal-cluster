@@ -17,10 +17,17 @@ import {
   UTILITY_POLE_THUMBNAIL,
   TRAFFIC_SIGNAL_THUMBNAIL,
   DRAINAGE_INLET_THUMBNAIL,
+  COMMERCIAL_TRASH_BIN_THUMBNAIL,
   MANHOLE_COVER_THUMBNAIL,
   FIRE_HYDRANT_THUMBNAIL,
   TRAFFIC_BOLLARD_THUMBNAIL,
   ROAD_BARRIER_THUMBNAIL,
+  DRIVEWAY_THUMBNAIL,
+  MAILBOX_THUMBNAIL,
+  PARCEL_BOX_THUMBNAIL,
+  RECYCLING_BIN_THUMBNAIL,
+  DRIVEWAY_GATE_THUMBNAIL,
+  SPEED_HUMP_THUMBNAIL,
   ROAD_SIGN_THUMBNAILS,
   ROAD_NETWORK_THUMBNAIL,
 } from './art'
@@ -76,6 +83,13 @@ const STREET_INFRASTRUCTURE_THUMBNAILS: Record<StreetInfrastructureKind, string>
   'environment:fire-hydrant': FIRE_HYDRANT_THUMBNAIL,
   'environment:traffic-bollard': TRAFFIC_BOLLARD_THUMBNAIL,
   'environment:road-barrier': ROAD_BARRIER_THUMBNAIL,
+  'environment:driveway': DRIVEWAY_THUMBNAIL,
+  'environment:mailbox': MAILBOX_THUMBNAIL,
+  'environment:parcel-box': PARCEL_BOX_THUMBNAIL,
+  'environment:trash-bin': COMMERCIAL_TRASH_BIN_THUMBNAIL,
+  'environment:recycling-bin': RECYCLING_BIN_THUMBNAIL,
+  'environment:residential-gate': DRIVEWAY_GATE_THUMBNAIL,
+  'environment:speed-hump': SPEED_HUMP_THUMBNAIL,
 }
 
 function roadSegmentLabel(count: number): string {

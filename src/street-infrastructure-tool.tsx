@@ -22,6 +22,7 @@ import {
   resolveManholeCoverLayout,
   resolveTrafficBollardLayout,
   resolveRoadBarrierLayout,
+  resolveResidentialRoadAssetLayout,
 } from './street-infrastructure-geometry'
 import StreetInfrastructurePreview from './street-infrastructure-preview'
 import { useEnvironmentStore } from './store'
@@ -36,7 +37,12 @@ function roadNetworksForLevel(levelId: string): RoadNetworkNode[] {
 }
 
 function RoadAttachmentGuide({ node }: { node: StreetInfrastructureNode }) {
-  const radius = node.type === 'environment:manhole-cover'
+  const residential = node.type.startsWith('environment:') &&
+    !['environment:traffic-signal', 'environment:drainage-inlet', 'environment:manhole-cover', 'environment:fire-hydrant', 'environment:traffic-bollard', 'environment:road-barrier'].includes(node.type)
+  const residentialLayout = residential ? resolveResidentialRoadAssetLayout(node as never) : null
+  const radius = residentialLayout
+    ? Math.max(residentialLayout.footprintWidth, residentialLayout.footprintDepth) / 2
+    : node.type === 'environment:manhole-cover'
     ? resolveManholeCoverLayout(node).frameRadius
     : node.type === 'environment:drainage-inlet'
       ? (() => {
@@ -49,8 +55,10 @@ function RoadAttachmentGuide({ node }: { node: StreetInfrastructureNode }) {
           ? resolveTrafficBollardLayout(node).baseRadius
           : node.type === 'environment:road-barrier'
             ? resolveRoadBarrierLayout(node).length / 2
-            : resolveFireHydrantLayout(node).padRadius
-  const y = node.type === 'environment:manhole-cover'
+        : resolveFireHydrantLayout(node as Extract<StreetInfrastructureNode, { type: 'environment:fire-hydrant' }>).padRadius
+  const y = residentialLayout
+    ? residentialLayout.height + 0.01
+    : node.type === 'environment:manhole-cover'
     ? (() => {
         const layout = resolveManholeCoverLayout(node)
         return layout.treadY + layout.treadHeight / 2
@@ -114,7 +122,7 @@ export default function StreetInfrastructureTool() {
     [activeLevelId, kind, previewNode],
   )
 
-  const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position) => {
+  const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position, placementRotationY) => {
     if (!activeLevelId || !kind) return
     const node = parseStreetInfrastructure(kind, {
       parentId: activeLevelId,
@@ -123,7 +131,7 @@ export default function StreetInfrastructureTool() {
     })
     const roadNetworks = roadNetworksForLevel(activeLevelId)
     const attachmentId = `${node.id}:road`
-    const finalNode = resolveFreeRoadPlacement({
+    const roadAlignedNode = resolveFreeRoadPlacement({
       assetNodeId: node.id,
       id: attachmentId,
       kind: kind as RoadAttachmentAssetKind,
@@ -131,6 +139,14 @@ export default function StreetInfrastructureTool() {
       networks: roadNetworks,
       point: position,
     })
+    const finalNode = {
+      ...roadAlignedNode,
+      rotation: [
+        roadAlignedNode.rotation[0],
+        roadAlignedNode.rotation[1] + placementRotationY,
+        roadAlignedNode.rotation[2],
+      ],
+    } as StreetInfrastructureNode
     const scene = useScene.getState()
     scene.createNode(finalNode as unknown as AnyNode, activeLevelId as AnyNodeId)
     useViewer.getState().setSelection({ selectedIds: [finalNode.id as AnyNodeId] })

@@ -27,7 +27,7 @@ export default function CobraHeadLightTool() {
     [armLength, height, lightOn],
   )
 
-  const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position) => {
+  const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position, rotationY) => {
     if (!activeLevelId) return
     const brush = useEnvironmentStore.getState()
     const cobraHead = CobraHeadLightNode.parse({
@@ -35,7 +35,7 @@ export default function CobraHeadLightTool() {
       armLength: brush.cobraHeadArmLength,
       lightOn: brush.cobraHeadLightOn,
       position,
-      rotation: [0, 0, 0],
+      rotation: [0, rotationY, 0],
     })
     useScene
       .getState()

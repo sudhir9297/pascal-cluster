@@ -15,6 +15,7 @@ import {
   resolveTrafficBollardLayout,
   resolveFireHydrantLayout,
   resolveManholeCoverLayout,
+  resolveResidentialRoadAssetLayout,
 } from './street-infrastructure-geometry'
 
 export type RoadAttachmentAssetKind =
@@ -24,6 +25,13 @@ export type RoadAttachmentAssetKind =
   | 'environment:fire-hydrant'
   | 'environment:traffic-bollard'
   | 'environment:road-barrier'
+  | 'environment:driveway'
+  | 'environment:mailbox'
+  | 'environment:parcel-box'
+  | 'environment:trash-bin'
+  | 'environment:recycling-bin'
+  | 'environment:residential-gate'
+  | 'environment:speed-hump'
 
 export type RoadAttachmentTransform = {
   position: [number, number, number]
@@ -214,6 +222,14 @@ function attachmentAlignmentForKind(kind: RoadAttachmentAssetKind): RoadAttachme
   if (kind === 'environment:traffic-bollard') return 'curb'
   if (kind === 'environment:road-barrier') return 'curb'
   if (kind === 'environment:manhole-cover') return 'carriageway'
+  if (kind === 'environment:driveway' || kind === 'environment:speed-hump') return 'carriageway'
+  if (
+    kind === 'environment:mailbox' ||
+    kind === 'environment:parcel-box' ||
+    kind === 'environment:trash-bin' ||
+    kind === 'environment:recycling-bin' ||
+    kind === 'environment:residential-gate'
+  ) return 'curb'
   return 'free'
 }
 
@@ -301,6 +317,10 @@ export function resolveRoadAttachmentTransform(
   const barrierLayout = node.type === 'environment:road-barrier'
     ? resolveRoadBarrierLayout(node)
     : null
+  const residentialLayout = node.type.startsWith('environment:') &&
+    !['environment:traffic-signal', 'environment:drainage-inlet', 'environment:manhole-cover', 'environment:fire-hydrant', 'environment:traffic-bollard', 'environment:road-barrier'].includes(node.type)
+    ? resolveResidentialRoadAssetLayout(node as never)
+    : null
   const curbStrip = crossSection.sides[side].components.find(
     (candidate) => candidate.kind === 'curb',
   )
@@ -329,6 +349,8 @@ export function resolveRoadAttachmentTransform(
                 + barrierLayout!.width / 2
                 + ROADSIDE_ASSET_CLEARANCE
           )
+    : alignment === 'curb' && residentialLayout
+      ? sign * ((curbStrip?.outerOffset ?? crossSection.sides[side].outerOffset) + residentialLayout.length / 2 + ROADSIDE_ASSET_CLEARANCE)
     : component
     ? sign * component.lateralOffset
     : alignment === 'carriageway' && node.type === 'environment:manhole-cover'
@@ -372,6 +394,10 @@ export function resolveRoadAttachmentTransform(
   } else if (alignment === 'curb' && node.type === 'environment:fire-hydrant') {
     rotationY = -Math.atan2(sampled.tangent[1], sampled.tangent[0]) + (side === 'right' ? Math.PI : 0)
   } else if (alignment === 'curb' && node.type === 'environment:road-barrier') {
+    rotationY = -Math.atan2(sampled.tangent[1], sampled.tangent[0])
+  } else if (alignment === 'curb' && residentialLayout) {
+    rotationY = -Math.atan2(sampled.tangent[1], sampled.tangent[0]) + (side === 'right' ? Math.PI : 0)
+  } else if (alignment === 'carriageway' && residentialLayout) {
     rotationY = -Math.atan2(sampled.tangent[1], sampled.tangent[0])
   }
   return {

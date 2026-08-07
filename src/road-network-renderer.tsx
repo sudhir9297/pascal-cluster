@@ -79,7 +79,11 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
       const store = useEnvironmentStore.getState()
       if (!networkSelected) {
         useViewer.getState().setSelection({ selectedIds: [storeNode.id as AnyNodeId] })
-        store.setRoadElementSelection(null)
+        store.setRoadElementSelection(
+          selection.kind === 'decoration'
+            ? { networkId: storeNode.id, ...selection }
+            : null,
+        )
         return
       }
       const current = store.roadElementSelection
@@ -94,6 +98,12 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
       )
     },
     [networkSelected, storeNode.id],
+  )
+  const onSelectRoadsideDecoration = useCallback(
+    (id: string, event: { stopPropagation: () => void }) => {
+      onSelectElement({ kind: 'decoration', id }, event)
+    },
+    [onSelectElement],
   )
   useRegistry(storeNode.id as AnyNodeId, storeNode.type, ref)
   const override = useLiveNodeOverrides(
@@ -215,8 +225,27 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
       patch as Partial<AnyNode>,
     )
   }, [node, storeNode])
+  useEffect(() => {
+    const visibility = node.roadsideItemVisibility ?? {}
+    const scene = useScene.getState()
+    for (const candidate of Object.values(scene.nodes)) {
+      const metadata = candidate.metadata
+      if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) continue
+      const values = metadata as Record<string, unknown>
+      if (values.generatedBy !== 'road-auto-infrastructure' || values.roadNetworkId !== node.id) {
+        continue
+      }
+      const visible = visibility[candidate.type as string] === true
+      if (candidate.visible === visible) continue
+      scene.updateNode(candidate.id as AnyNodeId, { visible } as Partial<AnyNode>)
+    }
+  }, [node.id, node.roadsideItemVisibility, sceneNodes])
   const roadsideLampStylePresets = useMemo(
-    () => node.showRoadsideDecorations ? ensureRoadsideLampVerge(node) : null,
+    () => node.showRoadsideDecorations
+      || node.roadsideItemVisibility?.lamp === true
+      || node.roadsideItemVisibility?.sign === true
+      ? ensureRoadsideLampVerge(node)
+      : null,
     [node],
   )
   const roadsideNode = useMemo(
@@ -232,8 +261,12 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
     } as Partial<AnyNode>)
   }, [node.id, roadsideLampStylePresets])
   const generatedRoadsideDecorations = useMemo(
-    () => buildRoadsideDecorations(roadsideNode),
-    [roadsideNode],
+    () => node.showRoadsideDecorations
+      || node.roadsideItemVisibility?.lamp === true
+      || node.roadsideItemVisibility?.sign === true
+      ? buildRoadsideDecorations(roadsideNode)
+      : {},
+    [node.roadsideItemVisibility, node.showRoadsideDecorations, roadsideNode],
   )
   useEffect(() => {
     const signature = JSON.stringify(generatedRoadsideDecorations)
@@ -329,17 +362,30 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
         return
       }
       if (event.key !== 'Delete' && event.key !== 'Backspace') return
-      const deletion = deleteRoadEdge(node, elementSelection.id)
-      if (!deletion) return
       event.preventDefault()
       event.stopPropagation()
       event.stopImmediatePropagation()
       const scene = useScene.getState()
       useEnvironmentStore.getState().setRoadElementSelection(null)
-      if (deletion.empty) {
-        scene.deleteNode(node.id as AnyNodeId)
+      if (elementSelection.kind === 'decoration') {
+        const nextDecorations = { ...node.roadsideDecorations }
+        if (!(elementSelection.id in nextDecorations)) return
+        delete nextDecorations[elementSelection.id]
+        scene.updateNode(node.id as AnyNodeId, {
+          roadsideDecorations: nextDecorations,
+          roadsideDecorationSuppressed: {
+            ...(node.roadsideDecorationSuppressed ?? {}),
+            [elementSelection.id]: true,
+          },
+        } as Partial<AnyNode>)
       } else {
-        scene.updateNode(node.id as AnyNodeId, deletion.patch as Partial<AnyNode>)
+        const deletion = deleteRoadEdge(node, elementSelection.id)
+        if (!deletion) return
+        if (deletion.empty) {
+          scene.deleteNode(node.id as AnyNodeId)
+        } else {
+          scene.updateNode(node.id as AnyNodeId, deletion.patch as Partial<AnyNode>)
+        }
       }
       triggerSFX('sfx:item-delete')
     }
@@ -358,6 +404,7 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
         node={renderedNode}
         nonInteractive={roadToolActive}
         onSelectElement={roadToolActive ? undefined : onSelectElement}
+		onSelectRoadsideDecoration={roadToolActive ? undefined : onSelectRoadsideDecoration}
 		terrain={terrain}
       />
       {editingControls.splineHandles ? (

@@ -27,7 +27,7 @@ export default function StreetLightTool() {
     [height, armLength, lightOn],
   )
 
-  const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position) => {
+  const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position, rotationY) => {
     if (!activeLevelId) return
     const brush = useEnvironmentStore.getState()
     const streetLight = StreetLightNode.parse({
@@ -35,7 +35,7 @@ export default function StreetLightTool() {
       armLength: brush.streetLightArmLength,
       lightOn: brush.streetLightOn,
       position,
-      rotation: [0, 0, 0],
+      rotation: [0, rotationY, 0],
     })
     useScene
       .getState()

@@ -25,14 +25,14 @@ export default function PostTopLightTool() {
     [height, lightOn],
   )
 
-  const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position) => {
+  const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position, rotationY) => {
     if (!activeLevelId) return
     const brush = useEnvironmentStore.getState()
     const postTopLight = PedestrianPostLightNode.parse({
       height: brush.postTopLightHeight,
       lightOn: brush.postTopLightOn,
       position,
-      rotation: [0, 0, 0],
+      rotation: [0, rotationY, 0],
     })
     useScene
       .getState()

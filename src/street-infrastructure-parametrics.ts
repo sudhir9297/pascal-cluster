@@ -1,5 +1,7 @@
 import type { ParametricDescriptor } from '@pascal-app/core'
 import type { StreetInfrastructureNode } from './street-infrastructure-config'
+import ParcelBoxOpenControl from './parcel-box-open-control'
+import DrivewayGateOpenControl from './driveway-gate-open-control'
 
 const trafficSignalParametrics: ParametricDescriptor<any> = {
   groups: [
@@ -224,6 +226,86 @@ const roadBarrierParametrics: ParametricDescriptor<any> = {
   ],
 }
 
+const residentialRoadAssetParametrics: ParametricDescriptor<any> = {
+  groups: [
+    {
+      label: 'Dimensions',
+      fields: [
+        { key: 'width', kind: 'number', unit: 'm', min: 0.1, max: 20, step: 0.05 },
+        { key: 'length', kind: 'number', unit: 'm', min: 0.1, max: 20, step: 0.05 },
+        { key: 'height', kind: 'number', unit: 'm', min: 0.05, max: 4, step: 0.05 },
+        { key: 'depth', kind: 'number', unit: 'm', min: 0.05, max: 4, step: 0.02 },
+      ],
+    },
+    {
+      label: 'Finish',
+      fields: [
+        { key: 'bodyColor', kind: 'color' },
+        { key: 'accentColor', kind: 'color' },
+      ],
+    },
+    { label: 'Position', fields: [{ key: 'position', kind: 'vec3' }] },
+  ],
+}
+
+const drivewayParametrics: ParametricDescriptor<any> = {
+  groups: [
+    {
+      label: 'Shape',
+      fields: [
+        {
+          key: 'drivewayShape',
+          kind: 'enum',
+          options: ['straight', 'curved-left', 'curved-right'],
+          display: 'segmented',
+        },
+        {
+          key: 'curveAmount',
+          kind: 'number',
+          unit: 'm',
+          min: 0.25,
+          max: 20,
+          step: 0.25,
+          visibleIf: (node: any) => node.drivewayShape !== 'straight',
+        },
+      ],
+    },
+    ...residentialRoadAssetParametrics.groups,
+  ],
+}
+
+const parcelBoxParametrics: ParametricDescriptor<any> = {
+  groups: [
+    {
+      label: 'Open Animation',
+      fields: [
+        {
+          key: 'open',
+          kind: 'custom',
+          component: ParcelBoxOpenControl,
+        },
+      ],
+    },
+    ...residentialRoadAssetParametrics.groups,
+  ],
+}
+
+const drivewayGateParametrics: ParametricDescriptor<any> = {
+  groups: [
+    {
+      label: 'Open Animation',
+      fields: [
+        {
+          key: 'open',
+          kind: 'custom',
+          component: DrivewayGateOpenControl,
+        },
+      ],
+    },
+    ...residentialRoadAssetParametrics.groups,
+  ],
+}
+
 export function getStreetInfrastructureParametrics(
   kind: string,
 ): ParametricDescriptor<StreetInfrastructureNode> {
@@ -232,5 +314,9 @@ export function getStreetInfrastructureParametrics(
   if (kind === 'environment:manhole-cover') return manholeCoverParametrics
   if (kind === 'environment:fire-hydrant') return fireHydrantParametrics
   if (kind === 'environment:traffic-bollard') return trafficBollardParametrics
-  return roadBarrierParametrics
+  if (kind === 'environment:road-barrier') return roadBarrierParametrics
+  if (kind === 'environment:driveway') return drivewayParametrics
+  if (kind === 'environment:parcel-box') return parcelBoxParametrics
+  if (kind === 'environment:residential-gate') return drivewayGateParametrics
+  return residentialRoadAssetParametrics
 }

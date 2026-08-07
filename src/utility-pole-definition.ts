@@ -130,6 +130,7 @@ export const utilityPoleDefinition: UtilityPoleDefinition = {
   tool: () => import('./utility-pole-tool'),
   toolHints: [
     { key: 'Left click', label: 'Place utility pole' },
+    { key: 'R', label: 'Rotate 45°' },
     { key: 'Esc', label: 'Stop' },
   ],
 

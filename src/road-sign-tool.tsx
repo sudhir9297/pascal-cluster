@@ -29,7 +29,7 @@ export default function RoadSignTool() {
     [mounting, postHeight, scale, signId],
   )
 
-  const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position) => {
+  const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position, rotationY) => {
     if (!activeLevelId) return
     const brush = useEnvironmentStore.getState()
     const sign = createRoadSignNode({
@@ -38,7 +38,7 @@ export default function RoadSignTool() {
       scale: brush.roadSignScale,
       mounting: brush.roadSignMounting,
       position,
-      rotation: [0, 0, 0],
+      rotation: [0, rotationY, 0],
     }, Object.keys(useScene.getState().nodes))
     useScene.getState().createNode(sign as unknown as AnyNode, activeLevelId as AnyNodeId)
     useViewer.getState().setSelection({ selectedIds: [sign.id as AnyNodeId] })

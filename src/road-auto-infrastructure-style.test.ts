@@ -12,7 +12,14 @@ describe('automatic infrastructure road clearances', () => {
     const source = buildRoadDraftStyle(roadDraftSettingsForPreset('local-street'))
     const style = applyRoadAutoInfrastructureClearances(
       source,
-      DEFAULT_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
+      {
+        enabled: true,
+        items: {
+          ...DEFAULT_ROAD_AUTO_INFRASTRUCTURE_SETTINGS.items,
+          'environment:drainage-inlet': true,
+          'environment:fire-hydrant': true,
+        },
+      },
     )
 
     expect(style.leftSide?.gutterWidth).toBe(AUTO_DRAINAGE_MIN_GUTTER_WIDTH)

@@ -27,7 +27,7 @@ export default function HeritageCrookLightTool() {
     [armReach, height, lightOn],
   )
 
-  const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position) => {
+  const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position, rotationY) => {
     if (!activeLevelId) return
     const brush = useEnvironmentStore.getState()
     const crookLight = HeritageCrookLightNode.parse({
@@ -35,7 +35,7 @@ export default function HeritageCrookLightTool() {
       armReach: brush.heritageCrookArmReach,
       lightOn: brush.heritageCrookLightOn,
       position,
-      rotation: [0, 0, 0],
+      rotation: [0, rotationY, 0],
     })
     useScene
       .getState()

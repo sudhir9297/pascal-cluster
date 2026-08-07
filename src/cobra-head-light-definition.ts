@@ -104,6 +104,7 @@ export const cobraHeadLightDefinition: CobraHeadLightDefinition = {
   tool: () => import('./cobra-head-light-tool'),
   toolHints: [
     { key: 'Left click', label: 'Place cobra-head roadway light' },
+    { key: 'R', label: 'Rotate 45°' },
     { key: 'Esc', label: 'Stop' },
   ],
 

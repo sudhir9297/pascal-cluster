@@ -1,15 +1,19 @@
 import type { FloorplanGeometry, GeometryContext } from '@pascal-app/core'
 import type {
   DrainageInletNode,
+  DrivewayNode,
   FireHydrantNode,
   ManholeCoverNode,
   TrafficSignalNode,
   TrafficBollardNode,
   RoadBarrierNode,
+  ResidentialGateNode,
 } from './schema'
-import type { StreetInfrastructureNode } from './street-infrastructure-config'
+import { resolveDrivewayGateOpenPose } from './driveway-gate-operation'
+import { isResidentialRoadAssetKind, type StreetInfrastructureNode } from './street-infrastructure-config'
 import {
   TRAFFIC_SIGNAL_DIMENSIONS,
+  buildDrivewayPlan,
   resolveDrainageInletLayout,
   resolveFireHydrantLayout,
   resolveFireHydrantOutletLayout,
@@ -17,6 +21,7 @@ import {
   resolveTrafficSignalLayout,
   resolveTrafficBollardLayout,
   resolveRoadBarrierLayout,
+  resolveResidentialRoadAssetLayout,
 } from './street-infrastructure-geometry'
 
 type Point = readonly [number, number]
@@ -102,6 +107,130 @@ export function buildStreetInfrastructureFloorplan(
     ? (ctx.viewState?.palette?.selectedStroke ?? '#2563eb')
     : '#394247'
   const children: FloorplanGeometry[] = []
+
+  if (isResidentialRoadAssetKind(node.type)) {
+    const layout = resolveResidentialRoadAssetLayout(node as never)
+    const residentialNode = node as Extract<StreetInfrastructureNode, { bodyColor: string; accentColor: string }>
+    const fill = residentialNode.bodyColor
+    const accent = residentialNode.accentColor
+    const kind = node.type
+    if (kind === 'environment:speed-hump') {
+      const legacyPalette = fill === '#5a5b58' && accent === '#e7dfb9'
+      const rubber = legacyPalette ? '#25282b' : fill
+      const yellow = legacyPalette ? '#f2b632' : accent
+      const moduleCount = Math.max(3, Math.round(layout.width / Math.max(layout.length, 0.1)))
+      const moduleWidth = layout.width / moduleCount
+      for (let index = 0; index < moduleCount; index += 1) {
+        const moduleCenter = localPoint(
+          center,
+          -layout.width / 2 + moduleWidth * (index + 0.5),
+          0,
+          angle,
+        )
+        children.push(rectangle(
+          moduleCenter,
+          moduleWidth * 0.985,
+          layout.length,
+          angle,
+          index % 2 === 0 ? rubber : yellow,
+          stroke,
+        ))
+      }
+    } else if (kind === 'environment:driveway') {
+      const drivewayPlan = buildDrivewayPlan(node as DrivewayNode)
+      children.push({
+        kind: 'polygon',
+        points: drivewayPlan.outline.map(([localX, localZ]) => (
+          localPoint(center, localX, localZ, angle)
+        )),
+        fill,
+        fillOpacity: 0.78,
+        stroke,
+        strokeWidth: 0.035,
+      })
+      for (const edge of [drivewayPlan.leftEdge, drivewayPlan.rightEdge]) {
+        for (let index = 1; index < edge.length; index += 1) {
+          const start = localPoint(center, edge[index - 1]![0], edge[index - 1]![1], angle)
+          const end = localPoint(center, edge[index]![0], edge[index]![1], angle)
+          children.push({ kind: 'line', x1: start[0], y1: start[1], x2: end[0], y2: end[1], stroke: accent, strokeWidth: 0.04 })
+        }
+      }
+    } else if (kind === 'environment:residential-gate') {
+      const gate = node as ResidentialGateNode
+      const pose = resolveDrivewayGateOpenPose(gate.operationState)
+      if (pose.openProgress < 0.01) {
+        children.push(rectangle(center, layout.width, layout.length, angle, fill, stroke))
+      }
+      for (const side of [-1, 1]) {
+        const post = localPoint(center, side * (layout.width / 2 - 0.06), 0, angle)
+        children.push({ kind: 'circle', cx: post[0], cy: post[1], r: 0.07, fill: accent, stroke, strokeWidth: 0.02 })
+      }
+      for (const side of [-1, 1]) {
+        const hingeX = side * layout.width * 0.43
+        const leafAngle = side < 0 ? pose.leftLeafAngle : pose.rightLeafAngle
+        const closedLeafX = -hingeX
+        const endX = hingeX + closedLeafX * Math.cos(leafAngle)
+        const endZ = -closedLeafX * Math.sin(leafAngle)
+        const hinge = localPoint(center, hingeX, 0, angle)
+        const leafEnd = localPoint(center, endX, endZ, angle)
+        children.push({ kind: 'line', x1: hinge[0], y1: hinge[1], x2: leafEnd[0], y2: leafEnd[1], stroke: accent, strokeWidth: 0.045 })
+        if (side < 0) {
+          children.push({ kind: 'circle', cx: leafEnd[0], cy: leafEnd[1], r: 0.045, fill: accent, stroke, strokeWidth: 0.018 })
+        }
+      }
+    } else if (kind === 'environment:trash-bin' || kind === 'environment:recycling-bin') {
+      children.push(rectangle(center, layout.width * 0.98, layout.length * 0.98, angle, fill, stroke))
+      children.push(rectangle(center, layout.width * 0.9, layout.length * 0.88, angle, fill, accent))
+      for (const side of [-1, 1]) {
+        for (const end of kind === 'environment:trash-bin' ? [-1, 1] : [1]) {
+          const wheel = localPoint(center, side * layout.width * 0.4, end * layout.length * 0.33, angle)
+          children.push({ kind: 'circle', cx: wheel[0], cy: wheel[1], r: Math.min(layout.width, layout.length) * 0.075, fill: '#171918', stroke, strokeWidth: 0.015 })
+        }
+      }
+      const hingeStart = localPoint(center, -layout.width * 0.34, layout.length * 0.36, angle)
+      const hingeEnd = localPoint(center, layout.width * 0.34, layout.length * 0.36, angle)
+      children.push({ kind: 'line', x1: hingeStart[0], y1: hingeStart[1], x2: hingeEnd[0], y2: hingeEnd[1], stroke: accent, strokeWidth: 0.03 })
+      const handleStart = localPoint(center, -layout.width * 0.31, layout.length * 0.485, angle)
+      const handleEnd = localPoint(center, layout.width * 0.31, layout.length * 0.485, angle)
+      children.push({ kind: 'line', x1: handleStart[0], y1: handleStart[1], x2: handleEnd[0], y2: handleEnd[1], stroke: accent, strokeWidth: 0.035, strokeLinecap: 'round' })
+      const labelStart = localPoint(center, -layout.width * 0.16, -layout.length * 0.42, angle)
+      const labelEnd = localPoint(center, layout.width * 0.16, -layout.length * 0.42, angle)
+      children.push({ kind: 'line', x1: labelStart[0], y1: labelStart[1], x2: labelEnd[0], y2: labelEnd[1], stroke: '#d5d8c8', strokeWidth: 0.025 })
+      if (kind === 'environment:recycling-bin') {
+        const points = [0, 1, 2].map((index) => {
+          const markAngle = -Math.PI / 2 + index * (Math.PI * 2 / 3)
+          return localPoint(center, Math.cos(markAngle) * layout.width * 0.18, Math.sin(markAngle) * layout.length * 0.18, angle)
+        })
+        for (let index = 0; index < points.length; index += 1) {
+          const start = points[index]!
+          const end = points[(index + 1) % points.length]!
+          children.push({ kind: 'line', x1: start[0], y1: start[1], x2: end[0], y2: end[1], stroke: accent, strokeWidth: 0.032, strokeLinecap: 'round' })
+        }
+      }
+    } else if (kind === 'environment:mailbox') {
+      children.push(rectangle(center, layout.width, layout.length, angle, fill, stroke))
+      children.push({ kind: 'circle', cx: x, cy: z, r: Math.min(layout.width, layout.length) * 0.16, fill: accent, stroke, strokeWidth: 0.02 })
+      for (const offset of [-0.42, 0.42]) {
+        const start = localPoint(center, -layout.width * 0.42, offset * layout.length, angle)
+        const end = localPoint(center, layout.width * 0.42, offset * layout.length, angle)
+        children.push({ kind: 'line', x1: start[0], y1: start[1], x2: end[0], y2: end[1], stroke: accent, strokeWidth: 0.025 })
+      }
+      const flagStart = localPoint(center, layout.width * 0.28, 0, angle)
+      const flagEnd = localPoint(center, layout.width * 0.28, -layout.length * 0.35, angle)
+      children.push({ kind: 'line', x1: flagStart[0], y1: flagStart[1], x2: flagEnd[0], y2: flagEnd[1], stroke: accent, strokeWidth: 0.035, strokeLinecap: 'round' })
+    } else if (kind === 'environment:parcel-box') {
+      children.push(rectangle(center, layout.width, layout.length, angle, fill, stroke))
+      const lock = localPoint(center, 0, -layout.length * 0.5, angle)
+      children.push({ kind: 'circle', cx: lock[0], cy: lock[1], r: Math.min(layout.width, layout.length) * 0.12, fill: accent, stroke, strokeWidth: 0.02 })
+      const doorStart = localPoint(center, -layout.width * 0.4, -layout.length * 0.44, angle)
+      const doorEnd = localPoint(center, layout.width * 0.4, -layout.length * 0.44, angle)
+      children.push({ kind: 'line', x1: doorStart[0], y1: doorStart[1], x2: doorEnd[0], y2: doorEnd[1], stroke: accent, strokeWidth: 0.03 })
+    } else {
+      children.push(rectangle(center, layout.width, layout.length, angle, fill, stroke))
+    }
+    if (selected) children.push({ kind: 'move-handle', point: center })
+    return { kind: 'group', children }
+  }
 
   if ((node.type as string) === 'environment:traffic-signal') {
     const signal = node as TrafficSignalNode

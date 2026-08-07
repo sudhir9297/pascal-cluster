@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-label="Green wheeled food-waste bin">
+  <defs>
+    <linearGradient id="body" x1="0" y1="0" x2="1" y2="0.9">
+      <stop offset="0" stop-color="#087345"/>
+      <stop offset="0.55" stop-color="#076f44"/>
+      <stop offset="1" stop-color="#045d39"/>
+    </linearGradient>
+    <linearGradient id="lid" x1="0" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#128052"/>
+      <stop offset="1" stop-color="#075f3c"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feGaussianBlur stdDeviation="13"/>
+    </filter>
+  </defs>
+  <rect width="640" height="640" fill="#f4f5f3"/>
+  <ellipse cx="326" cy="561" rx="188" ry="34" fill="#183128" opacity="0.18" filter="url(#shadow)"/>
+  <path d="M180 190 468 190 429 540Q425 565 402 570L241 570Q216 566 212 541Z" fill="url(#body)"/>
+  <path d="M406 211 468 190 429 540Q425 562 403 570Z" fill="#055b38" opacity="0.7"/>
+  <path d="M185 207 458 207 448 248 193 248Z" fill="#086840"/>
+  <path d="M158 165 464 158 490 195 469 220 171 219 151 200Z" fill="url(#lid)"/>
+  <path d="M181 133 442 132 471 160 454 190 174 190 157 164Z" fill="#0c7147"/>
+  <path d="M241 112 393 116 423 151 399 165 218 164 205 148Z" fill="url(#lid)"/>
+  <path d="M257 115 383 119 398 144 382 151 235 150 226 143Z" fill="#21845a" opacity="0.55"/>
+  <path d="M170 183 476 179 485 198 467 217 171 215 153 201Z" fill="#075f3b" opacity="0.7"/>
+  <path d="M178 208 458 208" stroke="#16915d" stroke-width="6" opacity="0.55"/>
+  <path d="M203 236 235 547M437 230 409 546" stroke="#118151" stroke-width="5" opacity="0.42"/>
+  <path d="M286 234 285 548M355 233 356 550" stroke="#0a6540" stroke-width="4" opacity="0.52"/>
+  <path d="M438 275Q457 301 450 454" fill="none" stroke="#148052" stroke-width="8" opacity="0.55"/>
+  <rect x="181" y="146" width="50" height="13" rx="6" fill="#064f34"/>
+  <rect x="409" y="145" width="48" height="13" rx="6" fill="#064f34"/>
+  <g transform="translate(448 459)">
+    <rect x="-35" y="-7" width="47" height="18" rx="8" fill="#252827"/>
+    <circle cx="20" cy="48" r="45" fill="#171918"/>
+    <circle cx="20" cy="48" r="29" fill="#343836"/>
+    <circle cx="20" cy="48" r="8" fill="#161918"/>
+    <g stroke="#191c1a" stroke-width="6">
+      <path d="M20 19v58M-9 48h58M0 28l40 40M40 28 0 68"/>
+    </g>
+  </g>
+  <g fill="none" stroke="#d5d8c8" stroke-linecap="round" stroke-width="6">
+    <path d="M286 326h69M286 398h69M290 329l62 66M351 329l-62 66"/>
+  </g>
+  <circle cx="321" cy="365" r="6" fill="#d5d8c8"/>
+  <g fill="#d5d8c8">
+    <rect x="286" y="418" width="70" height="6" rx="3"/>
+    <rect x="296" y="432" width="50" height="5" rx="2.5"/>
+    <rect x="271" y="463" width="29" height="27" rx="2"/>
+    <rect x="307" y="463" width="29" height="27" rx="2"/>
+    <rect x="343" y="463" width="29" height="27" rx="2"/>
+  </g>
+</svg>

@@ -299,6 +299,7 @@ export function makeCatalogLampDefinition(variant: CatalogLampVariant): GenericD
     tool: () => import('./catalog-lamp-tool'),
     toolHints: [
       { key: 'Left click', label: `Place ${variant.label.toLowerCase()}` },
+      ...(isWallHosted ? [] : [{ key: 'R', label: 'Rotate 45°' }]),
       { key: 'Esc', label: 'Stop' },
     ],
     presentation: {

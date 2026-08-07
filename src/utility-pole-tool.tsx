@@ -35,7 +35,7 @@ export default function UtilityPoleTool() {
     [assembly, height, crossarmLength, transformerMounted],
   )
 
-  const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position) => {
+  const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position, placementRotationY) => {
     if (!activeLevelId) return
     const brush = useEnvironmentStore.getState()
     const utilityPole = UtilityPoleNode.parse({
@@ -53,7 +53,7 @@ export default function UtilityPoleTool() {
     )
     const orientedPole = UtilityPoleNode.parse({
       ...utilityPole,
-      rotation: [0, rotationY, 0],
+      rotation: [0, rotationY + placementRotationY, 0],
     })
     useScene
       .getState()

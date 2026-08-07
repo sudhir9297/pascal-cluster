@@ -91,6 +91,7 @@ export const postTopLightDefinition: PostTopLightDefinition = {
   tool: () => import('./post-top-light-tool'),
   toolHints: [
     { key: 'Left click', label: 'Place pedestrian post-top light' },
+    { key: 'R', label: 'Rotate 45°' },
     { key: 'Esc', label: 'Stop' },
   ],
 

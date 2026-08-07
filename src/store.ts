@@ -40,7 +40,7 @@ export function nextRoadElevationMode(
 export type RoadJoinMode = "auto" | "suppress";
 export type RoadElementSelection = {
 	networkId: string;
-	kind: "control" | "corner" | "edge" | "endpoint" | "junction" | "spline";
+	kind: "control" | "corner" | "decoration" | "edge" | "endpoint" | "junction" | "spline";
 	id: string;
 	cornerKey?: string;
 	index?: number;

@@ -38,6 +38,13 @@ import {
   roadBarrierDefinition,
   trafficBollardDefinition,
   trafficSignalDefinition,
+  drivewayDefinition,
+  mailboxDefinition,
+  parcelBoxDefinition,
+  trashBinDefinition,
+  recyclingBinDefinition,
+  residentialGateDefinition,
+  speedHumpDefinition,
 } from './street-infrastructure-definition'
 
 type PluginHostPanel = {
@@ -96,6 +103,13 @@ export const environmentPlugin: Plugin = {
     fireHydrantDefinition as unknown as AnyNodeDefinition,
     trafficBollardDefinition as unknown as AnyNodeDefinition,
     roadBarrierDefinition as unknown as AnyNodeDefinition,
+    drivewayDefinition as unknown as AnyNodeDefinition,
+    mailboxDefinition as unknown as AnyNodeDefinition,
+    parcelBoxDefinition as unknown as AnyNodeDefinition,
+    trashBinDefinition as unknown as AnyNodeDefinition,
+    recyclingBinDefinition as unknown as AnyNodeDefinition,
+    residentialGateDefinition as unknown as AnyNodeDefinition,
+    speedHumpDefinition as unknown as AnyNodeDefinition,
     roadSignDefinition as unknown as AnyNodeDefinition,
   ],
 }
@@ -146,6 +160,13 @@ export {
   FireHydrantNode,
   TrafficBollardNode,
   RoadBarrierNode,
+  DrivewayNode,
+  MailboxNode,
+  ParcelBoxNode,
+  TrashBinNode,
+  RecyclingBinNode,
+  ResidentialGateNode,
+  SpeedHumpNode,
   RoadSignNode,
   RoadNetworkNode,
   RoadEdgeAttachment,
@@ -190,6 +211,13 @@ export {
   fireHydrantDefinition,
   trafficBollardDefinition,
   roadBarrierDefinition,
+  drivewayDefinition,
+  mailboxDefinition,
+  parcelBoxDefinition,
+  trashBinDefinition,
+  recyclingBinDefinition,
+  residentialGateDefinition,
+  speedHumpDefinition,
 } from './street-infrastructure-definition'
 export { roadSignDefinition } from './road-sign-definition'
 export { roadNetworkDefinition } from './road-network-definition'
@@ -283,8 +311,10 @@ export {
 export {
   STREET_INFRASTRUCTURE_KINDS,
   STREET_INFRASTRUCTURE_VARIANTS,
+  RESIDENTIAL_ROAD_ASSET_KINDS,
   getStreetInfrastructureVariant,
   isStreetInfrastructureKind,
+  isResidentialRoadAssetKind,
   parseStreetInfrastructure,
   type StreetInfrastructureKind,
   type StreetInfrastructureNode,
@@ -297,4 +327,7 @@ export {
   resolveManholeCoverLayout,
   resolveFireHydrantLayout,
   resolveFireHydrantOutletLayout,
+  resolveResidentialRoadAssetLayout,
+  type ResidentialRoadAssetLayout,
+  type ResidentialRoadAssetNode,
 } from './street-infrastructure-geometry'

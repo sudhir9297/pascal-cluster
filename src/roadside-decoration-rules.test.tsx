@@ -725,6 +725,17 @@ describe("semantic roadside decoration rules", () => {
 		expect(Object.values(parsed.roadsideDecorations).map((item) => item.kind)).not.toContain("guardrail");
 	});
 
+	test("keeps an individually deleted generated decoration suppressed", () => {
+		const node = longRoad();
+		const deletedId = Object.keys(node.roadsideDecorations)[0]!;
+		const next = RoadNetworkNode.parse({
+			...node,
+			roadsideDecorationSuppressed: { [deletedId]: true },
+		});
+
+		expect(buildRoadsideDecorations(next)[deletedId]).toBeUndefined();
+	});
+
 	test("maps semantic stations into visible world positions", () => {
 		const node = longRoad();
 		const previews = buildRoadsideDecorationPreviews(node);
@@ -748,10 +759,11 @@ describe("semantic roadside decoration rules", () => {
 			onUpdate: () => {},
 		}));
 		expect(markup).toContain('aria-label="Roadside decorations"');
-		expect(markup).toContain('aria-label="Roadside decoration visibility"');
+		expect(markup).toContain('aria-label="Roadside item visibility"');
 		expect(markup).toContain('aria-label="Roadside lamp sides"');
 		expect(markup).toContain('aria-label="Roadside decoration spacing"');
-		expect(markup).toContain("Show lamps and signs");
+		expect(markup).toContain("Roadside lamps");
+		expect(markup).toContain("Traffic signals");
 		expect(markup).toContain("Lamps on both sides");
 		expect(markup).toContain("Spacing");
 		expect(markup).not.toContain("Sparse");

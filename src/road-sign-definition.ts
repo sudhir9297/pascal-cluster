@@ -105,6 +105,7 @@ export const roadSignDefinition: RoadSignDefinition = {
   tool: () => import('./road-sign-tool'),
   toolHints: [
     { key: 'Left click', label: 'Place road sign' },
+    { key: 'R', label: 'Rotate 45°' },
     { key: 'Esc', label: 'Stop' },
   ],
 

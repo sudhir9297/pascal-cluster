@@ -29,7 +29,7 @@ export default function MultiHeadAreaLightTool() {
     [armLength, headCount, height, lightOn],
   )
 
-  const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position) => {
+  const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position, rotationY) => {
     if (!activeLevelId) return
     const brush = useEnvironmentStore.getState()
     const areaLight = MultiHeadAreaLightNode.parse({
@@ -38,7 +38,7 @@ export default function MultiHeadAreaLightTool() {
       headCount: brush.multiHeadAreaHeadCount,
       lightOn: brush.multiHeadAreaLightOn,
       position,
-      rotation: [0, 0, 0],
+      rotation: [0, rotationY, 0],
     })
     useScene
       .getState()
