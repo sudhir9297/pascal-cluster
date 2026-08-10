@@ -4,7 +4,7 @@ import './find-sync'
 import './normalize-road-signs'
 import './purge-removed-lamps'
 import { cobraHeadLightDefinition } from './cobra-head-light-definition'
-import { ENVIRONMENT_ICON } from './art'
+import { STREETSCAPE_ICON } from './art'
 import { heritageCrookLightDefinition } from './heritage-crook-light-definition'
 import { postTopLightDefinition } from './post-top-light-definition'
 import { multiHeadAreaLightDefinition } from './multi-head-area-light-definition'
@@ -63,14 +63,14 @@ type PluginHostPanel = {
 }
 
 /**
- * The Pascal Environment plugin manifest — the entire public surface of this
+ * The Pascal Streetscape plugin manifest — the entire public surface of this
  * package. A host loads it through the same `loadPlugin` path the built-ins use:
- * environment node kinds plus one left-rail panel (`Environment`). The cast
+ * streetscape node kinds plus one left-rail panel (`Streetscape`). The cast
  * mirrors the built-in bundle: `AnyNodeDefinition` is the hand-maintained union
  * today; the registry derives it post-migration.
  */
-export const environmentPlugin: Plugin = {
-  id: 'pascal:environment',
+export const streetscapePlugin: Plugin = {
+  id: 'pascal:streetscape',
   apiVersion: 1,
   nodes: [
     roadNetworkDefinition as unknown as AnyNodeDefinition,
@@ -114,18 +114,18 @@ export const environmentPlugin: Plugin = {
   ],
 }
 
-export const environmentHostPanel: PluginHostPanel = {
-  id: 'pascal:environment:environment',
-  label: 'Environment',
-  icon: { kind: 'url', src: ENVIRONMENT_ICON },
+export const streetscapeHostPanel: PluginHostPanel = {
+  id: 'pascal:streetscape:streetscape',
+  label: 'Streetscape',
+  icon: { kind: 'url', src: STREETSCAPE_ICON },
   component: () => import('./presets-panel'),
-  pluginId: environmentPlugin.id,
-  description: 'Procedural systems and assets for building complete outdoor environments.',
+  pluginId: streetscapePlugin.id,
+  description: 'Procedural systems and assets for building complete outdoor streetscapes.',
   creator: {
     name: 'Pascal',
     url: 'https://github.com/pascalorg',
   },
-  pluginUrl: 'https://github.com/pascalorg/plugin-environment',
+  pluginUrl: 'https://github.com/pascalorg/plugin-streetscape',
   defaultInstalled: true,
 }
 

@@ -5,15 +5,15 @@ import { EDITOR_LAYER, triggerSFX } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useMemo } from 'react'
 import HeritageCrookLightPreview from './heritage-crook-light-preview'
-import { finishEnvironmentPlacement, usePlacement } from './placement'
+import { usePlacement } from './placement'
 import { HeritageCrookLightNode } from './schema'
-import { useEnvironmentStore } from './store'
+import { useStreetscapeStore } from './store'
 
 export default function HeritageCrookLightTool() {
   const activeLevelId = useViewer((s) => s.selection.levelId)
-  const height = useEnvironmentStore((s) => s.heritageCrookHeight)
-  const armReach = useEnvironmentStore((s) => s.heritageCrookArmReach)
-  const lightOn = useEnvironmentStore((s) => s.heritageCrookLightOn)
+  const height = useStreetscapeStore((s) => s.heritageCrookHeight)
+  const armReach = useStreetscapeStore((s) => s.heritageCrookArmReach)
+  const lightOn = useStreetscapeStore((s) => s.heritageCrookLightOn)
 
   const previewNode = useMemo(
     () =>
@@ -29,7 +29,7 @@ export default function HeritageCrookLightTool() {
 
   const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position, rotationY) => {
     if (!activeLevelId) return
-    const brush = useEnvironmentStore.getState()
+    const brush = useStreetscapeStore.getState()
     const crookLight = HeritageCrookLightNode.parse({
       height: brush.heritageCrookHeight,
       armReach: brush.heritageCrookArmReach,
@@ -42,7 +42,6 @@ export default function HeritageCrookLightTool() {
       .createNode(crookLight as unknown as AnyNode, activeLevelId as AnyNodeId)
     useViewer.getState().setSelection({ selectedIds: [crookLight.id as AnyNodeId] })
     triggerSFX('sfx:item-place')
-    finishEnvironmentPlacement(brush.placementMode)
   })
 
   if (!activeLevelId) return null

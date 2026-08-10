@@ -4,16 +4,16 @@ import { type AnyNode, type AnyNodeId, useScene } from '@pascal-app/core'
 import { EDITOR_LAYER, triggerSFX } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useMemo } from 'react'
-import { finishEnvironmentPlacement, usePlacement } from './placement'
+import { usePlacement } from './placement'
 import { StreetLightNode } from './schema'
 import StreetLightPreview from './street-light-preview'
-import { useEnvironmentStore } from './store'
+import { useStreetscapeStore } from './store'
 
 export default function StreetLightTool() {
   const activeLevelId = useViewer((s) => s.selection.levelId)
-  const height = useEnvironmentStore((s) => s.streetLightHeight)
-  const armLength = useEnvironmentStore((s) => s.streetLightArmLength)
-  const lightOn = useEnvironmentStore((s) => s.streetLightOn)
+  const height = useStreetscapeStore((s) => s.streetLightHeight)
+  const armLength = useStreetscapeStore((s) => s.streetLightArmLength)
+  const lightOn = useStreetscapeStore((s) => s.streetLightOn)
 
   const previewNode = useMemo(
     () =>
@@ -29,7 +29,7 @@ export default function StreetLightTool() {
 
   const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position, rotationY) => {
     if (!activeLevelId) return
-    const brush = useEnvironmentStore.getState()
+    const brush = useStreetscapeStore.getState()
     const streetLight = StreetLightNode.parse({
       height: brush.streetLightHeight,
       armLength: brush.streetLightArmLength,
@@ -42,7 +42,6 @@ export default function StreetLightTool() {
       .createNode(streetLight as unknown as AnyNode, activeLevelId as AnyNodeId)
     useViewer.getState().setSelection({ selectedIds: [streetLight.id as AnyNodeId] })
     triggerSFX('sfx:item-place')
-    finishEnvironmentPlacement(brush.placementMode)
   })
 
   if (!activeLevelId) return null

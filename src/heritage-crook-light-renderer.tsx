@@ -20,7 +20,7 @@ export default function HeritageCrookLightRenderer({
   const ref = useRef<Group>(null!)
   const handlers = useNodeEvents(
     storeNode as never,
-    'environment:heritage-crook-light' as never,
+    'streetscape:heritage-crook-light' as never,
   )
   useRegistry(storeNode.id as AnyNodeId, storeNode.type, ref)
 

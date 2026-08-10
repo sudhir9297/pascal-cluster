@@ -7,7 +7,7 @@ const activeAnimations = new Map<string, ParcelBoxAnimation>()
 
 function parcelBoxNode(nodeId: AnyNodeId): ParcelBoxNode | null {
   const node = useScene.getState().nodes[nodeId] as unknown as ParcelBoxNode | undefined
-  return node?.type === 'environment:parcel-box' ? node : null
+  return node?.type === 'streetscape:parcel-box' ? node : null
 }
 
 function effectiveOperationState(nodeId: AnyNodeId): number {

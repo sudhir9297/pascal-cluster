@@ -204,7 +204,7 @@ describe('road network corner rendering', () => {
       const attached = createRoadAttachmentForPlacement({
         assetNodeId: `driveway_${shape}`,
         id: `driveway_${shape}:road`,
-        kind: 'environment:driveway',
+        kind: 'streetscape:driveway',
         node: DrivewayNode.parse({ drivewayShape: shape, curveAmount: 2.5 }),
         networks: [road],
         point: [0, 0, 5],

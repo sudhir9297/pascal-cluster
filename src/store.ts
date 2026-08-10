@@ -15,8 +15,7 @@ import {
 	STANDARD_UTILITY_POLE_EXPOSED_HEIGHT_M,
 } from "./utility-pole-geometry";
 
-export type EnvironmentPlacementMode = "single" | "continuous";
-export type EnvironmentPanelCategory =
+export type StreetscapePanelCategory =
 	| "roads"
 	| "lighting"
 	| "signs"
@@ -50,17 +49,14 @@ export type RoadElementSelection = {
 /**
  * The plugin's own module-level state — the example of "plugins self-manage
  * runtime state with module-level stores" from the plugin-authoring contract.
- * It holds the active catalog category and environment placement brushes. The
+ * It holds the active catalog category and streetscape placement brushes. The
  * panel writes it and placement tools read it; colours and intensity remain
  * inspector-only.
  */
-type EnvironmentStore = {
-	/** Active catalog category in the Environment panel. */
-	panelCategory: EnvironmentPanelCategory;
-	setPanelCategory: (value: EnvironmentPanelCategory) => void;
-	/** Whether a placement tool exits after one click or stays armed. */
-	placementMode: EnvironmentPlacementMode;
-	setPlacementMode: (value: EnvironmentPlacementMode) => void;
+type StreetscapeStore = {
+	/** Active catalog category in the Streetscape panel. */
+	panelCategory: StreetscapePanelCategory;
+	setPanelCategory: (value: StreetscapePanelCategory) => void;
 	/** Whether the road tool commits each leg directly or drafts one multi-point spline. */
 	roadAlignmentMode: RoadAlignmentMode;
 	setRoadAlignmentMode: (value: RoadAlignmentMode) => void;
@@ -189,11 +185,9 @@ type EnvironmentStore = {
 
 const DEFAULT_ROAD_DRAFT = roadDraftSettingsForPreset("local-street");
 
-export const useEnvironmentStore = create<EnvironmentStore>((set) => ({
+export const useStreetscapeStore = create<StreetscapeStore>((set) => ({
 	panelCategory: "roads",
 	setPanelCategory: (panelCategory) => set({ panelCategory }),
-	placementMode: "continuous",
-	setPlacementMode: (placementMode) => set({ placementMode }),
 	roadAlignmentMode: "straight",
 	setRoadAlignmentMode: (roadAlignmentMode) => set({ roadAlignmentMode }),
 	roadBendRadius: 5,

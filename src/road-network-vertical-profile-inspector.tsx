@@ -20,7 +20,7 @@ import {
 	updateRoadVerticalProfilePoint,
 } from "./road-network-vertical-profile";
 import type { RoadGraphEdge, RoadNetworkNode } from "./schema";
-import { useEnvironmentStore } from "./store";
+import { useStreetscapeStore } from "./store";
 
 function ProfilePreview({
 	edge,
@@ -77,7 +77,7 @@ export function RoadVerticalProfileEditor({
 	node: RoadNetworkNode;
 	onUpdate: (patch: Partial<RoadNetworkNode>) => void;
 }) {
-	const selection = useEnvironmentStore((state) => state.roadElementSelection);
+	const selection = useStreetscapeStore((state) => state.roadElementSelection);
 	const preferredEdgeId =
 		selection?.networkId === node.id && node.edges[selection.id]
 			? selection.id

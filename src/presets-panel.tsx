@@ -47,7 +47,7 @@ import {
   STREET_INFRASTRUCTURE_VARIANTS,
   type StreetInfrastructureKind,
 } from './street-infrastructure-config'
-import { ROAD_ELEVATION_OPTIONS, useEnvironmentStore } from './store'
+import { ROAD_ELEVATION_OPTIONS, useStreetscapeStore } from './store'
 import {
   STANDARD_LAMP_HEIGHT_MAX_M,
   STANDARD_LAMP_HEIGHT_MIN_M,
@@ -65,31 +65,31 @@ import {
   type RoadStylePresetId,
 } from './road-style-presets'
 
-const STREET_LIGHT_KIND = 'environment:street-light'
-const POST_TOP_LIGHT_KIND = 'environment:pedestrian-post-light'
-const HERITAGE_CROOK_LIGHT_KIND = 'environment:heritage-crook-light'
-const COBRA_HEAD_LIGHT_KIND = 'environment:cobra-head-light'
-const TWIN_ARM_MEDIAN_LIGHT_KIND = 'environment:twin-arm-median-light'
-const MULTI_HEAD_AREA_LIGHT_KIND = 'environment:multi-head-area-light'
-const TRUSS_ROADWAY_LIGHT_KIND = 'environment:truss-roadway-light'
-const UTILITY_POLE_KIND = 'environment:utility-pole'
-const ROAD_SIGN_KIND = 'environment:road-sign'
-const ROAD_NETWORK_KIND = 'environment:road-network'
+const STREET_LIGHT_KIND = 'streetscape:street-light'
+const POST_TOP_LIGHT_KIND = 'streetscape:pedestrian-post-light'
+const HERITAGE_CROOK_LIGHT_KIND = 'streetscape:heritage-crook-light'
+const COBRA_HEAD_LIGHT_KIND = 'streetscape:cobra-head-light'
+const TWIN_ARM_MEDIAN_LIGHT_KIND = 'streetscape:twin-arm-median-light'
+const MULTI_HEAD_AREA_LIGHT_KIND = 'streetscape:multi-head-area-light'
+const TRUSS_ROADWAY_LIGHT_KIND = 'streetscape:truss-roadway-light'
+const UTILITY_POLE_KIND = 'streetscape:utility-pole'
+const ROAD_SIGN_KIND = 'streetscape:road-sign'
+const ROAD_NETWORK_KIND = 'streetscape:road-network'
 
 const STREET_INFRASTRUCTURE_THUMBNAILS: Record<StreetInfrastructureKind, string> = {
-  'environment:traffic-signal': TRAFFIC_SIGNAL_THUMBNAIL,
-  'environment:drainage-inlet': DRAINAGE_INLET_THUMBNAIL,
-  'environment:manhole-cover': MANHOLE_COVER_THUMBNAIL,
-  'environment:fire-hydrant': FIRE_HYDRANT_THUMBNAIL,
-  'environment:traffic-bollard': TRAFFIC_BOLLARD_THUMBNAIL,
-  'environment:road-barrier': ROAD_BARRIER_THUMBNAIL,
-  'environment:driveway': DRIVEWAY_THUMBNAIL,
-  'environment:mailbox': MAILBOX_THUMBNAIL,
-  'environment:parcel-box': PARCEL_BOX_THUMBNAIL,
-  'environment:trash-bin': COMMERCIAL_TRASH_BIN_THUMBNAIL,
-  'environment:recycling-bin': RECYCLING_BIN_THUMBNAIL,
-  'environment:residential-gate': DRIVEWAY_GATE_THUMBNAIL,
-  'environment:speed-hump': SPEED_HUMP_THUMBNAIL,
+  'streetscape:traffic-signal': TRAFFIC_SIGNAL_THUMBNAIL,
+  'streetscape:drainage-inlet': DRAINAGE_INLET_THUMBNAIL,
+  'streetscape:manhole-cover': MANHOLE_COVER_THUMBNAIL,
+  'streetscape:fire-hydrant': FIRE_HYDRANT_THUMBNAIL,
+  'streetscape:traffic-bollard': TRAFFIC_BOLLARD_THUMBNAIL,
+  'streetscape:road-barrier': ROAD_BARRIER_THUMBNAIL,
+  'streetscape:driveway': DRIVEWAY_THUMBNAIL,
+  'streetscape:mailbox': MAILBOX_THUMBNAIL,
+  'streetscape:parcel-box': PARCEL_BOX_THUMBNAIL,
+  'streetscape:trash-bin': COMMERCIAL_TRASH_BIN_THUMBNAIL,
+  'streetscape:recycling-bin': RECYCLING_BIN_THUMBNAIL,
+  'streetscape:residential-gate': DRIVEWAY_GATE_THUMBNAIL,
+  'streetscape:speed-hump': SPEED_HUMP_THUMBNAIL,
 }
 
 function roadSegmentLabel(count: number): string {
@@ -129,7 +129,7 @@ const dragRoadNetworkTool = (event: DragEvent<HTMLButtonElement>) => {
 const activateCatalogLampTool = (kind: string) => {
   const setTool = useEditor.getState().setTool as (value: string) => void
   const config = getCatalogLampConfig(kind)
-  const store = useEnvironmentStore.getState()
+  const store = useStreetscapeStore.getState()
   store.setCatalogLampVisualStyle(config?.projection ?? 'shoebox')
   if (
     config?.projection === 'path'
@@ -199,7 +199,7 @@ const activateStreetInfrastructureTool = (kind: StreetInfrastructureKind) => {
 
 const activateRoadSignTool = (signId: RoadSignId) => {
   const setTool = useEditor.getState().setTool as (value: string) => void
-  useEnvironmentStore.getState().setRoadSignId(signId)
+  useStreetscapeStore.getState().setRoadSignId(signId)
   setTool(ROAD_SIGN_KIND)
   useEditor.getState().setMode('build')
 }
@@ -342,8 +342,8 @@ function RoadNetworkArtwork() {
   )
 }
 
-/** Environment asset cards and their placement brush settings. */
-export default function EnvironmentPanel() {
+/** Streetscape asset cards and their placement brush settings. */
+export default function StreetscapePanel() {
   const selectedIds = useViewer((s) => s.selection.selectedIds)
   const activeLevelId = useViewer((s) => s.selection.levelId)
   const [roadExchangeStatus, setRoadExchangeStatus] = useState<{
@@ -354,55 +354,54 @@ export default function EnvironmentPanel() {
     networkId: string
     plan: RoadCleanupPlan
   } | null>(null)
-  const panelCategory = useEnvironmentStore((s) => s.panelCategory)
-  const setPanelCategory = useEnvironmentStore((s) => s.setPanelCategory)
-  const height = useEnvironmentStore((s) => s.streetLightHeight)
-  const placementMode = useEnvironmentStore((s) => s.placementMode)
-  const armLength = useEnvironmentStore((s) => s.streetLightArmLength)
-  const lightOn = useEnvironmentStore((s) => s.streetLightOn)
-  const postTopLightHeight = useEnvironmentStore((s) => s.postTopLightHeight)
-  const postTopLightOn = useEnvironmentStore((s) => s.postTopLightOn)
-  const heritageCrookHeight = useEnvironmentStore((s) => s.heritageCrookHeight)
-  const heritageCrookArmReach = useEnvironmentStore((s) => s.heritageCrookArmReach)
-  const heritageCrookLightOn = useEnvironmentStore((s) => s.heritageCrookLightOn)
-  const cobraHeadHeight = useEnvironmentStore((s) => s.cobraHeadHeight)
-  const cobraHeadArmLength = useEnvironmentStore((s) => s.cobraHeadArmLength)
-  const cobraHeadLightOn = useEnvironmentStore((s) => s.cobraHeadLightOn)
-  const twinArmMedianHeight = useEnvironmentStore((s) => s.twinArmMedianHeight)
-  const twinArmMedianArmLength = useEnvironmentStore((s) => s.twinArmMedianArmLength)
-  const twinArmMedianLightOn = useEnvironmentStore((s) => s.twinArmMedianLightOn)
-  const multiHeadAreaHeight = useEnvironmentStore((s) => s.multiHeadAreaHeight)
-  const multiHeadAreaArmLength = useEnvironmentStore((s) => s.multiHeadAreaArmLength)
-  const multiHeadAreaHeadCount = useEnvironmentStore((s) => s.multiHeadAreaHeadCount)
-  const multiHeadAreaLightOn = useEnvironmentStore((s) => s.multiHeadAreaLightOn)
-  const trussRoadwayHeight = useEnvironmentStore((s) => s.trussRoadwayHeight)
-  const trussRoadwayArmLength = useEnvironmentStore((s) => s.trussRoadwayArmLength)
-  const trussRoadwayBraceDepth = useEnvironmentStore((s) => s.trussRoadwayBraceDepth)
-  const trussRoadwayLightOn = useEnvironmentStore((s) => s.trussRoadwayLightOn)
-  const catalogLampHeight = useEnvironmentStore((s) => s.catalogLampHeight)
-  const catalogLampArmLength = useEnvironmentStore((s) => s.catalogLampArmLength)
-  const catalogLampVisualStyle = useEnvironmentStore((s) => s.catalogLampVisualStyle)
-  const catalogLampLightOn = useEnvironmentStore((s) => s.catalogLampLightOn)
-  const utilityPoleHeight = useEnvironmentStore((s) => s.utilityPoleHeight)
-  const utilityPoleCrossarmLength = useEnvironmentStore((s) => s.utilityPoleCrossarmLength)
-  const utilityPoleTransformerMounted = useEnvironmentStore((s) => s.utilityPoleTransformerMounted)
-  const utilityPoleAssembly = useEnvironmentStore((s) => s.utilityPoleAssembly)
-  const roadSignPostHeight = useEnvironmentStore((s) => s.roadSignPostHeight)
-  const roadSignScale = useEnvironmentStore((s) => s.roadSignScale)
-  const roadSignMounting = useEnvironmentStore((s) => s.roadSignMounting)
-  const roadSignId = useEnvironmentStore((s) => s.roadSignId)
-  const roadAlignmentMode = useEnvironmentStore((s) => s.roadAlignmentMode)
-  const roadBendRadius = useEnvironmentStore((s) => s.roadBendRadius)
-  const roadElevationMode = useEnvironmentStore((s) => s.roadElevationMode)
-  const roadCrossSectionEditorTab = useEnvironmentStore((s) => s.roadCrossSectionEditorTab)
-  const roadStylePresetId = useEnvironmentStore((s) => s.roadStylePresetId)
-  const roadLaneCount = useEnvironmentStore((s) => s.roadLaneCount)
-  const roadLaneWidth = useEnvironmentStore((s) => s.roadLaneWidth)
-  const roadShoulderWidth = useEnvironmentStore((s) => s.roadShoulderWidth)
-  const roadMedianWidth = useEnvironmentStore((s) => s.roadMedianWidth)
-  const roadSideComponents = useEnvironmentStore((s) => s.roadSideComponents)
-  const roadJoinMode = useEnvironmentStore((s) => s.roadJoinMode)
-  const roadAutoInfrastructure = useEnvironmentStore((s) => s.roadAutoInfrastructure)
+  const panelCategory = useStreetscapeStore((s) => s.panelCategory)
+  const setPanelCategory = useStreetscapeStore((s) => s.setPanelCategory)
+  const height = useStreetscapeStore((s) => s.streetLightHeight)
+  const armLength = useStreetscapeStore((s) => s.streetLightArmLength)
+  const lightOn = useStreetscapeStore((s) => s.streetLightOn)
+  const postTopLightHeight = useStreetscapeStore((s) => s.postTopLightHeight)
+  const postTopLightOn = useStreetscapeStore((s) => s.postTopLightOn)
+  const heritageCrookHeight = useStreetscapeStore((s) => s.heritageCrookHeight)
+  const heritageCrookArmReach = useStreetscapeStore((s) => s.heritageCrookArmReach)
+  const heritageCrookLightOn = useStreetscapeStore((s) => s.heritageCrookLightOn)
+  const cobraHeadHeight = useStreetscapeStore((s) => s.cobraHeadHeight)
+  const cobraHeadArmLength = useStreetscapeStore((s) => s.cobraHeadArmLength)
+  const cobraHeadLightOn = useStreetscapeStore((s) => s.cobraHeadLightOn)
+  const twinArmMedianHeight = useStreetscapeStore((s) => s.twinArmMedianHeight)
+  const twinArmMedianArmLength = useStreetscapeStore((s) => s.twinArmMedianArmLength)
+  const twinArmMedianLightOn = useStreetscapeStore((s) => s.twinArmMedianLightOn)
+  const multiHeadAreaHeight = useStreetscapeStore((s) => s.multiHeadAreaHeight)
+  const multiHeadAreaArmLength = useStreetscapeStore((s) => s.multiHeadAreaArmLength)
+  const multiHeadAreaHeadCount = useStreetscapeStore((s) => s.multiHeadAreaHeadCount)
+  const multiHeadAreaLightOn = useStreetscapeStore((s) => s.multiHeadAreaLightOn)
+  const trussRoadwayHeight = useStreetscapeStore((s) => s.trussRoadwayHeight)
+  const trussRoadwayArmLength = useStreetscapeStore((s) => s.trussRoadwayArmLength)
+  const trussRoadwayBraceDepth = useStreetscapeStore((s) => s.trussRoadwayBraceDepth)
+  const trussRoadwayLightOn = useStreetscapeStore((s) => s.trussRoadwayLightOn)
+  const catalogLampHeight = useStreetscapeStore((s) => s.catalogLampHeight)
+  const catalogLampArmLength = useStreetscapeStore((s) => s.catalogLampArmLength)
+  const catalogLampVisualStyle = useStreetscapeStore((s) => s.catalogLampVisualStyle)
+  const catalogLampLightOn = useStreetscapeStore((s) => s.catalogLampLightOn)
+  const utilityPoleHeight = useStreetscapeStore((s) => s.utilityPoleHeight)
+  const utilityPoleCrossarmLength = useStreetscapeStore((s) => s.utilityPoleCrossarmLength)
+  const utilityPoleTransformerMounted = useStreetscapeStore((s) => s.utilityPoleTransformerMounted)
+  const utilityPoleAssembly = useStreetscapeStore((s) => s.utilityPoleAssembly)
+  const roadSignPostHeight = useStreetscapeStore((s) => s.roadSignPostHeight)
+  const roadSignScale = useStreetscapeStore((s) => s.roadSignScale)
+  const roadSignMounting = useStreetscapeStore((s) => s.roadSignMounting)
+  const roadSignId = useStreetscapeStore((s) => s.roadSignId)
+  const roadAlignmentMode = useStreetscapeStore((s) => s.roadAlignmentMode)
+  const roadBendRadius = useStreetscapeStore((s) => s.roadBendRadius)
+  const roadElevationMode = useStreetscapeStore((s) => s.roadElevationMode)
+  const roadCrossSectionEditorTab = useStreetscapeStore((s) => s.roadCrossSectionEditorTab)
+  const roadStylePresetId = useStreetscapeStore((s) => s.roadStylePresetId)
+  const roadLaneCount = useStreetscapeStore((s) => s.roadLaneCount)
+  const roadLaneWidth = useStreetscapeStore((s) => s.roadLaneWidth)
+  const roadShoulderWidth = useStreetscapeStore((s) => s.roadShoulderWidth)
+  const roadMedianWidth = useStreetscapeStore((s) => s.roadMedianWidth)
+  const roadSideComponents = useStreetscapeStore((s) => s.roadSideComponents)
+  const roadJoinMode = useStreetscapeStore((s) => s.roadJoinMode)
+  const roadAutoInfrastructure = useStreetscapeStore((s) => s.roadAutoInfrastructure)
   const activeTool = useEditor((s) => s.tool)
   const streetLightCount = useScene(
     (s) => Object.values(s.nodes).filter((n) => (n.type as string) === STREET_LIGHT_KIND).length,
@@ -611,7 +610,7 @@ export default function EnvironmentPanel() {
       selectedRoadNetwork.id as AnyNodeId,
       roadCleanupReview.plan.resultGraph as Partial<AnyNode>,
     )
-    useEnvironmentStore.getState().setRoadElementSelection(null)
+    useStreetscapeStore.getState().setRoadElementSelection(null)
     setRoadCleanupReview(null)
     setRoadExchangeStatus({
       kind: 'success',
@@ -630,7 +629,7 @@ export default function EnvironmentPanel() {
       setRoadCleanupReview(null)
       if (selectedRoadNetwork) {
         scene.updateNode(selectedRoadNetwork.id as AnyNodeId, graph as Partial<AnyNode>)
-        useEnvironmentStore.getState().setRoadElementSelection(null)
+        useStreetscapeStore.getState().setRoadElementSelection(null)
         setRoadExchangeStatus({
           kind: 'success',
           message: `Replaced the selected road with ${roadSegmentLabel(Object.keys(graph.edges).length)}.`,
@@ -657,7 +656,7 @@ export default function EnvironmentPanel() {
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-4 text-sidebar-foreground">
       <header className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-base">Environment</h2>
+          <h2 className="font-semibold text-base">Streetscape</h2>
           <span className="rounded-full bg-sidebar-accent px-2 py-0.5 text-sidebar-foreground/70 text-xs">
             {count} placed
           </span>
@@ -678,11 +677,9 @@ export default function EnvironmentPanel() {
               ? 'Click the ground to set road points. Enter or double-click finishes the path.'
               : 'Click or drag Road into the scene, then set two or more points.'
             : panelCategory === 'signs' && roadSignArmed
-              ? 'Choose a sign, then click the ground to place it.'
-              : armed && placementMode === 'continuous'
-                ? 'Continuous: click repeatedly to place. Press Esc to stop.'
-                : armed
-                  ? 'Single: place once, then return to selection.'
+              ? 'Click repeatedly to place signs. Press Esc to stop.'
+              : armed
+                  ? 'Click repeatedly to place. Press Esc to stop.'
                   : panelCategory === 'lighting'
                     ? 'Choose a lamp, then click the ground to place it.'
                     : panelCategory === 'signs'
@@ -690,30 +687,6 @@ export default function EnvironmentPanel() {
                       : 'Choose a utility asset, then click the ground to place it.'}
         </p>
       </header>
-
-      {panelCategory !== 'signs' && panelCategory !== 'roads' && <div className="flex flex-col gap-1.5">
-        <span className="font-medium text-sidebar-foreground/65 text-xs">Placement</span>
-        <div className="grid grid-cols-2 rounded-lg bg-sidebar-accent/55 p-1 ring-1 ring-sidebar-border">
-          {(['single', 'continuous'] as const).map((mode) => {
-            const selected = placementMode === mode
-            return (
-              <button
-                aria-pressed={selected}
-                className={`rounded-md px-2 py-1.5 font-medium text-xs transition-colors ${
-                  selected
-                    ? 'bg-sidebar text-sidebar-foreground shadow-sm ring-1 ring-sidebar-border'
-                    : 'text-sidebar-foreground/55 hover:text-sidebar-foreground'
-                }`}
-                key={mode}
-                onClick={() => useEnvironmentStore.getState().setPlacementMode(mode)}
-                type="button"
-              >
-                {mode === 'single' ? 'Single' : 'Continuous'}
-              </button>
-            )
-          })}
-        </div>
-      </div>}
 
       {panelCategory === 'roads' && (
         <>
@@ -766,7 +739,7 @@ export default function EnvironmentPanel() {
                 aria-label="Road preset"
                 className="h-8 rounded-md border border-sidebar-border bg-sidebar px-2 text-sidebar-foreground text-xs outline-none focus:ring-1 focus:ring-sidebar-ring"
                 onChange={(event) =>
-                  useEnvironmentStore
+                  useStreetscapeStore
                     .getState()
                     .setRoadStylePresetId(event.target.value as RoadStylePresetId)
                 }
@@ -781,7 +754,7 @@ export default function EnvironmentPanel() {
             </label>
 
             <SegmentedControl
-              onChange={useEnvironmentStore.getState().setRoadCrossSectionEditorTab}
+              onChange={useStreetscapeStore.getState().setRoadCrossSectionEditorTab}
               options={[
                 { label: 'Roadway', value: 'roadway' },
                 { label: 'Left', value: 'left' },
@@ -796,7 +769,7 @@ export default function EnvironmentPanel() {
                   label="Lane count"
                   max={12}
                   min={1}
-                  onChange={useEnvironmentStore.getState().setRoadLaneCount}
+                  onChange={useStreetscapeStore.getState().setRoadLaneCount}
                   precision={0}
                   restoreOnCommit={false}
                   step={1}
@@ -806,7 +779,7 @@ export default function EnvironmentPanel() {
                   label="Lane width"
                   max={5}
                   min={2.4}
-                  onChange={useEnvironmentStore.getState().setRoadLaneWidth}
+                  onChange={useStreetscapeStore.getState().setRoadLaneWidth}
                   precision={2}
                   restoreOnCommit={false}
                   step={0.05}
@@ -817,7 +790,7 @@ export default function EnvironmentPanel() {
                   label="Shoulder"
                   max={4}
                   min={0}
-                  onChange={useEnvironmentStore.getState().setRoadShoulderWidth}
+                  onChange={useStreetscapeStore.getState().setRoadShoulderWidth}
                   precision={2}
                   restoreOnCommit={false}
                   step={0.05}
@@ -828,7 +801,7 @@ export default function EnvironmentPanel() {
                   label="Median"
                   max={12}
                   min={0}
-                  onChange={useEnvironmentStore.getState().setRoadMedianWidth}
+                  onChange={useStreetscapeStore.getState().setRoadMedianWidth}
                   precision={2}
                   restoreOnCommit={false}
                   step={0.1}
@@ -848,7 +821,7 @@ export default function EnvironmentPanel() {
                     max={control.max}
                     min={0}
                     onChange={(value) =>
-                      useEnvironmentStore
+                      useStreetscapeStore
                         .getState()
                         .setRoadSideComponentWidth(selectedRoadSide, control.key, value)
                     }
@@ -871,7 +844,7 @@ export default function EnvironmentPanel() {
           <div className="flex flex-col gap-1.5">
             <span className="font-medium text-sidebar-foreground/65 text-xs">Alignment</span>
             <SegmentedControl
-              onChange={useEnvironmentStore.getState().setRoadAlignmentMode}
+              onChange={useStreetscapeStore.getState().setRoadAlignmentMode}
               options={[
                 { label: 'Straight', value: 'straight' },
                 { label: 'Spline', value: 'spline' },
@@ -884,7 +857,7 @@ export default function EnvironmentPanel() {
             label="Bend radius"
             max={25}
             min={0.5}
-            onChange={useEnvironmentStore.getState().setRoadBendRadius}
+            onChange={useStreetscapeStore.getState().setRoadBendRadius}
             precision={1}
             restoreOnCommit={false}
             step={0.5}
@@ -895,7 +868,7 @@ export default function EnvironmentPanel() {
           <div className="flex flex-col gap-1.5">
             <span className="font-medium text-sidebar-foreground/65 text-xs">Elevation</span>
             <SegmentedControl
-              onChange={useEnvironmentStore.getState().setRoadElevationMode}
+              onChange={useStreetscapeStore.getState().setRoadElevationMode}
               options={ROAD_ELEVATION_OPTIONS}
               value={roadElevationMode}
             />
@@ -904,7 +877,7 @@ export default function EnvironmentPanel() {
           <div className="flex flex-col gap-1.5">
             <span className="font-medium text-sidebar-foreground/65 text-xs">Crossings</span>
             <SegmentedControl
-              onChange={useEnvironmentStore.getState().setRoadJoinMode}
+              onChange={useStreetscapeStore.getState().setRoadJoinMode}
               options={[
                 { label: 'Auto join', value: 'auto' },
                 { label: 'No join', value: 'suppress' },
@@ -928,7 +901,7 @@ export default function EnvironmentPanel() {
             <ToggleControl
               checked={roadAutoInfrastructure.enabled}
               label="Add automatically"
-              onChange={useEnvironmentStore.getState().setRoadAutoInfrastructureEnabled}
+              onChange={useStreetscapeStore.getState().setRoadAutoInfrastructureEnabled}
             />
             {roadAutoInfrastructure.enabled ? (
               <div className="flex flex-col gap-1.5 border-sidebar-border border-l pl-3">
@@ -938,7 +911,7 @@ export default function EnvironmentPanel() {
                       checked={roadAutoInfrastructure.items[option.kind]}
                       label={option.label}
                       onChange={(checked) =>
-                        useEnvironmentStore
+                        useStreetscapeStore
                           .getState()
                           .setRoadAutoInfrastructureItem(option.kind, checked)
                       }
@@ -1373,7 +1346,7 @@ export default function EnvironmentPanel() {
             label="Height"
             max={STANDARD_LAMP_HEIGHT_MAX_M}
             min={STANDARD_LAMP_HEIGHT_MIN_M}
-            onChange={useEnvironmentStore.getState().setStreetLightHeight}
+            onChange={useStreetscapeStore.getState().setStreetLightHeight}
             precision={2}
             restoreOnCommit={false}
             step={0.25}
@@ -1384,7 +1357,7 @@ export default function EnvironmentPanel() {
             label="Arm"
             max={3}
             min={0.3}
-            onChange={useEnvironmentStore.getState().setStreetLightArmLength}
+            onChange={useStreetscapeStore.getState().setStreetLightArmLength}
             precision={1}
             restoreOnCommit={false}
             step={0.1}
@@ -1394,7 +1367,7 @@ export default function EnvironmentPanel() {
           <ToggleControl
             checked={lightOn}
             label="Lamp on"
-            onChange={useEnvironmentStore.getState().setStreetLightOn}
+            onChange={useStreetscapeStore.getState().setStreetLightOn}
           />
         </div>
       )}
@@ -1404,7 +1377,7 @@ export default function EnvironmentPanel() {
             label="Height"
             max={STANDARD_LAMP_HEIGHT_MAX_M}
             min={STANDARD_LAMP_HEIGHT_MIN_M}
-            onChange={useEnvironmentStore.getState().setPostTopLightHeight}
+            onChange={useStreetscapeStore.getState().setPostTopLightHeight}
             precision={2}
             restoreOnCommit={false}
             step={0.1}
@@ -1414,7 +1387,7 @@ export default function EnvironmentPanel() {
           <ToggleControl
             checked={postTopLightOn}
             label="Lamp on"
-            onChange={useEnvironmentStore.getState().setPostTopLightOn}
+            onChange={useStreetscapeStore.getState().setPostTopLightOn}
           />
         </div>
       )}
@@ -1424,7 +1397,7 @@ export default function EnvironmentPanel() {
             label="Height"
             max={STANDARD_LAMP_HEIGHT_MAX_M}
             min={STANDARD_LAMP_HEIGHT_MIN_M}
-            onChange={useEnvironmentStore.getState().setHeritageCrookHeight}
+            onChange={useStreetscapeStore.getState().setHeritageCrookHeight}
             precision={2}
             restoreOnCommit={false}
             step={0.1}
@@ -1435,7 +1408,7 @@ export default function EnvironmentPanel() {
             label="Arm reach"
             max={1.5}
             min={0.5}
-            onChange={useEnvironmentStore.getState().setHeritageCrookArmReach}
+            onChange={useStreetscapeStore.getState().setHeritageCrookArmReach}
             precision={2}
             restoreOnCommit={false}
             step={0.05}
@@ -1445,7 +1418,7 @@ export default function EnvironmentPanel() {
           <ToggleControl
             checked={heritageCrookLightOn}
             label="Lamp on"
-            onChange={useEnvironmentStore.getState().setHeritageCrookLightOn}
+            onChange={useStreetscapeStore.getState().setHeritageCrookLightOn}
           />
         </div>
       )}
@@ -1455,7 +1428,7 @@ export default function EnvironmentPanel() {
             label="Height"
             max={STANDARD_LAMP_HEIGHT_MAX_M}
             min={STANDARD_LAMP_HEIGHT_MIN_M}
-            onChange={useEnvironmentStore.getState().setCobraHeadHeight}
+            onChange={useStreetscapeStore.getState().setCobraHeadHeight}
             precision={2}
             restoreOnCommit={false}
             step={0.1}
@@ -1466,7 +1439,7 @@ export default function EnvironmentPanel() {
             label="Arm"
             max={3}
             min={0.5}
-            onChange={useEnvironmentStore.getState().setCobraHeadArmLength}
+            onChange={useStreetscapeStore.getState().setCobraHeadArmLength}
             precision={2}
             restoreOnCommit={false}
             step={0.1}
@@ -1476,7 +1449,7 @@ export default function EnvironmentPanel() {
           <ToggleControl
             checked={cobraHeadLightOn}
             label="Lamp on"
-            onChange={useEnvironmentStore.getState().setCobraHeadLightOn}
+            onChange={useStreetscapeStore.getState().setCobraHeadLightOn}
           />
         </div>
       )}
@@ -1486,7 +1459,7 @@ export default function EnvironmentPanel() {
             label="Height"
             max={STANDARD_LAMP_HEIGHT_MAX_M}
             min={STANDARD_LAMP_HEIGHT_MIN_M}
-            onChange={useEnvironmentStore.getState().setTwinArmMedianHeight}
+            onChange={useStreetscapeStore.getState().setTwinArmMedianHeight}
             precision={2}
             restoreOnCommit={false}
             step={0.1}
@@ -1497,7 +1470,7 @@ export default function EnvironmentPanel() {
             label="Arm"
             max={3}
             min={0.5}
-            onChange={useEnvironmentStore.getState().setTwinArmMedianArmLength}
+            onChange={useStreetscapeStore.getState().setTwinArmMedianArmLength}
             precision={2}
             restoreOnCommit={false}
             step={0.1}
@@ -1507,7 +1480,7 @@ export default function EnvironmentPanel() {
           <ToggleControl
             checked={twinArmMedianLightOn}
             label="Lamps on"
-            onChange={useEnvironmentStore.getState().setTwinArmMedianLightOn}
+            onChange={useStreetscapeStore.getState().setTwinArmMedianLightOn}
           />
         </div>
       )}
@@ -1517,7 +1490,7 @@ export default function EnvironmentPanel() {
             label="Height"
             max={STANDARD_LAMP_HEIGHT_MAX_M}
             min={STANDARD_LAMP_HEIGHT_MIN_M}
-            onChange={useEnvironmentStore.getState().setMultiHeadAreaHeight}
+            onChange={useStreetscapeStore.getState().setMultiHeadAreaHeight}
             precision={2}
             restoreOnCommit={false}
             step={0.1}
@@ -1528,7 +1501,7 @@ export default function EnvironmentPanel() {
             label="Arm"
             max={3}
             min={0.5}
-            onChange={useEnvironmentStore.getState().setMultiHeadAreaArmLength}
+            onChange={useStreetscapeStore.getState().setMultiHeadAreaArmLength}
             precision={2}
             restoreOnCommit={false}
             step={0.1}
@@ -1537,7 +1510,7 @@ export default function EnvironmentPanel() {
           />
           <SegmentedControl
             onChange={(value) =>
-              useEnvironmentStore.getState().setMultiHeadAreaHeadCount(Number(value) as 3 | 4)
+              useStreetscapeStore.getState().setMultiHeadAreaHeadCount(Number(value) as 3 | 4)
             }
             options={[
               { label: '3 heads', value: '3' },
@@ -1548,7 +1521,7 @@ export default function EnvironmentPanel() {
           <ToggleControl
             checked={multiHeadAreaLightOn}
             label="Lamps on"
-            onChange={useEnvironmentStore.getState().setMultiHeadAreaLightOn}
+            onChange={useStreetscapeStore.getState().setMultiHeadAreaLightOn}
           />
         </div>
       )}
@@ -1558,7 +1531,7 @@ export default function EnvironmentPanel() {
             label="Height"
             max={STANDARD_LAMP_HEIGHT_MAX_M}
             min={STANDARD_LAMP_HEIGHT_MIN_M}
-            onChange={useEnvironmentStore.getState().setTrussRoadwayHeight}
+            onChange={useStreetscapeStore.getState().setTrussRoadwayHeight}
             precision={2}
             restoreOnCommit={false}
             step={0.1}
@@ -1569,7 +1542,7 @@ export default function EnvironmentPanel() {
             label="Arm"
             max={3.5}
             min={0.8}
-            onChange={useEnvironmentStore.getState().setTrussRoadwayArmLength}
+            onChange={useStreetscapeStore.getState().setTrussRoadwayArmLength}
             precision={2}
             restoreOnCommit={false}
             step={0.1}
@@ -1580,7 +1553,7 @@ export default function EnvironmentPanel() {
             label="Brace depth"
             max={1.2}
             min={0.35}
-            onChange={useEnvironmentStore.getState().setTrussRoadwayBraceDepth}
+            onChange={useStreetscapeStore.getState().setTrussRoadwayBraceDepth}
             precision={2}
             restoreOnCommit={false}
             step={0.05}
@@ -1590,7 +1563,7 @@ export default function EnvironmentPanel() {
           <ToggleControl
             checked={trussRoadwayLightOn}
             label="Lamp on"
-            onChange={useEnvironmentStore.getState().setTrussRoadwayLightOn}
+            onChange={useStreetscapeStore.getState().setTrussRoadwayLightOn}
           />
         </div>
       )}
@@ -1600,7 +1573,7 @@ export default function EnvironmentPanel() {
             Shared {activeCatalogVariant?.family ?? 'lamp'} family style
           </p>
           <SegmentedControl
-            onChange={useEnvironmentStore.getState().setCatalogLampVisualStyle}
+            onChange={useStreetscapeStore.getState().setCatalogLampVisualStyle}
             options={catalogLampStyleOptions.map((option) => ({
               label: option.label,
               value: option.value,
@@ -1614,7 +1587,7 @@ export default function EnvironmentPanel() {
               label="Height"
               max={activeCatalogVariant?.height[1] ?? STANDARD_LAMP_HEIGHT_MAX_M}
               min={activeCatalogVariant?.height[0] ?? STANDARD_LAMP_HEIGHT_MIN_M}
-              onChange={useEnvironmentStore.getState().setCatalogLampHeight}
+              onChange={useStreetscapeStore.getState().setCatalogLampHeight}
               precision={2}
               restoreOnCommit={false}
               step={activeCatalogVariant?.projection === 'path' ? 0.01 : 0.1}
@@ -1632,7 +1605,7 @@ export default function EnvironmentPanel() {
                   : 'Reach / span'}
             max={activeCatalogVariant?.arm[1] ?? 12}
             min={activeCatalogVariant?.arm[0] ?? 0.15}
-            onChange={useEnvironmentStore.getState().setCatalogLampArmLength}
+            onChange={useStreetscapeStore.getState().setCatalogLampArmLength}
             precision={2}
             restoreOnCommit={false}
             step={activeCatalogVariant?.projection === 'path'
@@ -1646,7 +1619,7 @@ export default function EnvironmentPanel() {
           <ToggleControl
             checked={catalogLampLightOn}
             label="Lamp on"
-            onChange={useEnvironmentStore.getState().setCatalogLampLightOn}
+            onChange={useStreetscapeStore.getState().setCatalogLampLightOn}
           />
         </div>
       )}
@@ -1656,7 +1629,7 @@ export default function EnvironmentPanel() {
             label="Height"
             max={15.85}
             min={7.62}
-            onChange={useEnvironmentStore.getState().setUtilityPoleHeight}
+            onChange={useStreetscapeStore.getState().setUtilityPoleHeight}
             precision={2}
             restoreOnCommit={false}
             step={0.01}
@@ -1667,7 +1640,7 @@ export default function EnvironmentPanel() {
             label="Crossarm"
             max={3.66}
             min={STANDARD_UTILITY_POLE_CROSSARM_LENGTH_M}
-            onChange={useEnvironmentStore.getState().setUtilityPoleCrossarmLength}
+            onChange={useStreetscapeStore.getState().setUtilityPoleCrossarmLength}
             precision={2}
             restoreOnCommit={false}
             step={0.01}
@@ -1679,7 +1652,7 @@ export default function EnvironmentPanel() {
           </span>
           <SegmentedControl
             onChange={(value) =>
-              useEnvironmentStore.getState().setUtilityPoleAssembly(value as UtilityPoleAssembly)
+              useStreetscapeStore.getState().setUtilityPoleAssembly(value as UtilityPoleAssembly)
             }
             options={[
               { label: 'Tangent', value: 'tangent' },
@@ -1692,7 +1665,7 @@ export default function EnvironmentPanel() {
           <ToggleControl
             checked={utilityPoleTransformerMounted}
             label="Transformer"
-            onChange={useEnvironmentStore.getState().setUtilityPoleTransformerMounted}
+            onChange={useStreetscapeStore.getState().setUtilityPoleTransformerMounted}
           />
           <p className="px-2 pt-2 text-sidebar-foreground/45 text-xs">
             Inserts into a nearby line or branches to the nearest pole within{' '}
@@ -1706,7 +1679,7 @@ export default function EnvironmentPanel() {
             label="Post height"
             max={4.5}
             min={1.2}
-            onChange={useEnvironmentStore.getState().setRoadSignPostHeight}
+            onChange={useStreetscapeStore.getState().setRoadSignPostHeight}
             precision={2}
             restoreOnCommit={false}
             step={0.05}
@@ -1717,7 +1690,7 @@ export default function EnvironmentPanel() {
             label="Sign scale"
             max={2.5}
             min={0.5}
-            onChange={useEnvironmentStore.getState().setRoadSignScale}
+            onChange={useStreetscapeStore.getState().setRoadSignScale}
             precision={2}
             restoreOnCommit={false}
             step={0.05}
@@ -1725,7 +1698,7 @@ export default function EnvironmentPanel() {
           />
           <SegmentedControl
             onChange={(value) =>
-              useEnvironmentStore.getState().setRoadSignMounting(value as 'single-post' | 'double-post')
+              useStreetscapeStore.getState().setRoadSignMounting(value as 'single-post' | 'double-post')
             }
             options={[
               { label: 'Single post', value: 'single-post' },

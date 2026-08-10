@@ -2,10 +2,10 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { roadNetworkDefinition } from './road-network-definition'
 import { createEmptyRoadGraph, insertRoadSegment } from './road-network-topology'
 import { RoadNetworkNode } from './schema'
-import { useEnvironmentStore } from './store'
+import { useStreetscapeStore } from './store'
 
 describe('road signal junction action', () => {
-  afterEach(() => useEnvironmentStore.getState().setRoadElementSelection(null))
+  afterEach(() => useStreetscapeStore.getState().setRoadElementSelection(null))
 
   test('creates editable signal nodes and matching attachment records once', () => {
     const horizontal = insertRoadSegment(createEmptyRoadGraph(), [-12, 0, 0], [12, 0, 0])
@@ -22,7 +22,7 @@ describe('road signal junction action', () => {
         },
       },
     })
-    useEnvironmentStore.getState().setRoadElementSelection({
+    useStreetscapeStore.getState().setRoadElementSelection({
       networkId: road.id,
       kind: 'junction',
       id: junctionId,
@@ -46,7 +46,7 @@ describe('road signal junction action', () => {
     action.run({ node: road, sceneApi })
 
     expect(created).toHaveLength(2)
-    expect(created.every((node) => node.type === 'environment:traffic-signal')).toBe(true)
+    expect(created.every((node) => node.type === 'streetscape:traffic-signal')).toBe(true)
     expect(created.every((node) => node.mount === 'mast-arm')).toBe(true)
     expect(created.every((node) => node.headCount === 'two')).toBe(true)
     expect(created.every((node) => node.roadAttachment?.networkNodeId === road.id)).toBe(true)

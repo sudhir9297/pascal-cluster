@@ -5,7 +5,7 @@ import { buildUtilityWireFloorplan } from './utility-wire-floorplan'
 type UtilityWireDefinition = NodeDefinition<typeof UtilityWireSpanNode> & Record<string, unknown>
 
 export const utilityWireDefinition: UtilityWireDefinition = {
-  kind: 'environment:utility-wire-span',
+  kind: 'streetscape:utility-wire-span',
   schemaVersion: 1,
   schema: UtilityWireSpanNode,
   category: 'furnish',

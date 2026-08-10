@@ -20,7 +20,7 @@ import {
 	moveRoadSplinePoints,
 } from "./road-network-spline-handles";
 import type { RoadNetworkNode } from "./schema";
-import { type RoadElementSelection, useEnvironmentStore } from "./store";
+import { type RoadElementSelection, useStreetscapeStore } from "./store";
 
 const HANDLE_SCALE = 0.82;
 const HANDLE_COLOR = "#22c55e";
@@ -110,7 +110,7 @@ function RoadSplinePointControl({
 		setHovered(false);
 		setElevationHovered(false);
 		if (!selected) {
-			useEnvironmentStore.getState().setRoadElementSelection({
+			useStreetscapeStore.getState().setRoadElementSelection({
 				networkId: node.id,
 				...controlSelection,
 			});
@@ -323,7 +323,7 @@ function RoadSplineInsertControl({
 		useScene
 			.getState()
 			.updateNode(node.id as AnyNodeId, patch as Partial<AnyNode>);
-		useEnvironmentStore.getState().setRoadElementSelection({
+		useStreetscapeStore.getState().setRoadElementSelection({
 			networkId: node.id,
 			kind: "control",
 			id: edgeId,
@@ -414,7 +414,7 @@ export function RoadNetworkSplineControls({
 			useScene
 				.getState()
 				.updateNode(node.id as AnyNodeId, patch as Partial<AnyNode>);
-			useEnvironmentStore.getState().setRoadElementSelection({
+			useStreetscapeStore.getState().setRoadElementSelection({
 				networkId: node.id,
 				kind: "spline",
 				id: node.id,
@@ -456,7 +456,7 @@ export function RoadNetworkSplineControls({
 					point={point}
 					selected={selected}
 					toggleSelection={() => {
-						const current = useEnvironmentStore.getState().roadElementSelection;
+						const current = useStreetscapeStore.getState().roadElementSelection;
 						const currentIndices =
 							current?.networkId === node.id &&
 							current.kind === "control" &&
@@ -467,7 +467,7 @@ export function RoadNetworkSplineControls({
 						const nextIndices = currentIndices.includes(index)
 							? currentIndices.filter((candidate) => candidate !== index)
 							: [...currentIndices, index].sort((left, right) => left - right);
-						useEnvironmentStore.getState().setRoadElementSelection(
+						useStreetscapeStore.getState().setRoadElementSelection(
 							nextIndices.length === 0
 								? { networkId: node.id, kind: "spline", id: node.id }
 								: {

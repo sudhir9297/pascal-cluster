@@ -13,7 +13,6 @@ import { getSideFromNormal, isValidWallSideFace, useEditor } from '@pascal-app/e
 import { useEffect, useRef, useState } from 'react'
 import { type Group, Vector3 } from 'three'
 import { findCeilingPlacementTarget } from './ceiling-placement'
-import type { EnvironmentPlacementMode } from './store'
 import {
   resolveWallArmAttachment,
   resolveWallArmPlanAttachment,
@@ -42,11 +41,6 @@ function isTypingTarget(target: EventTarget | null): boolean {
 export type PlacementPreviewTransform = {
   position: [number, number, number]
   rotation: [number, number, number]
-}
-
-/** Finish a point placement according to the Environment panel's active mode. */
-export function finishEnvironmentPlacement(mode: EnvironmentPlacementMode): void {
-  if (mode === 'single') useEditor.getState().setMode('select')
 }
 
 /** Snap a planar position to the grid when grid snapping is the active mode —
@@ -179,10 +173,10 @@ export function usePlacement(
 }
 
 /**
- * Ceiling-hosted placement for parametric Environment nodes.
+ * Ceiling-hosted placement for parametric Streetscape nodes.
  *
  * Pascal's generic `attachTo: 'ceiling'` coordinator is item-specific. This
- * companion applies the same host rule to ceiling-mounted environment lights:
+ * companion applies the same host rule to ceiling-mounted streetscape lights:
  * the preview is valid only within a ceiling polygon and commits in its frame.
  */
 export function useCeilingPlacement(
@@ -262,7 +256,7 @@ export function useCeilingPlacement(
 /**
  * Pascal-native placement for architectural wall-mounted lights.
  *
- * Unlike the ordinary environment point brush, this listens to wall surface
+ * Unlike the ordinary streetscape point brush, this listens to wall surface
  * events, previews in the wall face frame, and commits the node as a wall
  * child with the same wallId / wallT / side contract used by attached items.
  * Grid events provide the equivalent nearest-wall path in the 2D floor plan.

@@ -20,7 +20,7 @@ export default function MultiHeadAreaLightRenderer({
   const ref = useRef<Group>(null!)
   const handlers = useNodeEvents(
     storeNode as never,
-    'environment:multi-head-area-light' as never,
+    'streetscape:multi-head-area-light' as never,
   )
   useRegistry(storeNode.id as AnyNodeId, storeNode.type, ref)
 

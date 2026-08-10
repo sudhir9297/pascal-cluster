@@ -10,24 +10,24 @@ export type RoadAutoInfrastructureSettings = {
 export const DEFAULT_ROAD_AUTO_INFRASTRUCTURE_SETTINGS: RoadAutoInfrastructureSettings = {
   enabled: false,
   items: {
-    'environment:traffic-signal': false,
-    'environment:drainage-inlet': false,
-    'environment:manhole-cover': false,
-    'environment:fire-hydrant': false,
-    'environment:traffic-bollard': false,
-    'environment:road-barrier': false,
+    'streetscape:traffic-signal': false,
+    'streetscape:drainage-inlet': false,
+    'streetscape:manhole-cover': false,
+    'streetscape:fire-hydrant': false,
+    'streetscape:traffic-bollard': false,
+    'streetscape:road-barrier': false,
   },
 }
 
 export const FULL_ROAD_AUTO_INFRASTRUCTURE_SETTINGS: RoadAutoInfrastructureSettings = {
   enabled: true,
   items: {
-    'environment:traffic-signal': true,
-    'environment:drainage-inlet': true,
-    'environment:manhole-cover': true,
-    'environment:fire-hydrant': true,
-    'environment:traffic-bollard': true,
-    'environment:road-barrier': true,
+    'streetscape:traffic-signal': true,
+    'streetscape:drainage-inlet': true,
+    'streetscape:manhole-cover': true,
+    'streetscape:fire-hydrant': true,
+    'streetscape:traffic-bollard': true,
+    'streetscape:road-barrier': true,
   },
 }
 
@@ -35,10 +35,10 @@ export const ROAD_AUTO_INFRASTRUCTURE_OPTIONS: ReadonlyArray<{
   kind: RoadAutoInfrastructureKind
   label: string
 }> = [
-  { kind: 'environment:traffic-signal', label: 'Traffic signals' },
-  { kind: 'environment:drainage-inlet', label: 'Drainage grates' },
-  { kind: 'environment:manhole-cover', label: 'Manhole covers' },
-  { kind: 'environment:fire-hydrant', label: 'Fire hydrants' },
-  { kind: 'environment:traffic-bollard', label: 'Traffic bollards' },
-  { kind: 'environment:road-barrier', label: 'Road barriers' },
+  { kind: 'streetscape:traffic-signal', label: 'Traffic signals' },
+  { kind: 'streetscape:drainage-inlet', label: 'Drainage grates' },
+  { kind: 'streetscape:manhole-cover', label: 'Manhole covers' },
+  { kind: 'streetscape:fire-hydrant', label: 'Fire hydrants' },
+  { kind: 'streetscape:traffic-bollard', label: 'Traffic bollards' },
+  { kind: 'streetscape:road-barrier', label: 'Road barriers' },
 ]

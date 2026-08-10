@@ -5,15 +5,15 @@ import { EDITOR_LAYER, triggerSFX } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useMemo } from 'react'
 import TwinArmMedianLightPreview from './twin-arm-median-light-preview'
-import { finishEnvironmentPlacement, usePlacement } from './placement'
+import { usePlacement } from './placement'
 import { TwinArmMedianLightNode } from './schema'
-import { useEnvironmentStore } from './store'
+import { useStreetscapeStore } from './store'
 
 export default function TwinArmMedianLightTool() {
   const activeLevelId = useViewer((s) => s.selection.levelId)
-  const height = useEnvironmentStore((s) => s.twinArmMedianHeight)
-  const armLength = useEnvironmentStore((s) => s.twinArmMedianArmLength)
-  const lightOn = useEnvironmentStore((s) => s.twinArmMedianLightOn)
+  const height = useStreetscapeStore((s) => s.twinArmMedianHeight)
+  const armLength = useStreetscapeStore((s) => s.twinArmMedianArmLength)
+  const lightOn = useStreetscapeStore((s) => s.twinArmMedianLightOn)
 
   const previewNode = useMemo(
     () =>
@@ -29,7 +29,7 @@ export default function TwinArmMedianLightTool() {
 
   const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position, rotationY) => {
     if (!activeLevelId) return
-    const brush = useEnvironmentStore.getState()
+    const brush = useStreetscapeStore.getState()
     const twinArm = TwinArmMedianLightNode.parse({
       height: brush.twinArmMedianHeight,
       armLength: brush.twinArmMedianArmLength,
@@ -42,7 +42,6 @@ export default function TwinArmMedianLightTool() {
       .createNode(twinArm as unknown as AnyNode, activeLevelId as AnyNodeId)
     useViewer.getState().setSelection({ selectedIds: [twinArm.id as AnyNodeId] })
     triggerSFX('sfx:item-place')
-    finishEnvironmentPlacement(brush.placementMode)
   })
 
   if (!activeLevelId) return null

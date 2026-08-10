@@ -1,4 +1,4 @@
-import environmentIcon from './assets/environment-icon.webp'
+import streetscapeIcon from './assets/streetscape-icon.webp'
 import bollardLightThumbnail from './assets/bollard-light-thumbnail-v2.png'
 import canopySoffitLightThumbnail from './assets/canopy-soffit-light-thumbnail-v2.png'
 import catenarySuspendedLightThumbnail from './assets/catenary-suspended-light-thumbnail-v2.png'
@@ -74,10 +74,10 @@ const catalogLampThumbnailOverrides: Partial<Record<CatalogLampProjection, strin
   'wall-pack': url(wallPackBulkheadThumbnail),
 }
 
-/** The Environment panel / section icon. */
-export const ENVIRONMENT_ICON = url(environmentIcon)
+/** The Streetscape panel / section icon. */
+export const STREETSCAPE_ICON = url(streetscapeIcon)
 
-/** Catalog artwork for the placeable environment assets. */
+/** Catalog artwork for the placeable streetscape assets. */
 export const STREET_LIGHT_THUMBNAIL = url(streetLightThumbnail)
 export const WALL_ARM_LIGHT_THUMBNAIL = url(wallArmLightThumbnail)
 export const CATENARY_SUSPENDED_LIGHT_THUMBNAIL = url(catenarySuspendedLightThumbnail)

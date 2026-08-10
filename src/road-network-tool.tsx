@@ -68,7 +68,7 @@ import {
 } from "./road-network-topology";
 import { roadGraphHasBlockingIssues } from "./road-network-validation";
 import { RoadNetworkNode } from "./schema";
-import { nextRoadElevationMode, useEnvironmentStore } from "./store";
+import { nextRoadElevationMode, useStreetscapeStore } from "./store";
 
 const ROAD_OPERATION_COLORS: Record<RoadInsertionOperation, string> = {
 	"create-cross": "#22c55e",
@@ -185,7 +185,7 @@ export function RoadDraftCursor({
 function roadNetworks(levelId: string): RoadNetworkNode[] {
 	return Object.values(useScene.getState().nodes).filter(
 		(node) =>
-			(node.type as string) === "environment:road-network" &&
+			(node.type as string) === "streetscape:road-network" &&
 			(node as { parentId?: string }).parentId === levelId,
 	) as unknown as RoadNetworkNode[];
 }
@@ -199,7 +199,7 @@ function previewSegment(
 ): RoadInsertionPreview {
 	const existing = roadNetworks(levelId);
 	const graph = existing.length > 0 ? mergeRoadGraphs(existing).graph : createEmptyRoadGraph();
-	const store = useEnvironmentStore.getState();
+	const store = useStreetscapeStore.getState();
 	return previewRoadInsertion(graph, start, end, {
 		alignment,
 		bendRadius: store.roadBendRadius,
@@ -285,7 +285,7 @@ function publishRoadAlignmentGuides(
 }
 
 function rawPlanPoint(event: GridEvent): [number, number, number] {
-	const elevationMode = useEnvironmentStore.getState().roadElevationMode;
+	const elevationMode = useStreetscapeStore.getState().roadElevationMode;
 	const elevation = elevationMode === "bridge" ? 5.5 : 0;
 	return [
 		event.localPosition[0],
@@ -389,7 +389,7 @@ function commitSegment(
 	const existing = roadNetworks(levelId);
 	const merged = mergeRoadGraphs(existing);
 	const graph = existing.length > 0 ? merged.graph : createEmptyRoadGraph();
-	const store = useEnvironmentStore.getState();
+	const store = useStreetscapeStore.getState();
 	const draftStyle = buildRoadDraftStyle({
 		laneCount: store.roadLaneCount,
 		laneWidth: store.roadLaneWidth,
@@ -580,21 +580,21 @@ export default function RoadNetworkTool() {
 	const [numericEntry, setNumericEntry] =
 		useState<RoadDraftNumericEntry | null>(null);
 	const [tangentLength, setTangentLength] = useState<number | null>(null);
-	const roadSideComponents = useEnvironmentStore(
+	const roadSideComponents = useStreetscapeStore(
 		(state) => state.roadSideComponents,
 	);
-	const roadAutoInfrastructure = useEnvironmentStore(
+	const roadAutoInfrastructure = useStreetscapeStore(
 		(state) => state.roadAutoInfrastructure,
 	);
-	const roadStylePresetId = useEnvironmentStore(
+	const roadStylePresetId = useStreetscapeStore(
 		(state) => state.roadStylePresetId,
 	);
-	const roadLaneCount = useEnvironmentStore((state) => state.roadLaneCount);
-	const roadLaneWidth = useEnvironmentStore((state) => state.roadLaneWidth);
-	const roadShoulderWidth = useEnvironmentStore(
+	const roadLaneCount = useStreetscapeStore((state) => state.roadLaneCount);
+	const roadLaneWidth = useStreetscapeStore((state) => state.roadLaneWidth);
+	const roadShoulderWidth = useStreetscapeStore(
 		(state) => state.roadShoulderWidth,
 	);
-	const roadMedianWidth = useEnvironmentStore((state) => state.roadMedianWidth);
+	const roadMedianWidth = useStreetscapeStore((state) => state.roadMedianWidth);
 	const draftStyle = useMemo(
 		() => buildRoadDraftStyle({
 				laneCount: roadLaneCount,
@@ -618,10 +618,10 @@ export default function RoadNetworkTool() {
 		() => applyRoadAutoInfrastructureClearances(draftStyle, roadAutoInfrastructure),
 		[draftStyle, roadAutoInfrastructure],
 	);
-	const alignmentMode = useEnvironmentStore((state) => state.roadAlignmentMode);
-	const bendRadius = useEnvironmentStore((state) => state.roadBendRadius);
-	const elevationMode = useEnvironmentStore((state) => state.roadElevationMode);
-	const joinMode = useEnvironmentStore((state) => state.roadJoinMode);
+	const alignmentMode = useStreetscapeStore((state) => state.roadAlignmentMode);
+	const bendRadius = useStreetscapeStore((state) => state.roadBendRadius);
+	const elevationMode = useStreetscapeStore((state) => state.roadElevationMode);
+	const joinMode = useStreetscapeStore((state) => state.roadJoinMode);
 
 	useEffect(() => {
 		startRef.current = null;
@@ -770,7 +770,7 @@ export default function RoadNetworkTool() {
 			unconstrainedCursorRef.current = unconstrainedPoint;
 			setCursor([...point]);
 			// The shared tool may briefly remain mounted while the floorplan host
-			// switches from Road to another environment tool. Its ref is then a DOM
+			// switches from Road to another streetscape tool. Its ref is then a DOM
 			// group rather than a Three group, so only update a Three position.
 			cursorRef.current?.position?.set(point[0], point[1], point[2]);
 		};
@@ -803,7 +803,7 @@ export default function RoadNetworkTool() {
 			const mode = activeRoadDraftSnapMode();
 			const rawPoint = rawPlanPoint(event);
 			let point = snappedPlanPoint(event, startRef.current, mode);
-			const store = useEnvironmentStore.getState();
+			const store = useStreetscapeStore.getState();
 			const existing = roadNetworks(activeLevelId);
 			const graph: RoadNetworkGraph | null =
 				existing.length > 0 ? mergeRoadGraphs(existing).graph : null;
@@ -897,7 +897,7 @@ export default function RoadNetworkTool() {
 				triggerSFX("sfx:item-place");
 				return;
 			}
-			if (useEnvironmentStore.getState().roadAlignmentMode === "spline") {
+			if (useStreetscapeStore.getState().roadAlignmentMode === "spline") {
 				const last = splinePointsRef.current.at(-1) ?? previous;
 				if (Math.hypot(point[0] - last[0], point[2] - last[2]) < 0.05) return;
 				setAttemptedInvalid(null);
@@ -950,7 +950,7 @@ export default function RoadNetworkTool() {
 		};
 		const finish = () => {
 			if (
-				useEnvironmentStore.getState().roadAlignmentMode === "spline" &&
+				useStreetscapeStore.getState().roadAlignmentMode === "spline" &&
 				startRef.current &&
 				splinePointsRef.current.length > 0
 			) {
@@ -1024,7 +1024,7 @@ export default function RoadNetworkTool() {
 		const onDoubleClick = finish;
 		const numericFallbackValue = (field: RoadDraftNumericField) => {
 			if (field === "radius") {
-				return useEnvironmentStore.getState().roadBendRadius;
+				return useStreetscapeStore.getState().roadBendRadius;
 			}
 			if (field === "tangent") return tangentLengthRef.current ?? 0;
 			if (!startRef.current || !cursorPointRef.current) return null;
@@ -1067,7 +1067,7 @@ export default function RoadNetworkTool() {
 				});
 				refreshConstrainedCursor();
 			} else if (entry.field === "radius") {
-				useEnvironmentStore.getState().setRoadBendRadius(value);
+				useStreetscapeStore.getState().setRoadBendRadius(value);
 				updateTangentLength(null);
 			} else {
 				updateTangentLength(value);
@@ -1152,21 +1152,21 @@ export default function RoadNetworkTool() {
 			}
 			if (event.key === "Enter") finish();
 			if (key === "c") {
-				const store = useEnvironmentStore.getState();
+				const store = useStreetscapeStore.getState();
 				store.setRoadAlignmentMode(
 					store.roadAlignmentMode === "straight" ? "spline" : "straight",
 				);
 				clearDraft();
 			}
 			if (key === "b") {
-				const store = useEnvironmentStore.getState();
+				const store = useStreetscapeStore.getState();
 				store.setRoadElevationMode(
 					nextRoadElevationMode(store.roadElevationMode),
 				);
 				clearDraft();
 			}
 			if (key === "j") {
-				const store = useEnvironmentStore.getState();
+				const store = useStreetscapeStore.getState();
 				store.setRoadJoinMode(
 					store.roadJoinMode === "auto" ? "suppress" : "auto",
 				);

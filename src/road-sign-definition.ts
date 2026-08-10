@@ -61,7 +61,7 @@ const scaleHandle: HandleDescriptor<RoadSignNode> = {
 }
 
 export const roadSignDefinition: RoadSignDefinition = {
-  kind: 'environment:road-sign',
+  kind: 'streetscape:road-sign',
   schemaVersion: 1,
   schema: RoadSignNode,
   category: 'furnish',

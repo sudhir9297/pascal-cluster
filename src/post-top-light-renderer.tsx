@@ -20,7 +20,7 @@ export default function PostTopLightRenderer({
   const ref = useRef<Group>(null!)
   const handlers = useNodeEvents(
     storeNode as never,
-    'environment:pedestrian-post-light' as never,
+    'streetscape:pedestrian-post-light' as never,
   )
   useRegistry(storeNode.id as AnyNodeId, storeNode.type, ref)
 

@@ -34,7 +34,7 @@ import {
   type StreetInfrastructureNode,
 } from './street-infrastructure-config'
 import { planRoadAutoInfrastructureAttachmentMigration } from './road-auto-infrastructure'
-import { useEnvironmentStore, type RoadElementSelection } from './store'
+import { useStreetscapeStore, type RoadElementSelection } from './store'
 import { decodeTerrainField } from './terrain-field-compat'
 import { roadRuntimeDefaultsPatch } from './road-network-runtime-defaults'
 
@@ -45,15 +45,15 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
   const runtimeDefaultsSignatureRef = useRef<string | null>(null)
   const attachmentSyncSignatureRef = useRef<string | null>(null)
   const attachmentRoadSignatureRef = useRef<string | null>(null)
-  const handlers = useNodeEvents(storeNode as never, 'environment:road-network' as never)
+  const handlers = useNodeEvents(storeNode as never, 'streetscape:road-network' as never)
   const roadToolActive = useEditor(
-    (state) => state.mode === 'build' && (state.tool as string | null) === 'environment:road-network',
+    (state) => state.mode === 'build' && (state.tool as string | null) === 'streetscape:road-network',
   )
 	const sceneNodes = useScene((state) => state.nodes)
 	const clearancePeers = useMemo(
 		() => Object.values(sceneNodes).flatMap((candidate) =>
 			(candidate.id as string) !== storeNode.id &&
-			(candidate.type as string) === 'environment:road-network'
+			(candidate.type as string) === 'streetscape:road-network'
 				? [candidate as unknown as RoadNetworkNode]
 				: [],
 		),
@@ -70,7 +70,7 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
       storeNode.id as AnyNodeId,
     ),
   )
-  const storedElementSelection = useEnvironmentStore((state) => state.roadElementSelection)
+  const storedElementSelection = useStreetscapeStore((state) => state.roadElementSelection)
   const elementSelection =
     storedElementSelection?.networkId === storeNode.id ? storedElementSelection : null
   const editingControls = roadNetworkEditingControlsState({
@@ -87,7 +87,7 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
       event: { stopPropagation: () => void },
     ) => {
       event.stopPropagation()
-      const store = useEnvironmentStore.getState()
+      const store = useStreetscapeStore.getState()
       if (!networkSelected) {
         useViewer.getState().setSelection({ selectedIds: [storeNode.id as AnyNodeId] })
         store.setRoadElementSelection(
@@ -144,7 +144,7 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
           parentId: node.parentId as AnyNodeId,
         }],
       })
-      useEnvironmentStore.getState().setRoadElementSelection(null)
+      useStreetscapeStore.getState().setRoadElementSelection(null)
       useViewer.getState().setSelection({
         selectedIds: materialized.selection.selectedIds as AnyNodeId[],
       })
@@ -461,7 +461,7 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
   }, [storeNode, storedComponents])
   useEffect(() => {
     if (!networkSelected && elementSelection) {
-      useEnvironmentStore.getState().setRoadElementSelection(null)
+      useStreetscapeStore.getState().setRoadElementSelection(null)
     }
   }, [elementSelection, networkSelected])
   useEffect(() => {
@@ -480,7 +480,7 @@ export default function RoadNetworkRenderer({ node: storeNode }: { node: RoadNet
       event.stopPropagation()
       event.stopImmediatePropagation()
       const scene = useScene.getState()
-      useEnvironmentStore.getState().setRoadElementSelection(null)
+      useStreetscapeStore.getState().setRoadElementSelection(null)
       if (elementSelection.kind === 'decoration') {
         const nextDecorations = { ...node.roadsideDecorations }
         if (!(elementSelection.id in nextDecorations)) return

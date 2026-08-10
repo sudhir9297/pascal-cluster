@@ -22,21 +22,21 @@ import {
 } from './street-infrastructure-geometry'
 
 export type RoadAttachmentAssetKind =
-  | 'environment:street-light'
-  | 'environment:road-sign'
-  | 'environment:traffic-signal'
-  | 'environment:drainage-inlet'
-  | 'environment:manhole-cover'
-  | 'environment:fire-hydrant'
-  | 'environment:traffic-bollard'
-  | 'environment:road-barrier'
-  | 'environment:driveway'
-  | 'environment:mailbox'
-  | 'environment:parcel-box'
-  | 'environment:trash-bin'
-  | 'environment:recycling-bin'
-  | 'environment:residential-gate'
-  | 'environment:speed-hump'
+  | 'streetscape:street-light'
+  | 'streetscape:road-sign'
+  | 'streetscape:traffic-signal'
+  | 'streetscape:drainage-inlet'
+  | 'streetscape:manhole-cover'
+  | 'streetscape:fire-hydrant'
+  | 'streetscape:traffic-bollard'
+  | 'streetscape:road-barrier'
+  | 'streetscape:driveway'
+  | 'streetscape:mailbox'
+  | 'streetscape:parcel-box'
+  | 'streetscape:trash-bin'
+  | 'streetscape:recycling-bin'
+  | 'streetscape:residential-gate'
+  | 'streetscape:speed-hump'
 
 type RoadAttachmentPoseNode = StreetInfrastructureNode | StreetLightNode | RoadSignNode
 
@@ -243,18 +243,18 @@ function roadSurfaceHeightAtLateralOffset(
 }
 
 function attachmentAlignmentForKind(kind: RoadAttachmentAssetKind): RoadAttachmentAlignment {
-  if (kind === 'environment:drainage-inlet') return 'gutter'
-  if (kind === 'environment:fire-hydrant') return 'curb'
-  if (kind === 'environment:traffic-bollard') return 'curb'
-  if (kind === 'environment:road-barrier') return 'curb'
-  if (kind === 'environment:manhole-cover') return 'carriageway'
-  if (kind === 'environment:driveway' || kind === 'environment:speed-hump') return 'carriageway'
+  if (kind === 'streetscape:drainage-inlet') return 'gutter'
+  if (kind === 'streetscape:fire-hydrant') return 'curb'
+  if (kind === 'streetscape:traffic-bollard') return 'curb'
+  if (kind === 'streetscape:road-barrier') return 'curb'
+  if (kind === 'streetscape:manhole-cover') return 'carriageway'
+  if (kind === 'streetscape:driveway' || kind === 'streetscape:speed-hump') return 'carriageway'
   if (
-    kind === 'environment:mailbox' ||
-    kind === 'environment:parcel-box' ||
-    kind === 'environment:trash-bin' ||
-    kind === 'environment:recycling-bin' ||
-    kind === 'environment:residential-gate'
+    kind === 'streetscape:mailbox' ||
+    kind === 'streetscape:parcel-box' ||
+    kind === 'streetscape:trash-bin' ||
+    kind === 'streetscape:recycling-bin' ||
+    kind === 'streetscape:residential-gate'
   ) return 'curb'
   return 'free'
 }
@@ -323,7 +323,7 @@ export function resolveRoadAttachmentTransform(
   // Older road graphs may have persisted the original free alignment before
   // infrastructure-specific snapping was introduced. Infer the safe default
   // from the asset kind so those assets are repaired on the next sync too.
-  const alignment = attachment.alignment === 'free' && node.type === 'environment:manhole-cover'
+  const alignment = attachment.alignment === 'free' && node.type === 'streetscape:manhole-cover'
     ? 'carriageway'
     : attachment.alignment ?? 'free'
   const component = alignment === 'gutter'
@@ -332,26 +332,26 @@ export function resolveRoadAttachmentTransform(
       ? sideComponentMetrics(style, side, 'curb')
       : null
   const crossSection = buildRoadCrossSection(style)
-  const manholeLayout = node.type === 'environment:manhole-cover'
+  const manholeLayout = node.type === 'streetscape:manhole-cover'
     ? resolveManholeCoverLayout(node)
     : null
-  const hydrantLayout = node.type === 'environment:fire-hydrant'
+  const hydrantLayout = node.type === 'streetscape:fire-hydrant'
     ? resolveFireHydrantLayout(node)
     : null
-  const bollardLayout = node.type === 'environment:traffic-bollard'
+  const bollardLayout = node.type === 'streetscape:traffic-bollard'
     ? resolveTrafficBollardLayout(node)
     : null
-  const barrierLayout = node.type === 'environment:road-barrier'
+  const barrierLayout = node.type === 'streetscape:road-barrier'
     ? resolveRoadBarrierLayout(node)
     : null
   const residentialLayout = [
-    'environment:driveway',
-    'environment:mailbox',
-    'environment:parcel-box',
-    'environment:trash-bin',
-    'environment:recycling-bin',
-    'environment:residential-gate',
-    'environment:speed-hump',
+    'streetscape:driveway',
+    'streetscape:mailbox',
+    'streetscape:parcel-box',
+    'streetscape:trash-bin',
+    'streetscape:recycling-bin',
+    'streetscape:residential-gate',
+    'streetscape:speed-hump',
   ].includes(node.type)
     ? resolveResidentialRoadAssetLayout(node as never)
     : null
@@ -361,7 +361,7 @@ export function resolveRoadAttachmentTransform(
   const vergeStrip = crossSection.sides[side].components.find(
     (candidate) => candidate.kind === 'verge',
   )
-  const lateralOffset = alignment === 'curb' && node.type === 'environment:fire-hydrant'
+  const lateralOffset = alignment === 'curb' && node.type === 'streetscape:fire-hydrant'
     ? sign * (
         vergeStrip
           ? Math.abs(vergeStrip.lateralOffset)
@@ -369,13 +369,13 @@ export function resolveRoadAttachmentTransform(
             + hydrantLayout!.barrelRadius
             + HYDRANT_CURB_CLEARANCE
       )
-    : alignment === 'curb' && node.type === 'environment:traffic-bollard'
+    : alignment === 'curb' && node.type === 'streetscape:traffic-bollard'
       ? sign * (
           (curbStrip?.outerOffset ?? crossSection.sides[side].outerOffset)
             + bollardLayout!.baseRadius
             + ROADSIDE_ASSET_CLEARANCE
         )
-      : alignment === 'curb' && node.type === 'environment:road-barrier'
+      : alignment === 'curb' && node.type === 'streetscape:road-barrier'
         ? sign * (
             vergeStrip
               ? Math.abs(vergeStrip.lateralOffset)
@@ -385,11 +385,11 @@ export function resolveRoadAttachmentTransform(
           )
     : alignment === 'curb' && residentialLayout
       ? sign * ((curbStrip?.outerOffset ?? crossSection.sides[side].outerOffset) + residentialLayout.length / 2 + ROADSIDE_ASSET_CLEARANCE)
-    : alignment === 'carriageway' && node.type === 'environment:driveway'
+    : alignment === 'carriageway' && node.type === 'streetscape:driveway'
       ? sign * (crossSection.carriagewayWidth / 2 + residentialLayout!.length / 2)
     : component
     ? sign * component.lateralOffset
-    : alignment === 'carriageway' && node.type === 'environment:manhole-cover'
+    : alignment === 'carriageway' && node.type === 'streetscape:manhole-cover'
       ? sign * Math.min(
           Math.abs(attachment.lateralOffset),
           Math.max(
@@ -407,9 +407,9 @@ export function resolveRoadAttachmentTransform(
     side,
     lateralOffset,
   )
-  const geometryBaseOffset = alignment === 'gutter' && node.type === 'environment:drainage-inlet'
+  const geometryBaseOffset = alignment === 'gutter' && node.type === 'streetscape:drainage-inlet'
     ? DRAINAGE_INLET_PLACEMENT_Y
-    : alignment === 'carriageway' && node.type === 'environment:manhole-cover'
+    : alignment === 'carriageway' && node.type === 'streetscape:manhole-cover'
       ? roadSurfaceHeight
         + ROAD_SURFACE_CLEARANCE
         - manholeLayout!.coverTopY
@@ -430,13 +430,13 @@ export function resolveRoadAttachmentTransform(
   } else if (alignment === 'gutter') {
     rotationY = tangentRotationY
       + (side === 'right' ? Math.PI : 0)
-  } else if (alignment === 'curb' && node.type === 'environment:fire-hydrant') {
+  } else if (alignment === 'curb' && node.type === 'streetscape:fire-hydrant') {
     rotationY = tangentRotationY + (side === 'right' ? Math.PI : 0)
-  } else if (alignment === 'curb' && node.type === 'environment:road-barrier') {
+  } else if (alignment === 'curb' && node.type === 'streetscape:road-barrier') {
     rotationY = tangentRotationY
   } else if (alignment === 'curb' && residentialLayout) {
     rotationY = tangentRotationY + (side === 'right' ? Math.PI : 0)
-  } else if (alignment === 'carriageway' && node.type === 'environment:driveway') {
+  } else if (alignment === 'carriageway' && node.type === 'streetscape:driveway') {
     // A driveway's local -Z end is its road-facing mouth. Mirror the right
     // side so that mouth always meets the carriageway instead of pointing out.
     rotationY = tangentRotationY + (side === 'right' ? Math.PI : 0)
@@ -459,7 +459,7 @@ function drivewayOpeningForPose(
   roadsideDepth: number,
   longitudinalOffset = 0,
 ): RoadAttachmentOpening | null {
-  if (node.type !== 'environment:driveway') return null
+  if (node.type !== 'streetscape:driveway') return null
   const plan = buildDrivewayPlan(node)
   const mouth = [plan.leftEdge[0], plan.rightEdge[0]].filter(
     (point): point is NonNullable<typeof point> => point !== undefined,
@@ -628,7 +628,7 @@ export function createRoadAttachmentForPlacement({
     station: target.station,
     lateralOffset: target.lateralOffset,
     verticalOffset: point[1] - target.point[1],
-    roadOpeningWidth: kind === 'environment:driveway'
+    roadOpeningWidth: kind === 'streetscape:driveway'
       ? resolveResidentialRoadAssetLayout(node as never).width
       : undefined,
     alignment,

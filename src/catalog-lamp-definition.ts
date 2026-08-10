@@ -153,7 +153,7 @@ export function makeCatalogLampDefinition(variant: CatalogLampVariant): GenericD
       snappable: {},
       floorPlaced: {
         footprint: (node: any) => {
-          const isShoebox = node.type === 'environment:shoebox-area-light' && (node.visualStyle ?? 'shoebox') === 'shoebox'
+          const isShoebox = node.type === 'streetscape:shoebox-area-light' && (node.visualStyle ?? 'shoebox') === 'shoebox'
           const isFloodlight = resolveCatalogLampProjection(node.type, node.visualStyle) === 'floodlight'
           const isHighMast = resolveCatalogLampProjection(node.type, node.visualStyle) === 'high-mast'
           const isSolar = resolveCatalogLampProjection(node.type, node.visualStyle) === 'solar'
@@ -163,7 +163,7 @@ export function makeCatalogLampDefinition(variant: CatalogLampVariant): GenericD
           const isCanopy = resolveCatalogLampProjection(node.type, node.visualStyle) === 'canopy'
           const isWallPack = resolveCatalogLampProjection(node.type, node.visualStyle) === 'wall-pack'
           const isWallArm = resolveCatalogLampProjection(node.type, node.visualStyle) === 'wall-arm'
-          const isTraditionalLantern = node.type === 'environment:traditional-post-top-lantern'
+          const isTraditionalLantern = node.type === 'streetscape:traditional-post-top-lantern'
             && resolveCatalogLampProjection(node.type, node.visualStyle) === 'lantern'
           const highMastLayout = isHighMast ? resolveHighMastCrownLightLayout(node) : undefined
           const traditionalLanternLayout = isTraditionalLantern
@@ -315,17 +315,17 @@ export function makeCatalogLampDefinition(variant: CatalogLampVariant): GenericD
   }
 }
 
-export const highMastCrownLightDefinition = makeCatalogLampDefinition(getCatalogLampConfig('environment:high-mast-crown-light')!)
-export const shoeboxAreaLightDefinition = makeCatalogLampDefinition(getCatalogLampConfig('environment:shoebox-area-light')!)
-export const floodlightPoleDefinition = makeCatalogLampDefinition(getCatalogLampConfig('environment:floodlight-pole')!)
-export const traditionalPostTopLanternDefinition = makeCatalogLampDefinition(getCatalogLampConfig('environment:traditional-post-top-lantern')!)
-export const globePostTopLightDefinition = makeCatalogLampDefinition(getCatalogLampConfig('environment:globe-post-top-light')!)
-export const decorativeCandelabraLightDefinition = makeCatalogLampDefinition(getCatalogLampConfig('environment:decorative-candelabra-light')!)
-export const pathGardenLightDefinition = makeCatalogLampDefinition(getCatalogLampConfig('environment:path-garden-light')!)
-export const bollardLightDefinition = makeCatalogLampDefinition(getCatalogLampConfig('environment:bollard-light')!)
-export const catenaryStreetLightDefinition = makeCatalogLampDefinition(getCatalogLampConfig('environment:catenary-street-light')!)
-export const wallArmLightDefinition = makeCatalogLampDefinition(getCatalogLampConfig('environment:wall-arm-light')!)
-export const wallPackLightDefinition = makeCatalogLampDefinition(getCatalogLampConfig('environment:wall-pack-light')!)
-export const tunnelLuminaireDefinition = makeCatalogLampDefinition(getCatalogLampConfig('environment:tunnel-luminaire')!)
-export const canopySoffitLightDefinition = makeCatalogLampDefinition(getCatalogLampConfig('environment:canopy-soffit-light')!)
-export const solarStreetLightDefinition = makeCatalogLampDefinition(getCatalogLampConfig('environment:solar-street-light')!)
+export const highMastCrownLightDefinition = makeCatalogLampDefinition(getCatalogLampConfig('streetscape:high-mast-crown-light')!)
+export const shoeboxAreaLightDefinition = makeCatalogLampDefinition(getCatalogLampConfig('streetscape:shoebox-area-light')!)
+export const floodlightPoleDefinition = makeCatalogLampDefinition(getCatalogLampConfig('streetscape:floodlight-pole')!)
+export const traditionalPostTopLanternDefinition = makeCatalogLampDefinition(getCatalogLampConfig('streetscape:traditional-post-top-lantern')!)
+export const globePostTopLightDefinition = makeCatalogLampDefinition(getCatalogLampConfig('streetscape:globe-post-top-light')!)
+export const decorativeCandelabraLightDefinition = makeCatalogLampDefinition(getCatalogLampConfig('streetscape:decorative-candelabra-light')!)
+export const pathGardenLightDefinition = makeCatalogLampDefinition(getCatalogLampConfig('streetscape:path-garden-light')!)
+export const bollardLightDefinition = makeCatalogLampDefinition(getCatalogLampConfig('streetscape:bollard-light')!)
+export const catenaryStreetLightDefinition = makeCatalogLampDefinition(getCatalogLampConfig('streetscape:catenary-street-light')!)
+export const wallArmLightDefinition = makeCatalogLampDefinition(getCatalogLampConfig('streetscape:wall-arm-light')!)
+export const wallPackLightDefinition = makeCatalogLampDefinition(getCatalogLampConfig('streetscape:wall-pack-light')!)
+export const tunnelLuminaireDefinition = makeCatalogLampDefinition(getCatalogLampConfig('streetscape:tunnel-luminaire')!)
+export const canopySoffitLightDefinition = makeCatalogLampDefinition(getCatalogLampConfig('streetscape:canopy-soffit-light')!)
+export const solarStreetLightDefinition = makeCatalogLampDefinition(getCatalogLampConfig('streetscape:solar-street-light')!)

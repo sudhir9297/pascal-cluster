@@ -2,7 +2,7 @@ import { type AnyNodeId, useLiveNodeOverrides, useScene } from '@pascal-app/core
 import { roadCurbCornerRadiusAtPlanPoint } from './road-network-corner-editing'
 import { moveRoadGraphNode } from './road-network-graph-editing'
 import type { RoadNetworkNode } from './schema'
-import { useEnvironmentStore } from './store'
+import { useStreetscapeStore } from './store'
 
 type RoadControlPayload = { edgeId: string; index: number }
 type RoadNodePayload = { nodeId: string }
@@ -20,7 +20,7 @@ export const roadControlPointAffordance = {
   }) {
     const { edgeId, index } = payload as RoadControlPayload
     const nodeId = node.id as AnyNodeId
-    useEnvironmentStore.getState().setRoadElementSelection({
+    useStreetscapeStore.getState().setRoadElementSelection({
       networkId: node.id,
       kind: 'control',
       id: edgeId,
@@ -71,7 +71,7 @@ export const roadNodePointAffordance = {
       graphNodes: node.graphNodes,
       junctions: node.junctions,
     }
-    useEnvironmentStore.getState().setRoadElementSelection({
+    useStreetscapeStore.getState().setRoadElementSelection({
       networkId: node.id,
       kind: 'control',
       id: graphNodeId,
@@ -117,7 +117,7 @@ export const roadCurbCornerAffordance = {
     const nodeId = node.id as AnyNodeId
     const originalJunction = node.junctions[junctionId]
     let lastJunctions = node.junctions
-    useEnvironmentStore.getState().setRoadElementSelection({
+    useStreetscapeStore.getState().setRoadElementSelection({
       networkId: node.id,
       kind: 'corner',
       id: junctionId,

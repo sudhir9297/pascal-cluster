@@ -114,7 +114,7 @@ export function buildStreetInfrastructureFloorplan(
     const fill = residentialNode.bodyColor
     const accent = residentialNode.accentColor
     const kind = node.type
-    if (kind === 'environment:speed-hump') {
+    if (kind === 'streetscape:speed-hump') {
       const legacyPalette = fill === '#5a5b58' && accent === '#e7dfb9'
       const rubber = legacyPalette ? '#25282b' : fill
       const yellow = legacyPalette ? '#f2b632' : accent
@@ -136,7 +136,7 @@ export function buildStreetInfrastructureFloorplan(
           stroke,
         ))
       }
-    } else if (kind === 'environment:driveway') {
+    } else if (kind === 'streetscape:driveway') {
       const drivewayPlan = buildDrivewayPlan(node as DrivewayNode)
       children.push({
         kind: 'polygon',
@@ -155,7 +155,7 @@ export function buildStreetInfrastructureFloorplan(
           children.push({ kind: 'line', x1: start[0], y1: start[1], x2: end[0], y2: end[1], stroke: accent, strokeWidth: 0.04 })
         }
       }
-    } else if (kind === 'environment:residential-gate') {
+    } else if (kind === 'streetscape:residential-gate') {
       const gate = node as ResidentialGateNode
       const pose = resolveDrivewayGateOpenPose(gate.operationState)
       if (pose.openProgress < 0.01) {
@@ -178,11 +178,11 @@ export function buildStreetInfrastructureFloorplan(
           children.push({ kind: 'circle', cx: leafEnd[0], cy: leafEnd[1], r: 0.045, fill: accent, stroke, strokeWidth: 0.018 })
         }
       }
-    } else if (kind === 'environment:trash-bin' || kind === 'environment:recycling-bin') {
+    } else if (kind === 'streetscape:trash-bin' || kind === 'streetscape:recycling-bin') {
       children.push(rectangle(center, layout.width * 0.98, layout.length * 0.98, angle, fill, stroke))
       children.push(rectangle(center, layout.width * 0.9, layout.length * 0.88, angle, fill, accent))
       for (const side of [-1, 1]) {
-        for (const end of kind === 'environment:trash-bin' ? [-1, 1] : [1]) {
+        for (const end of kind === 'streetscape:trash-bin' ? [-1, 1] : [1]) {
           const wheel = localPoint(center, side * layout.width * 0.4, end * layout.length * 0.33, angle)
           children.push({ kind: 'circle', cx: wheel[0], cy: wheel[1], r: Math.min(layout.width, layout.length) * 0.075, fill: '#171918', stroke, strokeWidth: 0.015 })
         }
@@ -196,7 +196,7 @@ export function buildStreetInfrastructureFloorplan(
       const labelStart = localPoint(center, -layout.width * 0.16, -layout.length * 0.42, angle)
       const labelEnd = localPoint(center, layout.width * 0.16, -layout.length * 0.42, angle)
       children.push({ kind: 'line', x1: labelStart[0], y1: labelStart[1], x2: labelEnd[0], y2: labelEnd[1], stroke: '#d5d8c8', strokeWidth: 0.025 })
-      if (kind === 'environment:recycling-bin') {
+      if (kind === 'streetscape:recycling-bin') {
         const points = [0, 1, 2].map((index) => {
           const markAngle = -Math.PI / 2 + index * (Math.PI * 2 / 3)
           return localPoint(center, Math.cos(markAngle) * layout.width * 0.18, Math.sin(markAngle) * layout.length * 0.18, angle)
@@ -207,7 +207,7 @@ export function buildStreetInfrastructureFloorplan(
           children.push({ kind: 'line', x1: start[0], y1: start[1], x2: end[0], y2: end[1], stroke: accent, strokeWidth: 0.032, strokeLinecap: 'round' })
         }
       }
-    } else if (kind === 'environment:mailbox') {
+    } else if (kind === 'streetscape:mailbox') {
       children.push(rectangle(center, layout.width, layout.length, angle, fill, stroke))
       children.push({ kind: 'circle', cx: x, cy: z, r: Math.min(layout.width, layout.length) * 0.16, fill: accent, stroke, strokeWidth: 0.02 })
       for (const offset of [-0.42, 0.42]) {
@@ -218,7 +218,7 @@ export function buildStreetInfrastructureFloorplan(
       const flagStart = localPoint(center, layout.width * 0.28, 0, angle)
       const flagEnd = localPoint(center, layout.width * 0.28, -layout.length * 0.35, angle)
       children.push({ kind: 'line', x1: flagStart[0], y1: flagStart[1], x2: flagEnd[0], y2: flagEnd[1], stroke: accent, strokeWidth: 0.035, strokeLinecap: 'round' })
-    } else if (kind === 'environment:parcel-box') {
+    } else if (kind === 'streetscape:parcel-box') {
       children.push(rectangle(center, layout.width, layout.length, angle, fill, stroke))
       const lock = localPoint(center, 0, -layout.length * 0.5, angle)
       children.push({ kind: 'circle', cx: lock[0], cy: lock[1], r: Math.min(layout.width, layout.length) * 0.12, fill: accent, stroke, strokeWidth: 0.02 })
@@ -232,7 +232,7 @@ export function buildStreetInfrastructureFloorplan(
     return { kind: 'group', children }
   }
 
-  if ((node.type as string) === 'environment:traffic-signal') {
+  if ((node.type as string) === 'streetscape:traffic-signal') {
     const signal = node as TrafficSignalNode
     const layout = resolveTrafficSignalLayout(signal)
     children.push({
@@ -390,7 +390,7 @@ export function buildStreetInfrastructureFloorplan(
         ),
       )
     }
-  } else if ((node.type as string) === 'environment:drainage-inlet') {
+  } else if ((node.type as string) === 'streetscape:drainage-inlet') {
     const inlet = node as DrainageInletNode
     const layout = resolveDrainageInletLayout(inlet)
     const curbSide = inlet.roadAttachment?.side === 'right' ? -1 : 1
@@ -417,7 +417,7 @@ export function buildStreetInfrastructureFloorplan(
         ),
       )
     }
-  } else if ((node.type as string) === 'environment:manhole-cover') {
+  } else if ((node.type as string) === 'streetscape:manhole-cover') {
     const cover = node as ManholeCoverNode
     const layout = resolveManholeCoverLayout(cover)
     children.push({
@@ -503,7 +503,7 @@ export function buildStreetInfrastructureFloorplan(
       const slot = localPoint(center, side * layout.radius * 0.58, 0, angle)
       children.push(rectangle(slot, 0.065, 0.024, angle + Math.PI / 2, '#1f2423', stroke))
     }
-  } else if ((node.type as string) === 'environment:traffic-bollard') {
+  } else if ((node.type as string) === 'streetscape:traffic-bollard') {
     const bollard = node as TrafficBollardNode
     const layout = resolveTrafficBollardLayout(bollard)
     children.push({
@@ -536,7 +536,7 @@ export function buildStreetInfrastructureFloorplan(
       stroke: bollard.reflectiveColor,
       strokeWidth: 0.02,
     })
-  } else if ((node.type as string) === 'environment:road-barrier') {
+  } else if ((node.type as string) === 'streetscape:road-barrier') {
     const barrier = node as RoadBarrierNode
     const layout = resolveRoadBarrierLayout(barrier)
     children.push(rectangle(center, layout.length, layout.width, angle, barrier.bodyColor, stroke))

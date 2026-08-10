@@ -14,7 +14,7 @@ import { UtilityPoleModel } from './utility-pole-model'
 
 export default function UtilityPoleRenderer({ node: storeNode }: { node: UtilityPoleNode }) {
   const ref = useRef<Group>(null!)
-  const handlers = useNodeEvents(storeNode as never, 'environment:utility-pole' as never)
+  const handlers = useNodeEvents(storeNode as never, 'streetscape:utility-pole' as never)
   useRegistry(storeNode.id as AnyNodeId, storeNode.type, ref)
 
   const liveTransform = useLiveTransforms((s) => s.get(storeNode.id as AnyNodeId))

@@ -20,7 +20,7 @@ export default function TwinArmMedianLightRenderer({
   const ref = useRef<Group>(null!)
   const handlers = useNodeEvents(
     storeNode as never,
-    'environment:twin-arm-median-light' as never,
+    'streetscape:twin-arm-median-light' as never,
   )
   useRegistry(storeNode.id as AnyNodeId, storeNode.type, ref)
 

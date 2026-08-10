@@ -20,10 +20,10 @@ export function applyRoadAutoInfrastructureClearances(
     if (components.curbWidth <= 0) return [side, components]
     const next = {
       ...components,
-      gutterWidth: settings.items['environment:drainage-inlet']
+      gutterWidth: settings.items['streetscape:drainage-inlet']
         ? Math.max(components.gutterWidth, AUTO_DRAINAGE_MIN_GUTTER_WIDTH)
         : components.gutterWidth,
-      vergeWidth: settings.items['environment:fire-hydrant']
+      vergeWidth: settings.items['streetscape:fire-hydrant']
         ? Math.max(components.vergeWidth, AUTO_HYDRANT_MIN_VERGE_WIDTH)
         : components.vergeWidth,
     }

@@ -14,8 +14,8 @@ export const catalogLampParametrics: ParametricDescriptor<CatalogLampNode> = {
           max: 30,
           step: 0.1,
           visibleIf: (node) =>
-            node.type !== 'environment:tunnel-luminaire'
-              && node.type !== 'environment:canopy-soffit-light'
+            node.type !== 'streetscape:tunnel-luminaire'
+              && node.type !== 'streetscape:canopy-soffit-light'
               && node.visualStyle !== 'wall-pack',
         },
         { key: 'armLength', kind: 'number', unit: 'm', min: 0.15, max: 12, step: 0.1 },

@@ -20,7 +20,7 @@ import {
 import { buildSignalJunctionPlacements } from "./road-edge-attachments";
 import { DEFAULT_ROAD_STYLE_PRESETS } from "./road-style-presets";
 import { RoadNetworkNode, TrafficSignalNode } from "./schema";
-import { useEnvironmentStore } from "./store";
+import { useStreetscapeStore } from "./store";
 
 const defaultStyle = createDefaultRoadStyle();
 
@@ -28,7 +28,7 @@ type RoadNetworkDefinition = NodeDefinition<typeof RoadNetworkNode> &
 	Record<string, unknown>;
 
 export const roadNetworkDefinition: RoadNetworkDefinition = {
-	kind: "environment:road-network",
+	kind: "streetscape:road-network",
 	schemaVersion: 33,
 	schema: RoadNetworkNode,
 	category: "structure",
@@ -460,7 +460,7 @@ export const roadNetworkDefinition: RoadNetworkDefinition = {
 	},
 	quickActions: ({ node }: { node: RoadNetworkNode }) => {
 		const junctions = node.junctions ?? {};
-		const selected = useEnvironmentStore.getState().roadElementSelection;
+		const selected = useStreetscapeStore.getState().roadElementSelection;
 		const hasSplineAlignment = Object.values(node.edges).some(
 			(edge) => edge.alignment.length > 0,
 		);
@@ -478,7 +478,7 @@ export const roadNetworkDefinition: RoadNetworkDefinition = {
 						: "Show draggable controls for reshaping this spline road",
 					icon: { kind: "iconify" as const, name: "lucide:move" },
 					run: () => {
-						useEnvironmentStore
+						useStreetscapeStore
 							.getState()
 							.setRoadElementSelection(
 								splineEditing
@@ -741,10 +741,10 @@ export const roadNetworkDefinition: RoadNetworkDefinition = {
 			label: "Alignment",
 			chip: {
 				subscribe: (onChange: () => void) =>
-					useEnvironmentStore.subscribe(onChange),
-				value: () => useEnvironmentStore.getState().roadAlignmentMode,
+					useStreetscapeStore.subscribe(onChange),
+				value: () => useStreetscapeStore.getState().roadAlignmentMode,
 				cycle: () => {
-					const store = useEnvironmentStore.getState();
+					const store = useStreetscapeStore.getState();
 					store.setRoadAlignmentMode(
 						store.roadAlignmentMode === "straight" ? "spline" : "straight",
 					);
@@ -765,10 +765,10 @@ export const roadNetworkDefinition: RoadNetworkDefinition = {
 			label: "Elevation",
 			chip: {
 				subscribe: (onChange: () => void) =>
-					useEnvironmentStore.subscribe(onChange),
-				value: () => useEnvironmentStore.getState().roadElevationMode,
+					useStreetscapeStore.subscribe(onChange),
+				value: () => useStreetscapeStore.getState().roadElevationMode,
 				cycle: () => {
-					const store = useEnvironmentStore.getState();
+					const store = useStreetscapeStore.getState();
 					store.setRoadElevationMode(
 						store.roadElevationMode === "ground" ? "bridge" : "ground",
 					);

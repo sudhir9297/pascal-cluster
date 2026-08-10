@@ -18,7 +18,7 @@ export default function CobraHeadLightRenderer({
   node: CobraHeadLightNode
 }) {
   const ref = useRef<Group>(null!)
-  const handlers = useNodeEvents(storeNode as never, 'environment:cobra-head-light' as never)
+  const handlers = useNodeEvents(storeNode as never, 'streetscape:cobra-head-light' as never)
   useRegistry(storeNode.id as AnyNodeId, storeNode.type, ref)
 
   const liveTransform = useLiveTransforms((s) => s.get(storeNode.id as AnyNodeId))

@@ -58,7 +58,7 @@ const armHandle: HandleDescriptor<StreetLightNode> = {
 }
 
 export const streetLightDefinition: StreetLightDefinition = {
-  kind: 'environment:street-light',
+  kind: 'streetscape:street-light',
   schemaVersion: 1,
   schema: StreetLightNode,
   category: 'furnish',

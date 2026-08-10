@@ -61,7 +61,7 @@ const armLengthHandle: HandleDescriptor<MultiHeadAreaLightNode> = {
 }
 
 export const multiHeadAreaLightDefinition: MultiHeadAreaLightDefinition = {
-  kind: 'environment:multi-head-area-light',
+  kind: 'streetscape:multi-head-area-light',
   schemaVersion: 1,
   schema: MultiHeadAreaLightNode,
   category: 'furnish',

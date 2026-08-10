@@ -4,15 +4,15 @@ import { type AnyNode, type AnyNodeId, useScene } from '@pascal-app/core'
 import { EDITOR_LAYER, triggerSFX } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useMemo } from 'react'
-import { finishEnvironmentPlacement, usePlacement } from './placement'
+import { usePlacement } from './placement'
 import PostTopLightPreview from './post-top-light-preview'
 import { PedestrianPostLightNode } from './schema'
-import { useEnvironmentStore } from './store'
+import { useStreetscapeStore } from './store'
 
 export default function PostTopLightTool() {
   const activeLevelId = useViewer((s) => s.selection.levelId)
-  const height = useEnvironmentStore((s) => s.postTopLightHeight)
-  const lightOn = useEnvironmentStore((s) => s.postTopLightOn)
+  const height = useStreetscapeStore((s) => s.postTopLightHeight)
+  const lightOn = useStreetscapeStore((s) => s.postTopLightOn)
 
   const previewNode = useMemo(
     () =>
@@ -27,7 +27,7 @@ export default function PostTopLightTool() {
 
   const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position, rotationY) => {
     if (!activeLevelId) return
-    const brush = useEnvironmentStore.getState()
+    const brush = useStreetscapeStore.getState()
     const postTopLight = PedestrianPostLightNode.parse({
       height: brush.postTopLightHeight,
       lightOn: brush.postTopLightOn,
@@ -39,7 +39,6 @@ export default function PostTopLightTool() {
       .createNode(postTopLight as unknown as AnyNode, activeLevelId as AnyNodeId)
     useViewer.getState().setSelection({ selectedIds: [postTopLight.id as AnyNodeId] })
     triggerSFX('sfx:item-place')
-    finishEnvironmentPlacement(brush.placementMode)
   })
 
   if (!activeLevelId) return null

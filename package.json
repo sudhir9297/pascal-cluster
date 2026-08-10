@@ -1,14 +1,14 @@
 {
-  "name": "@pascal-app/plugin-environment",
+  "name": "@pascal-app/plugin-streetscape",
   "version": "0.1.0",
-  "description": "First-party Pascal environment-building plugin with procedural systems and configurable assets for complete outdoor scenes.",
+  "description": "First-party Pascal plugin for building complete streetscapes with procedural roads, lighting, signs, utilities, and roadside infrastructure.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pascalorg/plugin-environment.git"
+    "url": "git+https://github.com/pascalorg/plugin-streetscape.git"
   },
   "homepage": "https://editor.pascal.app/docs/developers/plugins",
   "bugs": {
-    "url": "https://github.com/pascalorg/plugin-environment/issues"
+    "url": "https://github.com/pascalorg/plugin-streetscape/issues"
   },
   "type": "module",
   "main": "./src/index.ts",
@@ -58,7 +58,10 @@
     "pascal",
     "3d",
     "editor",
-    "plugin"
+    "plugin",
+    "streetscape",
+    "roads",
+    "infrastructure"
   ],
   "license": "MIT"
 }

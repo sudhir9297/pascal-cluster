@@ -62,7 +62,7 @@ describe("semantic roadside decoration rules", () => {
 		if (!result) throw new Error("Expected the roadside lamp to materialize");
 		expect(result.selection.selectedIds).toEqual([result.node.id]);
 		expect(result.selection.selectedIds).not.toContain(network.id);
-		expect(result.node.type).toBe("environment:street-light");
+		expect(result.node.type).toBe("streetscape:street-light");
 		expect(result.node.roadAttachment?.networkNodeId).toBe(network.id);
 		expect(result.networkPatch.roadsideDecorationSuppressed?.[lamp.id]).toBe(true);
 		expect(result.networkPatch.attachments?.[result.attachment.id]).toEqual(
@@ -82,7 +82,7 @@ describe("semantic roadside decoration rules", () => {
 		if (!result) throw new Error("Expected the roadside sign to materialize");
 		expect(result.selection.selectedIds).toEqual([result.node.id]);
 		expect(result.selection.selectedIds).not.toContain(network.id);
-		expect(result.node.type).toBe("environment:road-sign");
+		expect(result.node.type).toBe("streetscape:road-sign");
 		expect(result.node.roadAttachment?.networkNodeId).toBe(network.id);
 		expect(result.networkPatch.roadsideDecorationSuppressed?.[sign.id]).toBe(true);
 		expect(result.networkPatch.attachments?.[result.attachment.id]).toEqual(

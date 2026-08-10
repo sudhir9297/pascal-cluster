@@ -10,7 +10,7 @@ import {
 	moveRoadSplinePoints,
 } from "./road-network-spline-handles";
 import type { RoadNetworkNode } from "./schema";
-import { useEnvironmentStore } from "./store";
+import { useStreetscapeStore } from "./store";
 
 export function RoadSplinePointEditor({
 	node,
@@ -19,7 +19,7 @@ export function RoadSplinePointEditor({
 	node: RoadNetworkNode;
 	onUpdate: (patch: Partial<RoadNetworkNode>) => void;
 }) {
-	const selection = useEnvironmentStore((state) => state.roadElementSelection);
+	const selection = useStreetscapeStore((state) => state.roadElementSelection);
 	if (selection?.networkId !== node.id) {
 		return null;
 	}
@@ -75,7 +75,7 @@ export function RoadSplinePointEditor({
 		if (!patch) return;
 		onUpdate(patch);
 		if (command === "delete") {
-			useEnvironmentStore.getState().setRoadElementSelection({
+			useStreetscapeStore.getState().setRoadElementSelection({
 				networkId: node.id,
 				kind: "spline",
 				id: node.id,

@@ -20,7 +20,7 @@ export default function TrussRoadwayLightRenderer({
   const ref = useRef<Group>(null!)
   const handlers = useNodeEvents(
     storeNode as never,
-    'environment:truss-roadway-light' as never,
+    'streetscape:truss-roadway-light' as never,
   )
   useRegistry(storeNode.id as AnyNodeId, storeNode.type, ref)
 

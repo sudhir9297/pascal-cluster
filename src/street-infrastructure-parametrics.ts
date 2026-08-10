@@ -327,16 +327,16 @@ const drivewayGateParametrics: ParametricDescriptor<any> = {
 export function getStreetInfrastructureParametrics(
   kind: string,
 ): ParametricDescriptor<StreetInfrastructureNode> {
-  const descriptor = kind === 'environment:traffic-signal' ? trafficSignalParametrics
-    : kind === 'environment:drainage-inlet' ? drainageInletParametrics
-    : kind === 'environment:manhole-cover' ? manholeCoverParametrics
-    : kind === 'environment:fire-hydrant' ? fireHydrantParametrics
-    : kind === 'environment:traffic-bollard' ? trafficBollardParametrics
-    : kind === 'environment:road-barrier' ? roadBarrierParametrics
-    : kind === 'environment:driveway' ? drivewayParametrics
-    : kind === 'environment:mailbox' ? mailboxParametrics
-    : kind === 'environment:parcel-box' ? parcelBoxParametrics
-    : kind === 'environment:residential-gate' ? drivewayGateParametrics
+  const descriptor = kind === 'streetscape:traffic-signal' ? trafficSignalParametrics
+    : kind === 'streetscape:drainage-inlet' ? drainageInletParametrics
+    : kind === 'streetscape:manhole-cover' ? manholeCoverParametrics
+    : kind === 'streetscape:fire-hydrant' ? fireHydrantParametrics
+    : kind === 'streetscape:traffic-bollard' ? trafficBollardParametrics
+    : kind === 'streetscape:road-barrier' ? roadBarrierParametrics
+    : kind === 'streetscape:driveway' ? drivewayParametrics
+    : kind === 'streetscape:mailbox' ? mailboxParametrics
+    : kind === 'streetscape:parcel-box' ? parcelBoxParametrics
+    : kind === 'streetscape:residential-gate' ? drivewayGateParametrics
     : residentialRoadAssetParametrics
   return {
     ...descriptor,

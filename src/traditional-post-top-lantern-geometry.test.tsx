@@ -17,7 +17,7 @@ describe('traditional post-top lantern', () => {
   })
 
   test('keeps the fixture proportions and editor footprint in sync', () => {
-    const node = parseCatalogLamp('environment:traditional-post-top-lantern', {
+    const node = parseCatalogLamp('streetscape:traditional-post-top-lantern', {
       height: 4,
       visualStyle: 'lantern',
     })
@@ -35,7 +35,7 @@ describe('traditional post-top lantern', () => {
   })
 
   test('renders a complete four-sided heritage assembly', () => {
-    const node = parseCatalogLamp('environment:traditional-post-top-lantern', {
+    const node = parseCatalogLamp('streetscape:traditional-post-top-lantern', {
       height: 4,
       lightOn: true,
       visualStyle: 'lantern',
@@ -65,7 +65,7 @@ describe('traditional post-top lantern', () => {
   })
 
   test('uses a dedicated roof-and-pane plan symbol', () => {
-    const node = parseCatalogLamp('environment:traditional-post-top-lantern', {
+    const node = parseCatalogLamp('streetscape:traditional-post-top-lantern', {
       lightOn: true,
       position: [2, 0, 3],
       rotation: [0, Math.PI / 4, 0],

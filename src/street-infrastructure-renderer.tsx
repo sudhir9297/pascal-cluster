@@ -31,7 +31,7 @@ export default function StreetInfrastructureRenderer({
     const host = Object.values(sceneNodes).find(
       (candidate) => (candidate.id as string) === attachmentRef.networkNodeId,
     )
-    if (!host || (host.type as string) !== 'environment:road-network') return null
+    if (!host || (host.type as string) !== 'streetscape:road-network') return null
     const road = RoadNetworkNode.parse(host)
     const attachment = road.attachments?.[attachmentRef.attachmentId]
     const transform = attachment

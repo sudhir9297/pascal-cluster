@@ -49,7 +49,7 @@ const heightHandle: HandleDescriptor<PedestrianPostLightNode> = {
 }
 
 export const postTopLightDefinition: PostTopLightDefinition = {
-  kind: 'environment:pedestrian-post-light',
+  kind: 'streetscape:pedestrian-post-light',
   schemaVersion: 1,
   schema: PedestrianPostLightNode,
   category: 'furnish',

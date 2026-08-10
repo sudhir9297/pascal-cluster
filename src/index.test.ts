@@ -16,7 +16,7 @@ import {
   buildHeritageCrookCurves,
   resolveHeritageCrookLightLayout,
 } from './heritage-crook-light-geometry'
-import { environmentHostPanel, environmentPlugin } from './index'
+import { streetscapeHostPanel, streetscapePlugin } from './index'
 import { postTopLightDefinition } from './post-top-light-definition'
 import { resolvePostTopLightLayout } from './post-top-light-geometry'
 import {
@@ -42,7 +42,7 @@ import {
   createRoadSignPreviewNode,
   ROAD_SIGN_PREVIEW_ID,
 } from './schema'
-import { useEnvironmentStore } from './store'
+import { useStreetscapeStore } from './store'
 import {
   findNearestUtilityPoleForConnection,
   findUtilityPoleInlineInsertion,
@@ -76,56 +76,56 @@ import {
   STANDARD_UTILITY_POLE_EXPOSED_HEIGHT_M,
 } from './utility-pole-geometry'
 
-describe('Environment plugin manifest', () => {
+describe('Streetscape plugin manifest', () => {
   test('exports the stable plugin identity and node kinds', () => {
-    expect(environmentPlugin.id).toBe('pascal:environment')
-    expect(environmentPlugin.apiVersion).toBe(1)
-    expect(environmentPlugin.nodes?.map((definition) => definition.kind)).toEqual([
-      'environment:road-network',
-      'environment:street-light',
-      'environment:pedestrian-post-light',
-      'environment:heritage-crook-light',
-      'environment:cobra-head-light',
-      'environment:twin-arm-median-light',
-      'environment:multi-head-area-light',
-      'environment:truss-roadway-light',
-      'environment:high-mast-crown-light',
-      'environment:shoebox-area-light',
-      'environment:floodlight-pole',
-      'environment:traditional-post-top-lantern',
-      'environment:globe-post-top-light',
-      'environment:decorative-candelabra-light',
-      'environment:path-garden-light',
-      'environment:bollard-light',
-      'environment:catenary-street-light',
-      'environment:wall-arm-light',
-      'environment:wall-pack-light',
-      'environment:tunnel-luminaire',
-      'environment:canopy-soffit-light',
-      'environment:solar-street-light',
-      'environment:utility-pole',
-      'environment:utility-wire-span',
-      'environment:traffic-signal',
-      'environment:drainage-inlet',
-      'environment:manhole-cover',
-      'environment:fire-hydrant',
-      'environment:traffic-bollard',
-      'environment:road-barrier',
-      'environment:driveway',
-      'environment:mailbox',
-      'environment:parcel-box',
-    'environment:trash-bin',
-    'environment:recycling-bin',
-    'environment:residential-gate',
-      'environment:speed-hump',
-      'environment:road-sign',
+    expect(streetscapePlugin.id).toBe('pascal:streetscape')
+    expect(streetscapePlugin.apiVersion).toBe(1)
+    expect(streetscapePlugin.nodes?.map((definition) => definition.kind)).toEqual([
+      'streetscape:road-network',
+      'streetscape:street-light',
+      'streetscape:pedestrian-post-light',
+      'streetscape:heritage-crook-light',
+      'streetscape:cobra-head-light',
+      'streetscape:twin-arm-median-light',
+      'streetscape:multi-head-area-light',
+      'streetscape:truss-roadway-light',
+      'streetscape:high-mast-crown-light',
+      'streetscape:shoebox-area-light',
+      'streetscape:floodlight-pole',
+      'streetscape:traditional-post-top-lantern',
+      'streetscape:globe-post-top-light',
+      'streetscape:decorative-candelabra-light',
+      'streetscape:path-garden-light',
+      'streetscape:bollard-light',
+      'streetscape:catenary-street-light',
+      'streetscape:wall-arm-light',
+      'streetscape:wall-pack-light',
+      'streetscape:tunnel-luminaire',
+      'streetscape:canopy-soffit-light',
+      'streetscape:solar-street-light',
+      'streetscape:utility-pole',
+      'streetscape:utility-wire-span',
+      'streetscape:traffic-signal',
+      'streetscape:drainage-inlet',
+      'streetscape:manhole-cover',
+      'streetscape:fire-hydrant',
+      'streetscape:traffic-bollard',
+      'streetscape:road-barrier',
+      'streetscape:driveway',
+      'streetscape:mailbox',
+      'streetscape:parcel-box',
+    'streetscape:trash-bin',
+    'streetscape:recycling-bin',
+    'streetscape:residential-gate',
+      'streetscape:speed-hump',
+      'streetscape:road-sign',
     ])
   })
 
-  test('centers every vertical resize tracker over its environment asset', () => {
+  test('centers every vertical resize tracker over its streetscape asset', () => {
     let trackerCount = 0
 
-    for (const definition of environmentPlugin.nodes ?? []) {
+    for (const definition of streetscapePlugin.nodes ?? []) {
       if (!definition.handles) continue
       const node = definition.schema.parse({})
       const handles = typeof definition.handles === 'function'
@@ -143,8 +143,8 @@ describe('Environment plugin manifest', () => {
     expect(trackerCount).toBeGreaterThan(0)
   })
 
-  test('advertises placement-time rotation for every movable environment asset', () => {
-    const placeableDefinitions = (environmentPlugin.nodes ?? []).filter(
+  test('advertises placement-time rotation for every movable streetscape asset', () => {
+    const placeableDefinitions = (streetscapePlugin.nodes ?? []).filter(
       (definition) => definition.capabilities.movable && definition.tool,
     )
 
@@ -156,7 +156,7 @@ describe('Environment plugin manifest', () => {
 
   test('registers a drawn road network with stable graph defaults', () => {
     const road = RoadNetworkNode.parse({})
-    expect(road.type).toBe('environment:road-network')
+    expect(road.type).toBe('streetscape:road-network')
     expect(road.activeStyleId).toBe('local-street')
     expect(road.stylePresets['local-street']?.laneCount).toBe(2)
     expect(road.stylePresets['local-street']?.sidewalkWidth).toBe(0.5)
@@ -357,18 +357,18 @@ describe('Environment plugin manifest', () => {
     expect(alignment).toBeDefined()
     expect(elevation).toBeDefined()
 
-    useEnvironmentStore.getState().setRoadAlignmentMode('straight')
+    useStreetscapeStore.getState().setRoadAlignmentMode('straight')
     expect(alignment?.labels[alignment.value()]).toBe('Alignment: Straight')
     alignment?.cycle()
     expect(alignment?.labels[alignment.value()]).toBe('Alignment: Spline')
 
-    useEnvironmentStore.getState().setRoadElevationMode('ground')
+    useStreetscapeStore.getState().setRoadElevationMode('ground')
     expect(elevation?.labels[elevation.value()]).toBe('Elevation: Ground')
     elevation?.cycle()
     expect(elevation?.labels[elevation.value()]).toBe('Elevation: Bridge')
 
-    useEnvironmentStore.getState().setRoadAlignmentMode('straight')
-    useEnvironmentStore.getState().setRoadElevationMode('ground')
+    useStreetscapeStore.getState().setRoadAlignmentMode('straight')
+    useStreetscapeStore.getState().setRoadElevationMode('ground')
   })
 
   test('does not expose a redundant segment delete quick action', () => {
@@ -379,7 +379,7 @@ describe('Environment plugin manifest', () => {
     )
     const node = RoadNetworkNode.parse(result.graph)
     const edgeId = Object.keys(node.edges)[0]!
-    useEnvironmentStore.getState().setRoadElementSelection({
+    useStreetscapeStore.getState().setRoadElementSelection({
       networkId: node.id,
       kind: 'edge',
       id: edgeId,
@@ -391,7 +391,7 @@ describe('Environment plugin manifest', () => {
     expect(quickActions({ node })).not.toContainEqual(expect.objectContaining({
       id: 'road:delete-edge',
     }))
-    useEnvironmentStore.getState().setRoadElementSelection(null)
+    useStreetscapeStore.getState().setRoadElementSelection(null)
   })
 
   test('migrates legacy junction treatments into persistent junction records', () => {
@@ -417,7 +417,7 @@ describe('Environment plugin manifest', () => {
     const plus = insertRoadSegment(base.graph, [0, 0, -10], [0, 0, 10], { tolerance: 0.1 })
     const node = RoadNetworkNode.parse(plus.graph)
     const junctionId = Object.keys(node.junctions)[0]!
-    useEnvironmentStore.getState().setRoadElementSelection({
+    useStreetscapeStore.getState().setRoadElementSelection({
       networkId: node.id,
       kind: 'junction',
       id: junctionId,
@@ -435,7 +435,7 @@ describe('Environment plugin manifest', () => {
     junctionActions.find((action) => action.id === 'road:cycle-primary')!.run({ sceneApi })
     expect(junctionActions.some((action) => action.id === 'road:widen-corner')).toBe(false)
     const cornerKey = Object.keys(node.junctions[junctionId]!.cornerRadii)[0]!
-    useEnvironmentStore.getState().setRoadElementSelection({
+    useStreetscapeStore.getState().setRoadElementSelection({
       networkId: node.id,
       kind: 'corner',
       id: junctionId,
@@ -444,7 +444,7 @@ describe('Environment plugin manifest', () => {
     const cornerActions = quickActions({ node })
     expect(cornerActions.some((action) => action.id === 'road:widen-corners')).toBe(false)
     cornerActions.find((action) => action.id === 'road:widen-corner')!.run({ sceneApi })
-    useEnvironmentStore.getState().setRoadElementSelection(null)
+    useStreetscapeStore.getState().setRoadElementSelection(null)
 
     const primaryPatch = patches[0] as unknown as Pick<RoadNetworkNode, 'junctions'>
     const cornerPatch = patches[1] as unknown as Pick<RoadNetworkNode, 'junctions'>
@@ -484,24 +484,24 @@ describe('Environment plugin manifest', () => {
     const editAction = quickActions({ node }).find((action) => action.id === 'road:edit-spline')
     expect(editAction).toBeDefined()
     editAction!.run({ sceneApi: {} })
-    expect(useEnvironmentStore.getState().roadElementSelection).toMatchObject({
+    expect(useStreetscapeStore.getState().roadElementSelection).toMatchObject({
       networkId: node.id,
       kind: 'spline',
     })
-    useEnvironmentStore.getState().setRoadElementSelection(null)
+    useStreetscapeStore.getState().setRoadElementSelection(null)
   })
 
-  test('associates the Environment panel with the plugin', () => {
-    expect(environmentHostPanel.pluginId).toBe(environmentPlugin.id)
-    expect(environmentHostPanel.defaultInstalled).toBe(true)
-    expect(environmentHostPanel.pluginUrl).toBe(
-      'https://github.com/pascalorg/plugin-environment',
+  test('associates the Streetscape panel with the plugin', () => {
+    expect(streetscapeHostPanel.pluginId).toBe(streetscapePlugin.id)
+    expect(streetscapeHostPanel.defaultInstalled).toBe(true)
+    expect(streetscapeHostPanel.pluginUrl).toBe(
+      'https://github.com/pascalorg/plugin-streetscape',
     )
   })
 
   test('creates a street light with stable defaults', () => {
     const streetLight = StreetLightNode.parse({})
-    expect(streetLight.type).toBe('environment:street-light')
+    expect(streetLight.type).toBe('streetscape:street-light')
     expect(streetLight.height).toBe(6)
     expect(streetLight.armLength).toBe(1.2)
     expect(streetLight.lightOn).toBe(false)
@@ -525,7 +525,7 @@ describe('Environment plugin manifest', () => {
 
   test('creates an off pedestrian post-top light with stable defaults', () => {
     const postTopLight = PedestrianPostLightNode.parse({})
-    expect(postTopLight.type).toBe('environment:pedestrian-post-light')
+    expect(postTopLight.type).toBe('streetscape:pedestrian-post-light')
     expect(postTopLight.height).toBe(6)
     expect(postTopLight.lightOn).toBe(false)
     expect(postTopLight.intensity).toBe(650)
@@ -547,7 +547,7 @@ describe('Environment plugin manifest', () => {
 
   test("creates an off heritage Bishop's Crook lamp with stable defaults", () => {
     const crookLight = HeritageCrookLightNode.parse({})
-    expect(crookLight.type).toBe('environment:heritage-crook-light')
+    expect(crookLight.type).toBe('streetscape:heritage-crook-light')
     expect(crookLight.height).toBe(6)
     expect(crookLight.armReach).toBe(0.9)
     expect(crookLight.lightOn).toBe(false)
@@ -570,7 +570,7 @@ describe('Environment plugin manifest', () => {
 
   test('creates an off cobra-head roadway lamp with stable defaults', () => {
     const cobraHead = CobraHeadLightNode.parse({})
-    expect(cobraHead.type).toBe('environment:cobra-head-light')
+    expect(cobraHead.type).toBe('streetscape:cobra-head-light')
     expect(cobraHead.height).toBe(6)
     expect(cobraHead.armLength).toBe(1.25)
     expect(cobraHead.lightOn).toBe(false)
@@ -594,7 +594,7 @@ describe('Environment plugin manifest', () => {
 
   test('creates an off twin-arm median lamp with stable defaults', () => {
     const twinArm = TwinArmMedianLightNode.parse({})
-    expect(twinArm.type).toBe('environment:twin-arm-median-light')
+    expect(twinArm.type).toBe('streetscape:twin-arm-median-light')
     expect(twinArm.height).toBe(6)
     expect(twinArm.armLength).toBe(1.35)
     expect(twinArm.lightOn).toBe(false)
@@ -618,7 +618,7 @@ describe('Environment plugin manifest', () => {
 
   test('creates an off four-head area pole with stable defaults', () => {
     const areaLight = MultiHeadAreaLightNode.parse({})
-    expect(areaLight.type).toBe('environment:multi-head-area-light')
+    expect(areaLight.type).toBe('streetscape:multi-head-area-light')
     expect(areaLight.height).toBe(6)
     expect(areaLight.armLength).toBe(1.2)
     expect(areaLight.headCount).toBe(4)
@@ -641,7 +641,7 @@ describe('Environment plugin manifest', () => {
 
   test('creates an off truss roadway lamp with stable defaults', () => {
     const trussLight = TrussRoadwayLightNode.parse({})
-    expect(trussLight.type).toBe('environment:truss-roadway-light')
+    expect(trussLight.type).toBe('streetscape:truss-roadway-light')
     expect(trussLight.height).toBe(6)
     expect(trussLight.armLength).toBe(2)
     expect(trussLight.braceDepth).toBe(0.75)
@@ -666,7 +666,7 @@ describe('Environment plugin manifest', () => {
       const node = variant.schema.parse({})
       expect(node.type).toBe(variant.kind)
       expect(node.lightOn).toBe(false)
-      const definition = environmentPlugin.nodes?.find((candidate) => candidate.kind === variant.kind)
+      const definition = streetscapePlugin.nodes?.find((candidate) => candidate.kind === variant.kind)
       expect(definition?.tool).toBeDefined()
       expect(definition?.preview).toBeDefined()
       expect(definition?.renderer).toBeDefined()
@@ -675,8 +675,8 @@ describe('Environment plugin manifest', () => {
   })
 
   test('registers the architectural wall arm as a Pascal wall-hosted node', () => {
-    const definition = environmentPlugin.nodes?.find(
-      (candidate) => candidate.kind === 'environment:wall-arm-light',
+    const definition = streetscapePlugin.nodes?.find(
+      (candidate) => candidate.kind === 'streetscape:wall-arm-light',
     ) as any
 
     expect(definition?.capabilities.hostable).toEqual({ parents: ['wall'], align: 'face' })
@@ -687,8 +687,8 @@ describe('Environment plugin manifest', () => {
   })
 
   test('registers the wall pack as a cursor-positioned Pascal wall-hosted node', () => {
-    const definition = environmentPlugin.nodes?.find(
-      (candidate) => candidate.kind === 'environment:wall-pack-light',
+    const definition = streetscapePlugin.nodes?.find(
+      (candidate) => candidate.kind === 'streetscape:wall-pack-light',
     ) as any
     const attached = WallPackLightNode.parse({
       position: [1.4, 1.85, 0.1],
@@ -707,8 +707,8 @@ describe('Environment plugin manifest', () => {
   })
 
   test('registers the tunnel luminaire as a Pascal ceiling-hosted node', () => {
-    const definition = environmentPlugin.nodes?.find(
-      (candidate) => candidate.kind === 'environment:tunnel-luminaire',
+    const definition = streetscapePlugin.nodes?.find(
+      (candidate) => candidate.kind === 'streetscape:tunnel-luminaire',
     ) as any
     const attached = TunnelLuminaireNode.parse({ ceilingId: 'ceiling_test' })
     const legacy = TunnelLuminaireNode.parse({})
@@ -729,8 +729,8 @@ describe('Environment plugin manifest', () => {
   })
 
   test('registers the canopy light as a compact Pascal ceiling-hosted node', () => {
-    const definition = environmentPlugin.nodes?.find(
-      (candidate) => candidate.kind === 'environment:canopy-soffit-light',
+    const definition = streetscapePlugin.nodes?.find(
+      (candidate) => candidate.kind === 'streetscape:canopy-soffit-light',
     ) as any
     const attached = CanopySoffitLightNode.parse({ ceilingId: 'ceiling_test' })
     const legacy = CanopySoffitLightNode.parse({})
@@ -760,10 +760,10 @@ describe('Environment plugin manifest', () => {
       MultiHeadAreaLightNode.parse({}),
       TrussRoadwayLightNode.parse({}),
       ...CATALOG_LAMP_VARIANTS
-        .filter((variant) => variant.kind !== 'environment:high-mast-crown-light'
-          && variant.kind !== 'environment:path-garden-light'
-          && variant.kind !== 'environment:bollard-light'
-          && variant.kind !== 'environment:wall-pack-light')
+        .filter((variant) => variant.kind !== 'streetscape:high-mast-crown-light'
+          && variant.kind !== 'streetscape:path-garden-light'
+          && variant.kind !== 'streetscape:bollard-light'
+          && variant.kind !== 'streetscape:wall-pack-light')
         .map((variant) => variant.schema.parse({})),
     ]
     for (const node of nodes) {
@@ -786,15 +786,15 @@ describe('Environment plugin manifest', () => {
       'path-scale',
       'structure-mounted',
     ])
-    expect(getCatalogLampStyleOptions('environment:shoebox-area-light').map((option) => option.value)).toContain('floodlight')
-    expect(getCatalogLampStyleOptions('environment:traditional-post-top-lantern').map((option) => option.value)).toContain('globe')
-    expect(getCatalogLampStyleOptions('environment:wall-pack-light').map((option) => option.value)).toContain('wall-arm')
+    expect(getCatalogLampStyleOptions('streetscape:shoebox-area-light').map((option) => option.value)).toContain('floodlight')
+    expect(getCatalogLampStyleOptions('streetscape:traditional-post-top-lantern').map((option) => option.value)).toContain('globe')
+    expect(getCatalogLampStyleOptions('streetscape:wall-pack-light').map((option) => option.value)).toContain('wall-arm')
   })
 
   test('removes the in-ground uplight from the catalog and registry', () => {
-    expect(CATALOG_LAMP_VARIANTS.some((variant) => (variant.kind as string) === 'environment:in-ground-uplight')).toBe(false)
-    expect(isCatalogLampKind('environment:in-ground-uplight')).toBe(false)
-    expect(environmentPlugin.nodes?.some((definition) => definition.kind === 'environment:in-ground-uplight')).toBe(false)
+    expect(CATALOG_LAMP_VARIANTS.some((variant) => (variant.kind as string) === 'streetscape:in-ground-uplight')).toBe(false)
+    expect(isCatalogLampKind('streetscape:in-ground-uplight')).toBe(false)
+    expect(streetscapePlugin.nodes?.some((definition) => definition.kind === 'streetscape:in-ground-uplight')).toBe(false)
   })
 
   test('keeps the heritage crook smooth and joins its decorative brace', () => {
@@ -828,7 +828,7 @@ describe('Environment plugin manifest', () => {
 
   test('creates a utility pole with stable defaults', () => {
     const utilityPole = UtilityPoleNode.parse({})
-    expect(utilityPole.type).toBe('environment:utility-pole')
+    expect(utilityPole.type).toBe('streetscape:utility-pole')
     expect(utilityPole.height).toBe(STANDARD_UTILITY_POLE_EXPOSED_HEIGHT_M)
     expect(utilityPole.crossarmLength).toBe(STANDARD_UTILITY_POLE_CROSSARM_LENGTH_M)
     expect(utilityPole.assembly).toBe('tangent')
@@ -881,23 +881,27 @@ describe('Environment plugin manifest', () => {
     })
   })
 
-  test('supports single and continuous environment placement modes', () => {
-    expect(useEnvironmentStore.getState().placementMode).toBe('continuous')
-    useEnvironmentStore.getState().setPlacementMode('single')
-    expect(useEnvironmentStore.getState().placementMode).toBe('single')
-    useEnvironmentStore.getState().setPlacementMode('continuous')
+  test('keeps streetscape placement tools armed until cancellation or tool change', () => {
+    const store = useStreetscapeStore.getState()
+    const panel = readFileSync(new URL('./presets-panel.tsx', import.meta.url), 'utf8')
+    const placement = readFileSync(new URL('./placement.tsx', import.meta.url), 'utf8')
+
+    expect('placementMode' in store).toBe(false)
+    expect('setPlacementMode' in store).toBe(false)
+    expect(panel).not.toContain("['single', 'continuous']")
+    expect(placement).not.toContain("setMode('select')")
   })
 
-  test('configures automatic road infrastructure from the Environment side menu', () => {
-    const store = useEnvironmentStore.getState()
+  test('configures automatic road infrastructure from the Streetscape side menu', () => {
+    const store = useStreetscapeStore.getState()
     expect(store.roadAutoInfrastructure.enabled).toBe(false)
     expect(Object.values(store.roadAutoInfrastructure.items).every((value) => !value)).toBe(true)
 
     store.setRoadAutoInfrastructureEnabled(false)
-    expect(useEnvironmentStore.getState().roadAutoInfrastructure.enabled).toBe(false)
-    store.setRoadAutoInfrastructureItem('environment:fire-hydrant', false)
+    expect(useStreetscapeStore.getState().roadAutoInfrastructure.enabled).toBe(false)
+    store.setRoadAutoInfrastructureItem('streetscape:fire-hydrant', false)
     expect(
-      useEnvironmentStore.getState().roadAutoInfrastructure.items['environment:fire-hydrant'],
+      useStreetscapeStore.getState().roadAutoInfrastructure.items['streetscape:fire-hydrant'],
     ).toBe(false)
 
     const panel = readFileSync(new URL('./presets-panel.tsx', import.meta.url), 'utf8')
@@ -912,29 +916,29 @@ describe('Environment plugin manifest', () => {
     expect(roadsideInspector).not.toContain('Show lamps and signs')
 
     store.setRoadAutoInfrastructureEnabled(true)
-    store.setRoadAutoInfrastructureItem('environment:fire-hydrant', true)
+    store.setRoadAutoInfrastructureItem('streetscape:fire-hydrant', true)
   })
 
   test('separates roads, lighting, signs, and utility assets into panel categories', () => {
-    expect(useEnvironmentStore.getState().panelCategory).toBe('roads')
-    useEnvironmentStore.getState().setPanelCategory('roads')
-    expect(useEnvironmentStore.getState().panelCategory).toBe('roads')
-    useEnvironmentStore.getState().setPanelCategory('signs')
-    expect(useEnvironmentStore.getState().panelCategory).toBe('signs')
-    useEnvironmentStore.getState().setPanelCategory('utilities')
-    expect(useEnvironmentStore.getState().panelCategory).toBe('utilities')
-    useEnvironmentStore.getState().setPanelCategory('lighting')
-    expect(useEnvironmentStore.getState().postTopLightOn).toBe(false)
-    expect(useEnvironmentStore.getState().heritageCrookLightOn).toBe(false)
-    expect(useEnvironmentStore.getState().cobraHeadLightOn).toBe(false)
-    expect(useEnvironmentStore.getState().twinArmMedianLightOn).toBe(false)
-    expect(useEnvironmentStore.getState().multiHeadAreaLightOn).toBe(false)
-    expect(useEnvironmentStore.getState().trussRoadwayLightOn).toBe(false)
+    expect(useStreetscapeStore.getState().panelCategory).toBe('roads')
+    useStreetscapeStore.getState().setPanelCategory('roads')
+    expect(useStreetscapeStore.getState().panelCategory).toBe('roads')
+    useStreetscapeStore.getState().setPanelCategory('signs')
+    expect(useStreetscapeStore.getState().panelCategory).toBe('signs')
+    useStreetscapeStore.getState().setPanelCategory('utilities')
+    expect(useStreetscapeStore.getState().panelCategory).toBe('utilities')
+    useStreetscapeStore.getState().setPanelCategory('lighting')
+    expect(useStreetscapeStore.getState().postTopLightOn).toBe(false)
+    expect(useStreetscapeStore.getState().heritageCrookLightOn).toBe(false)
+    expect(useStreetscapeStore.getState().cobraHeadLightOn).toBe(false)
+    expect(useStreetscapeStore.getState().twinArmMedianLightOn).toBe(false)
+    expect(useStreetscapeStore.getState().multiHeadAreaLightOn).toBe(false)
+    expect(useStreetscapeStore.getState().trussRoadwayLightOn).toBe(false)
   })
 
   test('creates catalog-driven road signs with stable mounting defaults', () => {
     const sign = RoadSignNode.parse({})
-    expect(sign.type).toBe('environment:road-sign')
+    expect(sign.type).toBe('streetscape:road-sign')
     expect(sign.signId).toBe('stop')
     expect(sign.postHeight).toBe(2.1)
     expect(sign.mounting).toBe('single-post')
@@ -1071,7 +1075,7 @@ describe('Environment plugin manifest', () => {
       fromPoleId: 'utility-pole_from',
       toPoleId: 'utility-pole_to',
     })
-    expect(span.type).toBe('environment:utility-wire-span')
+    expect(span.type).toBe('streetscape:utility-wire-span')
     expect(span.sagRatio).toBe(0.035)
     expect(utilityWireDefinition.renderer).toBeDefined()
     expect(utilityWireDefinition.floorplan).toBeDefined()

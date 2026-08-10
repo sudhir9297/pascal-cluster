@@ -13,7 +13,7 @@ import {
 	RoadPanelSubheading,
 } from "./road-panel-controls";
 import type { RoadJunction, RoadNetworkNode } from "./schema";
-import { useEnvironmentStore } from "./store";
+import { useStreetscapeStore } from "./store";
 import {
 	addRoadManualJunctionBoundaryPoint,
 	enableRoadManualJunctionBoundary,
@@ -75,8 +75,8 @@ export function RoadJunctionInspector({
 	node: RoadNetworkNode;
 	onUpdate: (patch: Partial<RoadNetworkNode>) => void;
 }) {
-	const selection = useEnvironmentStore((state) => state.roadElementSelection);
-	const setSelection = useEnvironmentStore((state) => state.setRoadElementSelection);
+	const selection = useStreetscapeStore((state) => state.roadElementSelection);
+	const setSelection = useStreetscapeStore((state) => state.setRoadElementSelection);
 	const junctionEntries = Object.values(node.junctions).sort((first, second) =>
 		first.nodeId.localeCompare(second.nodeId),
 	);
@@ -132,7 +132,7 @@ export function RoadJunctionTreatmentControls({
 	node: RoadNetworkNode;
 	onUpdate: (patch: Partial<RoadNetworkNode>) => void;
 }) {
-	const selection = useEnvironmentStore((state) => state.roadElementSelection);
+	const selection = useStreetscapeStore((state) => state.roadElementSelection);
 	const junction = node.junctions[junctionId];
 	if (!junction) return null;
 	const selectedCornerKey =

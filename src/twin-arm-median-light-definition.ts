@@ -61,7 +61,7 @@ const armLengthHandle: HandleDescriptor<TwinArmMedianLightNode> = {
 }
 
 export const twinArmMedianLightDefinition: TwinArmMedianLightDefinition = {
-  kind: 'environment:twin-arm-median-light',
+  kind: 'streetscape:twin-arm-median-light',
   schemaVersion: 1,
   schema: TwinArmMedianLightNode,
   category: 'furnish',

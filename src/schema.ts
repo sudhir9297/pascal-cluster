@@ -32,7 +32,7 @@ export type RoadAttachmentRef = z.infer<typeof RoadAttachmentRef>;
 /** A catalog-driven roadside sign with a reusable plate, graphic, and post. */
 export const RoadSignNode = BaseNode.extend({
 	id: objectId("road-sign"),
-	type: nodeType("environment:road-sign"),
+	type: nodeType("streetscape:road-sign"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	signId: z.enum(ROAD_SIGN_IDS).default("stop"),
@@ -85,7 +85,7 @@ export function createRoadSignPreviewNode(
 /** A swept-arm roadway pole with a low-profile full-cutoff LED luminaire. */
 export const StreetLightNode = BaseNode.extend({
 	id: objectId("street-light"),
-	type: nodeType("environment:street-light"),
+	type: nodeType("streetscape:street-light"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	height: z
@@ -106,7 +106,7 @@ export type StreetLightNode = z.infer<typeof StreetLightNode>;
 /** A pedestrian-scale pole with a centered, downward-facing post-top luminaire. */
 export const PedestrianPostLightNode = BaseNode.extend({
 	id: objectId("pedestrian-post-light"),
-	type: nodeType("environment:pedestrian-post-light"),
+	type: nodeType("streetscape:pedestrian-post-light"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	height: z
@@ -125,7 +125,7 @@ export type PedestrianPostLightNode = z.infer<typeof PedestrianPostLightNode>;
 /** A heritage pole with a curved Bishop's Crook arm and pendant teardrop lamp. */
 export const HeritageCrookLightNode = BaseNode.extend({
 	id: objectId("heritage-crook-light"),
-	type: nodeType("environment:heritage-crook-light"),
+	type: nodeType("streetscape:heritage-crook-light"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	height: z
@@ -145,7 +145,7 @@ export type HeritageCrookLightNode = z.infer<typeof HeritageCrookLightNode>;
 /** A classic swept mast-arm roadway pole with a broad cobra-head luminaire. */
 export const CobraHeadLightNode = BaseNode.extend({
 	id: objectId("cobra-head-light"),
-	type: nodeType("environment:cobra-head-light"),
+	type: nodeType("streetscape:cobra-head-light"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	height: z
@@ -165,7 +165,7 @@ export type CobraHeadLightNode = z.infer<typeof CobraHeadLightNode>;
 /** A median pole carrying opposing full-cutoff LED roadway fixtures. */
 export const TwinArmMedianLightNode = BaseNode.extend({
 	id: objectId("twin-arm-median-light"),
-	type: nodeType("environment:twin-arm-median-light"),
+	type: nodeType("streetscape:twin-arm-median-light"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	height: z
@@ -185,7 +185,7 @@ export type TwinArmMedianLightNode = z.infer<typeof TwinArmMedianLightNode>;
 /** A junction or parking-area pole with three or four radial roadway heads. */
 export const MultiHeadAreaLightNode = BaseNode.extend({
 	id: objectId("multi-head-area-light"),
-	type: nodeType("environment:multi-head-area-light"),
+	type: nodeType("streetscape:multi-head-area-light"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	height: z
@@ -206,7 +206,7 @@ export type MultiHeadAreaLightNode = z.infer<typeof MultiHeadAreaLightNode>;
 /** A fitted pipe-truss roadway pole carrying a full-cutoff LED luminaire. */
 export const TrussRoadwayLightNode = BaseNode.extend({
 	id: objectId("truss-roadway-light"),
-	type: nodeType("environment:truss-roadway-light"),
+	type: nodeType("streetscape:truss-roadway-light"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	height: z
@@ -227,7 +227,7 @@ export type TrussRoadwayLightNode = z.infer<typeof TrussRoadwayLightNode>;
 /** A tapered high mast with a lowering ring and six outward-aimed LED luminaires. */
 export const HighMastCrownLightNode = BaseNode.extend({
 	id: objectId("high-mast-crown-light"),
-	type: nodeType("environment:high-mast-crown-light"),
+	type: nodeType("streetscape:high-mast-crown-light"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	height: z
@@ -248,7 +248,7 @@ export type HighMastCrownLightNode = z.infer<typeof HighMastCrownLightNode>;
 /** Square parking-area pole carrying one low-profile LED luminaire. */
 export const ShoeboxAreaLightNode = BaseNode.extend({
 	id: objectId("shoebox-area-light"),
-	type: nodeType("environment:shoebox-area-light"),
+	type: nodeType("streetscape:shoebox-area-light"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	height: z
@@ -269,7 +269,7 @@ export type ShoeboxAreaLightNode = z.infer<typeof ShoeboxAreaLightNode>;
 /** Projector/floodlight pole with a tilted rectangular floodlight head. */
 export const FloodlightPoleNode = BaseNode.extend({
 	id: objectId("floodlight-pole"),
-	type: nodeType("environment:floodlight-pole"),
+	type: nodeType("streetscape:floodlight-pole"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	height: z
@@ -290,7 +290,7 @@ export type FloodlightPoleNode = z.infer<typeof FloodlightPoleNode>;
 /** Traditional post-top lantern with a pitched cap and transparent panes. */
 export const TraditionalPostTopLanternNode = BaseNode.extend({
 	id: objectId("traditional-post-top-lantern"),
-	type: nodeType("environment:traditional-post-top-lantern"),
+	type: nodeType("streetscape:traditional-post-top-lantern"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	height: z
@@ -313,7 +313,7 @@ export type TraditionalPostTopLanternNode = z.infer<
 /** Prismatic acorn post-top lamp with a decorative civic pole. */
 export const GlobePostTopLightNode = BaseNode.extend({
 	id: objectId("globe-post-top-light"),
-	type: nodeType("environment:globe-post-top-light"),
+	type: nodeType("streetscape:globe-post-top-light"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	height: z
@@ -334,7 +334,7 @@ export type GlobePostTopLightNode = z.infer<typeof GlobePostTopLightNode>;
 /** Decorative three-light candelabra with a raised centre and scroll arms. */
 export const DecorativeCandelabraLightNode = BaseNode.extend({
 	id: objectId("decorative-candelabra-light"),
-	type: nodeType("environment:decorative-candelabra-light"),
+	type: nodeType("streetscape:decorative-candelabra-light"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	height: z
@@ -357,7 +357,7 @@ export type DecorativeCandelabraLightNode = z.infer<
 /** Professional twin-head low-voltage light for paths and planting beds. */
 export const PathGardenLightNode = BaseNode.extend({
 	id: objectId("path-garden-light"),
-	type: nodeType("environment:path-garden-light"),
+	type: nodeType("streetscape:path-garden-light"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	height: z.number().min(0.55).max(STANDARD_LAMP_HEIGHT_MAX_M).default(0.78),
@@ -375,7 +375,7 @@ export type PathGardenLightNode = z.infer<typeof PathGardenLightNode>;
 /** Low bollard light for pedestrian paths, plazas, and planting beds. */
 export const BollardLightNode = BaseNode.extend({
 	id: objectId("bollard-light"),
-	type: nodeType("environment:bollard-light"),
+	type: nodeType("streetscape:bollard-light"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	height: z
@@ -399,7 +399,7 @@ export type BollardLightNode = z.infer<typeof BollardLightNode>;
 /** Twin-optic roadway luminaire suspended from a catenary between tapered poles. */
 export const CatenaryStreetLightNode = BaseNode.extend({
 	id: objectId("catenary-street-light"),
-	type: nodeType("environment:catenary-street-light"),
+	type: nodeType("streetscape:catenary-street-light"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	height: z
@@ -420,7 +420,7 @@ export type CatenaryStreetLightNode = z.infer<typeof CatenaryStreetLightNode>;
 /** Architectural wall bracket with an integrated low-profile LED roadway head. */
 export const WallArmLightNode = BaseNode.extend({
 	id: objectId("wall-arm-light"),
-	type: nodeType("environment:wall-arm-light"),
+	type: nodeType("streetscape:wall-arm-light"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	/** Pascal wall-host metadata. Position is wall-local; `height` owns elevation. */
@@ -449,7 +449,7 @@ export type WallArmLightNode = z.infer<typeof WallArmLightNode>;
 /** Full-cutoff architectural LED wall pack mounted directly to a facade. */
 export const WallPackLightNode = BaseNode.extend({
 	id: objectId("wall-pack-light"),
-	type: nodeType("environment:wall-pack-light"),
+	type: nodeType("streetscape:wall-pack-light"),
 	/** Pascal wall-host metadata. Position is the exact wall-local cursor anchor. */
 	wallId: z.string().optional(),
 	wallT: z.number().min(0).max(1).optional(),
@@ -475,7 +475,7 @@ export type WallPackLightNode = z.infer<typeof WallPackLightNode>;
 /** Sealed continuous-line LED luminaire for tunnel and underpass ceilings. */
 export const TunnelLuminaireNode = BaseNode.extend({
 	id: objectId("tunnel-luminaire"),
-	type: nodeType("environment:tunnel-luminaire"),
+	type: nodeType("streetscape:tunnel-luminaire"),
 	/** Pascal host contract: this fixture mounts to the underside of a ceiling. */
 	attachTo: z.literal("ceiling").default("ceiling"),
 	/** The selected ceiling host; null keeps legacy level-hosted scenes readable. */
@@ -500,7 +500,7 @@ export type TunnelLuminaireNode = z.infer<typeof TunnelLuminaireNode>;
 /** Recessed canopy/soffit fixture; armLength stores the square face width. */
 export const CanopySoffitLightNode = BaseNode.extend({
 	id: objectId("canopy-soffit-light"),
-	type: nodeType("environment:canopy-soffit-light"),
+	type: nodeType("streetscape:canopy-soffit-light"),
 	attachTo: z.literal("ceiling").default("ceiling"),
 	ceilingId: z.string().nullable().default(null),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
@@ -525,7 +525,7 @@ export type CanopySoffitLightNode = z.infer<typeof CanopySoffitLightNode>;
 /** Single-sided solar street light with integrated PV, battery and roadway optics. */
 export const SolarStreetLightNode = BaseNode.extend({
 	id: objectId("solar-street-light"),
-	type: nodeType("environment:solar-street-light"),
+	type: nodeType("streetscape:solar-street-light"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	height: z
@@ -554,7 +554,7 @@ export type UtilityPoleAssembly = z.infer<typeof UtilityPoleAssembly>;
 /** A wood, three-phase distribution pole with a lower neutral and optional transformer. */
 export const UtilityPoleNode = BaseNode.extend({
 	id: objectId("utility-pole"),
-	type: nodeType("environment:utility-pole"),
+	type: nodeType("streetscape:utility-pole"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	height: z
@@ -578,7 +578,7 @@ export type UtilityPoleNode = z.infer<typeof UtilityPoleNode>;
 /** An automatically managed three-primary-plus-neutral span between two utility poles. */
 export const UtilityWireSpanNode = BaseNode.extend({
 	id: objectId("utility-wire-span"),
-	type: nodeType("environment:utility-wire-span"),
+	type: nodeType("streetscape:utility-wire-span"),
 	fromPoleId: z.string().min(1),
 	toPoleId: z.string().min(1),
 	conductorColor: z.string().default("#25292b"),
@@ -590,7 +590,7 @@ export type UtilityWireSpanNode = z.infer<typeof UtilityWireSpanNode>;
 /** A modular vehicle signal with field-realistic head layouts and support hardware. */
 export const TrafficSignalNode = BaseNode.extend({
 	id: objectId("traffic-signal"),
-	type: nodeType("environment:traffic-signal"),
+	type: nodeType("streetscape:traffic-signal"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, Math.PI, 0]),
 	mount: z.enum(["post", "mast-arm", "span-wire"]).default("mast-arm"),
@@ -621,7 +621,7 @@ export type TrafficSignalNode = z.infer<typeof TrafficSignalNode>;
 /** A shallow road-drainage inlet with interchangeable grate patterns. */
 export const DrainageInletNode = BaseNode.extend({
 	id: objectId("drainage-inlet"),
-	type: nodeType("environment:drainage-inlet"),
+	type: nodeType("streetscape:drainage-inlet"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	inletType: z
@@ -643,7 +643,7 @@ export type DrainageInletNode = z.infer<typeof DrainageInletNode>;
 /** A flush access cover with configurable tread patterns and finish. */
 export const ManholeCoverNode = BaseNode.extend({
 	id: objectId("manhole-cover"),
-	type: nodeType("environment:manhole-cover"),
+	type: nodeType("streetscape:manhole-cover"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	diameter: z.number().min(0.45).max(1.2).default(0.7),
@@ -658,7 +658,7 @@ export type ManholeCoverNode = z.infer<typeof ManholeCoverNode>;
 /** A configurable above-ground fire hydrant with dry- and wet-barrel silhouettes. */
 export const FireHydrantNode = BaseNode.extend({
 	id: objectId("fire-hydrant"),
-	type: nodeType("environment:fire-hydrant"),
+	type: nodeType("streetscape:fire-hydrant"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	height: z.number().min(0.65).max(1.8).default(1.25),
@@ -678,7 +678,7 @@ export type FireHydrantNode = z.infer<typeof FireHydrantNode>;
 /** A standalone traffic-control bollard for edges, crossings, and protected corners. */
 export const TrafficBollardNode = BaseNode.extend({
 	id: objectId("traffic-bollard"),
-	type: nodeType("environment:traffic-bollard"),
+	type: nodeType("streetscape:traffic-bollard"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	style: z.enum(["steel", "flexible", "reflective"]).default("steel"),
@@ -695,7 +695,7 @@ export type TrafficBollardNode = z.infer<typeof TrafficBollardNode>;
 /** A standalone roadside barrier segment with common scene-layout treatments. */
 export const RoadBarrierNode = BaseNode.extend({
 	id: objectId("road-barrier"),
-	type: nodeType("environment:road-barrier"),
+	type: nodeType("streetscape:road-barrier"),
 	position: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	rotation: z.tuple([z.number(), z.number(), z.number()]).default([0, 0, 0]),
 	barrierType: z.enum(["jersey", "guardrail", "water-filled", "crowd-control"]).default("jersey"),
@@ -734,7 +734,7 @@ function residentialRoadAssetSchema<Prefix extends string, Type extends string>(
 /** A paved residential driveway / parking apron. */
 export const DrivewayNode = residentialRoadAssetSchema(
 	"driveway",
-	"environment:driveway",
+	"streetscape:driveway",
 	{ width: 3.2, length: 5.5, height: 0.12, depth: 0.12, bodyColor: "#777b78", accentColor: "#b7b2a6" },
 ).extend({
 	drivewayShape: z
@@ -748,7 +748,7 @@ export type DrivewayNode = z.infer<typeof DrivewayNode>;
 /** A curbside post mailbox. */
 export const MailboxNode = residentialRoadAssetSchema(
 	"mailbox",
-	"environment:mailbox",
+	"streetscape:mailbox",
   { width: 0.4, length: 0.5, height: 1.65, depth: 0.12, bodyColor: "#17191a", accentColor: "#e23a31" },
 ).extend({
 	/** Front-door animation position: 0 is closed and 1 is folded fully open. */
@@ -759,7 +759,7 @@ export type MailboxNode = z.infer<typeof MailboxNode>;
 /** A larger curbside parcel-delivery box. */
 export const ParcelBoxNode = residentialRoadAssetSchema(
 	"parcel-box",
-	"environment:parcel-box",
+	"streetscape:parcel-box",
 	{ width: 0.72, length: 0.58, height: 1.28, depth: 0.12, bodyColor: "#242829", accentColor: "#777d7b" },
 ).extend({
 	/** Shared top-lid and front-access-door animation position. */
@@ -770,7 +770,7 @@ export type ParcelBoxNode = z.infer<typeof ParcelBoxNode>;
 /** A reinforced four-caster commercial refuse container. */
 export const TrashBinNode = residentialRoadAssetSchema(
 	"trash-bin",
-	"environment:trash-bin",
+	"streetscape:trash-bin",
 	{ width: 1.35, length: 0.86, height: 1.2, depth: 0.06, bodyColor: "#2f713b", accentColor: "#367f43" },
 );
 export type TrashBinNode = z.infer<typeof TrashBinNode>;
@@ -778,7 +778,7 @@ export type TrashBinNode = z.infer<typeof TrashBinNode>;
 /** A wheeled household recycling bin. */
 export const RecyclingBinNode = residentialRoadAssetSchema(
 	"recycling-bin",
-	"environment:recycling-bin",
+	"streetscape:recycling-bin",
 	{ width: 0.58, length: 0.66, height: 1.05, depth: 0.06, bodyColor: "#087345", accentColor: "#0a6b42" },
 );
 export type RecyclingBinNode = z.infer<typeof RecyclingBinNode>;
@@ -786,7 +786,7 @@ export type RecyclingBinNode = z.infer<typeof RecyclingBinNode>;
 /** A framed, double-leaf timber driveway gate with dark metal hardware. */
 export const ResidentialGateNode = residentialRoadAssetSchema(
 	"residential-gate",
-	"environment:residential-gate",
+	"streetscape:residential-gate",
 	{ width: 3.6, length: 0.16, height: 1.65, depth: 0.1, bodyColor: "#8a4f2b", accentColor: "#202326" },
 ).extend({
 	/** Shared open position for the two swing leaves. */
@@ -797,7 +797,7 @@ export type ResidentialGateNode = z.infer<typeof ResidentialGateNode>;
 /** A narrow modular rubber speed hump spanning the carriageway. */
 export const SpeedHumpNode = residentialRoadAssetSchema(
 	"speed-hump",
-	"environment:speed-hump",
+	"streetscape:speed-hump",
 	{ width: 5.8, length: 0.5, height: 0.07, depth: 0.02, bodyColor: "#25282b", accentColor: "#f2b632" },
 );
 export type SpeedHumpNode = z.infer<typeof SpeedHumpNode>;
@@ -1002,7 +1002,7 @@ export type RoadJunction = z.infer<typeof RoadJunction>;
  */
 export const RoadNetworkNode = BaseNode.extend({
 	id: objectId("road-network"),
-	type: nodeType("environment:road-network"),
+	type: nodeType("streetscape:road-network"),
 	graphNodes: z.record(z.string(), RoadGraphNode).default({}),
 	edges: z.record(z.string(), RoadGraphEdge).default({}),
 	roadsideDecorations: RoadsideDecorations.default({}),

@@ -61,7 +61,7 @@ const armLengthHandle: HandleDescriptor<TrussRoadwayLightNode> = {
 }
 
 export const trussRoadwayLightDefinition: TrussRoadwayLightDefinition = {
-  kind: 'environment:truss-roadway-light',
+  kind: 'streetscape:truss-roadway-light',
   schemaVersion: 1,
   schema: TrussRoadwayLightNode,
   category: 'furnish',

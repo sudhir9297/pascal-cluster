@@ -7,7 +7,7 @@ const activeAnimations = new Map<string, MailboxAnimation>()
 
 function mailboxNode(nodeId: AnyNodeId): MailboxNode | null {
   const node = useScene.getState().nodes[nodeId] as unknown as MailboxNode | undefined
-  return node?.type === 'environment:mailbox' ? node : null
+  return node?.type === 'streetscape:mailbox' ? node : null
 }
 
 function effectiveOperationState(nodeId: AnyNodeId): number {

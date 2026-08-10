@@ -1032,17 +1032,22 @@ function CurbsideMailboxModel({
           <boxGeometry args={[layout.width * 0.38, bodyHeight * 0.045, 0.035]} />
           {metal('#242728', 0.3, 0.72)}
         </mesh>
-        {([-1, 1] as const).map((side) => (
-          <mesh
-            {...common}
-            key={`mailbox-handle-mount:${side}`}
-            name="mailbox-door-handle-mount"
-            position={[side * layout.width * 0.17, bodyHeight * 0.55, -0.025]}
-          >
-            <boxGeometry args={[layout.width * 0.045, bodyHeight * 0.11, 0.026]} />
-            {metal('#242728', 0.32, 0.7)}
-          </mesh>
-        ))}
+        <mesh
+          {...common}
+          name="mailbox-door-handle-mount"
+          position={[-layout.width * 0.17, bodyHeight * 0.55, -0.025]}
+        >
+          <boxGeometry args={[layout.width * 0.045, bodyHeight * 0.11, 0.026]} />
+          {metal('#242728', 0.32, 0.7)}
+        </mesh>
+        <mesh
+          {...common}
+          name="mailbox-door-handle-mount"
+          position={[layout.width * 0.17, bodyHeight * 0.55, -0.025]}
+        >
+          <boxGeometry args={[layout.width * 0.045, bodyHeight * 0.11, 0.026]} />
+          {metal('#242728', 0.32, 0.7)}
+        </mesh>
         <mesh
           {...common}
           name="mailbox-door-lock-bezel"
@@ -1579,11 +1584,11 @@ export function ResidentialRoadAssetModel({
     />
   )
 
-  if (kind === 'environment:trash-bin') {
+  if (kind === 'streetscape:trash-bin') {
     return <CommercialTrashBinModel ghost={ghost} layer={layer} layout={layout} node={node} />
   }
 
-  if (kind === 'environment:driveway') {
+  if (kind === 'streetscape:driveway') {
     return (
       <group>
         <DrivewaySurface
@@ -1611,11 +1616,11 @@ export function ResidentialRoadAssetModel({
     )
   }
 
-  if (kind === 'environment:speed-hump') {
+  if (kind === 'streetscape:speed-hump') {
     return <ModularSpeedHumpModel ghost={ghost} layer={layer} layout={layout} node={node} />
   }
 
-  if (kind === 'environment:parcel-box') {
+  if (kind === 'streetscape:parcel-box') {
     const plate = Math.max(0.022, Math.min(layout.width, layout.length) * 0.045)
     const bodyHeight = layout.height - plate * 1.4
     const frontZ = -(layout.length / 2 + plate * 0.55)
@@ -1781,11 +1786,11 @@ export function ResidentialRoadAssetModel({
     )
   }
 
-  if (kind === 'environment:mailbox') {
+  if (kind === 'streetscape:mailbox') {
     return <CurbsideMailboxModel ghost={ghost} layer={layer} layout={layout} node={node} />
   }
 
-  if (kind === 'environment:recycling-bin') {
+  if (kind === 'streetscape:recycling-bin') {
     const recycling = true
     const legacyPalette = node.bodyColor === '#2e6a73' && node.accentColor === '#d9e3d7'
     const bodyColor = legacyPalette ? '#087345' : node.bodyColor
@@ -2014,7 +2019,7 @@ export function ResidentialRoadAssetModel({
     )
   }
 
-  if (kind === 'environment:residential-gate') {
+  if (kind === 'streetscape:residential-gate') {
     const postWidth = Math.max(0.1, layout.width * 0.045)
     const frameWidth = Math.max(0.075, layout.width * 0.032)
     const frameDepth = Math.max(layout.depth, 0.075)
@@ -2168,19 +2173,19 @@ export function StreetInfrastructureModel({
   node: StreetInfrastructureNode
 }) {
   const kind = node.type as string
-  if (kind === 'environment:traffic-signal') {
+  if (kind === 'streetscape:traffic-signal') {
     return <TrafficSignalModel ghost={ghost} layer={layer} node={node as TrafficSignalNode} />
   }
-  if (kind === 'environment:drainage-inlet') {
+  if (kind === 'streetscape:drainage-inlet') {
     return <DrainageInletModel ghost={ghost} layer={layer} node={node as DrainageInletNode} />
   }
-  if (kind === 'environment:manhole-cover') {
+  if (kind === 'streetscape:manhole-cover') {
     return <ManholeCoverModel ghost={ghost} layer={layer} node={node as ManholeCoverNode} />
   }
-  if (kind === 'environment:traffic-bollard') {
+  if (kind === 'streetscape:traffic-bollard') {
     return <TrafficBollardModel ghost={ghost} layer={layer} node={node as TrafficBollardNode} />
   }
-  if (kind === 'environment:road-barrier') {
+  if (kind === 'streetscape:road-barrier') {
     return <RoadBarrierModel ghost={ghost} layer={layer} node={node as RoadBarrierNode} />
   }
   if (isResidentialRoadAssetKind(kind)) {

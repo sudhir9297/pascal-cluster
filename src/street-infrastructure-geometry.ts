@@ -52,13 +52,13 @@ type ResidentialRoadDimensions = {
 }
 
 const RESIDENTIAL_ROAD_DEFAULTS: Record<ResidentialRoadAssetNode['type'], ResidentialRoadDimensions> = {
-  'environment:driveway': { width: 3.2, length: 5.5, height: 0.12, depth: 0.12 },
-  'environment:mailbox': { width: 0.4, length: 0.5, height: 1.65, depth: 0.12 },
-  'environment:parcel-box': { width: 0.7, length: 0.48, height: 1.22, depth: 0.12 },
-  'environment:trash-bin': { width: 1.35, length: 0.86, height: 1.2, depth: 0.06 },
-  'environment:recycling-bin': { width: 0.58, length: 0.66, height: 1.05, depth: 0.06 },
-  'environment:residential-gate': { width: 3.2, length: 0.12, height: 1.55, depth: 0.08 },
-  'environment:speed-hump': { width: 5.8, length: 0.5, height: 0.07, depth: 0.02 },
+  'streetscape:driveway': { width: 3.2, length: 5.5, height: 0.12, depth: 0.12 },
+  'streetscape:mailbox': { width: 0.4, length: 0.5, height: 1.65, depth: 0.12 },
+  'streetscape:parcel-box': { width: 0.7, length: 0.48, height: 1.22, depth: 0.12 },
+  'streetscape:trash-bin': { width: 1.35, length: 0.86, height: 1.2, depth: 0.06 },
+  'streetscape:recycling-bin': { width: 0.58, length: 0.66, height: 1.05, depth: 0.06 },
+  'streetscape:residential-gate': { width: 3.2, length: 0.12, height: 1.55, depth: 0.08 },
+  'streetscape:speed-hump': { width: 5.8, length: 0.5, height: 0.07, depth: 0.02 },
 }
 
 function clampFinite(value: unknown, fallback: number, min: number, max: number): number {
@@ -76,7 +76,7 @@ export function buildDrivewayPlan(
   width = node.width,
   segments = 20,
 ): DrivewayPlan {
-  const defaults = RESIDENTIAL_ROAD_DEFAULTS['environment:driveway']
+  const defaults = RESIDENTIAL_ROAD_DEFAULTS['streetscape:driveway']
   const safeWidth = clampFinite(width, defaults.width, 0.1, 20)
   const length = clampFinite(node.length, defaults.length, 0.1, 20)
   const shape = node.drivewayShape === 'curved-left' || node.drivewayShape === 'curved-right' || node.drivewayShape === 'straight'
@@ -127,19 +127,19 @@ export function resolveResidentialRoadAssetLayout(
   node: ResidentialRoadAssetNode,
 ): ResidentialRoadAssetLayout {
   const defaults = RESIDENTIAL_ROAD_DEFAULTS[node.type]
-  const untouchedLegacyTrashBin = node.type === 'environment:trash-bin'
+  const untouchedLegacyTrashBin = node.type === 'streetscape:trash-bin'
     && node.width === 0.58
     && node.length === 0.66
     && node.height === 1.05
     && node.bodyColor === '#087345'
     && node.accentColor === '#0a6b42'
-  const untouchedLegacySpeedHump = node.type === 'environment:speed-hump'
+  const untouchedLegacySpeedHump = node.type === 'streetscape:speed-hump'
     && node.width === 5.8
     && node.length === 3.6
     && node.height === 0.11
     && node.bodyColor === '#5a5b58'
     && node.accentColor === '#e7dfb9'
-  const untouchedLegacyMailbox = node.type === 'environment:mailbox'
+  const untouchedLegacyMailbox = node.type === 'streetscape:mailbox'
     && node.height === 1.18
     && (
       (
@@ -162,7 +162,7 @@ export function resolveResidentialRoadAssetLayout(
   const length = clampFinite(useCurrentDefaults ? defaults.length : node.length, defaults.length, 0.1, 20)
   const height = clampFinite(useCurrentDefaults ? defaults.height : node.height, defaults.height, 0.05, 4)
   const depth = clampFinite(node.depth, defaults.depth, 0.05, 4)
-  const drivewayPlan = node.type === 'environment:driveway'
+  const drivewayPlan = node.type === 'streetscape:driveway'
     ? buildDrivewayPlan({ ...node, width, length } as DrivewayNode)
     : null
   const footprintWidth = drivewayPlan
@@ -170,7 +170,7 @@ export function resolveResidentialRoadAssetLayout(
     : width
   const footprintDepth = drivewayPlan
     ? 2 * Math.max(...drivewayPlan.outline.map(([, z]) => Math.abs(z)))
-    : node.type === 'environment:residential-gate'
+    : node.type === 'streetscape:residential-gate'
       ? Math.max(
           length,
           width * 0.86 * Math.abs(Math.sin(resolveDrivewayGateOpenPose(node.operationState).leftLeafAngle)),

@@ -175,7 +175,7 @@ function freeNodeAtStation({
   station,
 }: {
   edge: RoadGraphEdge
-  kind: Exclude<StreetInfrastructureKind, 'environment:traffic-signal'>
+  kind: Exclude<StreetInfrastructureKind, 'streetscape:traffic-signal'>
   network: RoadNetworkNode
   side: 'left' | 'right'
   station: number
@@ -194,12 +194,12 @@ function freeNodeAtStation({
       roadStation: station,
     },
   })
-  const alignment = kind === 'environment:drainage-inlet'
+  const alignment = kind === 'streetscape:drainage-inlet'
     ? 'gutter'
-    : kind === 'environment:manhole-cover'
+    : kind === 'streetscape:manhole-cover'
       ? 'carriageway'
       : 'curb'
-  const lateralOffset = kind === 'environment:manhole-cover'
+  const lateralOffset = kind === 'streetscape:manhole-cover'
     ? 0
     : side === 'left' ? 1 : -1
   const attachment: RoadEdgeAttachment = {
@@ -311,55 +311,55 @@ export function buildRoadAutoInfrastructurePlan({
     const edge = network.edges[edgeId]
     if (!edge || edge.stackLevel !== 0) continue
     const length = sampledLength(sampleRoadEdgePoints(network, edge, 48))
-    if (settings.items['environment:drainage-inlet']) {
+    if (settings.items['streetscape:drainage-inlet']) {
       for (const [index, station] of centeredStations(length, DRAINAGE_SPACING).entries()) {
         add(freeNodeAtStation({
           edge,
-          kind: 'environment:drainage-inlet',
+          kind: 'streetscape:drainage-inlet',
           network,
           side: index % 2 === 0 ? 'left' : 'right',
           station,
         }))
       }
     }
-    if (settings.items['environment:manhole-cover']) {
+    if (settings.items['streetscape:manhole-cover']) {
       for (const station of centeredStations(length, MANHOLE_SPACING)) {
         add(freeNodeAtStation({
           edge,
-          kind: 'environment:manhole-cover',
+          kind: 'streetscape:manhole-cover',
           network,
           side: 'left',
           station,
         }))
       }
     }
-    if (settings.items['environment:fire-hydrant']) {
+    if (settings.items['streetscape:fire-hydrant']) {
       for (const station of centeredStations(length, HYDRANT_SPACING)) {
         add(freeNodeAtStation({
           edge,
-          kind: 'environment:fire-hydrant',
+          kind: 'streetscape:fire-hydrant',
           network,
           side: 'right',
           station,
         }))
       }
     }
-    if (settings.items['environment:traffic-bollard']) {
+    if (settings.items['streetscape:traffic-bollard']) {
       for (const [index, station] of separatedStations(length, BOLLARD_SPACING, 0.32).entries()) {
         add(freeNodeAtStation({
           edge,
-          kind: 'environment:traffic-bollard',
+          kind: 'streetscape:traffic-bollard',
           network,
           side: index % 2 === 0 ? 'left' : 'right',
           station,
         }))
       }
     }
-    if (settings.items['environment:road-barrier']) {
+    if (settings.items['streetscape:road-barrier']) {
       for (const station of separatedStations(length, BARRIER_SPACING, 0.68)) {
         add(freeNodeAtStation({
           edge,
-          kind: 'environment:road-barrier',
+          kind: 'streetscape:road-barrier',
           network,
           side: 'left',
           station,
@@ -368,10 +368,10 @@ export function buildRoadAutoInfrastructurePlan({
     }
   }
 
-  if (settings.items['environment:traffic-signal']) {
+  if (settings.items['streetscape:traffic-signal']) {
     for (const junctionId of touchedJunctionIds(network, edgeIds)) {
       for (const placement of buildSignalJunctionPlacements(network, junctionId)) {
-        const kind = 'environment:traffic-signal' as const
+        const kind = 'streetscape:traffic-signal' as const
         const key = infrastructureKey(kind, junctionId, placement.edgeId, placement.side)
         const position = placement.position
         const rotation: [number, number, number] = [0, placement.rotationY, 0]

@@ -17,7 +17,7 @@ const NO_RAYCAST = () => {}
 
 export default function UtilityWireRenderer({ node }: { node: UtilityWireSpanNode }) {
   const ref = useRef<Group>(null!)
-  const handlers = useNodeEvents(node as never, 'environment:utility-wire-span' as never)
+  const handlers = useNodeEvents(node as never, 'streetscape:utility-wire-span' as never)
   useRegistry(node.id as AnyNodeId, node.type, ref)
 
   const fromStoreNode = useScene(

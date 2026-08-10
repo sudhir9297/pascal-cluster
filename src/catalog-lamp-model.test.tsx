@@ -12,9 +12,9 @@ import { CATALOG_LAMP_THUMBNAILS, getCatalogLampThumbnail } from './catalog-lamp
 
 describe('structural catalog lamp rendering', () => {
   test('normalizes stale visual styles back to the active structural variant', () => {
-    expect(resolveCatalogLampProjection('environment:catenary-street-light', 'stale-style')).toBe('catenary')
-    expect(resolveCatalogLampProjection('environment:wall-pack-light', 'stale-style')).toBe('wall-pack')
-    expect(resolveCatalogLampProjection('environment:wall-pack-light', 'catenary')).toBe('catenary')
+    expect(resolveCatalogLampProjection('streetscape:catenary-street-light', 'stale-style')).toBe('catenary')
+    expect(resolveCatalogLampProjection('streetscape:wall-pack-light', 'stale-style')).toBe('wall-pack')
+    expect(resolveCatalogLampProjection('streetscape:wall-pack-light', 'catenary')).toBe('catenary')
   })
 
   test('renders every structural projection safely in ghost and committed states', () => {
@@ -125,7 +125,7 @@ describe('structural catalog lamp rendering', () => {
   })
 
   test('builds the wall-arm style as an architectural bracket and LED head', () => {
-    const node = parseCatalogLamp('environment:wall-arm-light', {
+    const node = parseCatalogLamp('streetscape:wall-arm-light', {
       armLength: 1.4,
       height: 6,
       lightOn: false,
@@ -158,7 +158,7 @@ describe('structural catalog lamp rendering', () => {
   })
 
   test('builds the area pole as a square tapered support with a multi-cell LED head', () => {
-    const node = parseCatalogLamp('environment:shoebox-area-light', {
+    const node = parseCatalogLamp('streetscape:shoebox-area-light', {
       height: 6,
       lightOn: false,
       visualStyle: 'shoebox',
@@ -193,7 +193,7 @@ describe('structural catalog lamp rendering', () => {
   })
 
   test('gives the active single-sided area pole one roadway beam', () => {
-    const node = parseCatalogLamp('environment:shoebox-area-light', {
+    const node = parseCatalogLamp('streetscape:shoebox-area-light', {
       lightOn: true,
       visualStyle: 'shoebox',
     })
@@ -210,7 +210,7 @@ describe('structural catalog lamp rendering', () => {
   })
 
   test('builds the solar street light as a serviceable all-in-one PV luminaire', () => {
-    const node = parseCatalogLamp('environment:solar-street-light', {
+    const node = parseCatalogLamp('streetscape:solar-street-light', {
       armLength: 1.3,
       height: 6,
       lightOn: false,
@@ -246,7 +246,7 @@ describe('structural catalog lamp rendering', () => {
   })
 
   test('gives the active single-sided solar light one roadway beam', () => {
-    const node = parseCatalogLamp('environment:solar-street-light', {
+    const node = parseCatalogLamp('streetscape:solar-street-light', {
       lightOn: true,
       visualStyle: 'solar',
     })
@@ -263,7 +263,7 @@ describe('structural catalog lamp rendering', () => {
   })
 
   test('builds the high mast as a lowering ring with six serviceable LED luminaires', () => {
-    const node = parseCatalogLamp('environment:high-mast-crown-light', {
+    const node = parseCatalogLamp('streetscape:high-mast-crown-light', {
       lightOn: false,
       visualStyle: 'high-mast',
     })
@@ -289,7 +289,7 @@ describe('structural catalog lamp rendering', () => {
   })
 
   test('gives each active high-mast luminaire its own outward roadway beam', () => {
-    const node = parseCatalogLamp('environment:high-mast-crown-light', {
+    const node = parseCatalogLamp('streetscape:high-mast-crown-light', {
       lightOn: true,
       visualStyle: 'high-mast',
     })
@@ -306,7 +306,7 @@ describe('structural catalog lamp rendering', () => {
   })
 
   test('builds the floodlight as a braced yoke-mounted multi-cell projector', () => {
-    const node = parseCatalogLamp('environment:floodlight-pole', {
+    const node = parseCatalogLamp('streetscape:floodlight-pole', {
       armLength: 0.9,
       height: 6,
       lightOn: false,
@@ -339,7 +339,7 @@ describe('structural catalog lamp rendering', () => {
   })
 
   test('builds the wall-pack style as a facade-mounted full-cutoff fixture', () => {
-    const node = parseCatalogLamp('environment:wall-pack-light', {
+    const node = parseCatalogLamp('streetscape:wall-pack-light', {
       armLength: 0.35,
       height: 6,
       lightOn: false,
@@ -367,7 +367,7 @@ describe('structural catalog lamp rendering', () => {
   })
 
   test('builds the tunnel luminaire as a sealed clip-mounted optical line', () => {
-    const node = parseCatalogLamp('environment:tunnel-luminaire', {
+    const node = parseCatalogLamp('streetscape:tunnel-luminaire', {
       armLength: 2.2,
       height: 6,
       visualStyle: 'tunnel',
@@ -397,7 +397,7 @@ describe('structural catalog lamp rendering', () => {
   })
 
   test('builds the canopy style as a compact ceiling-hosted recessed fixture', () => {
-    const node = parseCatalogLamp('environment:canopy-soffit-light', {
+    const node = parseCatalogLamp('streetscape:canopy-soffit-light', {
       armLength: 0.42,
       ceilingId: 'ceiling:test',
       height: 6,

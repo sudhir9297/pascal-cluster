@@ -21,13 +21,13 @@ export type UtilityPoleAutoConnectResult =
   | { kind: 'inline'; spans: readonly [UtilityWireSpan, UtilityWireSpan] }
 
 function asUtilityPole(node: AnyNode | undefined): UtilityPoleNode | null {
-  return node && (node.type as string) === 'environment:utility-pole'
+  return node && (node.type as string) === 'streetscape:utility-pole'
     ? (node as unknown as UtilityPoleNode)
     : null
 }
 
 function asUtilityWireSpan(node: AnyNode): UtilityWireSpan | null {
-  return (node.type as string) === 'environment:utility-wire-span'
+  return (node.type as string) === 'streetscape:utility-wire-span'
     ? (node as unknown as UtilityWireSpan)
     : null
 }

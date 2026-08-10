@@ -3,7 +3,7 @@ import { dedupeRoadSignChildIds } from './road-sign-scene-normalization'
 
 describe('road sign scene normalization', () => {
   test('removes duplicate road-sign child IDs before level rendering', () => {
-    const sign = { type: 'environment:road-sign' }
+    const sign = { type: 'streetscape:road-sign' }
     const nodes = {
       'road-sign_a': sign,
       'wall_a': { type: 'wall' },

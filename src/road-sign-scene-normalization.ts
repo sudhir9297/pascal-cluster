@@ -13,7 +13,7 @@ export function dedupeRoadSignChildIds(
 ): string[] {
   const roadSignIds = new Set(
     Object.entries(nodes)
-      .filter(([, node]) => node.type === 'environment:road-sign')
+      .filter(([, node]) => node.type === 'streetscape:road-sign')
       .map(([id]) => id),
   )
   const seen = new Set<string>()

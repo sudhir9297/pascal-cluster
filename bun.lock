@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "@pascal-app/plugin-environment",
+      "name": "@pascal-app/plugin-streetscape",
       "devDependencies": {
         "@pascal-app/core": "0.9.1",
         "@pascal-app/editor": "0.9.1",

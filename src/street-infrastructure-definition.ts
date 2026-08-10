@@ -40,24 +40,24 @@ function modelHeight(node: StreetInfrastructureNode): number {
   if (isResidentialRoadAssetKind(node.type)) {
     return resolveResidentialRoadAssetLayout(node as never).height
   }
-  if (node.type === 'environment:traffic-signal') {
+  if (node.type === 'streetscape:traffic-signal') {
     return resolveTrafficSignalLayout(node).supportHeight
   }
-  if (node.type === 'environment:drainage-inlet') {
+  if (node.type === 'streetscape:drainage-inlet') {
     const layout = resolveDrainageInletLayout(node)
     return Math.max(node.curbHeight, layout.barCenterY + layout.barHeight / 2)
   }
-  if (node.type === 'environment:manhole-cover') {
+  if (node.type === 'streetscape:manhole-cover') {
     const layout = resolveManholeCoverLayout(node)
     return layout.treadY + layout.treadHeight / 2
   }
-  if (node.type === 'environment:traffic-bollard') {
+  if (node.type === 'streetscape:traffic-bollard') {
     return resolveTrafficBollardLayout(node).height
   }
-  if (node.type === 'environment:road-barrier') {
+  if (node.type === 'streetscape:road-barrier') {
     return resolveRoadBarrierLayout(node).height
   }
-  return resolveFireHydrantLayout(node as Extract<StreetInfrastructureNode, { type: 'environment:fire-hydrant' }>).height
+  return resolveFireHydrantLayout(node as Extract<StreetInfrastructureNode, { type: 'streetscape:fire-hydrant' }>).height
 }
 
 const elevationHandle: HandleDescriptor<any> = {
@@ -229,14 +229,14 @@ function footprint(input: unknown) {
       rotation: node.rotation,
     }
   }
-  if (kind === 'environment:traffic-signal') {
+  if (kind === 'streetscape:traffic-signal') {
     const layout = resolveTrafficSignalLayout(node as any)
     return {
       dimensions: [layout.footprintWidth, layout.supportHeight, layout.footprintDepth] as [number, number, number],
       rotation: node.rotation,
     }
   }
-  if (kind === 'environment:drainage-inlet') {
+  if (kind === 'streetscape:drainage-inlet') {
     const layout = resolveDrainageInletLayout(node as any)
     const surfaceHalfLength = (layout.length + 0.16) / 2
     const surfaceHalfWidth = (layout.width + 0.16) / 2
@@ -253,21 +253,21 @@ function footprint(input: unknown) {
       rotation: node.rotation,
     }
   }
-  if (kind === 'environment:manhole-cover') {
+  if (kind === 'streetscape:manhole-cover') {
     const layout = resolveManholeCoverLayout(node as any)
     return {
       dimensions: [layout.frameRadius * 2, 0.1, layout.frameRadius * 2] as [number, number, number],
       rotation: node.rotation,
     }
   }
-  if (kind === 'environment:traffic-bollard') {
+  if (kind === 'streetscape:traffic-bollard') {
     const layout = resolveTrafficBollardLayout(node as any)
     return {
       dimensions: [layout.baseRadius * 2, layout.height, layout.baseRadius * 2] as [number, number, number],
       rotation: node.rotation,
     }
   }
-  if (kind === 'environment:road-barrier') {
+  if (kind === 'streetscape:road-barrier') {
     const layout = resolveRoadBarrierLayout(node as any)
     return {
       dimensions: [layout.length, layout.height, layout.width] as [number, number, number],
@@ -309,17 +309,17 @@ function makeStreetInfrastructureDefinition(
       floorPlaced: { footprint, collides: false },
     },
     parametrics: getStreetInfrastructureParametrics(variant.kind),
-    ...(variant.kind === 'environment:mailbox'
-      || variant.kind === 'environment:parcel-box'
-      || variant.kind === 'environment:residential-gate'
+    ...(variant.kind === 'streetscape:mailbox'
+      || variant.kind === 'streetscape:parcel-box'
+      || variant.kind === 'streetscape:residential-gate'
       ? {
           keyboardActions: {
             e: {
               appliesTo: (node: AnyNode) => (node.type as string) === variant.kind,
               run: (node: AnyNode) => {
-                if (variant.kind === 'environment:mailbox') {
+                if (variant.kind === 'streetscape:mailbox') {
                   toggleMailboxOperationState(node.id as AnyNodeId)
-                } else if (variant.kind === 'environment:parcel-box') {
+                } else if (variant.kind === 'streetscape:parcel-box') {
                   toggleParcelBoxOperationState(node.id as AnyNodeId)
                 } else {
                   toggleDrivewayGateOperationState(node.id as AnyNodeId)
@@ -330,9 +330,9 @@ function makeStreetInfrastructureDefinition(
         }
       : null),
     floorplan: buildStreetInfrastructureFloorplan,
-    handles: variant.kind === 'environment:driveway'
+    handles: variant.kind === 'streetscape:driveway'
       ? [...drivewayLengthHandles, drivewayElevationHandle, rotateHandle]
-      : variant.kind === 'environment:speed-hump'
+      : variant.kind === 'streetscape:speed-hump'
         ? [...speedHumpWidthHandles, elevationHandle, rotateHandle]
       : [elevationHandle, rotateHandle],
     renderer: { kind: 'parametric', module: () => import('./street-infrastructure-renderer') },
@@ -361,16 +361,16 @@ const DEFINITIONS = new Map(
   ]),
 )
 
-export const trafficSignalDefinition = DEFINITIONS.get('environment:traffic-signal')!
-export const drainageInletDefinition = DEFINITIONS.get('environment:drainage-inlet')!
-export const manholeCoverDefinition = DEFINITIONS.get('environment:manhole-cover')!
-export const fireHydrantDefinition = DEFINITIONS.get('environment:fire-hydrant')!
-export const trafficBollardDefinition = DEFINITIONS.get('environment:traffic-bollard')!
-export const roadBarrierDefinition = DEFINITIONS.get('environment:road-barrier')!
-export const drivewayDefinition = DEFINITIONS.get('environment:driveway')!
-export const mailboxDefinition = DEFINITIONS.get('environment:mailbox')!
-export const parcelBoxDefinition = DEFINITIONS.get('environment:parcel-box')!
-export const trashBinDefinition = DEFINITIONS.get('environment:trash-bin')!
-export const recyclingBinDefinition = DEFINITIONS.get('environment:recycling-bin')!
-export const residentialGateDefinition = DEFINITIONS.get('environment:residential-gate')!
-export const speedHumpDefinition = DEFINITIONS.get('environment:speed-hump')!
+export const trafficSignalDefinition = DEFINITIONS.get('streetscape:traffic-signal')!
+export const drainageInletDefinition = DEFINITIONS.get('streetscape:drainage-inlet')!
+export const manholeCoverDefinition = DEFINITIONS.get('streetscape:manhole-cover')!
+export const fireHydrantDefinition = DEFINITIONS.get('streetscape:fire-hydrant')!
+export const trafficBollardDefinition = DEFINITIONS.get('streetscape:traffic-bollard')!
+export const roadBarrierDefinition = DEFINITIONS.get('streetscape:road-barrier')!
+export const drivewayDefinition = DEFINITIONS.get('streetscape:driveway')!
+export const mailboxDefinition = DEFINITIONS.get('streetscape:mailbox')!
+export const parcelBoxDefinition = DEFINITIONS.get('streetscape:parcel-box')!
+export const trashBinDefinition = DEFINITIONS.get('streetscape:trash-bin')!
+export const recyclingBinDefinition = DEFINITIONS.get('streetscape:recycling-bin')!
+export const residentialGateDefinition = DEFINITIONS.get('streetscape:residential-gate')!
+export const speedHumpDefinition = DEFINITIONS.get('streetscape:speed-hump')!

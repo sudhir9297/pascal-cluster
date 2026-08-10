@@ -28,30 +28,30 @@ import {
 } from './schema'
 
 export const STREET_INFRASTRUCTURE_KINDS = [
-  'environment:traffic-signal',
-  'environment:drainage-inlet',
-  'environment:manhole-cover',
-  'environment:fire-hydrant',
-  'environment:traffic-bollard',
-  'environment:road-barrier',
-  'environment:driveway',
-  'environment:mailbox',
-  'environment:parcel-box',
-  'environment:trash-bin',
-  'environment:recycling-bin',
-  'environment:residential-gate',
-  'environment:speed-hump',
+  'streetscape:traffic-signal',
+  'streetscape:drainage-inlet',
+  'streetscape:manhole-cover',
+  'streetscape:fire-hydrant',
+  'streetscape:traffic-bollard',
+  'streetscape:road-barrier',
+  'streetscape:driveway',
+  'streetscape:mailbox',
+  'streetscape:parcel-box',
+  'streetscape:trash-bin',
+  'streetscape:recycling-bin',
+  'streetscape:residential-gate',
+  'streetscape:speed-hump',
 ] as const
 
 export type StreetInfrastructureKind = (typeof STREET_INFRASTRUCTURE_KINDS)[number]
 export const RESIDENTIAL_ROAD_ASSET_KINDS = [
-  'environment:driveway',
-  'environment:mailbox',
-  'environment:parcel-box',
-  'environment:trash-bin',
-  'environment:recycling-bin',
-  'environment:residential-gate',
-  'environment:speed-hump',
+  'streetscape:driveway',
+  'streetscape:mailbox',
+  'streetscape:parcel-box',
+  'streetscape:trash-bin',
+  'streetscape:recycling-bin',
+  'streetscape:residential-gate',
+  'streetscape:speed-hump',
 ] as const
 export type ResidentialRoadAssetKind = (typeof RESIDENTIAL_ROAD_ASSET_KINDS)[number]
 export type StreetInfrastructureNode =
@@ -93,7 +93,7 @@ export type StreetInfrastructureVariant = {
 
 export const STREET_INFRASTRUCTURE_VARIANTS: readonly StreetInfrastructureVariant[] = [
   {
-    kind: 'environment:traffic-signal',
+    kind: 'streetscape:traffic-signal',
     label: 'Traffic signal',
     description: 'A field-detailed modular vehicle signal with multiple head layouts and mounting systems.',
     family: 'Traffic control',
@@ -101,7 +101,7 @@ export const STREET_INFRASTRUCTURE_VARIANTS: readonly StreetInfrastructureVarian
     schema: TrafficSignalNode,
   },
   {
-    kind: 'environment:drainage-inlet',
+    kind: 'streetscape:drainage-inlet',
     label: 'Drainage grate',
     description: 'A framed road, curb, or sweeper inlet with bicycle-safe and decorative grate patterns.',
     family: 'Drainage',
@@ -109,7 +109,7 @@ export const STREET_INFRASTRUCTURE_VARIANTS: readonly StreetInfrastructureVarian
     schema: DrainageInletNode,
   },
   {
-    kind: 'environment:manhole-cover',
+    kind: 'streetscape:manhole-cover',
     label: 'Manhole cover',
     description: 'A flush cast-metal access cover with configurable utility markings.',
     family: 'Drainage',
@@ -117,7 +117,7 @@ export const STREET_INFRASTRUCTURE_VARIANTS: readonly StreetInfrastructureVarian
     schema: ManholeCoverNode,
   },
   {
-    kind: 'environment:fire-hydrant',
+    kind: 'streetscape:fire-hydrant',
     label: 'Fire hydrant',
       description: 'A tall, proportioned dry- or wet-barrel hydrant with configurable outlet silhouettes.',
     family: 'Fire safety',
@@ -125,7 +125,7 @@ export const STREET_INFRASTRUCTURE_VARIANTS: readonly StreetInfrastructureVarian
     schema: FireHydrantNode,
   },
   {
-    kind: 'environment:traffic-bollard',
+    kind: 'streetscape:traffic-bollard',
     label: 'Traffic bollard',
     description: 'A standalone reflective, steel, or flexible bollard for protected corners and road edges.',
     family: 'Traffic safety',
@@ -133,7 +133,7 @@ export const STREET_INFRASTRUCTURE_VARIANTS: readonly StreetInfrastructureVarian
     schema: TrafficBollardNode,
   },
   {
-    kind: 'environment:road-barrier',
+    kind: 'streetscape:road-barrier',
     label: 'Road barrier',
     description: 'A standalone jersey, guardrail, water-filled, or crowd-control barrier segment.',
     family: 'Traffic safety',
@@ -141,7 +141,7 @@ export const STREET_INFRASTRUCTURE_VARIANTS: readonly StreetInfrastructureVarian
     schema: RoadBarrierNode,
   },
   {
-    kind: 'environment:driveway',
+    kind: 'streetscape:driveway',
     label: 'Driveway',
     description: 'A paved residential driveway or parking apron with a shallow finished edge.',
     family: 'Residential frontage',
@@ -149,7 +149,7 @@ export const STREET_INFRASTRUCTURE_VARIANTS: readonly StreetInfrastructureVarian
     schema: DrivewayNode,
   },
   {
-    kind: 'environment:mailbox',
+    kind: 'streetscape:mailbox',
     label: 'Mailbox',
     description: 'A curbside residential mailbox on a simple post.',
     family: 'Residential frontage',
@@ -157,7 +157,7 @@ export const STREET_INFRASTRUCTURE_VARIANTS: readonly StreetInfrastructureVarian
     schema: MailboxNode,
   },
   {
-    kind: 'environment:parcel-box',
+    kind: 'streetscape:parcel-box',
     label: 'Parcel box',
     description: 'A larger lockable curbside parcel-delivery box.',
     family: 'Residential frontage',
@@ -165,7 +165,7 @@ export const STREET_INFRASTRUCTURE_VARIANTS: readonly StreetInfrastructureVarian
     schema: ParcelBoxNode,
   },
   {
-    kind: 'environment:trash-bin',
+    kind: 'streetscape:trash-bin',
     label: 'Trash bin',
     description: 'A wide reinforced four-caster commercial refuse container.',
     family: 'Residential frontage',
@@ -173,7 +173,7 @@ export const STREET_INFRASTRUCTURE_VARIANTS: readonly StreetInfrastructureVarian
     schema: TrashBinNode,
   },
   {
-    kind: 'environment:recycling-bin',
+    kind: 'streetscape:recycling-bin',
     label: 'Recycling bin',
     description: 'A tall green wheeled recycling bin with a moulded hinged lid.',
     family: 'Residential frontage',
@@ -181,7 +181,7 @@ export const STREET_INFRASTRUCTURE_VARIANTS: readonly StreetInfrastructureVarian
     schema: RecyclingBinNode,
   },
   {
-    kind: 'environment:residential-gate',
+    kind: 'streetscape:residential-gate',
     label: 'Driveway gate',
     description: 'A double-leaf timber driveway gate with arched framing, crossed braces, and dark metal hardware.',
     family: 'Residential frontage',
@@ -189,7 +189,7 @@ export const STREET_INFRASTRUCTURE_VARIANTS: readonly StreetInfrastructureVarian
     schema: ResidentialGateNode,
   },
   {
-    kind: 'environment:speed-hump',
+    kind: 'streetscape:speed-hump',
     label: 'Speed hump',
     description: 'A narrow modular black-and-yellow rubber speed hump with reflective markings.',
     family: 'Traffic calming',

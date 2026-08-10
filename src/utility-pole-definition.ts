@@ -70,7 +70,7 @@ const crossarmHandle: HandleDescriptor<UtilityPoleNode> = {
 }
 
 export const utilityPoleDefinition: UtilityPoleDefinition = {
-  kind: 'environment:utility-pole',
+  kind: 'streetscape:utility-pole',
   schemaVersion: 3,
   schema: UtilityPoleNode,
   category: 'furnish',

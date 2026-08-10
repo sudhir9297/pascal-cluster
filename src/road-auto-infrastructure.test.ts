@@ -24,12 +24,12 @@ function straightRoad(length = 40) {
 const ENABLED_ROAD_AUTO_INFRASTRUCTURE_SETTINGS: RoadAutoInfrastructureSettings = {
   enabled: true,
   items: {
-    'environment:traffic-signal': true,
-    'environment:drainage-inlet': true,
-    'environment:manhole-cover': true,
-    'environment:fire-hydrant': true,
-    'environment:traffic-bollard': true,
-    'environment:road-barrier': true,
+    'streetscape:traffic-signal': true,
+    'streetscape:drainage-inlet': true,
+    'streetscape:manhole-cover': true,
+    'streetscape:fire-hydrant': true,
+    'streetscape:traffic-bollard': true,
+    'streetscape:road-barrier': true,
   },
 }
 
@@ -53,28 +53,28 @@ describe('automatic road infrastructure', () => {
       settings: ENABLED_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
     })
 
-    expect(nodes.filter((node) => node.type === 'environment:drainage-inlet')).toHaveLength(2)
-    expect(nodes.filter((node) => node.type === 'environment:manhole-cover')).toHaveLength(1)
-    expect(nodes.filter((node) => node.type === 'environment:fire-hydrant')).toHaveLength(1)
-    expect(nodes.filter((node) => node.type === 'environment:traffic-bollard')).toHaveLength(1)
-    expect(nodes.filter((node) => node.type === 'environment:road-barrier')).toHaveLength(1)
-    expect(nodes.some((node) => node.type === 'environment:traffic-signal')).toBe(false)
+    expect(nodes.filter((node) => node.type === 'streetscape:drainage-inlet')).toHaveLength(2)
+    expect(nodes.filter((node) => node.type === 'streetscape:manhole-cover')).toHaveLength(1)
+    expect(nodes.filter((node) => node.type === 'streetscape:fire-hydrant')).toHaveLength(1)
+    expect(nodes.filter((node) => node.type === 'streetscape:traffic-bollard')).toHaveLength(1)
+    expect(nodes.filter((node) => node.type === 'streetscape:road-barrier')).toHaveLength(1)
+    expect(nodes.some((node) => node.type === 'streetscape:traffic-signal')).toBe(false)
     expect(nodes.every((node) => node.parentId === 'level_test')).toBe(true)
     expect(nodes.every((node) => node.roadAttachment?.networkNodeId === network.id)).toBe(true)
     expect(
       nodes
-        .filter((node) => node.type === 'environment:drainage-inlet')
+        .filter((node) => node.type === 'streetscape:drainage-inlet')
         .every((node) => Math.abs(node.position[1] - 0.15) < 1e-6),
     ).toBe(true)
     expect(new Set(nodes.map((node) =>
       (node.metadata as Record<string, unknown>).roadAutoInfrastructureKey,
     )).size).toBe(nodes.length)
-    const bollardStation = nodes.find((node) => node.type === 'environment:traffic-bollard')
+    const bollardStation = nodes.find((node) => node.type === 'streetscape:traffic-bollard')
       ?.metadata as Record<string, unknown>
-    const barrierStation = nodes.find((node) => node.type === 'environment:road-barrier')
+    const barrierStation = nodes.find((node) => node.type === 'streetscape:road-barrier')
       ?.metadata as Record<string, unknown>
-    const hydrant = nodes.find((node) => node.type === 'environment:fire-hydrant')!
-    const barrier = nodes.find((node) => node.type === 'environment:road-barrier')!
+    const hydrant = nodes.find((node) => node.type === 'streetscape:fire-hydrant')!
+    const barrier = nodes.find((node) => node.type === 'streetscape:road-barrier')!
     expect(bollardStation.roadStation).toBeCloseTo(12.8, 5)
     expect(barrierStation.roadStation).toBeCloseTo(27.2, 5)
     expect(Math.abs(barrier.position[2])).toBeCloseTo(Math.abs(hydrant.position[2]), 5)
@@ -92,7 +92,7 @@ describe('automatic road infrastructure', () => {
       settings: ENABLED_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
     })
 
-    const signals = nodes.filter((node) => node.type === 'environment:traffic-signal')
+    const signals = nodes.filter((node) => node.type === 'streetscape:traffic-signal')
     expect(signals).toHaveLength(2)
     expect(signals.every((node) => node.mount === 'mast-arm')).toBe(true)
     expect(signals.every((node) => node.headCount === 'two')).toBe(true)
@@ -151,23 +151,23 @@ describe('automatic road infrastructure', () => {
     const settings: RoadAutoInfrastructureSettings = {
       enabled: true,
       items: {
-        'environment:traffic-signal': false,
-        'environment:drainage-inlet': false,
-        'environment:manhole-cover': true,
-        'environment:fire-hydrant': false,
-        'environment:traffic-bollard': false,
-        'environment:road-barrier': false,
+        'streetscape:traffic-signal': false,
+        'streetscape:drainage-inlet': false,
+        'streetscape:manhole-cover': true,
+        'streetscape:fire-hydrant': false,
+        'streetscape:traffic-bollard': false,
+        'streetscape:road-barrier': false,
       },
     }
     const nodes = buildRoadAutoInfrastructure({ edgeIds, network, settings })
-    expect(nodes.map((node) => node.type)).toEqual(['environment:manhole-cover'])
+    expect(nodes.map((node) => node.type)).toEqual(['streetscape:manhole-cover'])
   })
 
   test('honors per-road visibility overrides', () => {
     const { edgeIds, network: sourceNetwork } = straightRoad()
     const network = RoadNetworkNode.parse({
       ...sourceNetwork,
-      roadsideItemVisibility: { 'environment:manhole-cover': false },
+      roadsideItemVisibility: { 'streetscape:manhole-cover': false },
     })
     const nodes = buildRoadAutoInfrastructure({
       edgeIds,
@@ -175,9 +175,9 @@ describe('automatic road infrastructure', () => {
       settings: ENABLED_ROAD_AUTO_INFRASTRUCTURE_SETTINGS,
     })
 
-    expect(nodes.some((node) => node.type === 'environment:fire-hydrant')).toBe(true)
-    expect(nodes.filter((node) => node.type === 'environment:manhole-cover')).toHaveLength(1)
-    expect(nodes.find((node) => node.type === 'environment:manhole-cover')?.visible).toBe(false)
+    expect(nodes.some((node) => node.type === 'streetscape:fire-hydrant')).toBe(true)
+    expect(nodes.filter((node) => node.type === 'streetscape:manhole-cover')).toHaveLength(1)
+    expect(nodes.find((node) => node.type === 'streetscape:manhole-cover')?.visible).toBe(false)
   })
 
   test('does not recreate infrastructure that was already generated for an edge', () => {

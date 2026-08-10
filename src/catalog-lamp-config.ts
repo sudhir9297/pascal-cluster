@@ -30,7 +30,7 @@ const SHARED_HEIGHT = [
 
 export const CATALOG_LAMP_VARIANTS = [
   {
-    kind: 'environment:high-mast-crown-light',
+    kind: 'streetscape:high-mast-crown-light',
     label: 'High-mast lowering crown',
     description: 'Tapered high mast with a serviceable carrier ring and six outward-aimed LED luminaires.',
     family: 'roadway',
@@ -40,7 +40,7 @@ export const CATALOG_LAMP_VARIANTS = [
     projection: 'high-mast',
   },
   {
-    kind: 'environment:shoebox-area-light',
+    kind: 'streetscape:shoebox-area-light',
     label: 'LED area pole',
     description: 'Single-sided parking-area pole with one low-profile multi-cell LED luminaire.',
     family: 'roadway',
@@ -50,7 +50,7 @@ export const CATALOG_LAMP_VARIANTS = [
     projection: 'shoebox',
   },
   {
-    kind: 'environment:floodlight-pole',
+    kind: 'streetscape:floodlight-pole',
     label: 'Floodlight pole',
     description: 'Braced pole with an adjustable yoke-mounted LED projector for sports, yards, and façades.',
     family: 'roadway',
@@ -60,7 +60,7 @@ export const CATALOG_LAMP_VARIANTS = [
     projection: 'floodlight',
   },
   {
-    kind: 'environment:solar-street-light',
+    kind: 'streetscape:solar-street-light',
     label: 'Solar street light',
     description: 'Single-sided solar roadway pole with one all-in-one PV, battery, control, and LED head.',
     family: 'roadway',
@@ -70,7 +70,7 @@ export const CATALOG_LAMP_VARIANTS = [
     projection: 'solar',
   },
   {
-    kind: 'environment:traditional-post-top-lantern',
+    kind: 'streetscape:traditional-post-top-lantern',
     label: 'Traditional lantern',
     description: 'Pitched-roof post-top lantern for heritage streetscapes.',
     family: 'pedestrian',
@@ -80,7 +80,7 @@ export const CATALOG_LAMP_VARIANTS = [
     projection: 'lantern',
   },
   {
-    kind: 'environment:globe-post-top-light',
+    kind: 'streetscape:globe-post-top-light',
     label: 'Globe / acorn',
     description: 'Traditional prismatic acorn post-top lamp for parks, campuses, and civic paths.',
     family: 'pedestrian',
@@ -90,7 +90,7 @@ export const CATALOG_LAMP_VARIANTS = [
     projection: 'globe',
   },
   {
-    kind: 'environment:decorative-candelabra-light',
+    kind: 'streetscape:decorative-candelabra-light',
     label: 'Decorative candelabra',
     description: 'Three-light heritage lamp with cast scroll arms for plazas and promenades.',
     family: 'pedestrian',
@@ -100,7 +100,7 @@ export const CATALOG_LAMP_VARIANTS = [
     projection: 'candelabra',
   },
   {
-    kind: 'environment:path-garden-light',
+    kind: 'streetscape:path-garden-light',
     label: 'Path / garden',
     description: 'Professional twin-head path light with opposed warm pools for walkways and planting beds.',
     family: 'pedestrian',
@@ -110,7 +110,7 @@ export const CATALOG_LAMP_VARIANTS = [
     projection: 'path',
   },
   {
-    kind: 'environment:bollard-light',
+    kind: 'streetscape:bollard-light',
     label: 'Bollard',
     description: 'Shielded architectural bollard with a louvered 360-degree optic for paths and plazas.',
     family: 'pedestrian',
@@ -124,7 +124,7 @@ export const CATALOG_LAMP_VARIANTS = [
     projection: 'bollard',
   },
   {
-    kind: 'environment:catenary-street-light',
+    kind: 'streetscape:catenary-street-light',
     label: 'Catenary / suspended',
     description: 'Aerodynamic twin-optic roadway luminaire with a serviceable cable saddle and tapered support poles.',
     family: 'structure',
@@ -134,7 +134,7 @@ export const CATALOG_LAMP_VARIANTS = [
     projection: 'catenary',
   },
   {
-    kind: 'environment:wall-arm-light',
+    kind: 'streetscape:wall-arm-light',
     label: 'Architectural wall-arm',
     description: 'Tapered facade bracket with a curved lower tie and low-profile LED roadway head.',
     family: 'structure',
@@ -144,7 +144,7 @@ export const CATALOG_LAMP_VARIANTS = [
     projection: 'wall-arm',
   },
   {
-    kind: 'environment:wall-pack-light',
+    kind: 'streetscape:wall-pack-light',
     label: 'Wall-pack / bulkhead',
     description: 'Full-cutoff architectural LED wall pack with a shielded downward optic.',
     family: 'structure',
@@ -154,7 +154,7 @@ export const CATALOG_LAMP_VARIANTS = [
     projection: 'wall-pack',
   },
   {
-    kind: 'environment:tunnel-luminaire',
+    kind: 'streetscape:tunnel-luminaire',
     label: 'Tunnel / underpass',
     description: 'Sealed continuous-line LED fixture with clip mounts and dual optics.',
     family: 'structure',
@@ -164,7 +164,7 @@ export const CATALOG_LAMP_VARIANTS = [
     projection: 'tunnel',
   },
   {
-    kind: 'environment:canopy-soffit-light',
+    kind: 'streetscape:canopy-soffit-light',
     label: 'Canopy / soffit',
     description: 'Compact ceiling-hosted canopy light with twin glare-controlled optical modules.',
     family: 'structure',
@@ -184,42 +184,42 @@ export const LAMP_VISUAL_FAMILIES = [
     id: 'roadway-head',
     label: 'Roadway and area heads',
     kinds: [
-      'environment:street-light',
-      'environment:cobra-head-light',
-      'environment:twin-arm-median-light',
-      'environment:multi-head-area-light',
-      'environment:truss-roadway-light',
-      'environment:high-mast-crown-light',
-      'environment:shoebox-area-light',
-      'environment:floodlight-pole',
-      'environment:solar-street-light',
+      'streetscape:street-light',
+      'streetscape:cobra-head-light',
+      'streetscape:twin-arm-median-light',
+      'streetscape:multi-head-area-light',
+      'streetscape:truss-roadway-light',
+      'streetscape:high-mast-crown-light',
+      'streetscape:shoebox-area-light',
+      'streetscape:floodlight-pole',
+      'streetscape:solar-street-light',
     ],
   },
   {
     id: 'post-top',
     label: 'Post-top and civic heads',
     kinds: [
-      'environment:pedestrian-post-light',
-      'environment:traditional-post-top-lantern',
-      'environment:globe-post-top-light',
-      'environment:heritage-crook-light',
-      'environment:decorative-candelabra-light',
+      'streetscape:pedestrian-post-light',
+      'streetscape:traditional-post-top-lantern',
+      'streetscape:globe-post-top-light',
+      'streetscape:heritage-crook-light',
+      'streetscape:decorative-candelabra-light',
     ],
   },
   {
     id: 'path-scale',
     label: 'Path and low-scale lights',
-    kinds: ['environment:path-garden-light', 'environment:bollard-light'],
+    kinds: ['streetscape:path-garden-light', 'streetscape:bollard-light'],
   },
   {
     id: 'structure-mounted',
     label: 'Structure-mounted lights',
     kinds: [
-      'environment:catenary-street-light',
-      'environment:wall-arm-light',
-      'environment:wall-pack-light',
-      'environment:tunnel-luminaire',
-      'environment:canopy-soffit-light',
+      'streetscape:catenary-street-light',
+      'streetscape:wall-arm-light',
+      'streetscape:wall-pack-light',
+      'streetscape:tunnel-luminaire',
+      'streetscape:canopy-soffit-light',
     ],
   },
 ] as const

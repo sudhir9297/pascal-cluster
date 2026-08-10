@@ -36,7 +36,7 @@ describe('road-edge infrastructure attachments', () => {
     const candidate = findRoadAttachmentTarget(
       [road],
       [0, 0, 3],
-      'environment:drainage-inlet',
+      'streetscape:drainage-inlet',
     )
 
     expect(candidate?.side).toBe('left')
@@ -45,7 +45,7 @@ describe('road-edge infrastructure attachments', () => {
     const attached = createRoadAttachmentForPlacement({
       assetNodeId: 'drainage-inlet_1',
       id: 'drainage-inlet_1:road',
-      kind: 'environment:drainage-inlet',
+      kind: 'streetscape:drainage-inlet',
       node: DrainageInletNode.parse({ position: [0, 0, 3] }),
       networks: [road],
       point: [0, 0, 3],
@@ -100,7 +100,7 @@ describe('road-edge infrastructure attachments', () => {
     const left = createRoadAttachmentForPlacement({
       assetNodeId: 'driveway_left',
       id: 'driveway_left:road',
-      kind: 'environment:driveway',
+      kind: 'streetscape:driveway',
       node: driveway,
       networks: [road],
       point: [0, 0, 5],
@@ -108,7 +108,7 @@ describe('road-edge infrastructure attachments', () => {
     const right = createRoadAttachmentForPlacement({
       assetNodeId: 'driveway_right',
       id: 'driveway_right:road',
-      kind: 'environment:driveway',
+      kind: 'streetscape:driveway',
       node: driveway,
       networks: [road],
       point: [0, 0, -5],
@@ -134,7 +134,7 @@ describe('road-edge infrastructure attachments', () => {
     const curvedLeft = createRoadAttachmentForPlacement({
       assetNodeId: 'driveway_curve_left',
       id: 'driveway_curve_left:road',
-      kind: 'environment:driveway',
+      kind: 'streetscape:driveway',
       node: DrivewayNode.parse({ drivewayShape: 'curved-left', curveAmount: 2.5 }),
       networks: [road],
       point: [0, 0, 5],
@@ -142,7 +142,7 @@ describe('road-edge infrastructure attachments', () => {
     const curvedRight = createRoadAttachmentForPlacement({
       assetNodeId: 'driveway_curve_right',
       id: 'driveway_curve_right:road',
-      kind: 'environment:driveway',
+      kind: 'streetscape:driveway',
       node: DrivewayNode.parse({ drivewayShape: 'curved-right', curveAmount: 2.5 }),
       networks: [road],
       point: [0, 0, 5],
@@ -150,7 +150,7 @@ describe('road-edge infrastructure attachments', () => {
     const curvedLeftOnRightSide = createRoadAttachmentForPlacement({
       assetNodeId: 'driveway_curve_left_right_side',
       id: 'driveway_curve_left_right_side:road',
-      kind: 'environment:driveway',
+      kind: 'streetscape:driveway',
       node: DrivewayNode.parse({ drivewayShape: 'curved-left', curveAmount: 2.5 }),
       networks: [road],
       point: [0, 0, -5],
@@ -221,7 +221,7 @@ describe('road-edge infrastructure attachments', () => {
     const attached = createRoadAttachmentForPlacement({
       assetNodeId: 'traffic-signal_1',
       id: 'traffic-signal_1:road',
-      kind: 'environment:traffic-signal',
+      kind: 'streetscape:traffic-signal',
       node: TrafficSignalNode.parse({ position: [0, 0, 0] }),
       networks: [road],
       point: [0, 0, 0],
@@ -284,7 +284,7 @@ describe('road-edge infrastructure attachments', () => {
     const placed = resolveFreeRoadPlacement({
       assetNodeId: node.id,
       id: `${node.id}:road`,
-      kind: 'environment:manhole-cover',
+      kind: 'streetscape:manhole-cover',
       node,
       networks: [road],
       point: node.position,
@@ -300,7 +300,7 @@ describe('road-edge infrastructure attachments', () => {
     const left = resolveFreeRoadPlacement({
       assetNodeId: 'drainage-inlet_left',
       id: 'drainage-inlet_left:road',
-      kind: 'environment:drainage-inlet',
+      kind: 'streetscape:drainage-inlet',
       node: DrainageInletNode.parse({ position: [0, 0, 3] }),
       networks: [road],
       point: [0, 0, 3],
@@ -308,7 +308,7 @@ describe('road-edge infrastructure attachments', () => {
     const right = resolveFreeRoadPlacement({
       assetNodeId: 'drainage-inlet_right',
       id: 'drainage-inlet_right:road',
-      kind: 'environment:drainage-inlet',
+      kind: 'streetscape:drainage-inlet',
       node: DrainageInletNode.parse({ position: [0, 0, -3] }),
       networks: [road],
       point: [0, 0, -3],

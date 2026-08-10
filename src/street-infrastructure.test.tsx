@@ -96,19 +96,19 @@ describe('street infrastructure catalog', () => {
   })
   test('registers six stable utility-menu asset families', () => {
     expect(STREET_INFRASTRUCTURE_VARIANTS.map((variant) => variant.kind)).toEqual([
-      'environment:traffic-signal',
-      'environment:drainage-inlet',
-      'environment:manhole-cover',
-      'environment:fire-hydrant',
-      'environment:traffic-bollard',
-      'environment:road-barrier',
-      'environment:driveway',
-      'environment:mailbox',
-      'environment:parcel-box',
-      'environment:trash-bin',
-      'environment:recycling-bin',
-      'environment:residential-gate',
-      'environment:speed-hump',
+      'streetscape:traffic-signal',
+      'streetscape:drainage-inlet',
+      'streetscape:manhole-cover',
+      'streetscape:fire-hydrant',
+      'streetscape:traffic-bollard',
+      'streetscape:road-barrier',
+      'streetscape:driveway',
+      'streetscape:mailbox',
+      'streetscape:parcel-box',
+      'streetscape:trash-bin',
+      'streetscape:recycling-bin',
+      'streetscape:residential-gate',
+      'streetscape:speed-hump',
     ])
     for (const definition of [
       trafficSignalDefinition,
@@ -261,7 +261,7 @@ describe('street infrastructure catalog', () => {
 
   test('parses safe defaults for every new node', () => {
     expect(TrafficSignalNode.parse({})).toMatchObject({
-      type: 'environment:traffic-signal',
+      type: 'streetscape:traffic-signal',
       mount: 'mast-arm',
       headLayout: 'three-section',
       headCount: 'two',
@@ -273,42 +273,42 @@ describe('street infrastructure catalog', () => {
       greenColor: '#35c76d',
     })
     expect(DrainageInletNode.parse({})).toMatchObject({
-      type: 'environment:drainage-inlet',
+      type: 'streetscape:drainage-inlet',
       inletType: 'combination',
       gratePattern: 'bicycle-safe',
     })
     expect(ManholeCoverNode.parse({})).toMatchObject({
-      type: 'environment:manhole-cover',
+      type: 'streetscape:manhole-cover',
       treadPattern: 'radial',
     })
     expect(FireHydrantNode.parse({})).toMatchObject({
-      type: 'environment:fire-hydrant',
+      type: 'streetscape:fire-hydrant',
       barrelType: 'dry-barrel',
       outletLayout: 'two-hose-one-pumper',
       height: 1.25,
     })
     expect(TrafficBollardNode.parse({})).toMatchObject({
-      type: 'environment:traffic-bollard',
+      type: 'streetscape:traffic-bollard',
       style: 'steel',
       height: 0.9,
     })
     expect(RoadBarrierNode.parse({})).toMatchObject({
-      type: 'environment:road-barrier',
+      type: 'streetscape:road-barrier',
       barrierType: 'jersey',
       length: 2,
     })
     expect(DrivewayNode.parse({})).toMatchObject({
-      type: 'environment:driveway',
+      type: 'streetscape:driveway',
       drivewayShape: 'straight',
       curveAmount: 2.5,
     })
     expect(ParcelBoxNode.parse({})).toMatchObject({
-      type: 'environment:parcel-box',
+      type: 'streetscape:parcel-box',
       operationState: 0,
       bodyColor: '#242829',
     })
     expect(SpeedHumpNode.parse({})).toMatchObject({
-      type: 'environment:speed-hump',
+      type: 'streetscape:speed-hump',
       width: 5.8,
       length: 0.5,
       height: 0.07,
@@ -346,7 +346,7 @@ describe('street infrastructure catalog', () => {
     expect(thumbnail.subarray(1, 4).toString()).toBe('PNG')
     expect(thumbnail.byteLength).toBeGreaterThan(10_000)
     const panel = readFileSync(new URL('./presets-panel.tsx', import.meta.url), 'utf8')
-    expect(panel).toContain("'environment:speed-hump': SPEED_HUMP_THUMBNAIL")
+    expect(panel).toContain("'streetscape:speed-hump': SPEED_HUMP_THUMBNAIL")
   })
 
   test('renders the mailbox as a black arched box with one raised red flag', () => {
@@ -367,7 +367,7 @@ describe('street infrastructure catalog', () => {
     expect(markup.match(/name="mailbox-flag-arm"/g)).toHaveLength(1)
     expect(markup).not.toContain('name="mailbox-post-crossbar"')
 
-    const descriptor = getStreetInfrastructureParametrics('environment:mailbox')
+    const descriptor = getStreetInfrastructureParametrics('streetscape:mailbox')
     expect(descriptor.groups[0]?.label).toBe('Open Animation')
     expect(descriptor.groups[0]?.fields[0]).toMatchObject({ key: 'open', kind: 'custom' })
     const keyboardAction = mailboxDefinition.keyboardActions?.e
@@ -392,6 +392,16 @@ describe('street infrastructure catalog', () => {
     expect(legacyLayout.length).toBe(0.5)
     expect(legacyLayout.height).toBe(1.65)
     expect(legacyLayout.footprintDepth).toBe(0.5)
+  })
+
+  test('renders fixed mailbox handle mounts without a dynamic child list', () => {
+    const source = readFileSync(new URL('./street-infrastructure-model.tsx', import.meta.url), 'utf8')
+    const mailboxModel = source.slice(
+      source.indexOf('function CurbsideMailboxModel'),
+      source.indexOf('function DrivewaySurface'),
+    )
+
+    expect(mailboxModel).not.toContain("([-1, 1] as const).map")
   })
 
   test('resizes the speed hump width from either outer-end arrow', () => {
@@ -494,7 +504,7 @@ describe('street infrastructure catalog', () => {
 
   test('sanitizes legacy residential nodes before building buffer geometry', () => {
     const legacyDriveway = {
-      type: 'environment:driveway',
+      type: 'streetscape:driveway',
       position: [0, 0, 0],
       rotation: [0, 0, 0],
       bodyColor: '#777b78',
@@ -510,7 +520,7 @@ describe('street infrastructure catalog', () => {
     expect(() => renderToStaticMarkup(createElement(StreetInfrastructureModel, { node: legacyDriveway }))).not.toThrow()
 
     const legacyParcelBox = {
-      type: 'environment:parcel-box',
+      type: 'streetscape:parcel-box',
       position: [0, 0, 0],
       rotation: [0, 0, 0],
       width: 0.7,
@@ -553,7 +563,7 @@ describe('street infrastructure catalog', () => {
   })
 
   test('keeps every drainage side-menu setting wired to the resolver and renderer', () => {
-    const descriptor = getStreetInfrastructureParametrics('environment:drainage-inlet')
+    const descriptor = getStreetInfrastructureParametrics('streetscape:drainage-inlet')
     const fields = descriptor.groups.flatMap((group) => group.fields)
     expect(fields.map((field) => field.key)).toEqual([
       'inletType',
@@ -576,7 +586,7 @@ describe('street infrastructure catalog', () => {
   })
 
   test('offers straight and adjustable curved driveway shapes', () => {
-    const descriptor = getStreetInfrastructureParametrics('environment:driveway')
+    const descriptor = getStreetInfrastructureParametrics('streetscape:driveway')
     const fields = descriptor.groups.flatMap((group) => group.fields)
     const shape = fields.find((field) => field.key === 'drivewayShape')
     const curveAmount = fields.find((field) => field.key === 'curveAmount')
@@ -603,7 +613,7 @@ describe('street infrastructure catalog', () => {
   })
 
   test('exposes one scrubbed parcel-box animation through the side menu and E key', () => {
-    const descriptor = getStreetInfrastructureParametrics('environment:parcel-box')
+    const descriptor = getStreetInfrastructureParametrics('streetscape:parcel-box')
     expect(descriptor.groups[0]?.label).toBe('Open Animation')
     expect(descriptor.groups[0]?.fields[0]).toMatchObject({ key: 'open', kind: 'custom' })
 
@@ -678,7 +688,7 @@ describe('street infrastructure catalog', () => {
   })
 
   test('animates both driveway-gate leaves through the inspector and E key', () => {
-    const descriptor = getStreetInfrastructureParametrics('environment:residential-gate')
+    const descriptor = getStreetInfrastructureParametrics('streetscape:residential-gate')
     expect(descriptor.groups[0]?.label).toBe('Open Animation')
     expect(descriptor.groups[0]?.fields[0]).toMatchObject({ key: 'open', kind: 'custom' })
 
@@ -772,8 +782,8 @@ describe('street infrastructure catalog', () => {
     expect(thumbnail).toContain('Commercial four-caster trash bin')
     expect(thumbnail).toContain('#2f713b')
     const panel = readFileSync(new URL('./presets-panel.tsx', import.meta.url), 'utf8')
-    expect(panel).toContain("'environment:trash-bin': COMMERCIAL_TRASH_BIN_THUMBNAIL")
-    expect(panel).toContain("'environment:recycling-bin': RECYCLING_BIN_THUMBNAIL")
+    expect(panel).toContain("'streetscape:trash-bin': COMMERCIAL_TRASH_BIN_THUMBNAIL")
+    expect(panel).toContain("'streetscape:recycling-bin': RECYCLING_BIN_THUMBNAIL")
   })
 
   test('keeps enlarged and clamped inlet variants inside their selection footprints', () => {

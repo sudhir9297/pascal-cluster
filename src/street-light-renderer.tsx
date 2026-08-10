@@ -16,7 +16,7 @@ import { StreetLightModel } from './street-light-model'
 
 export default function StreetLightRenderer({ node: storeNode }: { node: StreetLightNode }) {
   const ref = useRef<Group>(null!)
-  const handlers = useNodeEvents(storeNode as never, 'environment:street-light' as never)
+  const handlers = useNodeEvents(storeNode as never, 'streetscape:street-light' as never)
   useRegistry(storeNode.id as AnyNodeId, storeNode.type, ref)
 
   const liveTransform = useLiveTransforms((s) => s.get(storeNode.id as AnyNodeId))
@@ -31,7 +31,7 @@ export default function StreetLightRenderer({ node: storeNode }: { node: StreetL
     const host = Object.values(sceneNodes).find(
       (candidate) => (candidate.id as string) === attachmentRef.networkNodeId,
     )
-    if (!host || (host.type as string) !== 'environment:road-network') return null
+    if (!host || (host.type as string) !== 'streetscape:road-network') return null
     const road = RoadNetworkNode.parse(host)
     const attachment = road.attachments?.[attachmentRef.attachmentId]
     return attachment

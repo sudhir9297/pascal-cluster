@@ -14,7 +14,7 @@ import { RoadSignModel } from './road-sign-model'
 
 export default function RoadSignRenderer({ node: storeNode }: { node: RoadSignNode }) {
   const ref = useRef<Group>(null!)
-  const handlers = useNodeEvents(storeNode as never, 'environment:road-sign' as never)
+  const handlers = useNodeEvents(storeNode as never, 'streetscape:road-sign' as never)
   useRegistry(storeNode.id as AnyNodeId, storeNode.type, ref)
 
   const liveTransform = useLiveTransforms((state) => state.get(storeNode.id as AnyNodeId))

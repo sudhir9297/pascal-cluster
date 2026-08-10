@@ -4,9 +4,9 @@ import { type AnyNode, type AnyNodeId, useScene } from '@pascal-app/core'
 import { EDITOR_LAYER, triggerSFX } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useMemo } from 'react'
-import { finishEnvironmentPlacement, usePlacement } from './placement'
+import { usePlacement } from './placement'
 import { UtilityPoleNode } from './schema'
-import { useEnvironmentStore } from './store'
+import { useStreetscapeStore } from './store'
 import UtilityPolePreview from './utility-pole-preview'
 import {
   autoConnectUtilityPole,
@@ -15,12 +15,12 @@ import {
 
 export default function UtilityPoleTool() {
   const activeLevelId = useViewer((s) => s.selection.levelId)
-  const height = useEnvironmentStore((s) => s.utilityPoleHeight)
-  const crossarmLength = useEnvironmentStore((s) => s.utilityPoleCrossarmLength)
-  const transformerMounted = useEnvironmentStore(
+  const height = useStreetscapeStore((s) => s.utilityPoleHeight)
+  const crossarmLength = useStreetscapeStore((s) => s.utilityPoleCrossarmLength)
+  const transformerMounted = useStreetscapeStore(
     (s) => s.utilityPoleTransformerMounted,
   )
-  const assembly = useEnvironmentStore((s) => s.utilityPoleAssembly)
+  const assembly = useStreetscapeStore((s) => s.utilityPoleAssembly)
 
   const previewNode = useMemo(
     () =>
@@ -37,7 +37,7 @@ export default function UtilityPoleTool() {
 
   const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position, placementRotationY) => {
     if (!activeLevelId) return
-    const brush = useEnvironmentStore.getState()
+    const brush = useStreetscapeStore.getState()
     const utilityPole = UtilityPoleNode.parse({
       assembly: brush.utilityPoleAssembly,
       height: brush.utilityPoleHeight,
@@ -61,7 +61,6 @@ export default function UtilityPoleTool() {
     autoConnectUtilityPole(orientedPole.id, activeLevelId as AnyNodeId)
     useViewer.getState().setSelection({ selectedIds: [orientedPole.id as AnyNodeId] })
     triggerSFX('sfx:item-place')
-    finishEnvironmentPlacement(brush.placementMode)
   })
 
   if (!activeLevelId) return null

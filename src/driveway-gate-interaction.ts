@@ -7,7 +7,7 @@ const activeAnimations = new Map<string, DrivewayGateAnimation>()
 
 function drivewayGateNode(nodeId: AnyNodeId): ResidentialGateNode | null {
   const node = useScene.getState().nodes[nodeId] as unknown as ResidentialGateNode | undefined
-  return node?.type === 'environment:residential-gate' ? node : null
+  return node?.type === 'streetscape:residential-gate' ? node : null
 }
 
 function effectiveOperationState(nodeId: AnyNodeId): number {

@@ -61,7 +61,7 @@ const armLengthHandle: HandleDescriptor<CobraHeadLightNode> = {
 }
 
 export const cobraHeadLightDefinition: CobraHeadLightDefinition = {
-  kind: 'environment:cobra-head-light',
+  kind: 'streetscape:cobra-head-light',
   schemaVersion: 1,
   schema: CobraHeadLightNode,
   category: 'furnish',

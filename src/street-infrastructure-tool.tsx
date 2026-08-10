@@ -4,7 +4,7 @@ import { type AnyNode, type AnyNodeId, useScene } from '@pascal-app/core'
 import { EDITOR_LAYER, triggerSFX, useEditor } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useCallback, useMemo } from 'react'
-import { finishEnvironmentPlacement, usePlacement } from './placement'
+import { usePlacement } from './placement'
 import {
   isStreetInfrastructureKind,
   parseStreetInfrastructure,
@@ -25,52 +25,52 @@ import {
   resolveResidentialRoadAssetLayout,
 } from './street-infrastructure-geometry'
 import StreetInfrastructurePreview from './street-infrastructure-preview'
-import { useEnvironmentStore } from './store'
+import { useStreetscapeStore } from './store'
 
 function roadNetworksForLevel(levelId: string): RoadNetworkNode[] {
   const scene = useScene.getState()
   return Object.values(scene.nodes).filter(
     (candidate) =>
-      (candidate.type as string) === 'environment:road-network' &&
+      (candidate.type as string) === 'streetscape:road-network' &&
       (candidate as { parentId?: string }).parentId === levelId,
   ) as unknown as RoadNetworkNode[]
 }
 
 function RoadAttachmentGuide({ node }: { node: StreetInfrastructureNode }) {
-  const residential = node.type.startsWith('environment:') &&
-    !['environment:traffic-signal', 'environment:drainage-inlet', 'environment:manhole-cover', 'environment:fire-hydrant', 'environment:traffic-bollard', 'environment:road-barrier'].includes(node.type)
+  const residential = node.type.startsWith('streetscape:') &&
+    !['streetscape:traffic-signal', 'streetscape:drainage-inlet', 'streetscape:manhole-cover', 'streetscape:fire-hydrant', 'streetscape:traffic-bollard', 'streetscape:road-barrier'].includes(node.type)
   const residentialLayout = residential ? resolveResidentialRoadAssetLayout(node as never) : null
   const radius = residentialLayout
     ? Math.max(residentialLayout.footprintWidth, residentialLayout.footprintDepth) / 2
-    : node.type === 'environment:manhole-cover'
+    : node.type === 'streetscape:manhole-cover'
     ? resolveManholeCoverLayout(node).frameRadius
-    : node.type === 'environment:drainage-inlet'
+    : node.type === 'streetscape:drainage-inlet'
       ? (() => {
           const layout = resolveDrainageInletLayout(node)
           return Math.max((layout.length + 0.16) / 2, (layout.width + 0.16) / 2)
         })()
-      : node.type === 'environment:traffic-signal'
+      : node.type === 'streetscape:traffic-signal'
         ? 0.36
-        : node.type === 'environment:traffic-bollard'
+        : node.type === 'streetscape:traffic-bollard'
           ? resolveTrafficBollardLayout(node).baseRadius
-          : node.type === 'environment:road-barrier'
+          : node.type === 'streetscape:road-barrier'
             ? resolveRoadBarrierLayout(node).length / 2
-        : resolveFireHydrantLayout(node as Extract<StreetInfrastructureNode, { type: 'environment:fire-hydrant' }>).padRadius
+        : resolveFireHydrantLayout(node as Extract<StreetInfrastructureNode, { type: 'streetscape:fire-hydrant' }>).padRadius
   const y = residentialLayout
     ? residentialLayout.height + 0.01
-    : node.type === 'environment:manhole-cover'
+    : node.type === 'streetscape:manhole-cover'
     ? (() => {
         const layout = resolveManholeCoverLayout(node)
         return layout.treadY + layout.treadHeight / 2
       })()
-    : node.type === 'environment:drainage-inlet'
+    : node.type === 'streetscape:drainage-inlet'
       ? (() => {
           const layout = resolveDrainageInletLayout(node)
           return layout.barBottomY + layout.barHeight
         })()
-    : node.type === 'environment:traffic-bollard'
+    : node.type === 'streetscape:traffic-bollard'
       ? 0.02
-      : node.type === 'environment:road-barrier'
+      : node.type === 'streetscape:road-barrier'
         ? 0.02
         : 0.018
   return (
@@ -178,7 +178,6 @@ export default function StreetInfrastructureTool() {
     })
     useViewer.getState().setSelection({ selectedIds: [finalNode.id as AnyNodeId] })
     triggerSFX('sfx:item-place')
-    finishEnvironmentPlacement(useEnvironmentStore.getState().placementMode)
   }, { resolvePreview: resolveRoadPreview })
 
   if (!activeLevelId || !previewNode) return null

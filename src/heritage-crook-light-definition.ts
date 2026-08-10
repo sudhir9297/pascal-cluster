@@ -63,7 +63,7 @@ const armReachHandle: HandleDescriptor<HeritageCrookLightNode> = {
 }
 
 export const heritageCrookLightDefinition: HeritageCrookLightDefinition = {
-  kind: 'environment:heritage-crook-light',
+  kind: 'streetscape:heritage-crook-light',
   schemaVersion: 1,
   schema: HeritageCrookLightNode,
   category: 'furnish',

@@ -5,15 +5,15 @@ import { EDITOR_LAYER, triggerSFX } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useMemo } from 'react'
 import CobraHeadLightPreview from './cobra-head-light-preview'
-import { finishEnvironmentPlacement, usePlacement } from './placement'
+import { usePlacement } from './placement'
 import { CobraHeadLightNode } from './schema'
-import { useEnvironmentStore } from './store'
+import { useStreetscapeStore } from './store'
 
 export default function CobraHeadLightTool() {
   const activeLevelId = useViewer((s) => s.selection.levelId)
-  const height = useEnvironmentStore((s) => s.cobraHeadHeight)
-  const armLength = useEnvironmentStore((s) => s.cobraHeadArmLength)
-  const lightOn = useEnvironmentStore((s) => s.cobraHeadLightOn)
+  const height = useStreetscapeStore((s) => s.cobraHeadHeight)
+  const armLength = useStreetscapeStore((s) => s.cobraHeadArmLength)
+  const lightOn = useStreetscapeStore((s) => s.cobraHeadLightOn)
 
   const previewNode = useMemo(
     () =>
@@ -29,7 +29,7 @@ export default function CobraHeadLightTool() {
 
   const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position, rotationY) => {
     if (!activeLevelId) return
-    const brush = useEnvironmentStore.getState()
+    const brush = useStreetscapeStore.getState()
     const cobraHead = CobraHeadLightNode.parse({
       height: brush.cobraHeadHeight,
       armLength: brush.cobraHeadArmLength,
@@ -42,7 +42,6 @@ export default function CobraHeadLightTool() {
       .createNode(cobraHead as unknown as AnyNode, activeLevelId as AnyNodeId)
     useViewer.getState().setSelection({ selectedIds: [cobraHead.id as AnyNodeId] })
     triggerSFX('sfx:item-place')
-    finishEnvironmentPlacement(brush.placementMode)
   })
 
   if (!activeLevelId) return null

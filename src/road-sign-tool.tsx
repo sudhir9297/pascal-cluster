@@ -5,16 +5,16 @@ import { EDITOR_LAYER, triggerSFX } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useMemo } from 'react'
 import RoadSignPreview from './road-sign-preview'
-import { finishEnvironmentPlacement, usePlacement } from './placement'
+import { usePlacement } from './placement'
 import { createRoadSignNode, createRoadSignPreviewNode } from './schema'
-import { useEnvironmentStore } from './store'
+import { useStreetscapeStore } from './store'
 
 export default function RoadSignTool() {
   const activeLevelId = useViewer((state) => state.selection.levelId)
-  const signId = useEnvironmentStore((state) => state.roadSignId)
-  const postHeight = useEnvironmentStore((state) => state.roadSignPostHeight)
-  const scale = useEnvironmentStore((state) => state.roadSignScale)
-  const mounting = useEnvironmentStore((state) => state.roadSignMounting)
+  const signId = useStreetscapeStore((state) => state.roadSignId)
+  const postHeight = useStreetscapeStore((state) => state.roadSignPostHeight)
+  const scale = useStreetscapeStore((state) => state.roadSignScale)
+  const mounting = useStreetscapeStore((state) => state.roadSignMounting)
 
   const previewNode = useMemo(
     () =>
@@ -31,7 +31,7 @@ export default function RoadSignTool() {
 
   const { cursorRef, cursorVisible } = usePlacement(activeLevelId, (position, rotationY) => {
     if (!activeLevelId) return
-    const brush = useEnvironmentStore.getState()
+    const brush = useStreetscapeStore.getState()
     const sign = createRoadSignNode({
       signId: brush.roadSignId,
       postHeight: brush.roadSignPostHeight,
@@ -43,7 +43,6 @@ export default function RoadSignTool() {
     useScene.getState().createNode(sign as unknown as AnyNode, activeLevelId as AnyNodeId)
     useViewer.getState().setSelection({ selectedIds: [sign.id as AnyNodeId] })
     triggerSFX('sfx:item-place')
-    finishEnvironmentPlacement(brush.placementMode)
   })
 
   if (!activeLevelId) return null

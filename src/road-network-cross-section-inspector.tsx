@@ -17,7 +17,7 @@ import {
 } from "./road-network-style-editing";
 import { resolveRoadSideComponents, type RoadSide } from "./road-cross-section";
 import type { RoadNetworkNode } from "./schema";
-import { useEnvironmentStore } from "./store";
+import { useStreetscapeStore } from "./store";
 
 const ROADWAY_CONTROLS: Array<{
 	key: RoadwayStyleNumberKey;
@@ -101,7 +101,7 @@ export function RoadCrossSectionInspector({
 	node: RoadNetworkNode;
 	onUpdate: (patch: Partial<RoadNetworkNode>) => void;
 }) {
-	const selection = useEnvironmentStore((state) => state.roadElementSelection);
+	const selection = useStreetscapeStore((state) => state.roadElementSelection);
 	const selectedEdgeId =
 		selection?.networkId === node.id && selection.kind === "edge"
 			? selection.id

@@ -16,8 +16,8 @@ describe('automatic infrastructure road clearances', () => {
         enabled: true,
         items: {
           ...DEFAULT_ROAD_AUTO_INFRASTRUCTURE_SETTINGS.items,
-          'environment:drainage-inlet': true,
-          'environment:fire-hydrant': true,
+          'streetscape:drainage-inlet': true,
+          'streetscape:fire-hydrant': true,
         },
       },
     )

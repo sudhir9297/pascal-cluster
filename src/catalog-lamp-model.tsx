@@ -492,7 +492,7 @@ export function CatalogLampModel({ node, ghost = false, layer = 0 }: { node: Cat
   const fixtureY = Math.max(0.25, height - 0.5)
   const distance = Math.max(8, height * 2.3)
 
-  if (projection === 'lantern' && node.type === 'environment:traditional-post-top-lantern') {
+  if (projection === 'lantern' && node.type === 'streetscape:traditional-post-top-lantern') {
     return (
       <TraditionalPostTopLanternModel
         distance={distance}
