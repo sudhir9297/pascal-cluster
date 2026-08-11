@@ -11,8 +11,3 @@ declare module '*.svg' {
   const asset: { src: string; height: number; width: number; blurDataURL?: string }
   export default asset
 }
-
-declare module '*.png' {
-  const asset: { src: string; height: number; width: number; blurDataURL?: string }
-  export default asset
-}

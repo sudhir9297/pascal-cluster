@@ -123,9 +123,9 @@ export const streetscapeHostPanel: PluginHostPanel = {
   description: 'Procedural systems and assets for building complete outdoor streetscapes.',
   creator: {
     name: 'Pascal',
-    url: 'https://github.com/pascalorg',
+    url: 'https://github.com/sudhir9297',
   },
-  pluginUrl: 'https://github.com/pascalorg/plugin-streetscape',
+  pluginUrl: 'https://github.com/sudhir9297/streetscape-pascal-plugin',
   defaultInstalled: true,
 }
 

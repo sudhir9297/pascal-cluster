@@ -342,8 +342,9 @@ describe('street infrastructure catalog', () => {
     expect(fills).toContain('#25282b')
     expect(fills).toContain('#f2b632')
 
-    const thumbnail = readFileSync(new URL('./assets/speed-hump-thumbnail-v2.png', import.meta.url))
-    expect(thumbnail.subarray(1, 4).toString()).toBe('PNG')
+    const thumbnail = readFileSync(new URL('./assets/speed-hump-thumbnail-v2.webp', import.meta.url))
+    expect(thumbnail.subarray(0, 4).toString()).toBe('RIFF')
+    expect(thumbnail.subarray(8, 12).toString()).toBe('WEBP')
     expect(thumbnail.byteLength).toBeGreaterThan(10_000)
     const panel = readFileSync(new URL('./presets-panel.tsx', import.meta.url), 'utf8')
     expect(panel).toContain("'streetscape:speed-hump': SPEED_HUMP_THUMBNAIL")
@@ -745,8 +746,9 @@ describe('street infrastructure catalog', () => {
       expect(floorplan.children.filter((child) => child.kind === 'circle')).toHaveLength(2)
     }
 
-    const thumbnail = readFileSync(new URL('./assets/recycling-bin-thumbnail-v2.png', import.meta.url))
-    expect(thumbnail.subarray(1, 4).toString()).toBe('PNG')
+    const thumbnail = readFileSync(new URL('./assets/recycling-bin-thumbnail-v2.webp', import.meta.url))
+    expect(thumbnail.subarray(0, 4).toString()).toBe('RIFF')
+    expect(thumbnail.subarray(8, 12).toString()).toBe('WEBP')
     expect(thumbnail.byteLength).toBeGreaterThan(10_000)
   })
 

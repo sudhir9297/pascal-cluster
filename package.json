@@ -4,11 +4,11 @@
   "description": "First-party Pascal plugin for building complete streetscapes with procedural roads, lighting, signs, utilities, and roadside infrastructure.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pascalorg/plugin-streetscape.git"
+    "url": "git+https://github.com/sudhir9297/streetscape-pascal-plugin.git"
   },
   "homepage": "https://editor.pascal.app/docs/developers/plugins",
   "bugs": {
-    "url": "https://github.com/pascalorg/plugin-streetscape/issues"
+    "url": "https://github.com/sudhir9297/streetscape-pascal-plugin/issues"
   },
   "type": "module",
   "main": "./src/index.ts",

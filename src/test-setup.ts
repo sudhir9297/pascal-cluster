@@ -1,3 +1,15 @@
+// Next.js turns static image imports into metadata objects. Mirror that shape in
+// Bun tests so importing the plugin manifest does not parse image bytes as code.
+Bun.plugin({
+  name: 'static image imports',
+  setup(build) {
+    build.onLoad({ filter: /\.(?:svg|webp)$/ }, ({ path }) => ({
+      contents: `export default ${JSON.stringify({ src: path, height: 0, width: 0 })}`,
+      loader: 'js',
+    }))
+  },
+})
+
 /**
  * React DOM's static renderer does not know React Three Fiber's intrinsic
  * elements and props. A number of structural tests intentionally use it to
