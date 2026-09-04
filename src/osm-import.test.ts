@@ -74,6 +74,12 @@ describe('mapOsmTags', () => {
 		).toBe('forward')
 	})
 
+	test('honors explicit two-way tags before implied motorway or roundabout direction', () => {
+		expect(mapOsmTags({ highway: 'motorway' })?.direction).toBe('forward')
+		expect(mapOsmTags({ highway: 'motorway', oneway: 'no' })?.direction).toBe('both')
+		expect(mapOsmTags({ highway: 'residential', junction: 'roundabout', oneway: 'no' })?.direction).toBe('both')
+	})
+
 	test('maps bridge and layer tags', () => {
 		const bridge = mapOsmTags({ highway: 'primary', bridge: 'yes', layer: '1' })
 		expect(bridge).toMatchObject({ isBridge: true, stackLevel: 1 })

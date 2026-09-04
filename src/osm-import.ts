@@ -5,7 +5,9 @@ import {
 	type RoadNetworkGraph,
 } from './road-network-topology'
 import { validateRoadGraph } from './road-network-validation'
-import type { RoadGraphEdge, RoadGraphNode } from './schema'
+import type { RoadGraphEdge, RoadGraphNode, RoadStylePreset } from './schema'
+import { buildOsmRoadStyle } from './osm-road-style'
+import { fitOsmJunctionCorners } from './osm-junctions'
 import type { GeoBoundingBox, GeoPoint } from './osm-elevation'
 import { getStreetRequest } from './map-data-source'
 import {
@@ -38,6 +40,7 @@ export type OsmRoadProps = {
 	direction: RoadGraphEdge['direction']
 	isBridge: boolean
 	stackLevel: number
+	style?: RoadStylePreset
 }
 
 type PlanPoint = readonly [number, number]
@@ -236,13 +239,15 @@ export function mapOsmTags(tags: Record<string, string>): OsmRoadProps | null {
 			? 'forward'
 			: oneway === '-1' || oneway === 'reverse'
 				? 'reverse'
-				: tags.junction === 'roundabout'
+				: oneway !== 'no' && oneway !== '0' && oneway !== 'false' &&
+					(tags.junction === 'roundabout' || tags.highway === 'motorway')
 					? 'forward'
 					: 'both'
 	const layer = Number.parseInt(tags.layer ?? '0', 10)
 	return {
 		...entry,
 		direction,
+		style: buildOsmRoadStyle(tags, entry.styleId, direction !== 'both'),
 		isBridge: Boolean(tags.bridge) && tags.bridge !== 'no',
 		stackLevel: Math.max(0, Number.isFinite(layer) ? layer : 0),
 	}
@@ -547,8 +552,16 @@ export function buildRoadGraphFromSegments(
 		}
 		graph.graphNodes[id] = node
 	}
+	const importedStyles = new Map<string, string>()
 	segments.forEach((segment, index) => {
 		const id = `e${index + 1}`
+		let styleId = segment.props.styleId
+		if (segment.props.style) {
+			const key = JSON.stringify(segment.props.style)
+			styleId = importedStyles.get(key) ?? `osm-${importedStyles.size + 1}`
+			importedStyles.set(key, styleId)
+			graph.stylePresets[styleId] = { ...segment.props.style, id: styleId }
+		}
 		const edge: RoadGraphEdge = {
 			id,
 			startNodeId: segment.startId,
@@ -556,7 +569,7 @@ export function buildRoadGraphFromSegments(
 			alignment: segment.interior.map((point) => [point[0], 0, point[1]]),
 			profileMode: 'legacy',
 			verticalProfile: [],
-			styleId: segment.props.styleId,
+			styleId,
 			direction: segment.props.direction,
 			roadClass: segment.props.roadClass,
 			joinMode: 'auto',
@@ -669,6 +682,7 @@ function assembleImportGraphs(
 	)
 	if (elevationAt) applyElevations(graph, bridgeEdgeIds, elevationAt)
 	reconcileRoadJunctions(graph)
+	fitOsmJunctionCorners(graph)
 	const errors = validateRoadGraph(graph).filter(
 		(issue) => issue.severity === 'error',
 	)

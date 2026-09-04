@@ -317,7 +317,7 @@ export function buildRoadNetworkMarkings(node: RoadNetworkNode): RoadMarkingPoly
       sample.point[2],
     ] as Point3)
     if (points.length < 2) continue
-    if (style.medianWidth === 0 && style.laneCount >= 2) {
+    if (edge.direction === 'both' && style.medianWidth === 0 && style.laneCount >= 2) {
       polygons.push(...ribbonPolygons(
 			points,
 			0.12,
@@ -327,7 +327,7 @@ export function buildRoadNetworkMarkings(node: RoadNetworkNode): RoadMarkingPoly
 		))
     }
     for (let boundary = 1; boundary < style.laneCount; boundary++) {
-      if (style.laneCount % 2 === 0 && boundary === style.laneCount / 2) continue
+      if (edge.direction === 'both' && style.laneCount % 2 === 0 && boundary === style.laneCount / 2) continue
       for (const dash of splitRoadMarkingDashes(
         offsetTransitionPath(trimmed.samples, boundary - 1),
       )) {

@@ -23,7 +23,13 @@ to a third-party plugin.
   and tagged objects, then import editable road networks, street lamps, traffic
   signals, and road signs. The importer reuses the previewed data, keeps road
   classes, one-way direction, junctions, bridges, object direction and lamp
-  height where mapped. Imports currently use a flat editor-floor datum. Common sign tags map to
+  height where mapped. Each imported street keeps its own editable cross-section,
+  using mapped lane counts, pavement width, sidewalks, on-road cycle lanes and
+  parking lanes. Widths in metres and feet are supported. Missing dimensions use
+  estimated defaults; medians, cycle lanes and parking are not added without tags.
+  One-way streets use lane dividers without an opposing-traffic centerline.
+  Curb returns shrink to fit closely spaced imported junctions.
+  Imports currently use a flat editor-floor datum. Common sign tags map to
   the built-in sign catalog; unknown sign codes use the generic warning sign.
   After import, the editor selects the new nodes and fits them in a north-up 2D
   view. The complete import is one

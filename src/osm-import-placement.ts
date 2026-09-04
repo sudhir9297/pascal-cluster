@@ -149,6 +149,7 @@ export function placeOsmImport(
 	const networks = result.graphs.map((graph) =>
 		RoadNetworkNode.parse({
 			...liftGraph(graph, floorOffset),
+			applyStyleToAll: false,
 			metadata: createMapImportMetadata(undefined, origin),
 			parentId: activeLevelId,
 		}),

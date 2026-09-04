@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test } from 'bun:test'
 import { clearSceneHistory, LevelNode, SlabNode, type AnyNodeId, useScene } from '@pascal-app/core'
 import { createEmptyRoadGraph } from './road-network-topology'
 import type { OsmImportResult } from './osm-import'
+import { RoadNetworkNode } from './schema'
 import {
 	getImportedStreetFocus,
 	getOsmImportFloorOffset,
@@ -78,6 +79,7 @@ describe('placeOsmImport', () => {
 			(scene.nodes[LEVEL_ID] as unknown as { children?: AnyNodeId[] }).children,
 		).toEqual([SLAB_ID, ...ids])
 		expect(getOsmImportSceneContext(LEVEL_ID).networks).toHaveLength(2)
+		expect(ids.every(id => !RoadNetworkNode.parse(scene.nodes[id]).applyStyleToAll)).toBe(true)
 		expect(getOsmImportSceneContext(LEVEL_ID).networks[0]?.metadata).toMatchObject({
 			streetscapeMapImport: {
 				origin: { lat: 0, lon: 0 },

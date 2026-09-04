@@ -137,3 +137,13 @@ describe('topology-driven road markings', () => {
 		)).toEqual(new Set(['#f3f1df']))
 	})
 })
+
+test('one-way streets paint every lane divider without an opposing-traffic centerline', () => {
+  for (const direction of ['forward', 'reverse'] as const) {
+    const graph = insertRoadSegment(createEmptyRoadGraph(), [0, 0, 0], [40, 0, 0]).graph
+    Object.values(graph.edges)[0]!.direction = direction
+    const markings = buildRoadNetworkMarkings(RoadNetworkNode.parse(graph))
+    expect(markings.filter(marking => marking.kind === 'centerline')).toHaveLength(0)
+    expect(markings.filter(marking => marking.kind === 'lane-dash').length).toBeGreaterThan(0)
+  }
+})
