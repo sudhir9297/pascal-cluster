@@ -1,0 +1,646 @@
+'use client'
+
+import { type AnyNodeId, emitter } from '@pascal-app/core'
+import { getActiveBuildingPose, SliderControl, useEditor } from '@pascal-app/editor'
+import { useViewer } from '@pascal-app/viewer'
+import { useEffect, useRef, useState } from 'react'
+import { MapGlobeView } from './map-globe-view'
+import {
+	clampMapZoom,
+	DEFAULT_MAP_ZOOM,
+	GLOBE_FLAT_THRESHOLD_ZOOM,
+} from './map-tiles'
+import { type GeocodeResult, searchPlaces } from './osm-geocode'
+import type { GeoPoint } from './osm-elevation'
+import {
+	completeOsmStreetImport,
+	DEFAULT_IMPORT_RADIUS_M,
+	getPreparedOsmStreetImportResult,
+	MAX_IMPORT_RADIUS_M,
+	MIN_IMPORT_RADIUS_M,
+	prepareOsmStreetImport,
+	type OsmImportPhase,
+	type OsmImportResult,
+	type PreparedOsmImport,
+} from './osm-import'
+import {
+	reviewOsmImport,
+	type OsmImportReview,
+} from './osm-import-deduplication'
+import {
+	getImportedStreetFocus,
+	getOsmImportSceneContext,
+	placeOsmImport,
+} from './osm-import-placement'
+import { countOsmPointAssets, type OsmPointAssetCounts } from './osm-point-assets'
+
+const SECONDARY_BUTTON_CLASS =
+	'cursor-pointer rounded-md border border-border bg-background px-3 py-2 font-medium text-sm transition-[background-color,transform] duration-150 hover:bg-accent active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100'
+const PRIMARY_BUTTON_CLASS =
+	'cursor-pointer rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground text-sm transition-[opacity,transform] duration-150 hover:opacity-90 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100'
+
+const PHASE_LABELS: Record<OsmImportPhase, string> = {
+	streets: 'Fetching streets and mapped objects',
+	building: 'Building road network',
+}
+
+/** Street-level zoom so a searched place lands in the flat map, not the globe. */
+const PLACE_ZOOM = 15
+
+type Status = { kind: 'success' | 'error' | 'info'; message: string }
+type BusyState = 'search' | 'preview' | OsmImportPhase
+
+function isCancelled(error: unknown, signal: AbortSignal): boolean {
+	return signal.aborted || (error instanceof DOMException && error.name === 'AbortError')
+}
+
+function roadSegmentLabel(count: number): string {
+	return `${count} street segment${count === 1 ? '' : 's'}`
+}
+
+function newRoadSegmentLabel(count: number): string {
+	return `${count} new street segment${count === 1 ? '' : 's'}`
+}
+
+function mappedObjectLabel(count: number): string {
+	return `${count} mapped object${count === 1 ? '' : 's'}`
+}
+
+function importSelectionLabel(segments: number, objects: number): string {
+	return `Import ${[
+		segments > 0 ? roadSegmentLabel(segments) : '',
+		objects > 0 ? mappedObjectLabel(objects) : '',
+	]
+		.filter(Boolean)
+		.join(' + ')}`
+}
+
+function mappedObjectSummary(counts: OsmPointAssetCounts): string {
+	return [
+		counts.streetLamps > 0
+			? `${counts.streetLamps} lamp${counts.streetLamps === 1 ? '' : 's'}`
+			: '',
+		counts.trafficSignals > 0
+			? `${counts.trafficSignals} traffic signal${counts.trafficSignals === 1 ? '' : 's'}`
+			: '',
+		counts.roadSigns > 0
+			? `${counts.roadSigns} sign${counts.roadSigns === 1 ? '' : 's'}`
+			: '',
+	]
+		.filter(Boolean)
+		.join(', ')
+}
+
+function fitOpenFloorplanToWidth(viewWidth: number) {
+	const floorplan = document.querySelector<SVGSVGElement>(
+		'svg[data-pascal-floorplan-2d="true"]',
+	)
+	if (!floorplan) return
+
+	const currentWidth = Number(floorplan.getAttribute('viewBox')?.split(/\s+/)[2])
+	if (!(Number.isFinite(currentWidth) && currentWidth > 0)) return
+
+	const widthFactor = viewWidth / currentWidth
+	if (!(Number.isFinite(widthFactor) && widthFactor > 0)) return
+	if (Math.abs(widthFactor - 1) < 0.01) return
+
+	const rect = floorplan.getBoundingClientRect()
+	floorplan.dispatchEvent(
+		new WheelEvent('wheel', {
+			bubbles: true,
+			cancelable: true,
+			clientX: rect.left + rect.width / 2,
+			clientY: rect.top + rect.height / 2,
+			deltaY: Math.log(widthFactor) / 0.0015,
+		}),
+	)
+}
+
+function focusImportedStreetNetworks(result: OsmImportResult, ids: AnyNodeId[]) {
+	const editor = useEditor.getState()
+	const focus = getImportedStreetFocus(result, getActiveBuildingPose())
+
+	editor.setMode('select')
+	useViewer.getState().setSelection({ selectedIds: ids })
+	if (!focus) {
+		editor.setViewMode('2d')
+		return
+	}
+
+	// Let the host camera perform its supported fit animation first. Once it
+	// settles, open the floorplan, use its north-up action, and feed its native
+	// wheel handler the exact scale required for the imported street bounds.
+	emitter.emit('camera-controls:fit-scene', {
+		bounds: {
+			center: focus.center,
+			max: focus.max,
+			min: focus.min,
+			size: focus.size,
+		},
+	})
+	window.setTimeout(() => {
+		useEditor.getState().setViewMode('2d')
+		window.setTimeout(() => {
+			document
+				.querySelector<HTMLButtonElement>('button[aria-label="Align view to north"]')
+				?.click()
+			window.setTimeout(() => fitOpenFloorplanToWidth(focus.viewWidth), 400)
+		}, 50)
+	}, 450)
+}
+
+type MapImportDialogProps = {
+	activeLevelId: AnyNodeId | null
+	onImported: (review: OsmImportReview) => void
+	onOpenChange: (open: boolean) => void
+	open: boolean
+}
+
+function MapImportDialog({
+	activeLevelId,
+	onImported,
+	onOpenChange,
+	open,
+}: MapImportDialogProps) {
+	const dialogRef = useRef<HTMLDialogElement>(null)
+	const activeRequestRef = useRef<AbortController | null>(null)
+	const [query, setQuery] = useState('')
+	const [results, setResults] = useState<GeocodeResult[]>([])
+	const [center, setCenter] = useState<GeoPoint>({ lat: 20, lon: 0 })
+	const [zoom, setZoom] = useState(DEFAULT_MAP_ZOOM)
+	const [radius, setRadius] = useState(DEFAULT_IMPORT_RADIUS_M)
+	const [prepared, setPrepared] = useState<PreparedOsmImport | null>(null)
+	const [review, setReview] = useState<OsmImportReview | null>(null)
+	const [busy, setBusy] = useState<BusyState | null>(null)
+	const [status, setStatus] = useState<Status | null>(null)
+
+	useEffect(() => {
+		const dialog = dialogRef.current
+		if (!dialog) return
+		if (open && !dialog.open) dialog.showModal()
+		if (!open) {
+			activeRequestRef.current?.abort()
+			if (dialog.open) dialog.close()
+		}
+	}, [open])
+
+	useEffect(() => () => activeRequestRef.current?.abort(), [])
+
+	const close = () => {
+		activeRequestRef.current?.abort()
+		onOpenChange(false)
+	}
+
+	const cancelRequest = () => {
+		if (!activeRequestRef.current) return
+		activeRequestRef.current.abort()
+		setStatus({ kind: 'info', message: 'Request cancelled.' })
+	}
+
+	const recenter = (next: GeoPoint) => {
+		setCenter(next)
+		setPrepared(null)
+		setReview(null)
+		setStatus(null)
+	}
+
+	const changeRadius = (next: number) => {
+		setRadius(next)
+		setPrepared(null)
+		setReview(null)
+		setStatus(null)
+	}
+
+	const selectPlace = (place: GeocodeResult, keepResults = false) => {
+		recenter({ lat: place.lat, lon: place.lon })
+		setZoom(PLACE_ZOOM)
+		if (!keepResults) setResults([])
+		setQuery(place.label)
+	}
+
+	const runSearch = async () => {
+		if (!query.trim() || busy) return
+		const controller = new AbortController()
+		activeRequestRef.current = controller
+		setBusy('search')
+		setStatus(null)
+		try {
+			const places = await searchPlaces(query, { signal: controller.signal })
+			if (activeRequestRef.current !== controller) return
+			setResults(places)
+			const first = places[0]
+			if (first) selectPlace(first, true)
+			else setStatus({ kind: 'error', message: 'No places matched that search.' })
+		} catch (error) {
+			if (activeRequestRef.current !== controller) return
+			setResults([])
+			setStatus(
+				isCancelled(error, controller.signal)
+					? { kind: 'info', message: 'Request cancelled.' }
+					: {
+							kind: 'error',
+							message:
+								error instanceof Error ? error.message : 'Place search failed.',
+						},
+			)
+		} finally {
+			if (activeRequestRef.current === controller) {
+				activeRequestRef.current = null
+				setBusy(null)
+			}
+		}
+	}
+
+	const runImport = async () => {
+		if (!activeLevelId || !prepared || busy) return
+		const controller = new AbortController()
+		activeRequestRef.current = controller
+		setStatus(null)
+		try {
+			const result = await completeOsmStreetImport(prepared, {
+				onPhase: setBusy,
+				signal: controller.signal,
+			})
+			if (activeRequestRef.current !== controller) return
+			controller.signal.throwIfAborted()
+			const finalReview = reviewOsmImport(
+				result,
+				getOsmImportSceneContext(activeLevelId),
+			)
+			if (
+				finalReview.result.graphs.length === 0 &&
+				finalReview.result.assets.length === 0
+			) {
+				setPrepared(null)
+				setReview(null)
+				setStatus({
+					kind: 'info',
+					message:
+						'Nothing was imported because every street and mapped object is already in this level.',
+				})
+				return
+			}
+			const ids = placeOsmImport(
+				finalReview.result,
+				activeLevelId,
+				finalReview.origin,
+			)
+			setPrepared(null)
+			setReview(null)
+			onImported(finalReview)
+			onOpenChange(false)
+			focusImportedStreetNetworks(finalReview.result, ids)
+		} catch (error) {
+			if (activeRequestRef.current !== controller) return
+			setStatus(
+				isCancelled(error, controller.signal)
+					? { kind: 'info', message: 'Request cancelled.' }
+					: {
+							kind: 'error',
+							message:
+								error instanceof Error ? error.message : 'Street import failed.',
+						},
+			)
+		} finally {
+			if (activeRequestRef.current === controller) {
+				activeRequestRef.current = null
+				setBusy(null)
+			}
+		}
+	}
+
+	const runPreview = async () => {
+		if (busy) return
+		const controller = new AbortController()
+		activeRequestRef.current = controller
+		setBusy('preview')
+		setStatus(null)
+		try {
+			const next = await prepareOsmStreetImport(center, radius, {
+				signal: controller.signal,
+			})
+			if (activeRequestRef.current !== controller) return
+			const nextReview = reviewOsmImport(
+				getPreparedOsmStreetImportResult(next),
+				activeLevelId
+					? getOsmImportSceneContext(activeLevelId)
+					: { featureSourceIds: new Set(), networks: [] },
+			)
+			setPrepared(next)
+			setReview(nextReview)
+			const overlapNote =
+				nextReview.duplicateSegments > 0
+					? ` ${roadSegmentLabel(nextReview.duplicateSegments)} already in the editor will be skipped.`
+					: ''
+			const trimNote =
+				nextReview.trimmedSegments > 0
+					? ` ${roadSegmentLabel(nextReview.trimmedSegments)} will be trimmed where they overlap.`
+					: ''
+			const assetCounts = countOsmPointAssets(nextReview.result.assets)
+			const assetSummary = mappedObjectSummary(assetCounts)
+			const assetNote = assetSummary ? ` Also found ${assetSummary}.` : ''
+			const duplicateAssetNote =
+				nextReview.duplicateAssets > 0
+					? ` ${mappedObjectLabel(nextReview.duplicateAssets)} already present will be skipped.`
+					: ''
+			setStatus({
+				kind:
+					nextReview.newSegments > 0 || nextReview.newAssets > 0
+						? 'success'
+						: 'info',
+				message:
+					nextReview.newSegments > 0 || nextReview.newAssets > 0
+						? `Preview ready: ${newRoadSegmentLabel(nextReview.newSegments)} from ${next.preview.wayCount} mapped way${next.preview.wayCount === 1 ? '' : 's'}.${assetNote}${overlapNote}${trimNote}${duplicateAssetNote}`
+						: `All ${roadSegmentLabel(nextReview.incomingSegments)} and ${mappedObjectLabel(nextReview.incomingAssets)} are already in this level. Nothing new to import.`,
+			})
+		} catch (error) {
+			if (activeRequestRef.current !== controller) return
+			setPrepared(null)
+			setReview(null)
+			setStatus(
+				isCancelled(error, controller.signal)
+					? { kind: 'info', message: 'Request cancelled.' }
+					: {
+							kind: 'error',
+							message:
+								error instanceof Error ? error.message : 'Street preview failed.',
+						},
+			)
+		} finally {
+			if (activeRequestRef.current === controller) {
+				activeRequestRef.current = null
+				setBusy(null)
+			}
+		}
+	}
+
+	const importing = busy !== null && busy !== 'search' && busy !== 'preview'
+	const modeLabel = zoom < GLOBE_FLAT_THRESHOLD_ZOOM ? 'Globe' : 'Map'
+
+	return (
+		<dialog
+			aria-describedby="map-import-description"
+			aria-labelledby="map-import-title"
+			className="m-auto h-[min(820px,calc(100dvh-2rem))] w-[min(1120px,calc(100vw-2rem))] max-w-none overflow-hidden rounded-xl border border-border bg-background p-0 text-foreground shadow-2xl backdrop:bg-black/60"
+			onCancel={(event) => {
+				event.preventDefault()
+				close()
+			}}
+			onClose={() => onOpenChange(false)}
+			ref={dialogRef}
+		>
+			<div className="flex h-full min-h-0 flex-col">
+				<header className="flex items-start justify-between gap-4 border-border border-b px-5 py-4">
+					<div className="min-w-0">
+						<h2 className="font-semibold text-base" id="map-import-title">
+							Import streets from map
+						</h2>
+						<p className="mt-1 text-muted-foreground text-xs" id="map-import-description">
+							Search or move the map, then import mapped streets, lamps, signals, and signs inside the circle.
+						</p>
+					</div>
+					<button
+						aria-label="Close map import"
+						className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-md text-muted-foreground text-xl leading-none transition-[background-color,transform] duration-150 hover:bg-accent hover:text-foreground active:scale-[0.94] disabled:cursor-not-allowed disabled:opacity-40"
+						onClick={close}
+						type="button"
+					>
+						<span aria-hidden>×</span>
+					</button>
+				</header>
+
+				<div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_300px] lg:overflow-hidden">
+					<div className="flex min-h-[320px] flex-col gap-3 border-border p-4 lg:min-h-0 lg:border-r">
+						<form
+							className="flex gap-2"
+							onSubmit={(event) => {
+								event.preventDefault()
+								void runSearch()
+							}}
+						>
+							<input
+								autoFocus
+								className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-ring"
+								disabled={busy !== null}
+								onChange={(event) => setQuery(event.target.value)}
+								placeholder="Search a place or paste latitude, longitude"
+								type="search"
+								value={query}
+							/>
+							<button
+								className={SECONDARY_BUTTON_CLASS}
+								disabled={!query.trim() || busy !== null}
+								type="submit"
+							>
+								{busy === 'search' ? 'Searching…' : 'Search'}
+							</button>
+						</form>
+
+						{results.length > 1 && (
+							<div className="grid max-h-28 gap-1 overflow-y-auto rounded-md border border-border bg-background p-1">
+								{results.map((result, index) => (
+									<button
+										className="cursor-pointer truncate rounded px-2 py-1.5 text-left text-xs transition-colors hover:bg-accent"
+										key={`${result.lat}:${result.lon}:${index}`}
+										onClick={() => selectPlace(result)}
+										title={result.label}
+										type="button"
+									>
+										{result.label}
+									</button>
+								))}
+							</div>
+						)}
+
+						<MapGlobeView
+							center={center}
+							className="min-h-[280px] flex-1"
+							disabled={busy !== null}
+							onCenterChange={recenter}
+							onZoomChange={setZoom}
+							radiusMeters={radius}
+							streetPreview={prepared?.preview}
+							zoom={zoom}
+						/>
+					</div>
+
+					<aside className="flex min-h-0 flex-col gap-5 p-5 lg:overflow-y-auto">
+						<section>
+							<p className="font-medium text-sm">Selected location</p>
+							<p className="mt-1 font-mono text-muted-foreground text-xs">
+								{center.lat.toFixed(5)}, {center.lon.toFixed(5)}
+							</p>
+							<p className="mt-1 text-muted-foreground text-xs">{modeLabel} view</p>
+						</section>
+
+						<div className="grid grid-cols-2 gap-2">
+							<button
+								aria-label="Zoom out"
+								className={SECONDARY_BUTTON_CLASS}
+								disabled={busy !== null}
+								onClick={() => setZoom(clampMapZoom(zoom - 1))}
+								type="button"
+							>
+								− Zoom out
+							</button>
+							<button
+								aria-label="Zoom in"
+								className={SECONDARY_BUTTON_CLASS}
+								disabled={busy !== null}
+								onClick={() => setZoom(clampMapZoom(zoom + 1))}
+								type="button"
+							>
+								+ Zoom in
+							</button>
+						</div>
+
+						<div className={busy ? 'pointer-events-none opacity-50' : undefined}>
+							<SliderControl
+								label="Import radius"
+								max={MAX_IMPORT_RADIUS_M}
+								min={MIN_IMPORT_RADIUS_M}
+								onChange={changeRadius}
+								precision={0}
+								restoreOnCommit={false}
+								step={25}
+								unit="m"
+								value={radius}
+							/>
+						</div>
+
+						<div className="rounded-lg border border-border bg-muted/35 p-3 text-muted-foreground text-xs leading-relaxed">
+							Yellow, red, and blue dots preview lamps, traffic signals, and signs. The
+							first import sets this level's map origin; later areas line up with it and
+							keep imported geometry flat on the editor floor.
+						</div>
+
+						{!activeLevelId && (
+							<p className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-amber-700 text-xs dark:text-amber-300">
+								Open a level before importing streets.
+							</p>
+						)}
+
+						{status && (
+							<p
+								className={`rounded-lg border p-3 text-xs leading-relaxed ${
+									status.kind === 'error'
+										? 'border-destructive/30 bg-destructive/10 text-destructive'
+										: status.kind === 'success'
+											? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+											: 'border-border bg-muted/50 text-muted-foreground'
+								}`}
+								role="status"
+							>
+								{status.message}
+							</p>
+						)}
+
+						<div className="mt-auto border-border border-t pt-4">
+							<button
+								className={`${PRIMARY_BUTTON_CLASS} w-full`}
+								disabled={
+									!busy &&
+									prepared !== null &&
+									(!activeLevelId ||
+										(review?.newSegments === 0 && review.newAssets === 0))
+								}
+								onClick={() =>
+									busy
+										? cancelRequest()
+										: prepared
+											? void runImport()
+											: void runPreview()
+								}
+								type="button"
+							>
+								{busy === 'search'
+									? 'Cancel search'
+									: busy === 'preview'
+										? 'Cancel · Fetching street preview…'
+									: importing
+										? `Cancel · ${PHASE_LABELS[busy as OsmImportPhase]}…`
+										: prepared
+											? review?.newSegments === 0 && review.newAssets === 0
+												? 'Nothing new to import'
+												: importSelectionLabel(
+														review?.newSegments ?? prepared.preview.segmentCount,
+														review?.newAssets ?? 0,
+													)
+											: 'Preview streets and objects'}
+							</button>
+							<p className="mt-2 text-center text-[11px] text-muted-foreground">
+								One import creates one undoable editor change.
+							</p>
+						</div>
+					</aside>
+				</div>
+			</div>
+		</dialog>
+	)
+}
+
+export function MapImportSection() {
+	const activeLevelId = useViewer((state) => state.selection.levelId) as AnyNodeId | null
+	const [open, setOpen] = useState(false)
+	const [lastImport, setLastImport] = useState<Status | null>(null)
+
+	return (
+		<>
+			<div className="flex flex-col gap-3 rounded-xl border border-sidebar-border p-3">
+				<div className="flex flex-col gap-0.5">
+					<span className="font-medium text-sidebar-foreground text-sm">Import from map</span>
+					<span className="text-[11px] text-sidebar-foreground/50">
+						Import editable roads, lamps, traffic signals, and signs from a real location.
+					</span>
+				</div>
+				<button
+					className="w-full cursor-pointer rounded-md border border-sidebar-border bg-sidebar px-3 py-2 font-medium text-sidebar-foreground text-xs transition-[background-color,transform] duration-150 hover:bg-sidebar-accent active:scale-[0.98]"
+					onClick={() => {
+						setLastImport(null)
+						setOpen(true)
+					}}
+					type="button"
+				>
+					Open map importer
+				</button>
+				{lastImport && (
+					<p
+						className="text-[11px] text-emerald-600 dark:text-emerald-400"
+						role="status"
+					>
+						{lastImport.message}
+					</p>
+				)}
+			</div>
+
+			<MapImportDialog
+				activeLevelId={activeLevelId}
+				onImported={(review) => {
+					const result = review.result
+					const assetSummary = mappedObjectSummary(
+						countOsmPointAssets(result.assets),
+					)
+					const assetNote = assetSummary ? ` Added ${assetSummary}.` : ''
+					const duplicateNote =
+						review.duplicateSegments > 0
+							? ` Skipped ${roadSegmentLabel(review.duplicateSegments)} already present.`
+							: ''
+					const trimmedNote =
+						review.trimmedSegments > 0
+							? ` Trimmed overlap from ${roadSegmentLabel(review.trimmedSegments)}.`
+							: ''
+					const duplicateAssetNote =
+						review.duplicateAssets > 0
+							? ` Skipped ${mappedObjectLabel(review.duplicateAssets)} already present.`
+							: ''
+					setLastImport({
+						kind: 'success',
+						message: `Imported ${roadSegmentLabel(result.stats.edges)} with ${result.stats.junctions} junction${result.stats.junctions === 1 ? '' : 's'}.${assetNote}${duplicateNote}${trimmedNote}${duplicateAssetNote}`,
+					})
+				}}
+				onOpenChange={setOpen}
+				open={open}
+			/>
+		</>
+	)
+}

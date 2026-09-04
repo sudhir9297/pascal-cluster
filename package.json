@@ -1,7 +1,7 @@
 {
-  "name": "@pascal-app/plugin-streetscape",
+  "name": "@pascal-app/plugin-streetscape-lab",
   "version": "0.1.0",
-  "description": "First-party Pascal plugin for building complete streetscapes with procedural roads, lighting, signs, utilities, and roadside infrastructure.",
+  "description": "Experimental Pascal streetscape plugin for testing procedural roads, lighting, signs, utilities, and roadside infrastructure.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sudhir9297/streetscape-pascal-plugin.git"

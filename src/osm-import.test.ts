@@ -1,0 +1,576 @@
+import { describe, expect, test } from 'bun:test'
+import {
+	applyElevations,
+	buildOverpassQuery,
+	buildRoadGraphFromSegments,
+	buildSegmentsFromWays,
+	computeBoundingBox,
+	completeOsmStreetImport,
+	ensureSimpleSegments,
+	getPreparedOsmStreetImportResult,
+	importStreetsFromOsm,
+	localToGeo,
+	mapOsmTags,
+	parseOverpassResponse,
+	parseOsmMapResponse,
+	prepareOsmStreetImport,
+	projectToLocal,
+	simplifyPolyline,
+	type OsmWay,
+} from './osm-import'
+import { reconcileRoadJunctions } from './road-network-topology'
+import { validateRoadGraph } from './road-network-validation'
+
+const CENTER = { lat: 0, lon: 0 }
+
+function way(
+	id: number,
+	tags: Record<string, string>,
+	points: Array<[nodeId: number, lat: number, lon: number]>,
+): OsmWay {
+	return {
+		id,
+		tags,
+		points: points.map(([nodeId, lat, lon]) => ({ nodeId, lat, lon })),
+	}
+}
+
+describe('mapOsmTags', () => {
+	test('maps highway classes to road classes and style presets', () => {
+		expect(mapOsmTags({ highway: 'residential' })).toMatchObject({
+			roadClass: 'local',
+			styleId: 'local-street',
+		})
+		expect(mapOsmTags({ highway: 'primary' })).toMatchObject({
+			roadClass: 'arterial',
+			styleId: 'arterial',
+		})
+		expect(mapOsmTags({ highway: 'tertiary' })).toMatchObject({
+			roadClass: 'collector',
+			styleId: 'collector',
+		})
+		expect(mapOsmTags({ highway: 'motorway_link' })).toMatchObject({
+			roadClass: 'highway',
+			styleId: 'highway',
+		})
+		expect(mapOsmTags({ highway: 'service' })).toMatchObject({
+			roadClass: 'service',
+			styleId: 'alley',
+		})
+	})
+
+	test('ignores non-road highway values', () => {
+		expect(mapOsmTags({ highway: 'footway' })).toBeNull()
+		expect(mapOsmTags({ highway: 'cycleway' })).toBeNull()
+		expect(mapOsmTags({})).toBeNull()
+	})
+
+	test('maps oneway and roundabout tags to edge direction', () => {
+		expect(mapOsmTags({ highway: 'primary', oneway: 'yes' })?.direction).toBe('forward')
+		expect(mapOsmTags({ highway: 'primary', oneway: '-1' })?.direction).toBe('reverse')
+		expect(mapOsmTags({ highway: 'primary' })?.direction).toBe('both')
+		expect(
+			mapOsmTags({ highway: 'primary', junction: 'roundabout' })?.direction,
+		).toBe('forward')
+	})
+
+	test('maps bridge and layer tags', () => {
+		const bridge = mapOsmTags({ highway: 'primary', bridge: 'yes', layer: '1' })
+		expect(bridge).toMatchObject({ isBridge: true, stackLevel: 1 })
+		const tunnel = mapOsmTags({ highway: 'primary', layer: '-2' })
+		expect(tunnel?.stackLevel).toBe(0)
+		expect(mapOsmTags({ highway: 'primary' })?.isBridge).toBe(false)
+	})
+})
+
+describe('projection', () => {
+	test('round-trips and preserves distances near the center', () => {
+		const point = { lat: 51.5008, lon: -0.1247 }
+		const local = projectToLocal({ lat: 51.5017, lon: -0.1233 }, point)
+		const back = localToGeo(local, point)
+		expect(back.lat).toBeCloseTo(51.5017, 6)
+		expect(back.lon).toBeCloseTo(-0.1233, 6)
+	})
+
+	test('x grows east and z shrinks north', () => {
+		const east = projectToLocal({ lat: 0, lon: 0.001 }, CENTER)
+		expect(east[0]).toBeCloseTo(111.32, 1)
+		expect(east[1]).toBeCloseTo(0, 5)
+		const north = projectToLocal({ lat: 0.001, lon: 0 }, CENTER)
+		expect(north[1]).toBeCloseTo(-111.32, 1)
+	})
+})
+
+describe('computeBoundingBox and query', () => {
+	test('bounding box widens with latitude', () => {
+		const equator = computeBoundingBox({ lat: 0, lon: 0 }, 500)
+		const nordic = computeBoundingBox({ lat: 60, lon: 0 }, 500)
+		expect(equator.north - equator.south).toBeCloseTo(nordic.north - nordic.south, 8)
+		expect(nordic.east - nordic.west).toBeGreaterThan(equator.east - equator.west)
+	})
+
+	test('overpass query filters road classes within the bbox', () => {
+		const query = buildOverpassQuery({ south: 1, west: 2, north: 3, east: 4 })
+		expect(query).toContain('way["highway"~')
+		expect(query).toContain('(1,2,3,4)')
+		expect(query).toContain('out geom')
+		expect(query).toContain('residential')
+		expect(query).toContain('node["highway"="street_lamp"]')
+		expect(query).toContain('node["highway"="traffic_signals"]')
+		expect(query).toContain('node["traffic_sign"]')
+		expect(query).not.toContain('footway')
+	})
+})
+
+describe('parseOverpassResponse', () => {
+	test('parses ways and ignores malformed elements', () => {
+		const ways = parseOverpassResponse({
+			elements: [
+				{ type: 'node', id: 1, lat: 0, lon: 0 },
+				{
+					type: 'way',
+					id: 10,
+					tags: { highway: 'residential' },
+					nodes: [1, 2],
+					geometry: [
+						{ lat: 0, lon: 0 },
+						{ lat: 0.001, lon: 0 },
+					],
+				},
+				{ type: 'way', id: 11, tags: { highway: 'primary' }, nodes: [1, 2, 3], geometry: [{ lat: 0, lon: 0 }] },
+				{ type: 'way', id: 12, nodes: [1, 2], geometry: [{ lat: 0, lon: 0 }, { lat: 1, lon: 1 }] },
+			],
+		})
+		expect(ways).toHaveLength(1)
+		expect(ways[0]).toMatchObject({ id: 10 })
+		expect(ways[0]!.points).toHaveLength(2)
+	})
+
+	test('returns empty for junk payloads', () => {
+		expect(parseOverpassResponse(null)).toEqual([])
+		expect(parseOverpassResponse({ remark: 'timeout' })).toEqual([])
+	})
+
+	test('parses roads and supported point objects from one response', () => {
+		const payload = {
+			elements: [
+				{
+					type: 'way',
+					id: 10,
+					tags: { highway: 'residential' },
+					nodes: [1, 2],
+					geometry: [
+						{ lat: 0, lon: 0 },
+						{ lat: 0, lon: 0.001 },
+					],
+				},
+				{ type: 'node', id: 30, lat: 0, lon: 0.0001, tags: { highway: 'street_lamp' } },
+			],
+		}
+		const parsed = parseOsmMapResponse(payload)
+		expect(parsed.ways).toHaveLength(1)
+		expect(parsed.pointFeatures).toMatchObject([
+			{ kind: 'street-lamp', sourceId: 'node/30' },
+		])
+	})
+})
+
+describe('simplifyPolyline', () => {
+	test('removes collinear points and keeps deviations', () => {
+		const collinear = simplifyPolyline([
+			[0, 0],
+			[5, 0.01],
+			[10, 0],
+			[15, 0.02],
+			[20, 0],
+		])
+		expect(collinear).toHaveLength(2)
+		const bent = simplifyPolyline([
+			[0, 0],
+			[10, 8],
+			[20, 0],
+		])
+		expect(bent).toHaveLength(3)
+	})
+})
+
+describe('buildSegmentsFromWays', () => {
+	test('splits crossing ways at their shared node', () => {
+		const ways = [
+			way(1, { highway: 'residential' }, [
+				[1, 0, -0.001],
+				[2, 0, 0],
+				[3, 0, 0.001],
+			]),
+			way(2, { highway: 'residential' }, [
+				[4, -0.001, 0],
+				[2, 0, 0],
+				[5, 0.001, 0],
+			]),
+		]
+		const { segments, nodePositions } = buildSegmentsFromWays(ways, CENTER, 300)
+		expect(segments).toHaveLength(4)
+		expect(segments.every((s) => s.startId === 'n2' || s.endId === 'n2')).toBe(true)
+		expect(nodePositions.get('n2')![0]).toBeCloseTo(0, 6)
+		expect(nodePositions.get('n2')![1]).toBeCloseTo(0, 6)
+	})
+
+	test('clips ways to the import radius with boundary endpoints', () => {
+		const ways = [
+			way(1, { highway: 'residential' }, [
+				[1, 0, -0.01],
+				[2, 0, 0],
+				[3, 0, 0.01],
+			]),
+		]
+		const { segments, nodePositions } = buildSegmentsFromWays(ways, CENTER, 200)
+		expect(segments).toHaveLength(1)
+		const segment = segments[0]!
+		const start = nodePositions.get(segment.startId)!
+		const end = nodePositions.get(segment.endId)!
+		expect(Math.hypot(start[0], start[1])).toBeCloseTo(200, 0)
+		expect(Math.hypot(end[0], end[1])).toBeCloseTo(200, 0)
+	})
+
+	test('drops ways entirely outside the radius', () => {
+		const ways = [
+			way(1, { highway: 'residential' }, [
+				[1, 0.01, 0.01],
+				[2, 0.011, 0.01],
+			]),
+		]
+		expect(buildSegmentsFromWays(ways, CENTER, 200).segments).toHaveLength(0)
+	})
+
+	test('preserves oneway direction on produced segments', () => {
+		const ways = [
+			way(1, { highway: 'primary', oneway: 'yes' }, [
+				[1, 0, -0.001],
+				[2, 0, 0.001],
+			]),
+		]
+		const { segments } = buildSegmentsFromWays(ways, CENTER, 300)
+		expect(segments[0]!.props.direction).toBe('forward')
+	})
+})
+
+describe('ensureSimpleSegments', () => {
+	const props = mapOsmTags({ highway: 'residential' })!
+
+	test('splits closed loops so no self-edges remain', () => {
+		const nodePositions = new Map<string, readonly [number, number]>([['nA', [0, 0]]])
+		const segments = ensureSimpleSegments(
+			[
+				{
+					startId: 'nA',
+					endId: 'nA',
+					interior: [
+						[10, 0],
+						[10, 10],
+						[0, 10],
+					],
+					props,
+				},
+			],
+			nodePositions as Map<string, [number, number]>,
+		)
+		expect(segments.length).toBeGreaterThanOrEqual(2)
+		expect(segments.every((s) => s.startId !== s.endId)).toBe(true)
+		const pairs = segments.map((s) => [s.startId, s.endId].sort().join('|'))
+		expect(new Set(pairs).size).toBe(pairs.length)
+	})
+
+	test('splits duplicate node pairs apart', () => {
+		const nodePositions = new Map<string, [number, number]>([
+			['nA', [0, 0]],
+			['nB', [20, 0]],
+		])
+		const segments = ensureSimpleSegments(
+			[
+				{ startId: 'nA', endId: 'nB', interior: [], props },
+				{ startId: 'nA', endId: 'nB', interior: [[10, 15]], props },
+			],
+			nodePositions,
+		)
+		expect(segments).toHaveLength(3)
+		const pairs = segments.map((s) => [s.startId, s.endId].sort().join('|'))
+		expect(new Set(pairs).size).toBe(pairs.length)
+	})
+
+	test('merges sub-5cm stubs by aliasing their endpoints', () => {
+		const nodePositions = new Map<string, [number, number]>([
+			['nA', [0, 0]],
+			['nB', [0.01, 0]],
+			['nC', [30, 0]],
+		])
+		const segments = ensureSimpleSegments(
+			[
+				{ startId: 'nA', endId: 'nB', interior: [], props },
+				{ startId: 'nB', endId: 'nC', interior: [], props },
+			],
+			nodePositions,
+		)
+		expect(segments).toHaveLength(1)
+		expect(segments[0]).toMatchObject({ startId: 'nA', endId: 'nC' })
+	})
+
+	test('survives mutual tiny stubs without alias cycles', () => {
+		const nodePositions = new Map<string, [number, number]>([
+			['nA', [0, 0]],
+			['nB', [0.01, 0]],
+			['nC', [30, 0]],
+		])
+		const segments = ensureSimpleSegments(
+			[
+				{ startId: 'nA', endId: 'nB', interior: [], props },
+				{ startId: 'nB', endId: 'nA', interior: [], props },
+				{ startId: 'nA', endId: 'nC', interior: [], props },
+			],
+			nodePositions,
+		)
+		expect(segments).toHaveLength(1)
+		expect(segments[0]!.endId).toBe('nC')
+	})
+})
+
+describe('graph assembly', () => {
+	test('produces a valid road graph with a junction at the crossing', () => {
+		const ways = [
+			way(1, { highway: 'primary', oneway: 'yes' }, [
+				[1, 0, -0.001],
+				[2, 0, 0],
+				[3, 0, 0.001],
+			]),
+			way(2, { highway: 'residential' }, [
+				[4, -0.001, 0],
+				[2, 0, 0],
+				[5, 0.001, 0],
+			]),
+		]
+		const { segments, nodePositions } = buildSegmentsFromWays(ways, CENTER, 300)
+		const simple = ensureSimpleSegments(segments, nodePositions)
+		const { graph } = buildRoadGraphFromSegments(simple, nodePositions)
+		reconcileRoadJunctions(graph)
+		const errors = validateRoadGraph(graph).filter((issue) => issue.severity === 'error')
+		expect(errors).toEqual([])
+		expect(graph.junctions.n2).toBeDefined()
+		expect(Object.keys(graph.edges)).toHaveLength(4)
+		const primaryEdges = Object.values(graph.edges).filter(
+			(edge) => edge.roadClass === 'arterial',
+		)
+		expect(primaryEdges).toHaveLength(2)
+		expect(primaryEdges.every((edge) => edge.direction === 'forward')).toBe(true)
+	})
+
+	test('marks bridge-only nodes and interpolates bridge alignment elevation', () => {
+		const props = mapOsmTags({ highway: 'primary', bridge: 'yes' })!
+		const groundProps = mapOsmTags({ highway: 'primary' })!
+		const nodePositions = new Map<string, [number, number]>([
+			['nA', [0, 0]],
+			['nB', [100, 0]],
+			['nC', [200, 0]],
+		])
+		const { graph, bridgeEdgeIds } = buildRoadGraphFromSegments(
+			[
+				{ startId: 'nA', endId: 'nB', interior: [[50, 0]], props },
+				{ startId: 'nB', endId: 'nC', interior: [[150, 0]], props: groundProps },
+			],
+			nodePositions,
+		)
+		expect(graph.graphNodes.nA!.elevationMode).toBe('bridge')
+		expect(graph.graphNodes.nB!.elevationMode).toBe('ground')
+		expect(bridgeEdgeIds.size).toBe(1)
+		applyElevations(graph, bridgeEdgeIds, (x) => x)
+		const bridgeEdge = Object.values(graph.edges).find((e) => bridgeEdgeIds.has(e.id))!
+		const groundEdge = Object.values(graph.edges).find((e) => !bridgeEdgeIds.has(e.id))!
+		expect(bridgeEdge.alignment[0]![1]).toBeCloseTo(50, 5)
+		expect(groundEdge.alignment[0]![1]).toBeCloseTo(150, 5)
+		expect(graph.graphNodes.nB!.position[1]).toBeCloseTo(100, 5)
+	})
+})
+
+describe('importStreetsFromOsm', () => {
+	const ways = [
+		way(1, { highway: 'residential' }, [
+			[1, 0, -0.001],
+			[2, 0, 0],
+			[3, 0, 0.001],
+		]),
+		way(2, { highway: 'residential' }, [
+			[4, -0.001, 0],
+			[2, 0, 0],
+			[5, 0.001, 0],
+		]),
+	]
+
+	test('returns validated graphs and stats', async () => {
+		const result = await importStreetsFromOsm(CENTER, 300, {
+			loadStreets: async () => ways,
+		})
+		expect(result.graphs).toHaveLength(1)
+		expect(result.stats).toMatchObject({ ways: 2, edges: 4, junctions: 1 })
+		const graph = result.graphs[0]!
+		for (const node of Object.values(graph.graphNodes)) {
+			expect(node.position[1]).toBeCloseTo(0, 5)
+		}
+		expect(
+			validateRoadGraph(graph).filter((issue) => issue.severity === 'error'),
+		).toEqual([])
+	})
+
+	test('prepares clipped preview paths and completes without fetching streets again', async () => {
+		let streetLoads = 0
+		const prepared = await prepareOsmStreetImport(CENTER, 300, {
+			loadStreets: async () => {
+				streetLoads += 1
+				return ways
+			},
+		})
+		expect(prepared.preview).toMatchObject({
+			segmentCount: 4,
+			wayCount: 2,
+		})
+		expect(prepared.preview.paths).toHaveLength(4)
+		expect(getPreparedOsmStreetImportResult(prepared)).toMatchObject({
+			source: {
+				baseElevation: null,
+				center: CENTER,
+				provider: 'openstreetmap',
+				radiusMeters: 300,
+			},
+			stats: { edges: 4 },
+		})
+		for (const path of prepared.preview.paths) {
+			expect(path.points.length).toBeGreaterThanOrEqual(2)
+			for (const point of path.points) {
+				const local = projectToLocal(point, CENTER)
+				expect(Math.hypot(local[0], local[1])).toBeLessThanOrEqual(300.01)
+			}
+		}
+
+		const phases: string[] = []
+		const result = await completeOsmStreetImport(prepared, {
+			onPhase: (phase) => phases.push(phase),
+		})
+		expect(streetLoads).toBe(1)
+		expect(phases).toEqual(['building'])
+		expect(result.stats.edges).toBe(4)
+	})
+
+	test('previews mapped lamps, signals, and signs from the same request', async () => {
+		const prepared = await prepareOsmStreetImport(CENTER, 300, {
+			loadMapData: async (): Promise<ReturnType<typeof parseOsmMapResponse>> => ({
+				pointFeatures: [
+					{
+						kind: 'street-lamp',
+						point: { lat: 0, lon: 0.0001 },
+						sourceId: 'node/101',
+						tags: { height: '8', highway: 'street_lamp' },
+					},
+					{
+						kind: 'traffic-signal',
+						point: { lat: 0, lon: 0.0002 },
+						sourceId: 'node/102',
+						tags: { highway: 'traffic_signals' },
+					},
+					{
+						kind: 'road-sign',
+						point: { lat: 0, lon: 0.0003 },
+						sourceId: 'node/103',
+						tags: { maxspeed: '30', traffic_sign: 'maxspeed' },
+					},
+				],
+				ways,
+			}),
+		})
+		expect(prepared.preview.assetCounts).toEqual({
+			roadSigns: 1,
+			streetLamps: 1,
+			trafficSignals: 1,
+		})
+		expect(getPreparedOsmStreetImportResult(prepared).assets).toHaveLength(3)
+
+		const result = await completeOsmStreetImport(prepared, {
+		})
+		expect(result.assets).toHaveLength(3)
+		expect(result.assets.map((asset) => asset.kind)).toEqual([
+			'street-lamp',
+			'traffic-signal',
+			'road-sign',
+		])
+		expect(result.assets.every((asset) => Math.abs(asset.position[1]) < 1e-6)).toBe(
+			true,
+		)
+		expect(result.assets[2]).toMatchObject({ signId: 'speed-limit', text: '30' })
+	})
+
+	test('omits short fragments from both the preview and final edge count', async () => {
+		const prepared = await prepareOsmStreetImport(CENTER, 300, {
+			loadStreets: async () => [
+				way(1, { highway: 'residential' }, [
+					[1, 0, -0.001],
+					[2, 0, 0.001],
+				]),
+				way(2, { highway: 'service' }, [
+					[3, 0.001, 0],
+					[4, 0.001, 0.00002],
+				]),
+			],
+		})
+		expect(prepared.preview.segmentCount).toBe(1)
+		expect(prepared.preview.paths).toHaveLength(1)
+
+		const result = await completeOsmStreetImport(prepared, {
+		})
+		expect(result.stats.edges).toBe(1)
+		expect(result.stats.droppedComponents).toBe(1)
+	})
+
+	test('reports phases in order', async () => {
+		const phases: string[] = []
+		await importStreetsFromOsm(CENTER, 300, {
+			loadStreets: async () => ways,
+			onPhase: (phase) => phases.push(phase),
+		})
+		expect(phases).toEqual(['streets', 'building'])
+	})
+
+	test('throws a friendly error when the area has no streets', async () => {
+		await expect(
+			importStreetsFromOsm(CENTER, 300, {
+				loadStreets: async () => [],
+			}),
+		).rejects.toThrow(/No streets were found/)
+	})
+
+	test('stops before loading streets when already cancelled', async () => {
+		const controller = new AbortController()
+		controller.abort()
+		let loaded = false
+		await expect(
+			importStreetsFromOsm(CENTER, 300, {
+				loadStreets: async () => {
+					loaded = true
+					return ways
+				},
+				signal: controller.signal,
+			}),
+		).rejects.toMatchObject({ name: 'AbortError' })
+		expect(loaded).toBe(false)
+	})
+
+	test('passes cancellation to the street loader', async () => {
+		const controller = new AbortController()
+		await expect(
+			importStreetsFromOsm(CENTER, 300, {
+				loadStreets: async (_bbox, signal) => {
+					expect(signal).toBe(controller.signal)
+					controller.abort()
+					signal?.throwIfAborted()
+					return ways
+				},
+				signal: controller.signal,
+			}),
+		).rejects.toMatchObject({ name: 'AbortError' })
+	})
+})

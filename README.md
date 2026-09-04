@@ -18,6 +18,30 @@ to a third-party plugin.
 
 ## What it contributes
 
+- **Map street import** — opens a searchable 3D globe and street map from the
+  Roads panel. Choose a 50–600 m radius, preview the clipped OpenStreetMap roads
+  and tagged objects, then import editable road networks, street lamps, traffic
+  signals, and road signs. The importer reuses the previewed data, keeps road
+  classes, one-way direction, junctions, bridges, object direction and lamp
+  height where mapped. Imports currently use a flat editor-floor datum. Common sign tags map to
+  the built-in sign catalog; unknown sign codes use the generic warning sign.
+  After import, the editor selects the new nodes and fits them in a north-up 2D
+  view. The complete import is one
+  undoable editor change. Imports on the same level share a geographic origin,
+  so adjacent selections line up. The preview reports streets already in the
+  editor; importing skips complete road duplicates, trims partial overlaps, and
+  skips objects already imported from the same OpenStreetMap node.
+
+  Standalone hosts use the public map services directly. Production hosts can
+  route geocoding, street data, and raster tiles through one
+  same-origin caching gateway:
+
+  ```ts
+  import { configureMapImportGateway } from '@pascal-app/plugin-streetscape-lab'
+
+  configureMapImportGateway('/api/map')
+  ```
+
 - **`streetscape:road-sign`** — a reusable catalog-driven roadside sign with
   procedural plate geometry, single- or double-post mounting, adjustable sign
   scale and mounting height, editable display text, vector face graphics, a
@@ -108,10 +132,10 @@ to a third-party plugin.
 ## Manifest
 
 ```ts
-import { streetscapePlugin } from '@pascal-app/plugin-streetscape'
+import { streetscapeLabPlugin } from '@pascal-app/plugin-streetscape-lab'
 
-setPluginDiscovery(async () => [streetscapePlugin])
+setPluginDiscovery(async () => [streetscapeLabPlugin])
 ```
 
-The editor app separately imports `streetscapeHostPanel` to surface the
-Streetscape placement panel. Panels are not part of the v1 core plugin manifest.
+The editor app separately imports `streetscapeLabHostPanel` to surface the
+Streetscape Lab placement panel. Panels are not part of the v1 core plugin manifest.

@@ -78,7 +78,7 @@ import {
 
 describe('Streetscape plugin manifest', () => {
   test('exports the stable plugin identity and node kinds', () => {
-    expect(streetscapePlugin.id).toBe('pascal:streetscape')
+    expect(streetscapePlugin.id).toBe('pascal:streetscape-lab')
     expect(streetscapePlugin.apiVersion).toBe(1)
     expect(streetscapePlugin.nodes?.map((definition) => definition.kind)).toEqual([
       'streetscape:road-network',

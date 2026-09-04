@@ -69,8 +69,8 @@ type PluginHostPanel = {
  * mirrors the built-in bundle: `AnyNodeDefinition` is the hand-maintained union
  * today; the registry derives it post-migration.
  */
-export const streetscapePlugin: Plugin = {
-  id: 'pascal:streetscape',
+export const streetscapeLabPlugin: Plugin = {
+  id: 'pascal:streetscape-lab',
   apiVersion: 1,
   nodes: [
     roadNetworkDefinition as unknown as AnyNodeDefinition,
@@ -114,13 +114,13 @@ export const streetscapePlugin: Plugin = {
   ],
 }
 
-export const streetscapeHostPanel: PluginHostPanel = {
-  id: 'pascal:streetscape:streetscape',
-  label: 'Streetscape',
+export const streetscapeLabHostPanel: PluginHostPanel = {
+  id: 'pascal:streetscape-lab:streetscape',
+  label: 'Streetscape Lab',
   icon: { kind: 'url', src: STREETSCAPE_ICON },
   component: () => import('./presets-panel'),
-  pluginId: streetscapePlugin.id,
-  description: 'Procedural systems and assets for building complete outdoor streetscapes.',
+  pluginId: streetscapeLabPlugin.id,
+  description: 'Working version of the streetscape tools for testing new features.',
   creator: {
     name: 'Pascal',
     url: 'https://github.com/sudhir9297',
@@ -128,6 +128,12 @@ export const streetscapeHostPanel: PluginHostPanel = {
   pluginUrl: 'https://github.com/sudhir9297/streetscape-pascal-plugin',
   defaultInstalled: true,
 }
+
+// Keep the original export names for consumers migrating this working copy.
+export const streetscapePlugin = streetscapeLabPlugin
+export const streetscapeHostPanel = streetscapeLabHostPanel
+
+export { configureMapImportGateway } from './map-data-source'
 
 export {
   CobraHeadLightNode,

@@ -57,6 +57,7 @@ import { STANDARD_UTILITY_POLE_AUTO_CONNECT_DISTANCE_M } from './utility-wire-au
 import { RoadNetworkNode, type UtilityPoleAssembly } from './schema'
 import { buildRoadCrossSection, type RoadSideComponentWidthKey } from './road-cross-section'
 import { buildRoadDraftStyle } from './road-draft-style'
+import { MapImportSection } from './map-import-panel'
 import { exportRoadNetworkGraph, importRoadNetworkGraph } from './road-network-io'
 import { planRoadGraphCleanup, type RoadCleanupPlan } from './road-network-cleanup'
 import {
@@ -1043,6 +1044,8 @@ export default function StreetscapePanel() {
               </span>
             )}
           </div>
+
+          <MapImportSection />
 
         </>
       )}
