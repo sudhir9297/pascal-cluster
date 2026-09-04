@@ -520,7 +520,9 @@ export default function StreetscapePanel() {
         catalogLampArmed
       : panelCategory === 'utilities'
         ? utilityPoleArmed || streetInfrastructureArmed
-        : roadSignArmed
+        : panelCategory === 'signs'
+          ? roadSignArmed
+          : false
   const count =
     panelCategory === 'roads'
       ? roadSegmentCount
@@ -536,7 +538,9 @@ export default function StreetscapePanel() {
       : panelCategory === 'utilities'
         ? utilityPoleCount
           + Object.values(streetInfrastructureCounts).reduce((total, value) => total + value, 0)
-        : roadSignCount
+        : panelCategory === 'signs'
+          ? roadSignCount
+          : 0
   const roadDraftStyle = useMemo(() => applyRoadAutoInfrastructureClearances(buildRoadDraftStyle({
     laneCount: roadLaneCount,
     laneWidth: roadLaneWidth,
@@ -669,6 +673,7 @@ export default function StreetscapePanel() {
             { label: 'Lights', value: 'lighting' },
             { label: 'Signs', value: 'signs' },
             { label: 'Utilities', value: 'utilities' },
+            { label: 'Map', value: 'map' },
           ]}
           value={panelCategory}
         />
@@ -677,7 +682,9 @@ export default function StreetscapePanel() {
             ? roadNetworkArmed
               ? 'Click the ground to set road points. Enter or double-click finishes the path.'
               : 'Click or drag Road into the scene, then set two or more points.'
-            : panelCategory === 'signs' && roadSignArmed
+            : panelCategory === 'map'
+              ? 'Search a location, preview mapped streets and objects, then import them into the current level.'
+              : panelCategory === 'signs' && roadSignArmed
               ? 'Click repeatedly to place signs. Press Esc to stop.'
               : armed
                   ? 'Click repeatedly to place. Press Esc to stop.'
@@ -688,6 +695,19 @@ export default function StreetscapePanel() {
                       : 'Choose a utility asset, then click the ground to place it.'}
         </p>
       </header>
+
+      {panelCategory === 'map' && (
+        <section className="flex flex-col gap-4 rounded-xl border border-sidebar-border bg-sidebar-accent/20 p-3">
+          <div className="flex flex-col gap-1">
+            <h3 className="font-medium text-sidebar-foreground text-sm">Import from OpenStreetMap</h3>
+            <p className="text-[11px] leading-relaxed text-sidebar-foreground/55">
+              Bring real streets and mapped roadside objects into the current level. The importer
+              opens in a focused map workspace so the search, preview, and import controls stay together.
+            </p>
+          </div>
+          <MapImportSection />
+        </section>
+      )}
 
       {panelCategory === 'roads' && (
         <>
@@ -1044,8 +1064,6 @@ export default function StreetscapePanel() {
               </span>
             )}
           </div>
-
-          <MapImportSection />
 
         </>
       )}

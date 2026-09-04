@@ -19,7 +19,8 @@ export type StreetscapePanelCategory =
 	| "roads"
 	| "lighting"
 	| "signs"
-	| "utilities";
+	| "utilities"
+	| "map";
 export type RoadAlignmentMode = "straight" | "spline";
 export type RoadCrossSectionEditorTab = "roadway" | RoadSide;
 export type RoadElevationMode = "ground" | "bridge";

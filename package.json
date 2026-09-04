@@ -65,6 +65,7 @@
   "type": "module",
   "types": "./src/index.ts",
   "dependencies": {
+    "lucide-react": "^1.41.0",
     "maplibre-gl": "^6.7.0"
   }
 }

@@ -1,9 +1,10 @@
 'use client'
 
 import { type AnyNodeId, emitter } from '@pascal-app/core'
-import { getActiveBuildingPose, SliderControl, useEditor } from '@pascal-app/editor'
+import { getActiveBuildingPose, useEditor } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useEffect, useRef, useState } from 'react'
+import './map-import-panel.css'
 import { MapGlobeView } from './map-globe-view'
 import {
 	clampMapZoom,
@@ -35,9 +36,9 @@ import {
 import { countOsmPointAssets, type OsmPointAssetCounts } from './osm-point-assets'
 
 const SECONDARY_BUTTON_CLASS =
-	'cursor-pointer rounded-md border border-border bg-background px-3 py-2 font-medium text-sm transition-[background-color,transform] duration-150 hover:bg-accent active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100'
+	'map-button cursor-pointer disabled:active:scale-100'
 const PRIMARY_BUTTON_CLASS =
-	'cursor-pointer rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground text-sm transition-[opacity,transform] duration-150 hover:opacity-90 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100'
+	'map-button-primary cursor-pointer disabled:active:scale-100'
 
 const PHASE_LABELS: Record<OsmImportPhase, string> = {
 	streets: 'Fetching streets and mapped objects',
@@ -46,6 +47,18 @@ const PHASE_LABELS: Record<OsmImportPhase, string> = {
 
 /** Street-level zoom so a searched place lands in the flat map, not the globe. */
 const PLACE_ZOOM = 15
+
+/** Choose a street-level zoom that keeps the complete import circle visible. */
+function fitZoomForRadius(centerLat: number, radiusMeters: number): number {
+	const earthCircumferenceMeters = 40_075_016.686
+	const targetDiameterPixels = 210
+	const latitudeScale = Math.max(0.15, Math.cos((centerLat * Math.PI) / 180))
+	const zoom = Math.log2(
+		(earthCircumferenceMeters * latitudeScale * targetDiameterPixels) /
+			(512 * 2 * Math.max(1, radiusMeters)),
+	)
+	return clampMapZoom(zoom)
+}
 
 type Status = { kind: 'success' | 'error' | 'info'; message: string }
 type BusyState = 'search' | 'preview' | OsmImportPhase
@@ -172,6 +185,7 @@ function MapImportDialog({
 	const [prepared, setPrepared] = useState<PreparedOsmImport | null>(null)
 	const [review, setReview] = useState<OsmImportReview | null>(null)
 	const [busy, setBusy] = useState<BusyState | null>(null)
+	const [locating, setLocating] = useState(false)
 	const [status, setStatus] = useState<Status | null>(null)
 
 	useEffect(() => {
@@ -206,16 +220,48 @@ function MapImportDialog({
 
 	const changeRadius = (next: number) => {
 		setRadius(next)
+		setZoom(fitZoomForRadius(center.lat, next))
 		setPrepared(null)
 		setReview(null)
 		setStatus(null)
 	}
 
 	const selectPlace = (place: GeocodeResult, keepResults = false) => {
-		recenter({ lat: place.lat, lon: place.lon })
-		setZoom(PLACE_ZOOM)
+		const nextCenter = { lat: place.lat, lon: place.lon }
+		recenter(nextCenter)
+		setZoom(Math.max(fitZoomForRadius(nextCenter.lat, radius), PLACE_ZOOM - 1))
 		if (!keepResults) setResults([])
 		setQuery(place.label)
+	}
+
+	const useMyLocation = () => {
+		if (!navigator.geolocation || busy || locating) return
+		setLocating(true)
+		setStatus(null)
+		navigator.geolocation.getCurrentPosition(
+			(position) => {
+				const nextCenter = {
+					lat: position.coords.latitude,
+					lon: position.coords.longitude,
+				}
+				recenter(nextCenter)
+				setResults([])
+				setQuery('')
+				setZoom(fitZoomForRadius(nextCenter.lat, radius))
+				setLocating(false)
+			},
+			(error) => {
+				setLocating(false)
+				setStatus({
+					kind: 'error',
+					message:
+						error.code === error.PERMISSION_DENIED
+							? 'Location access was denied. Allow it in your browser settings to use this option.'
+							: 'Your current location could not be determined.',
+				})
+			},
+			{ enableHighAccuracy: false, maximumAge: 60_000, timeout: 10_000 },
+		)
 	}
 
 	const runSearch = async () => {
@@ -379,9 +425,17 @@ function MapImportDialog({
 
 	return (
 		<dialog
-			aria-describedby="map-import-description"
-			aria-labelledby="map-import-title"
-			className="m-auto h-[min(820px,calc(100dvh-2rem))] w-[min(1120px,calc(100vw-2rem))] max-w-none overflow-hidden rounded-xl border border-border bg-background p-0 text-foreground shadow-2xl backdrop:bg-black/60"
+			aria-label="Import streets from map"
+			className="streetscape-map-dialog m-auto h-[min(820px,calc(100dvh-2rem))] w-[min(1120px,calc(100vw-2rem))] max-w-none overflow-hidden rounded-xl border border-border bg-background p-0 text-foreground shadow-2xl backdrop:bg-black/60"
+			style={{
+				height: 'min(820px, calc(100dvh - 2rem))',
+				width: 'min(1120px, calc(100vw - 2rem))',
+				left: '50%',
+				margin: 0,
+				position: 'fixed',
+				top: '50%',
+				transform: 'translate(-50%, -50%)',
+			}}
 			onCancel={(event) => {
 				event.preventDefault()
 				close()
@@ -389,19 +443,35 @@ function MapImportDialog({
 			onClose={() => onOpenChange(false)}
 			ref={dialogRef}
 		>
-			<div className="flex h-full min-h-0 flex-col">
-				<header className="flex items-start justify-between gap-4 border-border border-b px-5 py-4">
-					<div className="min-w-0">
-						<h2 className="font-semibold text-base" id="map-import-title">
-							Import streets from map
-						</h2>
-						<p className="mt-1 text-muted-foreground text-xs" id="map-import-description">
-							Search or move the map, then import mapped streets, lamps, signals, and signs inside the circle.
-						</p>
-					</div>
+			<div className="flex h-full min-h-0 flex-col" style={{ height: '100%' }}>
+				<header className="flex items-center gap-3 border-border border-b px-5 py-3">
+					<form
+						className="flex min-w-0 flex-1 gap-2"
+						onSubmit={(event) => {
+							event.preventDefault()
+							void runSearch()
+						}}
+					>
+						<input
+							autoFocus
+							className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-ring"
+							disabled={busy !== null}
+							onChange={(event) => setQuery(event.target.value)}
+							placeholder="Search a place or paste latitude, longitude"
+							type="search"
+							value={query}
+						/>
+						<button
+							className={SECONDARY_BUTTON_CLASS}
+							disabled={!query.trim() || busy !== null}
+							type="submit"
+						>
+							{busy === 'search' ? 'Searching…' : 'Search'}
+						</button>
+					</form>
 					<button
 						aria-label="Close map import"
-						className="grid size-8 shrink-0 cursor-pointer place-items-center rounded-md text-muted-foreground text-xl leading-none transition-[background-color,transform] duration-150 hover:bg-accent hover:text-foreground active:scale-[0.94] disabled:cursor-not-allowed disabled:opacity-40"
+						className="map-close grid size-8 shrink-0 cursor-pointer place-items-center rounded-md text-muted-foreground text-xl leading-none transition-[background-color,transform] duration-150 hover:bg-accent hover:text-foreground active:scale-[0.94] disabled:cursor-not-allowed disabled:opacity-40"
 						onClick={close}
 						type="button"
 					>
@@ -409,33 +479,8 @@ function MapImportDialog({
 					</button>
 				</header>
 
-				<div className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_300px] lg:overflow-hidden">
-					<div className="flex min-h-[320px] flex-col gap-3 border-border p-4 lg:min-h-0 lg:border-r">
-						<form
-							className="flex gap-2"
-							onSubmit={(event) => {
-								event.preventDefault()
-								void runSearch()
-							}}
-						>
-							<input
-								autoFocus
-								className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none placeholder:text-muted-foreground focus:border-ring"
-								disabled={busy !== null}
-								onChange={(event) => setQuery(event.target.value)}
-								placeholder="Search a place or paste latitude, longitude"
-								type="search"
-								value={query}
-							/>
-							<button
-								className={SECONDARY_BUTTON_CLASS}
-								disabled={!query.trim() || busy !== null}
-								type="submit"
-							>
-								{busy === 'search' ? 'Searching…' : 'Search'}
-							</button>
-						</form>
-
+				<div className="map-workspace grid min-h-0 flex-1 grid-cols-1 overflow-y-auto md:grid-cols-[minmax(0,1fr)_300px] md:overflow-hidden" style={{ gridTemplateColumns: 'minmax(0, 1fr) 300px', overflow: 'hidden' }}>
+					<div className="flex min-w-0 min-h-[320px] flex-col gap-3 border-border p-4 md:min-h-0 md:border-r" style={{ minHeight: 0, height: '100%' }}>
 						{results.length > 1 && (
 							<div className="grid max-h-28 gap-1 overflow-y-auto rounded-md border border-border bg-background p-1">
 								{results.map((result, index) => (
@@ -460,11 +505,12 @@ function MapImportDialog({
 							onZoomChange={setZoom}
 							radiusMeters={radius}
 							streetPreview={prepared?.preview}
+							style={{ minHeight: 320, height: '100%', flex: 1 }}
 							zoom={zoom}
 						/>
 					</div>
 
-					<aside className="flex min-h-0 flex-col gap-5 p-5 lg:overflow-y-auto">
+					<aside className="map-sidebar flex min-w-0 min-h-0 flex-col gap-5 overflow-y-auto p-5">
 						<section>
 							<p className="font-medium text-sm">Selected location</p>
 							<p className="mt-1 font-mono text-muted-foreground text-xs">
@@ -472,6 +518,16 @@ function MapImportDialog({
 							</p>
 							<p className="mt-1 text-muted-foreground text-xs">{modeLabel} view</p>
 						</section>
+						<button
+							className={`${SECONDARY_BUTTON_CLASS} w-full`}
+				disabled={
+					busy !== null || locating || typeof navigator === 'undefined' || !navigator.geolocation
+				}
+							onClick={useMyLocation}
+							type="button"
+						>
+							{locating ? 'Finding your location…' : 'Use my location'}
+						</button>
 
 						<div className="grid grid-cols-2 gap-2">
 							<button
@@ -493,22 +549,68 @@ function MapImportDialog({
 								+ Zoom in
 							</button>
 						</div>
+						<button
+							className={`${SECONDARY_BUTTON_CLASS} w-full`}
+							disabled={busy !== null}
+							onClick={() => setZoom(fitZoomForRadius(center.lat, radius))}
+							type="button"
+						>
+							Fit import radius
+						</button>
 
-						<div className={busy ? 'pointer-events-none opacity-50' : undefined}>
-							<SliderControl
-								label="Import radius"
+						<div className={`map-radius-control ${busy ? 'pointer-events-none opacity-50' : ''}`}>
+							<div className="map-radius-heading">
+								<label htmlFor="streetscape-import-radius">Import radius</label>
+								<output htmlFor="streetscape-import-radius">{radius} m</output>
+							</div>
+							<input
+								aria-label="Import radius"
+								id="streetscape-import-radius"
 								max={MAX_IMPORT_RADIUS_M}
 								min={MIN_IMPORT_RADIUS_M}
-								onChange={changeRadius}
-								precision={0}
-								restoreOnCommit={false}
+								onChange={(event) => changeRadius(Number(event.target.value))}
 								step={25}
-								unit="m"
+								type="range"
 								value={radius}
 							/>
+							<div className="map-radius-scale" aria-hidden="true">
+								<span>{MIN_IMPORT_RADIUS_M} m</span>
+								<span>{MAX_IMPORT_RADIUS_M} m</span>
+							</div>
 						</div>
 
-						<div className="rounded-lg border border-border bg-muted/35 p-3 text-muted-foreground text-xs leading-relaxed">
+						{prepared && review && (
+							<section className="map-card rounded-lg border border-border bg-muted/35 p-3" aria-label="Import data summary">
+								<p className="font-medium text-sm">Import summary</p>
+								<div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+									<div className="flex justify-between gap-2">
+										<span className="text-muted-foreground">Mapped ways</span>
+										<span className="font-medium">{prepared.preview.wayCount}</span>
+									</div>
+									<div className="flex justify-between gap-2">
+										<span className="text-muted-foreground">Street segments</span>
+										<span className="font-medium">{review.newSegments} new</span>
+									</div>
+									<div className="flex justify-between gap-2">
+										<span className="text-muted-foreground">Mapped objects</span>
+										<span className="font-medium">{review.newAssets} new</span>
+									</div>
+									<div className="flex justify-between gap-2">
+										<span className="text-muted-foreground">Import radius</span>
+										<span className="font-medium">{radius} m</span>
+									</div>
+								</div>
+								{(review.duplicateSegments > 0 || review.duplicateAssets > 0 || review.trimmedSegments > 0) && (
+									<p className="mt-2 border-border border-t pt-2 text-muted-foreground text-[11px] leading-relaxed">
+										{review.duplicateSegments > 0 && `${review.duplicateSegments} duplicate segment${review.duplicateSegments === 1 ? '' : 's'} skipped. `}
+										{review.duplicateAssets > 0 && `${review.duplicateAssets} duplicate object${review.duplicateAssets === 1 ? '' : 's'} skipped. `}
+										{review.trimmedSegments > 0 && `${review.trimmedSegments} segment${review.trimmedSegments === 1 ? '' : 's'} clipped to the import boundary.`}
+									</p>
+								)}
+							</section>
+						)}
+
+						<div className="map-card rounded-lg border border-border bg-muted/35 p-3 text-muted-foreground text-xs leading-relaxed">
 							Yellow, red, and blue dots preview lamps, traffic signals, and signs. The
 							first import sets this level's map origin; later areas line up with it and
 							keep imported geometry flat on the editor floor.
@@ -586,11 +688,11 @@ export function MapImportSection() {
 	return (
 		<>
 			<button
-				className="w-full cursor-pointer rounded-md border border-sidebar-border bg-sidebar px-3 py-2 font-medium text-sidebar-foreground text-xs transition-[background-color,transform] duration-150 hover:bg-sidebar-accent active:scale-[0.98]"
+				className="w-full cursor-pointer rounded-lg border border-sidebar-border bg-sidebar px-3 py-2.5 font-medium text-sidebar-foreground text-xs transition-[background-color,transform] duration-150 hover:bg-sidebar-accent active:scale-[0.98]"
 				onClick={() => setOpen(true)}
-			type="button"
-		>
-				Open map importer
+				type="button"
+			>
+				Open map workspace
 			</button>
 
 			<MapImportDialog

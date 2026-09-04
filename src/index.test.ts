@@ -919,7 +919,7 @@ describe('Streetscape plugin manifest', () => {
     store.setRoadAutoInfrastructureItem('streetscape:fire-hydrant', true)
   })
 
-  test('separates roads, lighting, signs, and utility assets into panel categories', () => {
+  test('separates roads, lighting, signs, utilities, and map import into panel categories', () => {
     expect(useStreetscapeStore.getState().panelCategory).toBe('roads')
     useStreetscapeStore.getState().setPanelCategory('roads')
     expect(useStreetscapeStore.getState().panelCategory).toBe('roads')
@@ -927,6 +927,8 @@ describe('Streetscape plugin manifest', () => {
     expect(useStreetscapeStore.getState().panelCategory).toBe('signs')
     useStreetscapeStore.getState().setPanelCategory('utilities')
     expect(useStreetscapeStore.getState().panelCategory).toBe('utilities')
+    useStreetscapeStore.getState().setPanelCategory('map')
+    expect(useStreetscapeStore.getState().panelCategory).toBe('map')
     useStreetscapeStore.getState().setPanelCategory('lighting')
     expect(useStreetscapeStore.getState().postTopLightOn).toBe(false)
     expect(useStreetscapeStore.getState().heritageCrookLightOn).toBe(false)

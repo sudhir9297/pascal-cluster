@@ -76,7 +76,7 @@ export function getStreetRequest(
 	}
 }
 
-export function getRasterTileUrl(zoom: number, x: number, y: number): string {
+export function getRasterTileUrl(zoom: number | string, x: number | string, y: number | string): string {
 	return gatewayBaseUrl
 		? `${gatewayBaseUrl}/tiles/${zoom}/${x}/${y}`
 		: `${OSM_TILE_ENDPOINT}/${zoom}/${x}/${y}.png`
