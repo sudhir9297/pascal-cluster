@@ -1,8 +1,8 @@
 'use client'
 
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import * as THREE from 'three'
+import * as MapLibreGL from 'maplibre-gl'
+import 'maplibre-gl/dist/maplibre-gl.css'
 import {
 	clampMapZoom,
 	GLOBE_FLAT_THRESHOLD_ZOOM,
@@ -10,16 +10,12 @@ import {
 	MAX_MAP_ZOOM,
 	metersPerPixel,
 	MIN_MAP_ZOOM,
-	osmTileUrl,
 	tileOffsetFromCenter,
-	tileFractionToLatLon,
 } from './map-tiles'
-import { type GeoPoint, latLonToTileFraction } from './osm-elevation'
+import { type GeoPoint } from './osm-elevation'
 import type { OsmStreetPreview, OsmStreetPreviewPath } from './osm-import'
 
 const MAX_LAT = 85.05112878
-const GLOBE_TEXTURE_ZOOM = 2
-const FLAT_TILE_RADIUS = 2
 /** Approximate number of tiles spanning the canvas height, for pan scaling. */
 const TILES_PER_VIEW = 3
 
@@ -41,140 +37,137 @@ const OBJECT_COLOR = {
 	'traffic-signal': '#f87171',
 } as const
 
-const textureLoader = new THREE.TextureLoader()
-textureLoader.setCrossOrigin('anonymous')
+const MAPCN_STYLE = 'https://tiles.openfreemap.org/styles/bright'
 
-const tileTextureCache = new Map<string, THREE.Texture>()
-
-function loadTileTexture(zoom: number, x: number, y: number): THREE.Texture {
-	const key = `${zoom}/${x}/${y}`
-	const cached = tileTextureCache.get(key)
-	if (cached) return cached
-	const texture = textureLoader.load(osmTileUrl(zoom, x, y))
-	texture.colorSpace = THREE.SRGBColorSpace
-	tileTextureCache.set(key, texture)
-	return texture
+function forceEnglishLabels(map: MapLibreGL.Map) {
+	for (const layer of map.getStyle().layers) {
+		if (layer.type !== 'symbol' || !layer.layout?.['text-field']) continue
+		map.setLayoutProperty(layer.id, 'text-field', [
+			'coalesce',
+			['get', 'name:en'],
+			['get', 'name_en'],
+			['get', 'name:latin'],
+		])
+	}
 }
 
-let sharedGlobeTexture: THREE.CanvasTexture | null = null
+/** MapCN's core pattern: MapLibre owns the camera and its native interaction loop. */
+function MapCnGlobe({
+	center,
+	disabled,
+	onCenterChange,
+	onZoomChange,
+	zoom,
+}: {
+	center: GeoPoint
+	disabled: boolean
+	onCenterChange: (center: GeoPoint) => void
+	onZoomChange: (zoom: number) => void
+	zoom: number
+}) {
+	const containerRef = useRef<HTMLDivElement>(null)
+	const mapRef = useRef<MapLibreGL.Map | null>(null)
+	const projectionRef = useRef<'globe' | 'mercator' | null>(null)
+	const onCenterChangeRef = useRef(onCenterChange)
+	const onZoomChangeRef = useRef(onZoomChange)
+	onCenterChangeRef.current = onCenterChange
+	onZoomChangeRef.current = onZoomChange
 
-/** Stitches the low-zoom OSM tiles into one Mercator texture for the sphere. */
-function useGlobeTexture(): THREE.CanvasTexture | null {
-	const [texture, setTexture] = useState(sharedGlobeTexture)
 	useEffect(() => {
-		if (sharedGlobeTexture) {
-			setTexture(sharedGlobeTexture)
-			return
+		if (!containerRef.current || mapRef.current) return
+		if (!MapLibreGL.getWorkerUrl()) {
+			MapLibreGL.setWorkerUrl(
+				`https://unpkg.com/maplibre-gl@${MapLibreGL.getVersion()}/dist/maplibre-gl-worker.mjs`,
+			)
 		}
-		const tiles = 2 ** GLOBE_TEXTURE_ZOOM
-		const size = 256
-		const canvas = document.createElement('canvas')
-		canvas.width = tiles * size
-		canvas.height = tiles * size
-		const context = canvas.getContext('2d')
-		if (!context) return
-		context.fillStyle = '#0b1a2b'
-		context.fillRect(0, 0, canvas.width, canvas.height)
-		const texture = new THREE.CanvasTexture(canvas)
-		texture.colorSpace = THREE.SRGBColorSpace
-		sharedGlobeTexture = texture
-		setTexture(texture)
-		for (let x = 0; x < tiles; x++) {
-			for (let y = 0; y < tiles; y++) {
-				const image = new Image()
-				image.crossOrigin = 'anonymous'
-				image.onload = () => {
-					context.drawImage(image, x * size, y * size, size, size)
-					texture.needsUpdate = true
-				}
-				image.src = osmTileUrl(GLOBE_TEXTURE_ZOOM, x, y)
-			}
+		const map = new MapLibreGL.Map({
+			attributionControl: false,
+			center: [center.lon, center.lat],
+			container: containerRef.current,
+			fadeDuration: 0,
+			interactive: true,
+			maxPitch: 0,
+			dragRotate: false,
+			pitchWithRotate: false,
+			renderWorldCopies: false,
+			touchPitch: false,
+			style: MAPCN_STYLE,
+			zoom,
+		})
+		if (disabled) {
+			map.dragPan.disable()
+			map.scrollZoom.disable()
+			map.touchZoomRotate.disable()
+		}
+		map.doubleClickZoom.disable()
+		map.boxZoom.disable()
+		map.once('load', () => {
+			forceEnglishLabels(map)
+			const projection = map.getZoom() < GLOBE_FLAT_THRESHOLD_ZOOM ? 'globe' : 'mercator'
+			map.setProjection({ type: projection })
+			projectionRef.current = projection
+		})
+		map.on('moveend', () => {
+			const nextCenter = map.getCenter()
+			onCenterChangeRef.current({
+				lat: Math.max(-MAX_LAT, Math.min(MAX_LAT, nextCenter.lat)),
+				lon: ((nextCenter.lng + 540) % 360) - 180,
+			})
+			onZoomChangeRef.current(clampMapZoom(map.getZoom()))
+		})
+		mapRef.current = map
+		const resizeObserver = new ResizeObserver(() => map.resize())
+		resizeObserver.observe(containerRef.current)
+		map.resize()
+		return () => {
+			resizeObserver.disconnect()
+			map.remove()
+			mapRef.current = null
+			projectionRef.current = null
 		}
 	}, [])
-	return texture
-}
 
-function globeOpacity(zoom: number): number {
-	return THREE.MathUtils.clamp(GLOBE_FLAT_THRESHOLD_ZOOM - zoom, 0, 1)
-}
-
-function flatOpacity(zoom: number): number {
-	return THREE.MathUtils.clamp(zoom - (GLOBE_FLAT_THRESHOLD_ZOOM - 1), 0, 1)
-}
-
-function Globe({ center, zoom }: { center: GeoPoint; zoom: number }) {
-	const texture = useGlobeTexture()
-	const meshRef = useRef<THREE.Mesh>(null)
-	const materialRef = useRef<THREE.MeshBasicMaterial>(null)
-	useFrame(() => {
-		if (meshRef.current) {
-			meshRef.current.rotation.y = -THREE.MathUtils.degToRad(center.lon) - Math.PI / 2
-			meshRef.current.rotation.x = THREE.MathUtils.degToRad(center.lat)
+	useEffect(() => {
+		const map = mapRef.current
+		if (!map) return
+		if (disabled) {
+			map.dragPan.disable()
+			map.scrollZoom.disable()
+			map.touchZoomRotate.disable()
+		} else {
+			map.dragPan.enable()
+			map.scrollZoom.enable()
+			map.touchZoomRotate.enable()
 		}
-		if (materialRef.current) materialRef.current.opacity = globeOpacity(zoom)
-	})
-	if (globeOpacity(zoom) <= 0) return null
-	return (
-		<mesh ref={meshRef}>
-			<sphereGeometry args={[1, 64, 64]} />
-			<meshBasicMaterial
-				ref={materialRef}
-				map={texture ?? undefined}
-				color={texture ? '#ffffff' : '#1d4ed8'}
-				transparent
-			/>
-		</mesh>
-	)
-}
+		map.doubleClickZoom.disable()
+		map.boxZoom.disable()
+	}, [disabled])
 
-function FlatMap({ center, zoom }: { center: GeoPoint; zoom: number }) {
-	const tileZoom = Math.round(clampMapZoom(zoom))
-	const fraction = latLonToTileFraction(center, tileZoom)
-	const scale = 2 ** tileZoom
-	const opacity = flatOpacity(zoom)
-	if (opacity <= 0) return null
-	const quads: Array<{ key: string; x: number; y: number; texture: THREE.Texture }> = []
-	const centerX = Math.floor(fraction.x)
-	const centerY = Math.floor(fraction.y)
-	for (let dx = -FLAT_TILE_RADIUS; dx <= FLAT_TILE_RADIUS; dx++) {
-		for (let dy = -FLAT_TILE_RADIUS; dy <= FLAT_TILE_RADIUS; dy++) {
-			const tileX = centerX + dx
-			const tileY = centerY + dy
-			if (tileY < 0 || tileY >= scale) continue
-			const wrappedX = ((tileX % scale) + scale) % scale
-			quads.push({
-				key: `${tileX}:${tileY}`,
-				x: tileX + 0.5 - fraction.x,
-				y: -(tileY + 0.5 - fraction.y),
-				texture: loadTileTexture(tileZoom, wrappedX, tileY),
-			})
+	useEffect(() => {
+		const map = mapRef.current
+		if (!map || !map.isStyleLoaded()) return
+		const currentCenter = map.getCenter()
+		const centerChanged =
+			Math.abs(currentCenter.lat - center.lat) > 0.00001 ||
+			Math.abs(currentCenter.lng - center.lon) > 0.00001
+		const zoomChanged = Math.abs(map.getZoom() - zoom) > 0.001
+		if (centerChanged || zoomChanged) map.jumpTo({ center: [center.lon, center.lat], zoom })
+		const projection = zoom < GLOBE_FLAT_THRESHOLD_ZOOM ? 'globe' : 'mercator'
+		if (projectionRef.current !== projection) {
+			map.setProjection({ type: projection })
+			projectionRef.current = projection
 		}
-	}
-	return (
-		<group>
-			{quads.map((quad) => (
-				<mesh key={quad.key} position={[quad.x, quad.y, 0]}>
-					<planeGeometry args={[1, 1]} />
-					<meshBasicMaterial map={quad.texture} transparent opacity={opacity} />
-				</mesh>
-			))}
-		</group>
-	)
-}
+	}, [center.lat, center.lon, zoom])
 
-function CameraRig({ zoom }: { zoom: number }) {
-	const { camera } = useThree()
-	useFrame(() => {
-		const target =
-			zoom >= GLOBE_FLAT_THRESHOLD_ZOOM
-				? 3.2
-				: THREE.MathUtils.mapLinear(THREE.MathUtils.clamp(zoom, 1, 5), 1, 5, 3.6, 2.4)
-		camera.position.z = THREE.MathUtils.lerp(camera.position.z, target, 0.2)
-		camera.position.x = 0
-		camera.position.y = 0
-		camera.lookAt(0, 0, 0)
-	})
-	return null
+	return (
+		<div
+			aria-hidden
+			className="absolute inset-0 bg-white transition-opacity duration-300"
+			style={{ pointerEvents: 'auto' }}
+		>
+			<div className="h-full w-full" ref={containerRef} />
+		</div>
+	)
 }
 
 export type MapGlobeViewProps = {
@@ -199,7 +192,6 @@ export function MapGlobeView({
 	streetPreview = null,
 }: MapGlobeViewProps) {
 	const containerRef = useRef<HTMLDivElement>(null)
-	const dragRef = useRef<{ x: number; y: number } | null>(null)
 	const [containerSize, setContainerSize] = useState({ height: 0, width: 0 })
 
 	useEffect(() => {
@@ -212,56 +204,6 @@ export function MapGlobeView({
 		observer.observe(node)
 		return () => observer.disconnect()
 	}, [])
-
-	const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-		if (disabled) return
-		dragRef.current = { x: event.clientX, y: event.clientY }
-		event.currentTarget.setPointerCapture(event.pointerId)
-	}
-
-	const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-		if (disabled) return
-		const start = dragRef.current
-		if (!start) return
-		const dx = event.clientX - start.x
-		const dy = event.clientY - start.y
-		dragRef.current = { x: event.clientX, y: event.clientY }
-		const height = containerRef.current?.clientHeight ?? 200
-
-		if (zoom < GLOBE_FLAT_THRESHOLD_ZOOM) {
-			const degPerPixel = 90 / height
-			const lon = center.lon - dx * degPerPixel
-			const lat = THREE.MathUtils.clamp(center.lat + dy * degPerPixel, -MAX_LAT, MAX_LAT)
-			onCenterChange({ lat, lon: ((lon + 540) % 360) - 180 })
-			return
-		}
-
-		const tileZoom = Math.round(clampMapZoom(zoom))
-		const fraction = latLonToTileFraction(center, tileZoom)
-		const tilesPerPixel = TILES_PER_VIEW / height
-		const next = tileFractionToLatLon(
-			fraction.x - dx * tilesPerPixel,
-			fraction.y - dy * tilesPerPixel,
-			tileZoom,
-		)
-		onCenterChange({
-			lat: THREE.MathUtils.clamp(next.lat, -MAX_LAT, MAX_LAT),
-			lon: ((next.lon + 540) % 360) - 180,
-		})
-	}
-
-	const endDrag = (event: React.PointerEvent<HTMLDivElement>) => {
-		dragRef.current = null
-		if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-			event.currentTarget.releasePointerCapture(event.pointerId)
-		}
-	}
-
-	const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
-		if (disabled) return
-		onZoomChange(clampMapZoom(zoom - event.deltaY * 0.004))
-	}
-
 	const selectionRadiusPixels =
 		zoom >= GLOBE_FLAT_THRESHOLD_ZOOM && containerSize.height > 0
 			? (radiusMeters / metersPerPixel(center.lat, Math.round(zoom))) *
@@ -321,33 +263,21 @@ export function MapGlobeView({
 		})
 	}, [center, containerSize, streetPreview, zoom])
 
-	useEffect(() => {
-		const node = containerRef.current
-		if (!node) return
-		const onWheelNative = (event: WheelEvent) => event.preventDefault()
-		node.addEventListener('wheel', onWheelNative, { passive: false })
-		return () => node.removeEventListener('wheel', onWheelNative)
-	}, [])
-
 	return (
 		<div
 			aria-label="Interactive globe and street map. Drag to move and use the mouse wheel to zoom."
 			aria-disabled={disabled}
 			className={`relative h-48 w-full overflow-hidden rounded-lg border border-border bg-[#0b1a2b] ${disabled ? 'cursor-wait' : 'cursor-grab active:cursor-grabbing'} ${className}`}
-			onPointerDown={handlePointerDown}
-			onPointerMove={handlePointerMove}
-			onPointerUp={endDrag}
-			onPointerCancel={endDrag}
-			onWheel={handleWheel}
 			ref={containerRef}
-			style={{ touchAction: 'none' }}
+			style={{ touchAction: 'pan-x pan-y' }}
 		>
-			<Canvas camera={{ position: [0, 0, 3.2], fov: 50 }} dpr={[1, 2]}>
-				<ambientLight intensity={1} />
-				<CameraRig zoom={zoom} />
-				<Globe center={center} zoom={zoom} />
-				<FlatMap center={center} zoom={zoom} />
-			</Canvas>
+			<MapCnGlobe
+				center={center}
+				disabled={disabled}
+				onCenterChange={onCenterChange}
+				onZoomChange={onZoomChange}
+				zoom={zoom}
+			/>
 			{(previewPaths.length > 0 || previewObjects.length > 0) && (
 				<svg
 					aria-hidden
@@ -410,7 +340,7 @@ export function MapGlobeView({
 					rel="noreferrer"
 					target="_blank"
 				>
-					© OpenStreetMap contributors
+					© OpenStreetMap contributors © CARTO
 				</a>{' '}
 				· z{zoom.toFixed(1)}
 			</div>

@@ -8,6 +8,11 @@ declare module '*.webp' {
 }
 
 declare module '*.svg' {
-  const asset: { src: string; height: number; width: number; blurDataURL?: string }
-  export default asset
+	const asset: { src: string; height: number; width: number; blurDataURL?: string }
+	export default asset
+}
+
+declare module '*.css' {
+	const styles: Record<string, string>
+	export default styles
 }

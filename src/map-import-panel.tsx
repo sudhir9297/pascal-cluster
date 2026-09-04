@@ -582,62 +582,20 @@ function MapImportDialog({
 export function MapImportSection() {
 	const activeLevelId = useViewer((state) => state.selection.levelId) as AnyNodeId | null
 	const [open, setOpen] = useState(false)
-	const [lastImport, setLastImport] = useState<Status | null>(null)
 
 	return (
 		<>
-			<div className="flex flex-col gap-3 rounded-xl border border-sidebar-border p-3">
-				<div className="flex flex-col gap-0.5">
-					<span className="font-medium text-sidebar-foreground text-sm">Import from map</span>
-					<span className="text-[11px] text-sidebar-foreground/50">
-						Import editable roads, lamps, traffic signals, and signs from a real location.
-					</span>
-				</div>
-				<button
-					className="w-full cursor-pointer rounded-md border border-sidebar-border bg-sidebar px-3 py-2 font-medium text-sidebar-foreground text-xs transition-[background-color,transform] duration-150 hover:bg-sidebar-accent active:scale-[0.98]"
-					onClick={() => {
-						setLastImport(null)
-						setOpen(true)
-					}}
-					type="button"
-				>
-					Open map importer
-				</button>
-				{lastImport && (
-					<p
-						className="text-[11px] text-emerald-600 dark:text-emerald-400"
-						role="status"
-					>
-						{lastImport.message}
-					</p>
-				)}
-			</div>
+			<button
+				className="w-full cursor-pointer rounded-md border border-sidebar-border bg-sidebar px-3 py-2 font-medium text-sidebar-foreground text-xs transition-[background-color,transform] duration-150 hover:bg-sidebar-accent active:scale-[0.98]"
+				onClick={() => setOpen(true)}
+			type="button"
+		>
+				Open map importer
+			</button>
 
 			<MapImportDialog
 				activeLevelId={activeLevelId}
-				onImported={(review) => {
-					const result = review.result
-					const assetSummary = mappedObjectSummary(
-						countOsmPointAssets(result.assets),
-					)
-					const assetNote = assetSummary ? ` Added ${assetSummary}.` : ''
-					const duplicateNote =
-						review.duplicateSegments > 0
-							? ` Skipped ${roadSegmentLabel(review.duplicateSegments)} already present.`
-							: ''
-					const trimmedNote =
-						review.trimmedSegments > 0
-							? ` Trimmed overlap from ${roadSegmentLabel(review.trimmedSegments)}.`
-							: ''
-					const duplicateAssetNote =
-						review.duplicateAssets > 0
-							? ` Skipped ${mappedObjectLabel(review.duplicateAssets)} already present.`
-							: ''
-					setLastImport({
-						kind: 'success',
-						message: `Imported ${roadSegmentLabel(result.stats.edges)} with ${result.stats.junctions} junction${result.stats.junctions === 1 ? '' : 's'}.${assetNote}${duplicateNote}${trimmedNote}${duplicateAssetNote}`,
-					})
-				}}
+				onImported={() => undefined}
 				onOpenChange={setOpen}
 				open={open}
 			/>
