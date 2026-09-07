@@ -22,10 +22,7 @@ export type RoadTransitionComponentBounds = {
 
 export type RoadTransitionSample = {
   carriagewayHalfWidth: number
-  components: Record<
-    RoadSide,
-    Record<RoadSideComponentKind, RoadTransitionComponentBounds>
-  >
+  components: Record<RoadSide, Record<RoadSideComponentKind, RoadTransitionComponentBounds>>
   distance: number
   laneBoundaryOffsets: number[]
   medianWidth: number
@@ -52,16 +49,13 @@ export type RoadTransitionProfile = {
 
 const EPSILON = 1e-6
 
-function resolveStyle(
-  node: RoadNetworkNode,
-  edge: RoadGraphEdge,
-): RoadStylePreset | undefined {
+function resolveStyle(node: RoadNetworkNode, edge: RoadGraphEdge): RoadStylePreset | undefined {
   const styleId = node.applyStyleToAll ? node.activeStyleId : edge.styleId
   return (
     node.stylePresets[styleId] ??
-    (DEFAULT_ROAD_STYLE_PRESETS[
-      styleId as keyof typeof DEFAULT_ROAD_STYLE_PRESETS
-    ] as RoadStylePreset | undefined) ??
+    (DEFAULT_ROAD_STYLE_PRESETS[styleId as keyof typeof DEFAULT_ROAD_STYLE_PRESETS] as
+      | RoadStylePreset
+      | undefined) ??
     node.stylePresets[node.activeStyleId]
   )
 }
@@ -118,15 +112,12 @@ function laneBoundaryOffsets(style: RoadStylePreset): number[] {
     const boundary = index + 1
     return (
       (boundary - style.laneCount / 2) * style.laneWidth +
-      Math.sign(boundary - style.laneCount / 2) * style.medianWidth / 2
+      (Math.sign(boundary - style.laneCount / 2) * style.medianWidth) / 2
     )
   })
 }
 
-function targetLaneBoundaryOffsets(
-  source: RoadStylePreset,
-  target: RoadStylePreset,
-): number[] {
+function targetLaneBoundaryOffsets(source: RoadStylePreset, target: RoadStylePreset): number[] {
   const sourceOffsets = laneBoundaryOffsets(source)
   const targetOffsets = laneBoundaryOffsets(target)
   const targetBySide = {
@@ -134,7 +125,7 @@ function targetLaneBoundaryOffsets(
     right: targetOffsets.filter((offset) => offset < -EPSILON).sort((a, b) => b - a),
   }
   const sourceRanks = { left: 0, right: 0 }
-  const targetLaneHalfWidth = target.medianWidth / 2 + target.laneCount * target.laneWidth / 2
+  const targetLaneHalfWidth = target.medianWidth / 2 + (target.laneCount * target.laneWidth) / 2
   return sourceOffsets.map((offset) => {
     if (Math.abs(offset) <= EPSILON) return 0
     const side = offset > 0 ? 'left' : 'right'
@@ -149,22 +140,24 @@ function componentBounds(
   targetMix: number,
   carriagewayHalfWidth: number,
 ): RoadTransitionSample['components'] {
-  return Object.fromEntries((['left', 'right'] as const).map((side) => {
-    const sourceComponents = resolveRoadSideComponents(style, side)
-    const targetComponents = target
-      ? resolveRoadSideComponents(target, side)
-      : sourceComponents
-    let cursor = carriagewayHalfWidth
-    const bounds = Object.fromEntries(ROAD_SIDE_COMPONENT_SPECS.map((spec) => {
-      const sourceWidth = sourceComponents[spec.widthKey]
-      const targetWidth = targetComponents[spec.widthKey]
-      const width = sourceWidth + (targetWidth - sourceWidth) * targetMix
-      const innerOffset = cursor
-      cursor += width
-      return [spec.kind, { innerOffset, outerOffset: cursor, width }]
-    })) as Record<RoadSideComponentKind, RoadTransitionComponentBounds>
-    return [side, bounds]
-  })) as RoadTransitionSample['components']
+  return Object.fromEntries(
+    (['left', 'right'] as const).map((side) => {
+      const sourceComponents = resolveRoadSideComponents(style, side)
+      const targetComponents = target ? resolveRoadSideComponents(target, side) : sourceComponents
+      let cursor = carriagewayHalfWidth
+      const bounds = Object.fromEntries(
+        ROAD_SIDE_COMPONENT_SPECS.map((spec) => {
+          const sourceWidth = sourceComponents[spec.widthKey] ?? 0
+          const targetWidth = targetComponents[spec.widthKey] ?? 0
+          const width = sourceWidth + (targetWidth - sourceWidth) * targetMix
+          const innerOffset = cursor
+          cursor += width
+          return [spec.kind, { innerOffset, outerOffset: cursor, width }]
+        }),
+      ) as Record<RoadSideComponentKind, RoadTransitionComponentBounds>
+      return [side, bounds]
+    }),
+  ) as RoadTransitionSample['components']
 }
 
 function buildSample(
@@ -176,9 +169,8 @@ function buildSample(
 ): RoadTransitionSample {
   const mix = Math.max(0, Math.min(1, targetMix))
   const targetStyle = target ?? style
-  const halfWidth = (
-    carriagewayWidth(style) + (carriagewayWidth(targetStyle) - carriagewayWidth(style)) * mix
-  ) / 2
+  const halfWidth =
+    (carriagewayWidth(style) + (carriagewayWidth(targetStyle) - carriagewayWidth(style)) * mix) / 2
   const sourceBoundaries = laneBoundaryOffsets(style)
   const targetBoundaries = targetLaneBoundaryOffsets(style, targetStyle)
   return {
@@ -224,8 +216,8 @@ export function roadTransitionLength(
   availableLength: number,
 ): number {
   const widthDelta = Math.abs(carriagewayWidth(source) - carriagewayWidth(target))
-  const laneDelta = Math.abs(source.laneCount - target.laneCount) *
-    Math.min(source.laneWidth, target.laneWidth)
+  const laneDelta =
+    Math.abs(source.laneCount - target.laneCount) * Math.min(source.laneWidth, target.laneWidth)
   const preferred = Math.max(8, Math.min(40, Math.max(widthDelta, laneDelta) * 6))
   return Math.min(preferred, Math.max(0, availableLength) * 0.45)
 }
@@ -246,17 +238,15 @@ function endpointTransition(
   )
   if (incident.length !== 2) return undefined
   const neighbor = incident.find((edge) => edge.id !== currentEdge.id)
-  if (
-    !neighbor || neighbor.joinMode !== 'auto' ||
-    neighbor.stackLevel !== currentEdge.stackLevel
-  ) return undefined
+  if (!neighbor || neighbor.joinMode !== 'auto' || neighbor.stackLevel !== currentEdge.stackLevel)
+    return undefined
   const neighborStyle = resolveStyle(node, neighbor)
   if (!neighborStyle || !styleNeedsTaper(style, neighborStyle)) return undefined
   const currentDirection = outwardDirectionAtNode(node, currentEdge, nodeId)
   const neighborDirection = outwardDirectionAtNode(node, neighbor, nodeId)
   if (!currentDirection || !neighborDirection) return undefined
-  const dot = currentDirection[0] * neighborDirection[0] +
-    currentDirection[1] * neighborDirection[1]
+  const dot =
+    currentDirection[0] * neighborDirection[0] + currentDirection[1] * neighborDirection[1]
   if (dot > -0.5) return undefined
   const length = roadTransitionLength(style, neighborStyle, availableLength)
   if (length <= EPSILON) return undefined
@@ -286,17 +276,33 @@ function profileForPath(node: RoadNetworkNode, path: RoadRenderPath): RoadTransi
   const sampleDistances = [...distances]
   if (start) sampleDistances.push(start.end.length)
   if (end) sampleDistances.push(totalLength - end.end.length)
-  const orderedDistances = [...new Set(sampleDistances.map((distance) =>
-    Math.round(Math.max(0, Math.min(totalLength, distance)) * 1e6) / 1e6,
-  ))].sort((left, right) => left - right)
+  const orderedDistances = [
+    ...new Set(
+      sampleDistances.map(
+        (distance) => Math.round(Math.max(0, Math.min(totalLength, distance)) * 1e6) / 1e6,
+      ),
+    ),
+  ].sort((left, right) => left - right)
   const samples = orderedDistances.map((distance) => {
     if (start && distance <= start.end.length + EPSILON) {
       const targetMix = 1 - distance / start.end.length
-      return buildSample(style, start.style, targetMix, pointAtDistance(points, distances, distance), distance)
+      return buildSample(
+        style,
+        start.style,
+        targetMix,
+        pointAtDistance(points, distances, distance),
+        distance,
+      )
     }
     if (end && distance >= totalLength - end.end.length - EPSILON) {
       const targetMix = 1 - (totalLength - distance) / end.end.length
-      return buildSample(style, end.style, targetMix, pointAtDistance(points, distances, distance), distance)
+      return buildSample(
+        style,
+        end.style,
+        targetMix,
+        pointAtDistance(points, distances, distance),
+        distance,
+      )
     }
     return buildSample(style, undefined, 0, pointAtDistance(points, distances, distance), distance)
   })
@@ -355,31 +361,32 @@ function transitionPathSignature(node: RoadNetworkNode, path: RoadRenderPath): s
       }
     }
   }
-  const dependencyEdges = [...dependencyEdgeIds]
-    .sort()
-    .flatMap((edgeId) => {
-      const edge = node.edges[edgeId]
-      return edge ? [edge] : []
-    })
+  const dependencyEdges = [...dependencyEdgeIds].sort().flatMap((edgeId) => {
+    const edge = node.edges[edgeId]
+    return edge ? [edge] : []
+  })
   const dependencyNodeIds = new Set([
     path.startNodeId,
     path.endNodeId,
     ...path.cornerNodeIds,
     ...dependencyEdges.flatMap((edge) => [edge.startNodeId, edge.endNodeId]),
   ])
-  const dependencyNodes = [...dependencyNodeIds]
-    .sort()
-    .flatMap((nodeId) => {
-      const graphNode = node.graphNodes[nodeId]
-      return graphNode ? [graphNode] : []
-    })
-  const styles = [...new Set(dependencyEdges.flatMap((edge) => {
-    const style = resolveStyle(node, edge)
-    return style ? [style.id] : []
-  }))]
+  const dependencyNodes = [...dependencyNodeIds].sort().flatMap((nodeId) => {
+    const graphNode = node.graphNodes[nodeId]
+    return graphNode ? [graphNode] : []
+  })
+  const styles = [
+    ...new Set(
+      dependencyEdges.flatMap((edge) => {
+        const style = resolveStyle(node, edge)
+        return style ? [style.id] : []
+      }),
+    ),
+  ]
     .sort()
     .flatMap((styleId) => {
-      const style = node.stylePresets[styleId] ??
+      const style =
+        node.stylePresets[styleId] ??
         DEFAULT_ROAD_STYLE_PRESETS[styleId as keyof typeof DEFAULT_ROAD_STYLE_PRESETS]
       return style ? [style] : []
     })
@@ -412,9 +419,8 @@ export function buildRoadTransitionProfilesIncremental(
     const key = path.edgeIds.join(':')
     const signature = transitionPathSignature(node, path)
     const previous = cache.entries.get(key)
-    const profile = previous?.signature === signature
-      ? previous.profile
-      : profileForPath(node, path)
+    const profile =
+      previous?.signature === signature ? previous.profile : profileForPath(node, path)
     if (previous?.signature === signature) reusedProfiles += 1
     else rebuiltProfiles += 1
     nextEntries.set(key, { profile, signature })
@@ -445,19 +451,22 @@ function interpolateSample(
 ): RoadTransitionSample {
   return {
     carriagewayHalfWidth:
-      first.carriagewayHalfWidth +
-      (second.carriagewayHalfWidth - first.carriagewayHalfWidth) * t,
-    components: Object.fromEntries((['left', 'right'] as const).map((side) => [
-      side,
-      Object.fromEntries(ROAD_SIDE_COMPONENT_SPECS.map((spec) => [
-        spec.kind,
-        interpolateBounds(
-          first.components[side][spec.kind],
-          second.components[side][spec.kind],
-          t,
+      first.carriagewayHalfWidth + (second.carriagewayHalfWidth - first.carriagewayHalfWidth) * t,
+    components: Object.fromEntries(
+      (['left', 'right'] as const).map((side) => [
+        side,
+        Object.fromEntries(
+          ROAD_SIDE_COMPONENT_SPECS.map((spec) => [
+            spec.kind,
+            interpolateBounds(
+              first.components[side][spec.kind],
+              second.components[side][spec.kind],
+              t,
+            ),
+          ]),
         ),
-      ])),
-    ])) as RoadTransitionSample['components'],
+      ]),
+    ) as RoadTransitionSample['components'],
     distance,
     laneBoundaryOffsets: first.laneBoundaryOffsets.map(
       (offset, index) => offset + (second.laneBoundaryOffsets[index]! - offset) * t,
@@ -496,9 +505,9 @@ export function trimRoadTransitionProfile(
   const end = Math.max(start, total - Math.max(0, endDistance))
   const selectedDistances = [
     start,
-    ...profile.samples.map((sample) => sample.distance).filter(
-      (distance) => distance > start + EPSILON && distance < end - EPSILON,
-    ),
+    ...profile.samples
+      .map((sample) => sample.distance)
+      .filter((distance) => distance > start + EPSILON && distance < end - EPSILON),
     end,
   ]
   const samples = selectedDistances.map((distance) => ({

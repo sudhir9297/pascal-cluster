@@ -88,22 +88,22 @@ export function RoadNetworkBridgeStructures({
 			{spans.map((span) => (
 				<group key={span.edgeId} name={`road-bridge-span:${span.edgeId}`}>
 					<BridgePrism
-						bottomOffset={span.surfaceThickness - span.deckThickness}
+						bottomOffset={-span.surfaceThickness - span.deckThickness}
 						color="#a9adb0"
 						name="road-bridge-deck"
 						points={span.points}
-						topOffset={span.surfaceThickness - 0.015}
+						topOffset={-span.surfaceThickness}
 						width={span.deckWidth}
 					/>
 					{([-1, 1] as const).map((side) => (
 						<BridgePrism
-							bottomOffset={span.surfaceThickness}
+							bottomOffset={0}
 							color="#deddd8"
 							key={`barrier:${side}`}
 							lateralOffset={side * (span.deckWidth / 2 - 0.17)}
 							name={`road-bridge-barrier:${side < 0 ? "right" : "left"}`}
 							points={span.points}
-							topOffset={span.surfaceThickness + span.barrierHeight}
+							topOffset={span.barrierHeight}
 							width={0.24}
 						/>
 					))}

@@ -155,7 +155,7 @@ export function buildRoadRibbonGeometry(
 		const normalZ = dx / length;
 		const centerX = point[0] + normalX * lateralOffset;
 		const centerZ = point[2] + normalZ * lateralOffset;
-		const y = point[1] + options.surfaceThickness + elevationOffset;
+		const y = point[1] + elevationOffset;
 		positions.push(
 			centerX + normalX * halfWidth,
 			y,

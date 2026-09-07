@@ -426,6 +426,8 @@ export const roadNetworkDefinition: RoadNetworkDefinition = {
 		roadsideItemSuppressed: {},
 		attachments: {},
 		junctions: {},
+		osmMappedSurfaces: [],
+		osmCrossings: [],
 		stylePresets: { ...DEFAULT_ROAD_STYLE_PRESETS },
 		activeStyleId: defaultStyle.id,
 		applyStyleToAll: true,

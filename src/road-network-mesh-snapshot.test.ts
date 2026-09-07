@@ -86,14 +86,14 @@ const ROAD_MESH_FIXTURES: Record<string, ExactMeshSnapshot> = {
   curvedRibbon: {
     indexCount: 60,
     positionCount: 66,
-    sha256: 'e821862742404c58d0d5e1befec49a66682956fa6aa643c9c3c9fd49a2089e02',
+    sha256: '3caa16072be2cad402d864bce8124699bc5d4ac12377239510240261b00a0786',
     triangleCount: 20,
     vertexCount: 22,
   },
   offsetSideRibbon: {
     indexCount: 6,
     positionCount: 12,
-    sha256: 'bf858af1c8a3492d2ef61283e6885619f78f8e9521c12473ab72be23bd33ca76',
+    sha256: 'c2b329baf1391df87da6f1dd25be0d20aa2bc0dfee922dc94b051d97164882d8',
     triangleCount: 2,
     vertexCount: 4,
   },
@@ -107,7 +107,7 @@ const ROAD_MESH_FIXTURES: Record<string, ExactMeshSnapshot> = {
   straightRibbon: {
     indexCount: 6,
     positionCount: 12,
-    sha256: '5b9ffa85c33339d4d8bfba081ce2ec119e33e4721c4b7ca216ca1986edd4a492',
+    sha256: 'c4a74eaf7a3cc457496c68c7516dfdcf781987381920f15505492f6c6a814942',
     triangleCount: 2,
     vertexCount: 4,
   },

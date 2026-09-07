@@ -174,7 +174,7 @@ function terminalBridgeAbutment(
 		id: `${edge.id}:${atStart ? "start" : "end"}`,
 		nodeId,
 		point,
-		topY: point[1] + surfaceThickness - deckThickness,
+		topY: point[1] - surfaceThickness - deckThickness,
 	};
 }
 
@@ -214,7 +214,7 @@ export function buildRoadBridgeSpans(node: RoadNetworkNode): RoadBridgeSpan[] {
 				const sample = sampleAtStation(points, station);
 				if (!sample) continue;
 				const topY =
-					sample.point[1] + style.surfaceThickness - deckThickness;
+					sample.point[1] - style.surfaceThickness - deckThickness;
 				if (topY <= 0.9) continue;
 				const normal = [-sample.tangent[1], sample.tangent[0]] as const;
 				const pier: RoadBridgePier = {
@@ -365,11 +365,11 @@ export function roadBridgeClearanceChecks(
 					lowerEdge.id,
 				)) {
 					const underside =
-						crossing.firstPoint[1] +
+						crossing.firstPoint[1] -
 						bridgeStyle.surfaceThickness -
 						deckThickness;
 					const lowerTop =
-						crossing.secondPoint[1] + lowerStyle.surfaceThickness;
+						crossing.secondPoint[1];
 					const clearance = underside - lowerTop;
 					if (clearance + 1e-6 >= required) continue;
 					checks.push({

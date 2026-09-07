@@ -64,7 +64,7 @@ describe('automatic road infrastructure', () => {
     expect(
       nodes
         .filter((node) => node.type === 'streetscape:drainage-inlet')
-        .every((node) => Math.abs(node.position[1] - 0.15) < 1e-6),
+        .every((node) => Math.abs(node.position[1] - 0.01) < 1e-6),
     ).toBe(true)
     expect(new Set(nodes.map((node) =>
       (node.metadata as Record<string, unknown>).roadAutoInfrastructureKey,

@@ -1,0 +1,419 @@
+{
+  "format": "pascal-road-network",
+  "version": 1,
+  "graph": {
+    "graphNodes": {
+      "n1": {
+        "id": "n1",
+        "position": [
+          0,
+          0,
+          -40.00000000007617
+        ],
+        "level": 0,
+        "elevationMode": "ground",
+        "terminal": false
+      },
+      "n2": {
+        "id": "n2",
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "level": 0,
+        "elevationMode": "ground",
+        "terminal": false
+      },
+      "n3": {
+        "id": "n3",
+        "position": [
+          0,
+          0,
+          40.00000000007617
+        ],
+        "level": 0,
+        "elevationMode": "ground",
+        "terminal": false
+      },
+      "n4": {
+        "id": "n4",
+        "position": [
+          -35.000000000032706,
+          0,
+          0
+        ],
+        "level": 0,
+        "elevationMode": "ground",
+        "terminal": false
+      },
+      "n5": {
+        "id": "n5",
+        "position": [
+          35.000000000032706,
+          0,
+          0
+        ],
+        "level": 0,
+        "elevationMode": "ground",
+        "terminal": false
+      }
+    },
+    "edges": {
+      "e1": {
+        "id": "e1",
+        "startNodeId": "n1",
+        "endNodeId": "n2",
+        "alignment": [],
+        "profileMode": "legacy",
+        "verticalProfile": [],
+        "styleId": "osm-1",
+        "direction": "forward",
+        "roadClass": "local",
+        "joinMode": "auto",
+        "stackLevel": 0,
+        "osmSource": {
+          "wayId": 1,
+          "tags": {
+            "highway": "residential",
+            "oneway": "yes",
+            "lanes": "3",
+            "turn:lanes": "left|through|right",
+            "sidewalk": "both",
+            "surface": "asphalt"
+          }
+        },
+        "turnLanes": {
+          "end": "left|through|right"
+        }
+      },
+      "e2": {
+        "id": "e2",
+        "startNodeId": "n2",
+        "endNodeId": "n3",
+        "alignment": [],
+        "profileMode": "legacy",
+        "verticalProfile": [],
+        "styleId": "osm-1",
+        "direction": "forward",
+        "roadClass": "local",
+        "joinMode": "auto",
+        "stackLevel": 0,
+        "osmSource": {
+          "wayId": 2,
+          "tags": {
+            "highway": "residential",
+            "oneway": "yes",
+            "lanes": "3",
+            "sidewalk": "both",
+            "surface": "asphalt"
+          }
+        },
+        "turnLanes": {}
+      },
+      "e3": {
+        "id": "e3",
+        "startNodeId": "n4",
+        "endNodeId": "n2",
+        "alignment": [],
+        "profileMode": "legacy",
+        "verticalProfile": [],
+        "styleId": "osm-2",
+        "direction": "both",
+        "roadClass": "local",
+        "joinMode": "auto",
+        "stackLevel": 0,
+        "osmSource": {
+          "wayId": 3,
+          "tags": {
+            "highway": "residential",
+            "lanes": "2",
+            "sidewalk": "both",
+            "surface": "asphalt"
+          }
+        },
+        "turnLanes": {}
+      },
+      "e4": {
+        "id": "e4",
+        "startNodeId": "n2",
+        "endNodeId": "n5",
+        "alignment": [],
+        "profileMode": "legacy",
+        "verticalProfile": [],
+        "styleId": "osm-2",
+        "direction": "both",
+        "roadClass": "local",
+        "joinMode": "auto",
+        "stackLevel": 0,
+        "osmSource": {
+          "wayId": 3,
+          "tags": {
+            "highway": "residential",
+            "lanes": "2",
+            "sidewalk": "both",
+            "surface": "asphalt"
+          }
+        },
+        "turnLanes": {}
+      }
+    },
+    "roadsideDecorations": {},
+    "roadsideDecorationSpacing": 30,
+    "roadsideLampsBothSides": false,
+    "showRoadsideDecorations": false,
+    "roadsideItemVisibility": {},
+    "roadsideDecorationSuppressed": {},
+    "roadsideAutoFillEnabled": false,
+    "roadsideItemSuppressed": {},
+    "attachments": {},
+    "junctions": {
+      "n2": {
+        "nodeId": "n2",
+        "kind": "four-way-plus",
+        "treatment": "auto",
+        "primaryMode": "auto",
+        "primaryEdgeIds": [
+          "e1",
+          "e2"
+        ],
+        "approachControls": {},
+        "cornerRadii": {
+          "e1::e4": 6,
+          "e2::e4": 6,
+          "e2::e3": 6,
+          "e1::e3": 6
+        },
+        "manualBoundaryEnabled": false,
+        "manualBoundaryPoints": [],
+        "solverStatus": "auto"
+      }
+    },
+    "stylePresets": {
+      "alley": {
+        "id": "alley",
+        "name": "Alley",
+        "laneCount": 1,
+        "laneWidth": 3.2,
+        "shoulderWidth": 0,
+        "sidewalkWidth": 0,
+        "medianWidth": 0,
+        "surfaceThickness": 0.1,
+        "surfaceColor": "#484a4d",
+        "markingColor": "#f3f1df",
+        "markings": false,
+        "leftSide": {
+          "parkingLaneWidth": 0,
+          "bikeLaneWidth": 0,
+          "gutterWidth": 0,
+          "curbWidth": 0,
+          "vergeWidth": 0,
+          "sidewalkWidth": 0
+        },
+        "rightSide": {
+          "parkingLaneWidth": 0,
+          "bikeLaneWidth": 0,
+          "gutterWidth": 0,
+          "curbWidth": 0,
+          "vergeWidth": 0,
+          "sidewalkWidth": 0
+        }
+      },
+      "local-street": {
+        "id": "local-street",
+        "name": "Local street",
+        "laneCount": 2,
+        "laneWidth": 3.25,
+        "shoulderWidth": 0.5,
+        "sidewalkWidth": 0.5,
+        "medianWidth": 0,
+        "surfaceThickness": 0.14,
+        "surfaceColor": "#3f4246",
+        "markingColor": "#f3f1df",
+        "markings": true,
+        "leftSide": {
+          "parkingLaneWidth": 0,
+          "bikeLaneWidth": 0,
+          "gutterWidth": 0.35,
+          "curbWidth": 0.15,
+          "vergeWidth": 0.45,
+          "sidewalkWidth": 0.5
+        },
+        "rightSide": {
+          "parkingLaneWidth": 0,
+          "bikeLaneWidth": 0,
+          "gutterWidth": 0.35,
+          "curbWidth": 0.15,
+          "vergeWidth": 0.45,
+          "sidewalkWidth": 0.5
+        }
+      },
+      "collector": {
+        "id": "collector",
+        "name": "Collector",
+        "laneCount": 2,
+        "laneWidth": 3.5,
+        "shoulderWidth": 1,
+        "sidewalkWidth": 0.6,
+        "medianWidth": 0,
+        "surfaceThickness": 0.18,
+        "surfaceColor": "#393c40",
+        "markingColor": "#f3f1df",
+        "markings": true,
+        "leftSide": {
+          "parkingLaneWidth": 0,
+          "bikeLaneWidth": 1.6,
+          "gutterWidth": 0.4,
+          "curbWidth": 0.15,
+          "vergeWidth": 0.6,
+          "sidewalkWidth": 0.6
+        },
+        "rightSide": {
+          "parkingLaneWidth": 0,
+          "bikeLaneWidth": 1.6,
+          "gutterWidth": 0.4,
+          "curbWidth": 0.15,
+          "vergeWidth": 0.6,
+          "sidewalkWidth": 0.6
+        }
+      },
+      "arterial": {
+        "id": "arterial",
+        "name": "Divided arterial",
+        "laneCount": 4,
+        "laneWidth": 3.5,
+        "shoulderWidth": 0.75,
+        "sidewalkWidth": 0.67,
+        "medianWidth": 2.4,
+        "surfaceThickness": 0.22,
+        "surfaceColor": "#35383c",
+        "markingColor": "#f3f1df",
+        "markings": true,
+        "leftSide": {
+          "parkingLaneWidth": 0,
+          "bikeLaneWidth": 1.8,
+          "gutterWidth": 0.45,
+          "curbWidth": 0.18,
+          "vergeWidth": 0.8,
+          "sidewalkWidth": 0.67
+        },
+        "rightSide": {
+          "parkingLaneWidth": 0,
+          "bikeLaneWidth": 1.8,
+          "gutterWidth": 0.45,
+          "curbWidth": 0.18,
+          "vergeWidth": 0.8,
+          "sidewalkWidth": 0.67
+        }
+      },
+      "highway": {
+        "id": "highway",
+        "name": "Highway",
+        "laneCount": 4,
+        "laneWidth": 3.65,
+        "shoulderWidth": 2.5,
+        "sidewalkWidth": 0,
+        "medianWidth": 3,
+        "surfaceThickness": 0.28,
+        "surfaceColor": "#303338",
+        "markingColor": "#f3f1df",
+        "markings": true,
+        "leftSide": {
+          "parkingLaneWidth": 0,
+          "bikeLaneWidth": 0,
+          "gutterWidth": 0,
+          "curbWidth": 0,
+          "vergeWidth": 1.2,
+          "sidewalkWidth": 0
+        },
+        "rightSide": {
+          "parkingLaneWidth": 0,
+          "bikeLaneWidth": 0,
+          "gutterWidth": 0,
+          "curbWidth": 0,
+          "vergeWidth": 1.2,
+          "sidewalkWidth": 0
+        }
+      },
+      "osm-1": {
+        "id": "osm-1",
+        "name": "residential street",
+        "laneCount": 3,
+        "laneWidth": 3.2,
+        "shoulderWidth": 0,
+        "sidewalkWidth": 1.8,
+        "medianWidth": 0,
+        "surfaceThickness": 0.14,
+        "surfaceColor": "#3f4246",
+        "surfaceMaterial": "asphalt",
+        "surfaceSource": {
+          "kind": "mapped",
+          "tag": "asphalt"
+        },
+        "markingColor": "#f3f1df",
+        "markings": true,
+        "leftSide": {
+          "parkingLaneWidth": 0,
+          "bikeLaneWidth": 0,
+          "gutterWidth": 0,
+          "curbWidth": 0.15,
+          "vergeWidth": 0,
+          "sidewalkWidth": 1.8
+        },
+        "rightSide": {
+          "parkingLaneWidth": 0,
+          "bikeLaneWidth": 0,
+          "gutterWidth": 0,
+          "curbWidth": 0.15,
+          "vergeWidth": 0,
+          "sidewalkWidth": 1.8
+        }
+      },
+      "osm-2": {
+        "id": "osm-2",
+        "name": "residential street",
+        "laneCount": 2,
+        "laneWidth": 3.2,
+        "shoulderWidth": 0,
+        "sidewalkWidth": 1.8,
+        "medianWidth": 0,
+        "surfaceThickness": 0.14,
+        "surfaceColor": "#3f4246",
+        "surfaceMaterial": "asphalt",
+        "surfaceSource": {
+          "kind": "mapped",
+          "tag": "asphalt"
+        },
+        "markingColor": "#f3f1df",
+        "markings": true,
+        "leftSide": {
+          "parkingLaneWidth": 0,
+          "bikeLaneWidth": 0,
+          "gutterWidth": 0,
+          "curbWidth": 0.15,
+          "vergeWidth": 0,
+          "sidewalkWidth": 1.8
+        },
+        "rightSide": {
+          "parkingLaneWidth": 0,
+          "bikeLaneWidth": 0,
+          "gutterWidth": 0,
+          "curbWidth": 0.15,
+          "vergeWidth": 0,
+          "sidewalkWidth": 1.8
+        }
+      }
+    },
+    "activeStyleId": "local-street",
+    "applyStyleToAll": true,
+    "regionalPack": "right-driving",
+    "snapTolerance": 0.5,
+    "embankmentSlope": 2,
+    "excavationSlope": 1.5,
+    "bridgeDeckThickness": 0.65,
+    "bridgeBarrierHeight": 1.05,
+    "bridgePierSpacing": 18,
+    "bridgePierDiameter": 1.1,
+    "bridgeMinimumClearance": 4.5
+  }
+}

@@ -802,6 +802,9 @@ function addGraphEdge(
 			template?.verticalProfile?.map((point) => ({ ...point })) ?? [],
 		styleId: template?.styleId ?? graph.activeStyleId,
 		direction: template?.direction ?? "both",
+		...(template?.osmSource ? { osmSource: template.osmSource } : {}),
+		...(template?.turnLanes ? { turnLanes: template.turnLanes } : {}),
+		...(template?.osmVertical ? { osmVertical: template.osmVertical } : {}),
 		roadClass: template?.roadClass ?? "local",
 		joinMode: template?.joinMode ?? "auto",
 		stackLevel: template?.stackLevel ?? 0,
@@ -956,6 +959,7 @@ function splitEdgeAt(
 			t,
 		),
 		verticalProfile: firstProfile,
+		...(edge.turnLanes ? { turnLanes: { start: edge.turnLanes.start } } : {}),
 	};
 	const secondEdgeId = addGraphEdge(graph, nodeId, originalEndNodeId, {
 		...edge,
@@ -967,6 +971,7 @@ function splitEdgeAt(
 			1,
 		),
 		verticalProfile: secondProfile,
+		...(edge.turnLanes ? { turnLanes: { end: edge.turnLanes.end } } : {}),
 		parentEdgeId: edge.parentEdgeId ?? edge.id,
 	});
 	remapSplitEdgeAttachments(

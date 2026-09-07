@@ -1,0 +1,2684 @@
+{
+  "assets": [
+    {
+      "position": [
+        -2.824786573318037,
+        0,
+        4.074312000154237
+      ],
+      "rotationY": 0,
+      "sourceId": "node/42428297",
+      "kind": "traffic-signal"
+    },
+    {
+      "position": [
+        30.600449177108953,
+        0,
+        -160.07816000003032
+      ],
+      "rotationY": 0,
+      "sourceId": "node/42428303",
+      "kind": "traffic-signal"
+    },
+    {
+      "position": [
+        57.37268013334385,
+        0,
+        -235.17463199963146
+      ],
+      "rotationY": 0,
+      "sourceId": "node/42428305",
+      "kind": "traffic-signal"
+    },
+    {
+      "position": [
+        -43.13912868263185,
+        0,
+        73.2040320004242
+      ],
+      "rotationY": 0,
+      "sourceId": "node/42439984",
+      "kind": "traffic-signal"
+    },
+    {
+      "position": [
+        35.45739564381052,
+        0,
+        -66.43577599963635
+      ],
+      "rotationY": 0,
+      "sourceId": "node/42439990",
+      "kind": "traffic-signal"
+    },
+    {
+      "position": [
+        74.25394198265457,
+        0,
+        -136.1332279994221
+      ],
+      "rotationY": 0,
+      "sourceId": "node/42439994",
+      "kind": "traffic-signal"
+    },
+    {
+      "position": [
+        111.81095510924784,
+        0,
+        -204.94011999987436
+      ],
+      "rotationY": 0,
+      "sourceId": "node/42439996",
+      "kind": "traffic-signal"
+    },
+    {
+      "position": [
+        -39.01578350588939,
+        0,
+        166.72396400017817
+      ],
+      "rotationY": 0,
+      "sourceId": "node/12055680088",
+      "kind": "traffic-signal"
+    },
+    {
+      "position": [
+        -72.75301060863588,
+        0,
+        128.57460000047155
+      ],
+      "rotationY": 0,
+      "sourceId": "node/12055680089",
+      "kind": "traffic-signal"
+    },
+    {
+      "position": [
+        73.83233204621324,
+        0,
+        -215.89400799974442
+      ],
+      "rotationY": 0,
+      "sourceId": "node/13996286029",
+      "kind": "street-lamp"
+    }
+  ],
+  "graphs": [
+    {
+      "graphNodes": {
+        "b1": {
+          "id": "b1",
+          "position": [
+            247.06382396893358,
+            0,
+            -38.20296959462448
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n42439994": {
+          "id": "n42439994",
+          "position": [
+            74.25394198265457,
+            0,
+            -136.1332279994221
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n6597464445": {
+          "id": "n6597464445",
+          "position": [
+            -19.562701044406456,
+            0,
+            -5.065059999867572
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n5522182777": {
+          "id": "n5522182777",
+          "position": [
+            -61.310516937141436,
+            0,
+            -28.130563999690423
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "b2": {
+          "id": "b2",
+          "position": [
+            -221.08541165407027,
+            0,
+            -116.71007134669348
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n42439996": {
+          "id": "n42439996",
+          "position": [
+            111.81095510924784,
+            0,
+            -204.94011999987436
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "b3": {
+          "id": "b3",
+          "position": [
+            192.4216525085435,
+            0,
+            -159.6054749871737
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n42428305": {
+          "id": "n42428305",
+          "position": [
+            57.37268013334385,
+            0,
+            -235.17463199963146
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "b4": {
+          "id": "b4",
+          "position": [
+            84.2380085285771,
+            0,
+            235.3804535621838
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n8396878498": {
+          "id": "n8396878498",
+          "position": [
+            12.150798364380332,
+            0,
+            195.23301600033676
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n9647769356": {
+          "id": "n9647769356",
+          "position": [
+            -23.694478420572754,
+            0,
+            175.273340000424
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n9235539560": {
+          "id": "n9235539560",
+          "position": [
+            -16.046474175851902,
+            0,
+            88.12091199993858
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n13915675578": {
+          "id": "n13915675578",
+          "position": [
+            50.070396036241256,
+            0,
+            125.00122800063451
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n8396878495": {
+          "id": "n8396878495",
+          "position": [
+            122.97518622252323,
+            0,
+            165.67755600060536
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "b5": {
+          "id": "b5",
+          "position": [
+            164.0878325762286,
+            0,
+            188.61384678871158
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "b6": {
+          "id": "b6",
+          "position": [
+            35.17979763777849,
+            0,
+            -247.51238724186098
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n42439990": {
+          "id": "n42439990",
+          "position": [
+            35.45739564381052,
+            0,
+            -66.43577599963635
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n5475605303": {
+          "id": "n5475605303",
+          "position": [
+            21.56956434191507,
+            0,
+            -40.84330799954927
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n42439984": {
+          "id": "n42439984",
+          "position": [
+            -43.13912868263185,
+            0,
+            73.2040320004242
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n42439981": {
+          "id": "n42439981",
+          "position": [
+            -80.78046379627374,
+            0,
+            143.60280000049585
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n8250908767": {
+          "id": "n8250908767",
+          "position": [
+            103.05833283107471,
+            0,
+            -28.598107999617355
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n8318633104": {
+          "id": "n8318633104",
+          "position": [
+            235.8654627681502,
+            0,
+            46.83232399993159
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n42428303": {
+          "id": "n42428303",
+          "position": [
+            30.600449177108953,
+            0,
+            -160.07816000003032
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "b7": {
+          "id": "b7",
+          "position": [
+            -97.7119165955433,
+            0,
+            -230.11384433628845
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n12989986305": {
+          "id": "n12989986305",
+          "position": [
+            40.21315572461583,
+            0,
+            -154.80159200006398
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "b8": {
+          "id": "b8",
+          "position": [
+            120.00919601344594,
+            0,
+            -219.31209011863962
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n42428297": {
+          "id": "n42428297",
+          "position": [
+            -2.824786573318037,
+            0,
+            4.074312000154237
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n8669764313": {
+          "id": "n8669764313",
+          "position": [
+            -242.97380629408232,
+            0,
+            52.96605600042312
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "b9": {
+          "id": "b9",
+          "position": [
+            -121.96008454939353,
+            0,
+            218.2332187745596
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n5522182776": {
+          "id": "n5522182776",
+          "position": [
+            -22.792233156516435,
+            0,
+            -98.62951999935092
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n5522182779": {
+          "id": "n5522182779",
+          "position": [
+            -27.944306577888128,
+            0,
+            -89.26750799989122
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n5522182778": {
+          "id": "n5522182778",
+          "position": [
+            -56.976366792777455,
+            0,
+            -36.06767999990012
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "b10": {
+          "id": "b10",
+          "position": [
+            -172.5224573813307,
+            0,
+            -180.93093074183562
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n8250892565": {
+          "id": "n8250892565",
+          "position": [
+            -161.9403765354645,
+            0,
+            -175.02843599993497
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n2639531794": {
+          "id": "n2639531794",
+          "position": [
+            -155.5150411065433,
+            0,
+            -187.65212399954407
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n8250908768": {
+          "id": "n8250908768",
+          "position": [
+            98.12549657674836,
+            0,
+            -19.369679999345806
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n8318633102": {
+          "id": "n8318633102",
+          "position": [
+            163.68584167240346,
+            0,
+            114.04733999997347
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n8318633103": {
+          "id": "n8318633103",
+          "position": [
+            170.52435483954042,
+            0,
+            100.76686400059884
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n8318633105": {
+          "id": "n8318633105",
+          "position": [
+            230.05567784564246,
+            0,
+            57.35206400026499
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n8396064852": {
+          "id": "n8396064852",
+          "position": [
+            -66.13373460854424,
+            0,
+            -18.71289199958028
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n8396878497": {
+          "id": "n8396878497",
+          "position": [
+            118.80968005105821,
+            0,
+            173.51448400043523
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n8396878500": {
+          "id": "n8396878500",
+          "position": [
+            16.425923118768917,
+            0,
+            187.31816400038724
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n1752942903": {
+          "id": "n1752942903",
+          "position": [
+            45.65192390363038,
+            0,
+            133.18324800054228
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n8669764314": {
+          "id": "n8669764314",
+          "position": [
+            -239.01067289201328,
+            0,
+            45.18478800045273
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "b11": {
+          "id": "b11",
+          "position": [
+            63.82557628898668,
+            0,
+            -241.71531976972156
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n4578017557": {
+          "id": "n4578017557",
+          "position": [
+            -41.8152734833325,
+            0,
+            165.16548400015807
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n4578017558": {
+          "id": "n4578017558",
+          "position": [
+            -72.22178208927102,
+            0,
+            148.3561640006758
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "b12": {
+          "id": "b12",
+          "position": [
+            -244.5093591306353,
+            0,
+            52.107324797249106
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "b13": {
+          "id": "b13",
+          "position": [
+            244.59838559862874,
+            0,
+            51.68781057990873
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n10224024813": {
+          "id": "n10224024813",
+          "position": [
+            -49.60662510627564,
+            0,
+            69.67518800031655
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n10224024814": {
+          "id": "n10224024814",
+          "position": [
+            -56.48729926573862,
+            0,
+            65.94596800024021
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n10224024816": {
+          "id": "n10224024816",
+          "position": [
+            -33.67820171157281,
+            0,
+            78.35814800054152
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "b14": {
+          "id": "b14",
+          "position": [
+            215.88358354331578,
+            0,
+            126.07251229548886
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n6597464446": {
+          "id": "n6597464446",
+          "position": [
+            10.717324580959163,
+            0,
+            11.655204000155948
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n10224032629": {
+          "id": "n10224032629",
+          "position": [
+            -12.58927269847103,
+            0,
+            -1.2022559998121096
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n10224032630": {
+          "id": "n10224032630",
+          "position": [
+            5.0930480301980126,
+            0,
+            8.482584000256281
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "b15": {
+          "id": "b15",
+          "position": [
+            -246.81672412697915,
+            0,
+            -39.76813663256897
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n12989986307": {
+          "id": "n12989986307",
+          "position": [
+            59.978229539616535,
+            0,
+            -224.81073999953736
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        },
+        "n12989986304": {
+          "id": "n12989986304",
+          "position": [
+            43.45112003614963,
+            0,
+            -166.36773999997018
+          ],
+          "level": 0,
+          "elevationMode": "ground",
+          "terminal": false
+        }
+      },
+      "edges": {
+        "e1": {
+          "id": "e1",
+          "startNodeId": "b1",
+          "endNodeId": "n42439994",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-1",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e2": {
+          "id": "e2",
+          "startNodeId": "n6597464445",
+          "endNodeId": "n5522182777",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-2",
+          "direction": "forward",
+          "roadClass": "arterial",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e3": {
+          "id": "e3",
+          "startNodeId": "n5522182777",
+          "endNodeId": "b2",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-2",
+          "direction": "forward",
+          "roadClass": "arterial",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e4": {
+          "id": "e4",
+          "startNodeId": "n42439996",
+          "endNodeId": "n42439994",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-3",
+          "direction": "forward",
+          "roadClass": "arterial",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e5": {
+          "id": "e5",
+          "startNodeId": "n42439996",
+          "endNodeId": "b3",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-4",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e6": {
+          "id": "e6",
+          "startNodeId": "n42428305",
+          "endNodeId": "n42439996",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-5",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e7": {
+          "id": "e7",
+          "startNodeId": "b4",
+          "endNodeId": "n8396878498",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-6",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e8": {
+          "id": "e8",
+          "startNodeId": "n8396878498",
+          "endNodeId": "n9647769356",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-6",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e9": {
+          "id": "e9",
+          "startNodeId": "n9235539560",
+          "endNodeId": "n13915675578",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-7",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e10": {
+          "id": "e10",
+          "startNodeId": "n13915675578",
+          "endNodeId": "n8396878495",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-7",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e11": {
+          "id": "e11",
+          "startNodeId": "n8396878495",
+          "endNodeId": "b5",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-7",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e12": {
+          "id": "e12",
+          "startNodeId": "b6",
+          "endNodeId": "n42428305",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-8",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e13": {
+          "id": "e13",
+          "startNodeId": "n42439990",
+          "endNodeId": "n5475605303",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-9",
+          "direction": "forward",
+          "roadClass": "arterial",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e14": {
+          "id": "e14",
+          "startNodeId": "n42439984",
+          "endNodeId": "n42439981",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-10",
+          "direction": "forward",
+          "roadClass": "arterial",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e15": {
+          "id": "e15",
+          "startNodeId": "n42439990",
+          "endNodeId": "n8250908767",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-11",
+          "direction": "forward",
+          "roadClass": "arterial",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e16": {
+          "id": "e16",
+          "startNodeId": "n8250908767",
+          "endNodeId": "n8318633104",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-11",
+          "direction": "forward",
+          "roadClass": "arterial",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e17": {
+          "id": "e17",
+          "startNodeId": "n42428303",
+          "endNodeId": "b7",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-1",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e18": {
+          "id": "e18",
+          "startNodeId": "n42439994",
+          "endNodeId": "n12989986305",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-12",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e19": {
+          "id": "e19",
+          "startNodeId": "n12989986305",
+          "endNodeId": "n42428303",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-12",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e20": {
+          "id": "e20",
+          "startNodeId": "n42439994",
+          "endNodeId": "n42439990",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-13",
+          "direction": "forward",
+          "roadClass": "arterial",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e21": {
+          "id": "e21",
+          "startNodeId": "b8",
+          "endNodeId": "n42439996",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-3",
+          "direction": "forward",
+          "roadClass": "arterial",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e22": {
+          "id": "e22",
+          "startNodeId": "n5475605303",
+          "endNodeId": "n42428297",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-9",
+          "direction": "forward",
+          "roadClass": "arterial",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e23": {
+          "id": "e23",
+          "startNodeId": "n42439981",
+          "endNodeId": "n8669764313",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-14",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e24": {
+          "id": "e24",
+          "startNodeId": "n42439981",
+          "endNodeId": "b9",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-10",
+          "direction": "forward",
+          "roadClass": "arterial",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e25": {
+          "id": "e25",
+          "startNodeId": "n5522182776",
+          "endNodeId": "n5522182779",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-15",
+          "direction": "forward",
+          "roadClass": "service",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e26": {
+          "id": "e26",
+          "startNodeId": "n5522182778",
+          "endNodeId": "n5522182777",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-15",
+          "direction": "forward",
+          "roadClass": "service",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e27": {
+          "id": "e27",
+          "startNodeId": "n5522182779",
+          "endNodeId": "n5522182778",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-15",
+          "direction": "forward",
+          "roadClass": "service",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e28": {
+          "id": "e28",
+          "startNodeId": "n42428305",
+          "endNodeId": "n42428303",
+          "alignment": [
+            [
+              49.91018426036959,
+              0,
+              -228.99637199941054
+            ]
+          ],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-16",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e29": {
+          "id": "e29",
+          "startNodeId": "n42428297",
+          "endNodeId": "n42439984",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-10",
+          "direction": "forward",
+          "roadClass": "arterial",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e30": {
+          "id": "e30",
+          "startNodeId": "b10",
+          "endNodeId": "n8250892565",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-11",
+          "direction": "forward",
+          "roadClass": "arterial",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e31": {
+          "id": "e31",
+          "startNodeId": "n8250892565",
+          "endNodeId": "n5522182776",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-11",
+          "direction": "forward",
+          "roadClass": "arterial",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e32": {
+          "id": "e32",
+          "startNodeId": "n5522182776",
+          "endNodeId": "n42439990",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-11",
+          "direction": "forward",
+          "roadClass": "arterial",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e33": {
+          "id": "e33",
+          "startNodeId": "n8250892565",
+          "endNodeId": "n2639531794",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-15",
+          "direction": "both",
+          "roadClass": "service",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e34": {
+          "id": "e34",
+          "startNodeId": "n8250908767",
+          "endNodeId": "n8250908768",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-15",
+          "direction": "both",
+          "roadClass": "service",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e35": {
+          "id": "e35",
+          "startNodeId": "n8318633102",
+          "endNodeId": "n8318633103",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-15",
+          "direction": "both",
+          "roadClass": "service",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e36": {
+          "id": "e36",
+          "startNodeId": "n8318633104",
+          "endNodeId": "n8318633105",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-15",
+          "direction": "both",
+          "roadClass": "service",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e37": {
+          "id": "e37",
+          "startNodeId": "n5522182777",
+          "endNodeId": "n8396064852",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-15",
+          "direction": "both",
+          "roadClass": "service",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e38": {
+          "id": "e38",
+          "startNodeId": "n8396878495",
+          "endNodeId": "n8396878497",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-15",
+          "direction": "both",
+          "roadClass": "service",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e39": {
+          "id": "e39",
+          "startNodeId": "n8396878500",
+          "endNodeId": "n1752942903",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-15",
+          "direction": "both",
+          "roadClass": "service",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e40": {
+          "id": "e40",
+          "startNodeId": "n8669764313",
+          "endNodeId": "n8669764314",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-15",
+          "direction": "both",
+          "roadClass": "service",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e41": {
+          "id": "e41",
+          "startNodeId": "b11",
+          "endNodeId": "n42428305",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-17",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e42": {
+          "id": "e42",
+          "startNodeId": "n4578017557",
+          "endNodeId": "n4578017558",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-6",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e43": {
+          "id": "e43",
+          "startNodeId": "n8669764313",
+          "endNodeId": "b12",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-6",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e44": {
+          "id": "e44",
+          "startNodeId": "n8318633104",
+          "endNodeId": "b13",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-18",
+          "direction": "forward",
+          "roadClass": "arterial",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e45": {
+          "id": "e45",
+          "startNodeId": "n9647769356",
+          "endNodeId": "n4578017557",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-6",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e46": {
+          "id": "e46",
+          "startNodeId": "n4578017558",
+          "endNodeId": "n42439981",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-6",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e47": {
+          "id": "e47",
+          "startNodeId": "n10224024813",
+          "endNodeId": "n42439984",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-19",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e48": {
+          "id": "e48",
+          "startNodeId": "n10224024814",
+          "endNodeId": "n10224024813",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-19",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e49": {
+          "id": "e49",
+          "startNodeId": "n42439984",
+          "endNodeId": "n10224024816",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-7",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e50": {
+          "id": "e50",
+          "startNodeId": "n10224024816",
+          "endNodeId": "n9235539560",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-7",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e51": {
+          "id": "e51",
+          "startNodeId": "b14",
+          "endNodeId": "n8318633103",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-2",
+          "direction": "forward",
+          "roadClass": "arterial",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e52": {
+          "id": "e52",
+          "startNodeId": "n8318633103",
+          "endNodeId": "n6597464446",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-2",
+          "direction": "forward",
+          "roadClass": "arterial",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e53": {
+          "id": "e53",
+          "startNodeId": "n10224032629",
+          "endNodeId": "n6597464445",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-2",
+          "direction": "forward",
+          "roadClass": "arterial",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e54": {
+          "id": "e54",
+          "startNodeId": "n10224032630",
+          "endNodeId": "n42428297",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-2",
+          "direction": "forward",
+          "roadClass": "arterial",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e55": {
+          "id": "e55",
+          "startNodeId": "n42428297",
+          "endNodeId": "n10224032629",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-2",
+          "direction": "forward",
+          "roadClass": "arterial",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e56": {
+          "id": "e56",
+          "startNodeId": "n6597464446",
+          "endNodeId": "n10224032630",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-2",
+          "direction": "forward",
+          "roadClass": "arterial",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e57": {
+          "id": "e57",
+          "startNodeId": "b15",
+          "endNodeId": "n10224024814",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-19",
+          "direction": "forward",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e58": {
+          "id": "e58",
+          "startNodeId": "n42428305",
+          "endNodeId": "n12989986307",
+          "alignment": [
+            [
+              60.66966983485306,
+              0,
+              -226.8033679998851
+            ]
+          ],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-20",
+          "direction": "both",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e59": {
+          "id": "e59",
+          "startNodeId": "n12989986304",
+          "endNodeId": "n12989986305",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-20",
+          "direction": "both",
+          "roadClass": "local",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e60": {
+          "id": "e60",
+          "startNodeId": "n1752942903",
+          "endNodeId": "n13915675578",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-15",
+          "direction": "both",
+          "roadClass": "service",
+          "joinMode": "auto",
+          "stackLevel": 0
+        },
+        "e61": {
+          "id": "e61",
+          "startNodeId": "n8396878498",
+          "endNodeId": "n8396878500",
+          "alignment": [],
+          "profileMode": "legacy",
+          "verticalProfile": [],
+          "styleId": "osm-15",
+          "direction": "both",
+          "roadClass": "service",
+          "joinMode": "auto",
+          "stackLevel": 0
+        }
+      },
+      "attachments": {},
+      "junctions": {
+        "n42439994": {
+          "nodeId": "n42439994",
+          "kind": "four-way-plus",
+          "treatment": "auto",
+          "approachControls": {},
+          "primaryMode": "auto",
+          "primaryEdgeIds": [
+            "e20",
+            "e4"
+          ],
+          "cornerRadii": {
+            "e18::e4": 6,
+            "e1::e4": 6,
+            "e1::e20": 6,
+            "e18::e20": 6
+          },
+          "manualBoundaryEnabled": false,
+          "manualBoundaryPoints": [],
+          "solverStatus": "auto"
+        },
+        "n5522182777": {
+          "nodeId": "n5522182777",
+          "kind": "four-way-plus",
+          "treatment": "auto",
+          "approachControls": {},
+          "primaryMode": "auto",
+          "primaryEdgeIds": [
+            "e2",
+            "e3"
+          ],
+          "cornerRadii": {
+            "e26::e3": 1.64775,
+            "e2::e26": 1.64775,
+            "e2::e37": 1.64775,
+            "e3::e37": 1.64775
+          },
+          "manualBoundaryEnabled": false,
+          "manualBoundaryPoints": [],
+          "solverStatus": "auto"
+        },
+        "n42439996": {
+          "nodeId": "n42439996",
+          "kind": "four-way-plus",
+          "treatment": "auto",
+          "approachControls": {},
+          "primaryMode": "auto",
+          "primaryEdgeIds": [
+            "e5",
+            "e6"
+          ],
+          "cornerRadii": {
+            "e21::e6": 0.5,
+            "e21::e5": 0.5,
+            "e4::e5": 0.5,
+            "e4::e6": 0.5
+          },
+          "manualBoundaryEnabled": false,
+          "manualBoundaryPoints": [],
+          "solverStatus": "auto"
+        },
+        "n42428305": {
+          "nodeId": "n42428305",
+          "kind": "multi-leg",
+          "treatment": "auto",
+          "approachControls": {},
+          "primaryMode": "auto",
+          "primaryEdgeIds": [
+            "e12",
+            "e6"
+          ],
+          "cornerRadii": {
+            "e12::e41": 0.5,
+            "e41::e6": 0.5,
+            "e58::e6": 0.5,
+            "e28::e58": 0.5,
+            "e12::e28": 0.5
+          },
+          "manualBoundaryEnabled": false,
+          "manualBoundaryPoints": [],
+          "solverStatus": "warning"
+        },
+        "n8396878498": {
+          "nodeId": "n8396878498",
+          "kind": "tee",
+          "treatment": "auto",
+          "approachControls": {},
+          "primaryMode": "auto",
+          "primaryEdgeIds": [
+            "e7",
+            "e8"
+          ],
+          "cornerRadii": {
+            "e61::e8": 0.5,
+            "e61::e7": 0.5,
+            "e7::e8": 0.5
+          },
+          "manualBoundaryEnabled": false,
+          "manualBoundaryPoints": [],
+          "solverStatus": "auto"
+        },
+        "n13915675578": {
+          "nodeId": "n13915675578",
+          "kind": "tee",
+          "treatment": "auto",
+          "approachControls": {},
+          "primaryMode": "auto",
+          "primaryEdgeIds": [
+            "e10",
+            "e9"
+          ],
+          "cornerRadii": {
+            "e10::e9": 1.64775,
+            "e10::e60": 1.64775,
+            "e60::e9": 1.64775
+          },
+          "manualBoundaryEnabled": false,
+          "manualBoundaryPoints": [],
+          "solverStatus": "auto"
+        },
+        "n8396878495": {
+          "nodeId": "n8396878495",
+          "kind": "tee",
+          "treatment": "auto",
+          "approachControls": {},
+          "primaryMode": "auto",
+          "primaryEdgeIds": [
+            "e10",
+            "e11"
+          ],
+          "cornerRadii": {
+            "e10::e11": 1.64775,
+            "e11::e38": 1.64775,
+            "e10::e38": 1.64775
+          },
+          "manualBoundaryEnabled": false,
+          "manualBoundaryPoints": [],
+          "solverStatus": "auto"
+        },
+        "n42439990": {
+          "nodeId": "n42439990",
+          "kind": "four-way-plus",
+          "treatment": "auto",
+          "approachControls": {},
+          "primaryMode": "auto",
+          "primaryEdgeIds": [
+            "e15",
+            "e32"
+          ],
+          "cornerRadii": {
+            "e20::e32": 6,
+            "e15::e20": 6,
+            "e13::e15": 6,
+            "e13::e32": 6
+          },
+          "manualBoundaryEnabled": false,
+          "manualBoundaryPoints": [],
+          "solverStatus": "auto"
+        },
+        "n42439984": {
+          "nodeId": "n42439984",
+          "kind": "four-way-plus",
+          "treatment": "auto",
+          "approachControls": {},
+          "primaryMode": "auto",
+          "primaryEdgeIds": [
+            "e47",
+            "e49"
+          ],
+          "cornerRadii": {
+            "e29::e47": 0.5,
+            "e29::e49": 0.5,
+            "e14::e49": 0.5,
+            "e14::e47": 0.5
+          },
+          "manualBoundaryEnabled": false,
+          "manualBoundaryPoints": [],
+          "solverStatus": "auto"
+        },
+        "n42439981": {
+          "nodeId": "n42439981",
+          "kind": "four-way-plus",
+          "treatment": "auto",
+          "approachControls": {},
+          "primaryMode": "auto",
+          "primaryEdgeIds": [
+            "e23",
+            "e46"
+          ],
+          "cornerRadii": {
+            "e14::e23": 0.5,
+            "e14::e46": 0.5,
+            "e24::e46": 0.5,
+            "e23::e24": 0.5
+          },
+          "manualBoundaryEnabled": false,
+          "manualBoundaryPoints": [],
+          "solverStatus": "auto"
+        },
+        "n8250908767": {
+          "nodeId": "n8250908767",
+          "kind": "tee",
+          "treatment": "auto",
+          "approachControls": {},
+          "primaryMode": "auto",
+          "primaryEdgeIds": [
+            "e15",
+            "e16"
+          ],
+          "cornerRadii": {
+            "e15::e16": 2.535,
+            "e16::e34": 2.535,
+            "e15::e34": 2.535
+          },
+          "manualBoundaryEnabled": false,
+          "manualBoundaryPoints": [],
+          "solverStatus": "auto"
+        },
+        "n8318633104": {
+          "nodeId": "n8318633104",
+          "kind": "tee",
+          "treatment": "auto",
+          "approachControls": {},
+          "primaryMode": "auto",
+          "primaryEdgeIds": [
+            "e16",
+            "e44"
+          ],
+          "cornerRadii": {
+            "e16::e44": 0.5,
+            "e36::e44": 0.5,
+            "e16::e36": 0.5
+          },
+          "manualBoundaryEnabled": false,
+          "manualBoundaryPoints": [],
+          "solverStatus": "auto"
+        },
+        "n42428303": {
+          "nodeId": "n42428303",
+          "kind": "tee",
+          "treatment": "auto",
+          "approachControls": {},
+          "primaryMode": "auto",
+          "primaryEdgeIds": [
+            "e17",
+            "e19"
+          ],
+          "cornerRadii": {
+            "e17::e28": 0.5,
+            "e19::e28": 0.5,
+            "e17::e19": 0.5
+          },
+          "manualBoundaryEnabled": false,
+          "manualBoundaryPoints": [],
+          "solverStatus": "auto"
+        },
+        "n12989986305": {
+          "nodeId": "n12989986305",
+          "kind": "tee",
+          "treatment": "auto",
+          "approachControls": {},
+          "primaryMode": "auto",
+          "primaryEdgeIds": [
+            "e18",
+            "e19"
+          ],
+          "cornerRadii": {
+            "e19::e59": 0.5,
+            "e18::e59": 0.5,
+            "e18::e19": 0.5
+          },
+          "manualBoundaryEnabled": false,
+          "manualBoundaryPoints": [],
+          "solverStatus": "auto"
+        },
+        "n42428297": {
+          "nodeId": "n42428297",
+          "kind": "four-way-plus",
+          "treatment": "auto",
+          "approachControls": {},
+          "primaryMode": "auto",
+          "primaryEdgeIds": [
+            "e54",
+            "e55"
+          ],
+          "cornerRadii": {
+            "e22::e55": 0.5,
+            "e22::e54": 0.5,
+            "e29::e54": 0.5,
+            "e29::e55": 0.5
+          },
+          "manualBoundaryEnabled": false,
+          "manualBoundaryPoints": [],
+          "solverStatus": "auto"
+        },
+        "n8669764313": {
+          "nodeId": "n8669764313",
+          "kind": "tee",
+          "treatment": "auto",
+          "approachControls": {},
+          "primaryMode": "auto",
+          "primaryEdgeIds": [
+            "e23",
+            "e43"
+          ],
+          "cornerRadii": {
+            "e40::e43": 0.5,
+            "e23::e40": 0.5,
+            "e23::e43": 0.5
+          },
+          "manualBoundaryEnabled": false,
+          "manualBoundaryPoints": [],
+          "solverStatus": "auto"
+        },
+        "n5522182776": {
+          "nodeId": "n5522182776",
+          "kind": "tee",
+          "treatment": "auto",
+          "approachControls": {},
+          "primaryMode": "auto",
+          "primaryEdgeIds": [
+            "e31",
+            "e32"
+          ],
+          "cornerRadii": {
+            "e31::e32": 2.535,
+            "e25::e32": 2.535,
+            "e25::e31": 2.535
+          },
+          "manualBoundaryEnabled": false,
+          "manualBoundaryPoints": [],
+          "solverStatus": "auto"
+        },
+        "n8250892565": {
+          "nodeId": "n8250892565",
+          "kind": "tee",
+          "treatment": "auto",
+          "approachControls": {},
+          "primaryMode": "auto",
+          "primaryEdgeIds": [
+            "e30",
+            "e31"
+          ],
+          "cornerRadii": {
+            "e30::e33": 1.64775,
+            "e31::e33": 1.64775,
+            "e30::e31": 1.64775
+          },
+          "manualBoundaryEnabled": false,
+          "manualBoundaryPoints": [],
+          "solverStatus": "auto"
+        },
+        "n8318633103": {
+          "nodeId": "n8318633103",
+          "kind": "tee",
+          "treatment": "auto",
+          "approachControls": {},
+          "primaryMode": "auto",
+          "primaryEdgeIds": [
+            "e51",
+            "e52"
+          ],
+          "cornerRadii": {
+            "e51::e52": 3.9000000000000004,
+            "e35::e51": 3.9000000000000004,
+            "e35::e52": 3.9000000000000004
+          },
+          "manualBoundaryEnabled": false,
+          "manualBoundaryPoints": [],
+          "solverStatus": "auto"
+        }
+      },
+      "stylePresets": {
+        "alley": {
+          "id": "alley",
+          "name": "Alley",
+          "laneCount": 1,
+          "laneWidth": 3.2,
+          "shoulderWidth": 0,
+          "sidewalkWidth": 0,
+          "medianWidth": 0,
+          "surfaceThickness": 0.1,
+          "surfaceColor": "#484a4d",
+          "markingColor": "#f3f1df",
+          "markings": false,
+          "leftSide": {
+            "parkingLaneWidth": 0,
+            "bikeLaneWidth": 0,
+            "gutterWidth": 0,
+            "curbWidth": 0,
+            "vergeWidth": 0,
+            "sidewalkWidth": 0
+          },
+          "rightSide": {
+            "parkingLaneWidth": 0,
+            "bikeLaneWidth": 0,
+            "gutterWidth": 0,
+            "curbWidth": 0,
+            "vergeWidth": 0,
+            "sidewalkWidth": 0
+          }
+        },
+        "local-street": {
+          "id": "local-street",
+          "name": "Local street",
+          "laneCount": 2,
+          "laneWidth": 3.25,
+          "shoulderWidth": 0.5,
+          "sidewalkWidth": 0.5,
+          "medianWidth": 0,
+          "surfaceThickness": 0.14,
+          "surfaceColor": "#3f4246",
+          "markingColor": "#f3f1df",
+          "markings": true,
+          "leftSide": {
+            "parkingLaneWidth": 0,
+            "bikeLaneWidth": 0,
+            "gutterWidth": 0.35,
+            "curbWidth": 0.15,
+            "vergeWidth": 0.45,
+            "sidewalkWidth": 0.5
+          },
+          "rightSide": {
+            "parkingLaneWidth": 0,
+            "bikeLaneWidth": 0,
+            "gutterWidth": 0.35,
+            "curbWidth": 0.15,
+            "vergeWidth": 0.45,
+            "sidewalkWidth": 0.5
+          }
+        },
+        "collector": {
+          "id": "collector",
+          "name": "Collector",
+          "laneCount": 2,
+          "laneWidth": 3.5,
+          "shoulderWidth": 1,
+          "sidewalkWidth": 0.6,
+          "medianWidth": 0,
+          "surfaceThickness": 0.18,
+          "surfaceColor": "#393c40",
+          "markingColor": "#f3f1df",
+          "markings": true,
+          "leftSide": {
+            "parkingLaneWidth": 0,
+            "bikeLaneWidth": 1.6,
+            "gutterWidth": 0.4,
+            "curbWidth": 0.15,
+            "vergeWidth": 0.6,
+            "sidewalkWidth": 0.6
+          },
+          "rightSide": {
+            "parkingLaneWidth": 0,
+            "bikeLaneWidth": 1.6,
+            "gutterWidth": 0.4,
+            "curbWidth": 0.15,
+            "vergeWidth": 0.6,
+            "sidewalkWidth": 0.6
+          }
+        },
+        "arterial": {
+          "id": "arterial",
+          "name": "Divided arterial",
+          "laneCount": 4,
+          "laneWidth": 3.5,
+          "shoulderWidth": 0.75,
+          "sidewalkWidth": 0.67,
+          "medianWidth": 2.4,
+          "surfaceThickness": 0.22,
+          "surfaceColor": "#35383c",
+          "markingColor": "#f3f1df",
+          "markings": true,
+          "leftSide": {
+            "parkingLaneWidth": 0,
+            "bikeLaneWidth": 1.8,
+            "gutterWidth": 0.45,
+            "curbWidth": 0.18,
+            "vergeWidth": 0.8,
+            "sidewalkWidth": 0.67
+          },
+          "rightSide": {
+            "parkingLaneWidth": 0,
+            "bikeLaneWidth": 1.8,
+            "gutterWidth": 0.45,
+            "curbWidth": 0.18,
+            "vergeWidth": 0.8,
+            "sidewalkWidth": 0.67
+          }
+        },
+        "highway": {
+          "id": "highway",
+          "name": "Highway",
+          "laneCount": 4,
+          "laneWidth": 3.65,
+          "shoulderWidth": 2.5,
+          "sidewalkWidth": 0,
+          "medianWidth": 3,
+          "surfaceThickness": 0.28,
+          "surfaceColor": "#303338",
+          "markingColor": "#f3f1df",
+          "markings": true,
+          "leftSide": {
+            "parkingLaneWidth": 0,
+            "bikeLaneWidth": 0,
+            "gutterWidth": 0,
+            "curbWidth": 0,
+            "vergeWidth": 1.2,
+            "sidewalkWidth": 0
+          },
+          "rightSide": {
+            "parkingLaneWidth": 0,
+            "bikeLaneWidth": 0,
+            "gutterWidth": 0,
+            "curbWidth": 0,
+            "vergeWidth": 1.2,
+            "sidewalkWidth": 0
+          }
+        },
+        "osm-1": {
+          "id": "osm-1",
+          "name": "West 47th Street",
+          "laneCount": 1,
+          "laneWidth": 3.2,
+          "shoulderWidth": 0,
+          "sidewalkWidth": 1.8,
+          "medianWidth": 0,
+          "surfaceThickness": 0.14,
+          "surfaceColor": "#3f4246",
+          "markingColor": "#f3f1df",
+          "markings": true,
+          "leftSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          },
+          "rightSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          }
+        },
+        "osm-2": {
+          "id": "osm-2",
+          "name": "West 45th Street",
+          "laneCount": 1,
+          "laneWidth": 3.2,
+          "shoulderWidth": 0,
+          "sidewalkWidth": 1.8,
+          "medianWidth": 0,
+          "surfaceThickness": 0.22,
+          "surfaceColor": "#35383c",
+          "markingColor": "#f3f1df",
+          "markings": true,
+          "leftSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          },
+          "rightSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          }
+        },
+        "osm-3": {
+          "id": "osm-3",
+          "name": "7th Avenue",
+          "laneCount": 3,
+          "laneWidth": 3.2,
+          "shoulderWidth": 0,
+          "sidewalkWidth": 1.8,
+          "medianWidth": 0,
+          "surfaceThickness": 0.22,
+          "surfaceColor": "#35383c",
+          "markingColor": "#f3f1df",
+          "markings": true,
+          "leftSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 2.2
+          },
+          "rightSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 2.2
+          }
+        },
+        "osm-4": {
+          "id": "osm-4",
+          "name": "West 48th Street",
+          "laneCount": 1,
+          "laneWidth": 3.2,
+          "shoulderWidth": 0,
+          "sidewalkWidth": 1.8,
+          "medianWidth": 0,
+          "surfaceThickness": 0.14,
+          "surfaceColor": "#3f4246",
+          "markingColor": "#f3f1df",
+          "markings": true,
+          "leftSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          },
+          "rightSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          }
+        },
+        "osm-5": {
+          "id": "osm-5",
+          "name": "West 48th Street",
+          "laneCount": 3,
+          "laneWidth": 3.2,
+          "shoulderWidth": 0,
+          "sidewalkWidth": 1.8,
+          "medianWidth": 0,
+          "surfaceThickness": 0.14,
+          "surfaceColor": "#3f4246",
+          "markingColor": "#f3f1df",
+          "markings": true,
+          "leftSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          },
+          "rightSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          }
+        },
+        "osm-6": {
+          "id": "osm-6",
+          "name": "West 43rd Street",
+          "laneCount": 3,
+          "laneWidth": 3.2,
+          "shoulderWidth": 0,
+          "sidewalkWidth": 1.8,
+          "medianWidth": 0,
+          "surfaceThickness": 0.14,
+          "surfaceColor": "#3f4246",
+          "markingColor": "#f3f1df",
+          "markings": true,
+          "leftSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          },
+          "rightSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          }
+        },
+        "osm-7": {
+          "id": "osm-7",
+          "name": "West 44th Street",
+          "laneCount": 1,
+          "laneWidth": 3.2,
+          "shoulderWidth": 0,
+          "sidewalkWidth": 1.8,
+          "medianWidth": 0,
+          "surfaceThickness": 0.14,
+          "surfaceColor": "#3f4246",
+          "markingColor": "#f3f1df",
+          "markings": true,
+          "leftSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 1.5,
+            "parkingLaneWidth": 0
+          },
+          "rightSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          }
+        },
+        "osm-8": {
+          "id": "osm-8",
+          "name": "West 48th Street",
+          "laneCount": 2,
+          "laneWidth": 3.2,
+          "shoulderWidth": 0,
+          "sidewalkWidth": 1.8,
+          "medianWidth": 0,
+          "surfaceThickness": 0.14,
+          "surfaceColor": "#3f4246",
+          "markingColor": "#f3f1df",
+          "markings": true,
+          "leftSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 2.2
+          },
+          "rightSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 2.2
+          }
+        },
+        "osm-9": {
+          "id": "osm-9",
+          "name": "7th Avenue",
+          "laneCount": 5,
+          "laneWidth": 3.2,
+          "shoulderWidth": 0,
+          "sidewalkWidth": 1.8,
+          "medianWidth": 0,
+          "surfaceThickness": 0.22,
+          "surfaceColor": "#35383c",
+          "markingColor": "#f3f1df",
+          "markings": true,
+          "leftSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          },
+          "rightSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          }
+        },
+        "osm-10": {
+          "id": "osm-10",
+          "name": "7th Avenue",
+          "laneCount": 4,
+          "laneWidth": 3.2,
+          "shoulderWidth": 0,
+          "sidewalkWidth": 1.8,
+          "medianWidth": 0,
+          "surfaceThickness": 0.22,
+          "surfaceColor": "#35383c",
+          "markingColor": "#f3f1df",
+          "markings": true,
+          "leftSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          },
+          "rightSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          }
+        },
+        "osm-11": {
+          "id": "osm-11",
+          "name": "West 46th Street",
+          "laneCount": 1,
+          "laneWidth": 3.2,
+          "shoulderWidth": 0,
+          "sidewalkWidth": 1.8,
+          "medianWidth": 0,
+          "surfaceThickness": 0.22,
+          "surfaceColor": "#35383c",
+          "markingColor": "#f3f1df",
+          "markings": true,
+          "leftSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          },
+          "rightSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          }
+        },
+        "osm-12": {
+          "id": "osm-12",
+          "name": "West 47th Street",
+          "laneCount": 2,
+          "laneWidth": 3.2,
+          "shoulderWidth": 0,
+          "sidewalkWidth": 1.8,
+          "medianWidth": 0,
+          "surfaceThickness": 0.14,
+          "surfaceColor": "#3f4246",
+          "markingColor": "#f3f1df",
+          "markings": true,
+          "leftSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          },
+          "rightSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          }
+        },
+        "osm-13": {
+          "id": "osm-13",
+          "name": "7th Avenue",
+          "laneCount": 3,
+          "laneWidth": 3.2,
+          "shoulderWidth": 0,
+          "sidewalkWidth": 1.8,
+          "medianWidth": 0,
+          "surfaceThickness": 0.22,
+          "surfaceColor": "#35383c",
+          "markingColor": "#f3f1df",
+          "markings": true,
+          "leftSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 1.5,
+            "parkingLaneWidth": 0
+          },
+          "rightSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          }
+        },
+        "osm-14": {
+          "id": "osm-14",
+          "name": "West 43rd Street",
+          "laneCount": 2,
+          "laneWidth": 3.2,
+          "shoulderWidth": 0,
+          "sidewalkWidth": 1.8,
+          "medianWidth": 0,
+          "surfaceThickness": 0.14,
+          "surfaceColor": "#3f4246",
+          "markingColor": "#f3f1df",
+          "markings": true,
+          "leftSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          },
+          "rightSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          }
+        },
+        "osm-15": {
+          "id": "osm-15",
+          "name": "service street",
+          "laneCount": 1,
+          "laneWidth": 3.2,
+          "shoulderWidth": 0,
+          "sidewalkWidth": 0,
+          "medianWidth": 0,
+          "surfaceThickness": 0.1,
+          "surfaceColor": "#484a4d",
+          "markingColor": "#f3f1df",
+          "markings": false,
+          "leftSide": {
+            "sidewalkWidth": 0,
+            "curbWidth": 0,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          },
+          "rightSide": {
+            "sidewalkWidth": 0,
+            "curbWidth": 0,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          }
+        },
+        "osm-16": {
+          "id": "osm-16",
+          "name": "Broadway",
+          "laneCount": 1,
+          "laneWidth": 3.2,
+          "shoulderWidth": 0,
+          "sidewalkWidth": 1.8,
+          "medianWidth": 0,
+          "surfaceThickness": 0.14,
+          "surfaceColor": "#3f4246",
+          "markingColor": "#f3f1df",
+          "markings": false,
+          "leftSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 1.5,
+            "parkingLaneWidth": 0
+          },
+          "rightSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          }
+        },
+        "osm-17": {
+          "id": "osm-17",
+          "name": "Broadway",
+          "laneCount": 1,
+          "laneWidth": 3.2,
+          "shoulderWidth": 0,
+          "sidewalkWidth": 1.8,
+          "medianWidth": 0,
+          "surfaceThickness": 0.14,
+          "surfaceColor": "#3f4246",
+          "markingColor": "#f3f1df",
+          "markings": false,
+          "leftSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 1.5,
+            "parkingLaneWidth": 0
+          },
+          "rightSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 2.2
+          }
+        },
+        "osm-18": {
+          "id": "osm-18",
+          "name": "West 46th Street",
+          "laneCount": 2,
+          "laneWidth": 3.2,
+          "shoulderWidth": 0,
+          "sidewalkWidth": 1.8,
+          "medianWidth": 0,
+          "surfaceThickness": 0.22,
+          "surfaceColor": "#35383c",
+          "markingColor": "#f3f1df",
+          "markings": true,
+          "leftSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          },
+          "rightSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 2.2
+          }
+        },
+        "osm-19": {
+          "id": "osm-19",
+          "name": "West 44th Street",
+          "laneCount": 1,
+          "laneWidth": 3.2,
+          "shoulderWidth": 0,
+          "sidewalkWidth": 1.8,
+          "medianWidth": 0,
+          "surfaceThickness": 0.14,
+          "surfaceColor": "#3f4246",
+          "markingColor": "#f3f1df",
+          "markings": true,
+          "leftSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          },
+          "rightSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          }
+        },
+        "osm-20": {
+          "id": "osm-20",
+          "name": "living street street",
+          "laneCount": 2,
+          "laneWidth": 3.2,
+          "shoulderWidth": 0,
+          "sidewalkWidth": 1.8,
+          "medianWidth": 0,
+          "surfaceThickness": 0.14,
+          "surfaceColor": "#3f4246",
+          "markingColor": "#f3f1df",
+          "markings": false,
+          "leftSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          },
+          "rightSide": {
+            "sidewalkWidth": 1.8,
+            "curbWidth": 0.15,
+            "gutterWidth": 0,
+            "vergeWidth": 0,
+            "bikeLaneWidth": 0,
+            "parkingLaneWidth": 0
+          }
+        }
+      },
+      "activeStyleId": "local-street"
+    }
+  ],
+  "source": {
+    "baseElevation": null,
+    "center": {
+      "lat": 40.758,
+      "lon": -73.9855
+    },
+    "provider": "openstreetmap",
+    "radiusMeters": 250
+  },
+  "stats": {
+    "ways": 70,
+    "edges": 61,
+    "junctions": 19,
+    "components": 1,
+    "droppedComponents": 0,
+    "failedElevationTiles": 0
+  }
+}

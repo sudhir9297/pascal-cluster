@@ -34,6 +34,20 @@ function renderRoad(node: RoadNetworkNode): string {
   return renderThree(createElement(RoadNetworkModel, { node }))
 }
 
+test('renders imported mapped sidewalk and cycleway geometry', () => {
+  const result = insertRoadSegment(createEmptyRoadGraph(), [0, 0, 0], [20, 0, 0])
+  const node = RoadNetworkNode.parse({
+    ...result.graph,
+    osmMappedSurfaces: [
+      { id: 101, kind: 'sidewalk', tags: { highway: 'footway', width: '2' }, points: [[0, 0, 3], [20, 0, 3]] },
+      { id: 102, kind: 'cycleway', tags: { highway: 'cycleway' }, points: [[0, 0, -3], [20, 0, -3]] },
+    ],
+  })
+  const markup = renderRoad(node)
+  expect(markup).toContain('name="road-mapped-sidewalk:101"')
+  expect(markup).toContain('name="road-mapped-cycleway:102"')
+})
+
 function polygonContains(
   points: readonly (readonly [number, number])[],
   target: readonly [number, number],
@@ -490,4 +504,12 @@ describe('road WebGPU resource lifecycle', () => {
     await Bun.sleep(550)
     expect(disposeCount).toBe(1)
   })
+})
+
+test('renders every captured Times Square junction with the production seam builder', async () => {
+  const node = RoadNetworkNode.parse(await Bun.file(`${import.meta.dir}/__fixtures__/osm-times-square-roads.json`).json())
+  const markup = renderRoad(node)
+  expect(markup.match(/name="road-junction-surface"/g)).toHaveLength(19)
+  expect(markup).toContain('name="road-junction-sidewalk"')
+  expect(markup).toContain('name="road-pavement-body"')
 })

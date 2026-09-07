@@ -1,3 +1,4 @@
+import { approachTurnLanes, turnArrowPolygons, type RoadTurn } from './road-turn-arrows'
 import {
   buildJunctionBoundaryGeometry,
   sampleRoadEdgePoints,
@@ -94,7 +95,7 @@ function offsetTransitionPath(
     const offset = sample.laneBoundaryOffsets[boundaryIndex] ?? 0
     return [
       sample.point[0] + left[0] * offset,
-      sample.point[1] + sample.surfaceThickness + 0.014,
+      sample.point[1] + 0.014,
       sample.point[2] + left[1] * offset,
     ]
   })
@@ -188,29 +189,25 @@ function orientedRectangle(
   ]
 }
 
-function arrowPolygons(sample: PathSample, lateralOffset: number): Point3[][] {
+function arrowPolygons(
+  sample: PathSample,
+  lateralOffset: number,
+  turns: RoadTurn[],
+  laneWidth: number,
+): Point3[][] {
   const forward = [-sample.direction[0], -sample.direction[1]] as const
-  const left = [-forward[1], forward[0]] as const
+  const right = [-forward[1], forward[0]] as const
   const center = [
     sample.point[0] - sample.direction[1] * lateralOffset,
     sample.point[1],
     sample.point[2] + sample.direction[0] * lateralOffset,
   ] as const
   const toWorld = ([along, across]: readonly [number, number]): Point3 => [
-    center[0] + forward[0] * along + left[0] * across,
+    center[0] + forward[0] * along + right[0] * across * Math.min(1, laneWidth / 3),
     center[1],
-    center[2] + forward[1] * along + left[1] * across,
+    center[2] + forward[1] * along + right[1] * across * Math.min(1, laneWidth / 3),
   ]
-  const shaft: Array<readonly [number, number]> = [
-    [-1.7, 0.22], [0.55, 0.22], [0.55, -0.22], [-1.7, -0.22],
-  ]
-  const head: Array<readonly [number, number]> = [
-    [0.15, 0.78], [2.1, 0], [0.15, -0.78],
-  ]
-  return [
-    shaft.map(toWorld),
-    head.map(toWorld),
-  ]
+  return turnArrowPolygons(turns).map((polygon) => polygon.map(toWorld))
 }
 
 function yieldTeeth(sample: PathSample, centerOffset: number, width: number): Point3[][] {
@@ -313,7 +310,7 @@ export function buildRoadNetworkMarkings(node: RoadNetworkNode): RoadMarkingPoly
     )
     const points = trimmed.samples.map((sample) => [
       sample.point[0],
-      sample.point[1] + sample.surfaceThickness + 0.014,
+      sample.point[1] + 0.014,
       sample.point[2],
     ] as Point3)
     if (points.length < 2) continue
@@ -350,7 +347,7 @@ export function buildRoadNetworkMarkings(node: RoadNetworkNode): RoadMarkingPoly
       if (!style?.markings || cut === undefined) continue
       const sampled = sampleRoadEdgePoints(node, edge, 96)
       const outward = edge.startNodeId === junction.nodeId ? sampled : [...sampled].reverse()
-      const yOffset = style.surfaceThickness + 0.016
+      const yOffset = 0.016
       const elevated = outward.map((point) => [point[0], point[1] + yOffset, point[2]] as Point3)
       const laneOffsets = incomingLaneOffsets(
 			edge,
@@ -360,8 +357,14 @@ export function buildRoadNetworkMarkings(node: RoadNetworkNode): RoadMarkingPoly
 		)
       const arrowSample = pointAtDistance(elevated, cut + 10.5)
       if (arrowSample) {
-        for (const laneOffset of laneOffsets) {
-          for (const points of arrowPolygons(arrowSample, laneOffset)) {
+        const mappedTurns = edge.osmSource && edge.direction === 'both' && style.laneCount % 2 !== 0
+          ? []
+          : approachTurnLanes(edge, junction.nodeId, laneOffsets.length)
+        // Positive outward offsets are the incoming driver's left side.
+        const orderedOffsets = [...laneOffsets].sort((a, b) => b - a)
+        for (const [laneIndex, laneOffset] of orderedOffsets.entries()) {
+          const turns = mappedTurns === undefined ? ['through' as const] : mappedTurns[laneIndex] ?? []
+          for (const points of arrowPolygons(arrowSample, laneOffset, turns, style.laneWidth)) {
             polygons.push({
               color: regionalPack.markingColor,
               edgeId: edge.id,

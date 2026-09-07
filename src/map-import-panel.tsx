@@ -48,6 +48,17 @@ const PHASE_LABELS: Record<OsmImportPhase, string> = {
 /** Street-level zoom so a searched place lands in the flat map, not the globe. */
 const PLACE_ZOOM = 15
 
+const MAP_DIALOG_LAYOUT_CSS = `
+.streetscape-map-dialog{display:block;position:fixed;left:50%;top:50%;inset:auto;width:min(1120px,calc(100vw - 2rem));height:min(820px,calc(100dvh - 2rem));margin:0;transform:translate(-50%,-50%);overflow:hidden;box-sizing:border-box}
+.streetscape-map-dialog>div{display:flex!important;flex-direction:column!important;height:100%!important;min-height:0!important}
+.streetscape-map-dialog header{display:flex!important;align-items:center;gap:12px;flex:0 0 auto}
+.streetscape-map-dialog header form{display:flex!important;flex:1 1 auto;min-width:0;gap:10px}
+.streetscape-map-dialog .map-workspace{display:grid!important;grid-template-columns:minmax(0,1fr) 300px!important;flex:1 1 auto;min-height:0;overflow:hidden}
+.streetscape-map-dialog .map-workspace>div:first-child{display:flex!important;flex-direction:column!important;gap:12px;min-width:0;min-height:0;height:100%}
+.streetscape-map-dialog .map-sidebar{display:flex!important;flex-direction:column!important;min-width:0;min-height:0;overflow-y:auto}
+@media(max-width:760px){.streetscape-map-dialog{width:calc(100vw - 24px);height:calc(100dvh - 24px)}.streetscape-map-dialog .map-workspace{display:flex;flex-direction:column;overflow-y:auto}.streetscape-map-dialog .map-sidebar{max-height:none;overflow:visible}}
+`
+
 /** Choose a street-level zoom that keeps the complete import circle visible. */
 function fitZoomForRadius(centerLat: number, radiusMeters: number): number {
 	const earthCircumferenceMeters = 40_075_016.686
@@ -443,6 +454,7 @@ function MapImportDialog({
 			onClose={() => onOpenChange(false)}
 			ref={dialogRef}
 		>
+			<style dangerouslySetInnerHTML={{ __html: MAP_DIALOG_LAYOUT_CSS }} />
 			<div className="flex h-full min-h-0 flex-col" style={{ height: '100%' }}>
 				<header className="flex items-center gap-3 border-border border-b px-5 py-3">
 					<form

@@ -58,7 +58,7 @@ function sampleEarthwork(
 	const normalZ = (dx / length) * direction;
 	const innerX = point[0] + normalX * halfWidth;
 	const innerZ = point[2] + normalZ * halfWidth;
-	const innerY = point[1] + surfaceThickness - 0.015;
+	const innerY = point[1] - surfaceThickness;
 	const terrainAtEdge = surfaceHeightAt(field, innerX, innerZ);
 	const initialDifference = innerY - terrainAtEdge;
 	if (Math.abs(initialDifference) <= 0.05) return null;

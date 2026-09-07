@@ -3,6 +3,7 @@ import type { RoadSideComponents, RoadStylePreset } from './schema'
 export type RoadSide = 'left' | 'right'
 export type RoadSideComponentKind =
   | 'parking-lane'
+  | 'bus-lane'
   | 'bike-lane'
   | 'gutter'
   | 'curb'
@@ -25,11 +26,14 @@ export type RoadSideComponentStrip = {
 
 export type RoadCrossSection = {
   carriagewayWidth: number
-  sides: Record<RoadSide, {
-    components: RoadSideComponentStrip[]
-    outerOffset: number
-    width: number
-  }>
+  sides: Record<
+    RoadSide,
+    {
+      components: RoadSideComponentStrip[]
+      outerOffset: number
+      width: number
+    }
+  >
   totalWidth: number
 }
 
@@ -50,6 +54,7 @@ export const ROAD_SIDE_COMPONENT_SPECS: ReadonlyArray<{
   widthKey: RoadSideComponentWidthKey
 }> = [
   { kind: 'parking-lane', widthKey: 'parkingLaneWidth', color: '#44484c', elevationOffset: 0.004 },
+  { kind: 'bus-lane', widthKey: 'busLaneWidth', color: '#326b83', elevationOffset: 0.006 },
   { kind: 'bike-lane', widthKey: 'bikeLaneWidth', color: '#517665', elevationOffset: 0.008 },
   { kind: 'gutter', widthKey: 'gutterWidth', color: '#85888a', elevationOffset: 0.018 },
   { kind: 'curb', widthKey: 'curbWidth', color: '#d8d5cd', elevationOffset: 0.105 },
@@ -67,14 +72,17 @@ export function resolveRoadSideComponents(
   side: RoadSide,
 ): RoadSideComponents {
   const authored = side === 'left' ? style.leftSide : style.rightSide
-  return authored ?? {
-    parkingLaneWidth: 0,
-    bikeLaneWidth: 0,
-    gutterWidth: 0,
-    curbWidth: 0,
-    vergeWidth: 0,
-    sidewalkWidth: style.sidewalkWidth,
-  }
+  return (
+    authored ?? {
+      parkingLaneWidth: 0,
+      busLaneWidth: 0,
+      bikeLaneWidth: 0,
+      gutterWidth: 0,
+      curbWidth: 0,
+      vergeWidth: 0,
+      sidewalkWidth: style.sidewalkWidth,
+    }
+  )
 }
 
 /** Apply one independently authored configuration to each side of a style. */
@@ -94,32 +102,37 @@ export function buildRoadCrossSection(style: RoadStylePreset): RoadCrossSection 
   const carriagewayWidth =
     style.laneCount * style.laneWidth + style.shoulderWidth * 2 + style.medianWidth
   const carriagewayHalfWidth = carriagewayWidth / 2
-  const sides = Object.fromEntries((['left', 'right'] as const).map((side) => {
-    const config = resolveRoadSideComponents(style, side)
-    const sign = side === 'left' ? 1 : -1
-    let cursor = carriagewayHalfWidth
-    const components: RoadSideComponentStrip[] = []
-    for (const spec of ROAD_SIDE_COMPONENT_SPECS) {
-      const width = config[spec.widthKey]
-      if (width <= 0) continue
-      const innerOffset = cursor
-      const outerOffset = cursor + width
-      components.push({
-        ...spec,
-        innerOffset,
-        lateralOffset: sign * (innerOffset + width / 2),
-        outerOffset,
+  const sides = Object.fromEntries(
+    (['left', 'right'] as const).map((side) => {
+      const config = resolveRoadSideComponents(style, side)
+      const sign = side === 'left' ? 1 : -1
+      let cursor = carriagewayHalfWidth
+      const components: RoadSideComponentStrip[] = []
+      for (const spec of ROAD_SIDE_COMPONENT_SPECS) {
+        const width = config[spec.widthKey] ?? 0
+        if (width <= 0) continue
+        const innerOffset = cursor
+        const outerOffset = cursor + width
+        components.push({
+          ...spec,
+          innerOffset,
+          lateralOffset: sign * (innerOffset + width / 2),
+          outerOffset,
+          side,
+          width,
+        })
+        cursor = outerOffset
+      }
+      return [
         side,
-        width,
-      })
-      cursor = outerOffset
-    }
-    return [side, {
-      components,
-      outerOffset: cursor,
-      width: cursor - carriagewayHalfWidth,
-    }]
-  })) as RoadCrossSection['sides']
+        {
+          components,
+          outerOffset: cursor,
+          width: cursor - carriagewayHalfWidth,
+        },
+      ]
+    }),
+  ) as RoadCrossSection['sides']
   return {
     carriagewayWidth,
     sides,
@@ -136,7 +149,10 @@ export function buildRoadJunctionBands(styles: RoadStylePreset[]): RoadJunctionB
     for (const side of ['left', 'right'] as const) {
       const config = resolveRoadSideComponents(style, side)
       for (const spec of ROAD_SIDE_COMPONENT_SPECS) {
-        maximumWidths[spec.widthKey] = Math.max(maximumWidths[spec.widthKey], config[spec.widthKey])
+        maximumWidths[spec.widthKey] = Math.max(
+          maximumWidths[spec.widthKey],
+          config[spec.widthKey] ?? 0,
+        )
       }
     }
   }
@@ -145,12 +161,14 @@ export function buildRoadJunctionBands(styles: RoadStylePreset[]): RoadJunctionB
     const width = maximumWidths[spec.widthKey]
     if (width <= 0) return []
     outerWidth += width
-    return [{
-      color: spec.color,
-      elevationOffset: spec.elevationOffset,
-      kind: spec.kind,
-      outerWidth,
-      width,
-    }]
+    return [
+      {
+        color: spec.color,
+        elevationOffset: spec.elevationOffset,
+        kind: spec.kind,
+        outerWidth,
+        width,
+      },
+    ]
   })
 }

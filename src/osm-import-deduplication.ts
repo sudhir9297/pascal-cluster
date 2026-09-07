@@ -340,6 +340,10 @@ function addEdgeRun(
 		endNodeId: endId,
 		id: edgeId,
 		parentEdgeId: edge.parentEdgeId ?? edge.id,
+		...(edge.turnLanes ? { turnLanes: {
+			start: usesOriginalStart ? edge.turnLanes.start : undefined,
+			end: usesOriginalEnd ? edge.turnLanes.end : undefined,
+		} } : {}),
 		profileMode: 'legacy',
 		startNodeId: startId,
 		verticalProfile: [],

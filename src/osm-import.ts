@@ -41,6 +41,7 @@ export type OsmRoadProps = {
 	isBridge: boolean
 	stackLevel: number
 	style?: RoadStylePreset
+	osmVertical: RoadGraphEdge['osmVertical']
 }
 
 type PlanPoint = readonly [number, number]
@@ -50,6 +51,9 @@ export type OsmSegment = {
 	endId: string
 	interior: PlanPoint[]
 	props: OsmRoadProps
+	osmSource?: RoadGraphEdge['osmSource']
+	turnLanes?: RoadGraphEdge['turnLanes']
+	osmVertical?: RoadGraphEdge['osmVertical']
 }
 
 export type OsmImportStats = {
@@ -64,6 +68,8 @@ export type OsmImportStats = {
 export type OsmImportResult = {
 	assets: OsmImportedPointAsset[]
 	graphs: RoadNetworkGraph[]
+	mappedSurfaces?: OsmMappedSurface[]
+	crossings?: OsmCrossingFeature[]
 	source: {
 		baseElevation: number | null
 		center: GeoPoint
@@ -98,6 +104,8 @@ export type PreparedOsmImport = {
 		componentCount: number
 		nodePositions: Map<string, PlanPoint>
 		pointFeatures: OsmPointFeature[]
+		mappedSurfaces: OsmMappedSurface[]
+		crossings: OsmCrossingFeature[]
 		previewGraphs: RoadNetworkGraph[]
 		segments: OsmSegment[]
 		waysCount: number
@@ -146,43 +154,74 @@ const IMPORTED_HIGHWAY_PATTERN =
 
 export function buildOverpassQuery(bbox: GeoBoundingBox): string {
 	const box = `${bbox.south},${bbox.west},${bbox.north},${bbox.east}`
-	return `[out:json][timeout:25];(way["highway"~"${IMPORTED_HIGHWAY_PATTERN}"](${box});node["highway"="street_lamp"](${box});node["highway"="traffic_signals"](${box});node["traffic_sign"](${box});node["highway"~"^(stop|give_way)$"](${box}););out geom;`
+	return `[out:json][timeout:25];(way["highway"~"${IMPORTED_HIGHWAY_PATTERN}"](${box});way["area:highway"](${box});way["highway"~"^(footway|path|cycleway|pedestrian|steps|track)$"](${box});way["barrier"="kerb"](${box});node["highway"="street_lamp"](${box});node["highway"="traffic_signals"](${box});node["traffic_sign"](${box});node["highway"~"^(stop|give_way|crossing)$"](${box});node["crossing"](${box}););out geom;`
+}
+
+function parseRawWays(payload: unknown): OsmWay[] {
+	const elements = (payload as { elements?: unknown[] })?.elements
+	if (!Array.isArray(elements)) return []
+	return elements.flatMap((element) => {
+		const way = element as { type?: string; id?: number; tags?: Record<string, string>; nodes?: number[]; geometry?: Array<{ lat: number; lon: number } | null> }
+		if (way.type !== 'way' || !way.geometry || !way.nodes || !way.tags || way.geometry.length !== way.nodes.length) return []
+		const points = way.geometry.flatMap((geo, index) => geo && Number.isFinite(geo.lat) && Number.isFinite(geo.lon) ? [{ lat: geo.lat, lon: geo.lon, nodeId: way.nodes![index]! }] : [])
+		return points.length >= 2 ? [{ id: way.id ?? 0, tags: way.tags, points }] : []
+	})
 }
 
 export function parseOverpassResponse(payload: unknown): OsmWay[] {
-	const elements = (payload as { elements?: unknown[] })?.elements
-	if (!Array.isArray(elements)) return []
-	const ways: OsmWay[] = []
-	for (const element of elements) {
-		const way = element as {
-			type?: string
-			id?: number
-			tags?: Record<string, string>
-			nodes?: number[]
-			geometry?: Array<{ lat: number; lon: number } | null>
-		}
-		if (way.type !== 'way' || !way.geometry || !way.nodes || !way.tags) continue
-		if (way.geometry.length !== way.nodes.length) continue
-		const points = way.geometry.flatMap((geo, index) =>
-			geo && Number.isFinite(geo.lat) && Number.isFinite(geo.lon)
-				? [{ lat: geo.lat, lon: geo.lon, nodeId: way.nodes![index]! }]
-				: [],
-		)
-		if (points.length < 2) continue
-		ways.push({ id: way.id ?? 0, tags: way.tags, points })
-	}
-	return ways
+	return parseRawWays(payload).filter((way) => HIGHWAY_CLASS_MAP[way.tags.highway ?? ''] !== undefined)
+}
+
+export type OsmMappedSurface = {
+	id: number
+	kind: 'road-area' | 'sidewalk' | 'cycleway' | 'pedestrian-area' | 'kerb'
+	tags: Record<string, string>
+	points: Array<GeoPoint & { nodeId: number }>
+}
+
+export function parseOsmMappedSurfaces(payload: unknown): OsmMappedSurface[] {
+	return parseRawWays(payload).flatMap((way): OsmMappedSurface[] => {
+		const { tags } = way
+		const closed = way.points.length >= 3 && way.points[0]!.nodeId === way.points.at(-1)!.nodeId
+		if (tags['area:highway'] && closed) return [{ id: way.id, kind: 'road-area' as const, tags: { ...tags }, points: way.points }]
+		if (tags.barrier === 'kerb') return [{ id: way.id, kind: 'kerb' as const, tags: { ...tags }, points: way.points }]
+		if (tags.highway === 'cycleway') return [{ id: way.id, kind: 'cycleway' as const, tags: { ...tags }, points: way.points }]
+		if (tags.highway === 'pedestrian') return [{ id: way.id, kind: 'pedestrian-area' as const, tags: { ...tags }, points: way.points }]
+		if (/^(footway|path|steps|track)$/.test(tags.highway ?? '')) return [{ id: way.id, kind: 'sidewalk' as const, tags: { ...tags }, points: way.points }]
+		return []
+	})
 }
 
 export type OsmMapData = {
 	pointFeatures: OsmPointFeature[]
 	ways: OsmWay[]
+	mappedSurfaces?: OsmMappedSurface[]
+	crossings?: OsmCrossingFeature[]
+}
+
+export type OsmCrossingFeature = {
+	id: number
+	point: GeoPoint
+	tags: Record<string, string>
+}
+
+export function parseOsmCrossingFeatures(payload: unknown): OsmCrossingFeature[] {
+	const elements = (payload as { elements?: unknown[] })?.elements
+	if (!Array.isArray(elements)) return []
+	return elements.flatMap((element) => {
+		const node = element as { type?: string; id?: number; lat?: number; lon?: number; tags?: Record<string, string> }
+		if (node.type !== 'node' || !Number.isFinite(node.id) || !Number.isFinite(node.lat) || !Number.isFinite(node.lon) || !node.tags) return []
+		if (node.tags.highway !== 'crossing' && !node.tags.crossing) return []
+		return [{ id: node.id!, point: { lat: node.lat!, lon: node.lon! }, tags: { ...node.tags } }]
+	})
 }
 
 export function parseOsmMapResponse(payload: unknown): OsmMapData {
 	return {
 		pointFeatures: parseOsmPointFeatures(payload),
 		ways: parseOverpassResponse(payload),
+		mappedSurfaces: parseOsmMappedSurfaces(payload),
+		crossings: parseOsmCrossingFeatures(payload),
 	}
 }
 
@@ -244,12 +283,19 @@ export function mapOsmTags(tags: Record<string, string>): OsmRoadProps | null {
 					? 'forward'
 					: 'both'
 	const layer = Number.parseInt(tags.layer ?? '0', 10)
+	const ele = Number.parseFloat(tags.ele ?? '')
 	return {
 		...entry,
 		direction,
 		style: buildOsmRoadStyle(tags, entry.styleId, direction !== 'both'),
 		isBridge: Boolean(tags.bridge) && tags.bridge !== 'no',
 		stackLevel: Math.max(0, Number.isFinite(layer) ? layer : 0),
+		osmVertical: {
+			...(Number.isFinite(layer) ? { layer } : {}),
+			...(Number.isFinite(ele) ? { ele } : {}),
+			...(tags.bridge && tags.bridge !== 'no' ? { bridge: true } : {}),
+			...(tags.tunnel && tags.tunnel !== 'no' ? { tunnel: true } : {}),
+		},
 	}
 }
 
@@ -379,7 +425,7 @@ export function buildSegmentsFromWays(
 	radiusMeters: number,
 ): { segments: OsmSegment[]; nodePositions: Map<string, PlanPoint> } {
 	let boundaryCounter = 0
-	const runsWithProps: Array<{ run: RunPoint[]; props: OsmRoadProps }> = []
+	const runsWithProps: Array<{ run: RunPoint[]; props: OsmRoadProps; way: OsmWay }> = []
 	for (const way of ways) {
 		const props = mapOsmTags(way.tags)
 		if (!props) continue
@@ -392,7 +438,7 @@ export function buildSegmentsFromWays(
 			radiusMeters,
 			() => `b${++boundaryCounter}`,
 		)) {
-			runsWithProps.push({ run, props })
+			runsWithProps.push({ run, props, way })
 		}
 	}
 
@@ -405,7 +451,7 @@ export function buildSegmentsFromWays(
 
 	const segments: OsmSegment[] = []
 	const nodePositions = new Map<string, PlanPoint>()
-	for (const { run, props } of runsWithProps) {
+	for (const { run, props, way } of runsWithProps) {
 		let sliceStart = 0
 		for (let index = 1; index < run.length; index++) {
 			const isLast = index === run.length - 1
@@ -425,6 +471,16 @@ export function buildSegmentsFromWays(
 				startId,
 				endId,
 				interior: simplified.slice(1, -1),
+				osmSource: { wayId: way.id, tags: { ...way.tags } },
+				turnLanes: {
+					start: startId === `n${way.points[0]?.nodeId}` && props.direction !== 'forward'
+						? way.tags['turn:lanes:backward'] ?? (props.direction === 'reverse' ? way.tags['turn:lanes'] : undefined)
+						: undefined,
+					end: endId === `n${way.points.at(-1)?.nodeId}` && props.direction !== 'reverse'
+						? way.tags['turn:lanes:forward'] ?? (props.direction === 'forward' ? way.tags['turn:lanes'] : undefined)
+						: undefined,
+				},
+				osmVertical: props.osmVertical,
 				props,
 			})
 		}
@@ -511,12 +567,18 @@ export function ensureSimpleSegments(
 				startId,
 				endId: midId,
 				interior: segment.interior.slice(0, splitIndex),
+				osmSource: segment.osmSource,
+				turnLanes: segment.turnLanes ? { start: segment.turnLanes.start } : undefined,
+				osmVertical: segment.osmVertical,
 				props: segment.props,
 			},
 			{
 				startId: midId,
 				endId,
 				interior: segment.interior.slice(splitIndex + 1),
+				osmSource: segment.osmSource,
+				turnLanes: segment.turnLanes ? { end: segment.turnLanes.end } : undefined,
+				osmVertical: segment.osmVertical,
 				props: segment.props,
 			},
 		)
@@ -571,6 +633,9 @@ export function buildRoadGraphFromSegments(
 			verticalProfile: [],
 			styleId,
 			direction: segment.props.direction,
+			osmSource: segment.osmSource,
+			turnLanes: segment.turnLanes,
+			osmVertical: segment.osmVertical,
 			roadClass: segment.props.roadClass,
 			joinMode: 'auto',
 			stackLevel: segment.props.stackLevel,
@@ -651,6 +716,8 @@ function createImportResult(
 	return {
 		assets,
 		graphs: assembly.graphs,
+		mappedSurfaces: prepared[PREPARED_IMPORT_DATA].mappedSurfaces,
+		crossings: prepared[PREPARED_IMPORT_DATA].crossings,
 		source: {
 			baseElevation,
 			center: { ...prepared.center },
@@ -750,10 +817,12 @@ export async function prepareOsmStreetImport(
 		: options.loadStreets
 			? {
 					pointFeatures: [],
+					mappedSurfaces: [],
+					crossings: [],
 					ways: await options.loadStreets(bbox, options.signal),
 				}
 			: await fetchOsmMapData(bbox, options.signal)
-	const { pointFeatures, ways } = mapData
+	const { pointFeatures, mappedSurfaces = [], crossings = [], ways } = mapData
 	options.signal?.throwIfAborted()
 	const { segments: rawSegments, nodePositions } = buildSegmentsFromWays(
 		ways,
@@ -808,6 +877,8 @@ export async function prepareOsmStreetImport(
 		radiusMeters: radius,
 		[PREPARED_IMPORT_DATA]: {
 			componentCount: previewAssembly.componentCount,
+			mappedSurfaces,
+			crossings,
 			nodePositions,
 			pointFeatures,
 			previewGraphs: previewAssembly.graphs,

@@ -1,0 +1,140 @@
+{
+  "timestamp": "2026-09-07T04:42:51Z",
+  "fetchedWays": 70,
+  "fetchedPointObjects": 21,
+  "tagCoverage": {
+    "lanes": 52,
+    "width": 0,
+    "est_width": 0,
+    "surface": 56,
+    "oneway": 57,
+    "turn:lanes": 17,
+    "ele": 0,
+    "tunnel": 2,
+    "layer": 1
+  },
+  "importStats": {
+    "ways": 70,
+    "edges": 61,
+    "junctions": 19,
+    "components": 1,
+    "droppedComponents": 0,
+    "failedElevationTiles": 0
+  },
+  "importedAssets": 10,
+  "overcommittedApproachCuts": [
+    {
+      "edgeId": "e43",
+      "name": "West 43rd Street",
+      "length": 1.7593583469977216,
+      "cuts": 4.800000000000001
+    },
+    {
+      "edgeId": "e58",
+      "name": "living street street",
+      "length": 11.164078722673043,
+      "cuts": 13.200510198899776
+    }
+  ],
+  "junctionSurfaceHeightDifferences": [
+    {
+      "nodeId": "n42439994",
+      "heights": [
+        0.14,
+        0.22
+      ]
+    },
+    {
+      "nodeId": "n5522182777",
+      "heights": [
+        0.22,
+        0.1
+      ]
+    },
+    {
+      "nodeId": "n42439996",
+      "heights": [
+        0.22,
+        0.14
+      ]
+    },
+    {
+      "nodeId": "n8396878498",
+      "heights": [
+        0.14,
+        0.1
+      ]
+    },
+    {
+      "nodeId": "n13915675578",
+      "heights": [
+        0.14,
+        0.1
+      ]
+    },
+    {
+      "nodeId": "n8396878495",
+      "heights": [
+        0.14,
+        0.1
+      ]
+    },
+    {
+      "nodeId": "n42439984",
+      "heights": [
+        0.22,
+        0.14
+      ]
+    },
+    {
+      "nodeId": "n42439981",
+      "heights": [
+        0.22,
+        0.14
+      ]
+    },
+    {
+      "nodeId": "n8250908767",
+      "heights": [
+        0.22,
+        0.1
+      ]
+    },
+    {
+      "nodeId": "n8318633104",
+      "heights": [
+        0.22,
+        0.1
+      ]
+    },
+    {
+      "nodeId": "n8669764313",
+      "heights": [
+        0.14,
+        0.1
+      ]
+    },
+    {
+      "nodeId": "n5522182776",
+      "heights": [
+        0.1,
+        0.22
+      ]
+    },
+    {
+      "nodeId": "n8250892565",
+      "heights": [
+        0.22,
+        0.1
+      ]
+    },
+    {
+      "nodeId": "n8318633103",
+      "heights": [
+        0.1,
+        0.22
+      ]
+    }
+  ],
+  "mixedWindingJunctionFans": []
+}

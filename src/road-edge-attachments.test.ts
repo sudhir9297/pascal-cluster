@@ -56,9 +56,9 @@ describe('road-edge infrastructure attachments', () => {
     expect(attached?.transform.position[2]).toBeCloseTo(3.925, 2)
     // Keep the complete assembly visibly seated above the road, matching the
     // same elevation a user would otherwise have to enter by hand.
-    expect(attached?.transform.position[1]).toBeCloseTo(0.15, 3)
+    expect(attached?.transform.position[1]).toBeCloseTo(0.01, 3)
     const drainageLayout = resolveDrainageInletLayout(DrainageInletNode.parse({}))
-    expect(attached!.transform.position[1] + drainageLayout.barBottomY).toBeGreaterThan(0.15)
+    expect(attached!.transform.position[1] + drainageLayout.barBottomY).toBeGreaterThan(0.01)
     expect(attached?.transform.rotation[1]).toBeCloseTo(0, 5)
   })
 
@@ -84,13 +84,13 @@ describe('road-edge infrastructure attachments', () => {
     expect(transform).not.toBeNull()
     expect(transform?.position[0]).toBeCloseTo(2, 2)
     expect(transform?.position[2]).toBeCloseTo(-3.28, 2)
-    expect(transform?.position[1]).toBeCloseTo(0.07, 3)
+    expect(transform?.position[1]).toBeCloseTo(-0.07, 3)
     const manholeLayout = resolveManholeCoverLayout(ManholeCoverNode.parse({}))
     expect(
       transform!.position[1]
         + manholeLayout.coverTopY,
-    ).toBeCloseTo(0.146, 3)
-    expect(transform!.position[1] + manholeLayout.treadBottomY).toBeGreaterThan(0.146)
+    ).toBeCloseTo(0.006, 3)
+    expect(transform!.position[1] + manholeLayout.treadBottomY).toBeGreaterThan(0.006)
     expect(transform?.rotation).toEqual([0.1, 0.2, 0.3])
   })
 
@@ -212,7 +212,7 @@ describe('road-edge infrastructure attachments', () => {
 
     expect(transform?.side).toBe('right')
     expect(transform?.position[2]).toBeCloseTo(-4.475, 3)
-    expect(transform?.position[1]).toBeCloseTo(0.206, 3)
+    expect(transform?.position[1]).toBeCloseTo(0.066, 3)
     expect(transform?.rotation[1]).toBeCloseTo(Math.PI, 5)
   })
 
@@ -228,7 +228,7 @@ describe('road-edge infrastructure attachments', () => {
     })
 
     expect(attached).not.toBeNull()
-    expect(attached?.transform.position[1]).toBeCloseTo(0.146, 3)
+    expect(attached?.transform.position[1]).toBeCloseTo(0, 3)
   })
 
   test('stores an edited pose as road-relative offsets and follows a reshaped road', () => {
@@ -290,7 +290,7 @@ describe('road-edge infrastructure attachments', () => {
       point: node.position,
     })
 
-    expect(placed.position[1]).toBeCloseTo(0.07, 3)
+    expect(placed.position[1]).toBeCloseTo(-0.07, 3)
     expect(placed.roadAttachment).toBeUndefined()
     expect(road.attachments).toEqual({})
   })
@@ -314,10 +314,10 @@ describe('road-edge infrastructure attachments', () => {
       point: [0, 0, -3],
     })
 
-    expect(left.position[1]).toBeCloseTo(0.15, 3)
+    expect(left.position[1]).toBeCloseTo(0.01, 3)
     expect(left.rotation[1]).toBeCloseTo(0, 5)
     expect(left.roadAttachment).toBeUndefined()
-    expect(right.position[1]).toBeCloseTo(0.15, 3)
+    expect(right.position[1]).toBeCloseTo(0.01, 3)
     expect(Math.abs(right.rotation[1])).toBeCloseTo(Math.PI, 5)
     expect(right.roadAttachment).toBeUndefined()
   })

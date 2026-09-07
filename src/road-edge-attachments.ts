@@ -90,7 +90,7 @@ const ATTACHMENT_CAPTURE_PADDING = 1.2
 const SIGNAL_SETBACK = 7.5
 const MANHOLE_ROAD_CLEARANCE = 0.12
 const ROAD_SURFACE_CLEARANCE = 0.006
-const DRAINAGE_INLET_PLACEMENT_Y = 0.15
+const DRAINAGE_INLET_PLACEMENT_Y = 0.01
 const HYDRANT_CURB_CLEARANCE = 0.05
 const ROADSIDE_ASSET_CLEARANCE = 0.08
 
@@ -225,21 +225,20 @@ function sideComponentMetrics(
 }
 
 function roadSurfaceHeightAtLateralOffset(
-  style: RoadStylePreset,
   crossSection: ReturnType<typeof buildRoadCrossSection>,
   side: RoadSide,
   lateralOffset: number,
 ): number {
   const distanceFromCenter = Math.abs(lateralOffset)
   if (distanceFromCenter <= crossSection.carriagewayWidth / 2) {
-    return style.surfaceThickness
+    return 0
   }
   const strip = crossSection.sides[side].components.find(
     (candidate) =>
       distanceFromCenter >= candidate.innerOffset - 1e-6 &&
       distanceFromCenter <= candidate.outerOffset + 1e-6,
   )
-  return strip ? style.surfaceThickness + strip.elevationOffset : 0
+  return strip ? strip.elevationOffset : 0
 }
 
 function attachmentAlignmentForKind(kind: RoadAttachmentAssetKind): RoadAttachmentAlignment {
@@ -402,7 +401,6 @@ export function resolveRoadAttachmentTransform(
       : attachment.lateralOffset
   const leftNormal: [number, number] = [-sampled.tangent[1], sampled.tangent[0]]
   const roadSurfaceHeight = roadSurfaceHeightAtLateralOffset(
-    style,
     crossSection,
     side,
     lateralOffset,

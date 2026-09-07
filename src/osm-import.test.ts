@@ -12,6 +12,8 @@ import {
 	localToGeo,
 	mapOsmTags,
 	parseOverpassResponse,
+	parseOsmMappedSurfaces,
+	parseOsmCrossingFeatures,
 	parseOsmMapResponse,
 	prepareOsmStreetImport,
 	projectToLocal,
@@ -82,9 +84,14 @@ describe('mapOsmTags', () => {
 
 	test('maps bridge and layer tags', () => {
 		const bridge = mapOsmTags({ highway: 'primary', bridge: 'yes', layer: '1' })
-		expect(bridge).toMatchObject({ isBridge: true, stackLevel: 1 })
-		const tunnel = mapOsmTags({ highway: 'primary', layer: '-2' })
+		expect(bridge).toMatchObject({
+			isBridge: true,
+			stackLevel: 1,
+			osmVertical: { bridge: true, layer: 1 },
+		})
+		const tunnel = mapOsmTags({ highway: 'primary', layer: '-2', tunnel: 'yes', ele: '4.5' })
 		expect(tunnel?.stackLevel).toBe(0)
+		expect(tunnel?.osmVertical).toEqual({ layer: -2, ele: 4.5, tunnel: true })
 		expect(mapOsmTags({ highway: 'primary' })?.isBridge).toBe(false)
 	})
 })
@@ -121,10 +128,12 @@ describe('computeBoundingBox and query', () => {
 		expect(query).toContain('(1,2,3,4)')
 		expect(query).toContain('out geom')
 		expect(query).toContain('residential')
+		expect(query).toContain('area:highway')
+		expect(query).toContain('footway')
 		expect(query).toContain('node["highway"="street_lamp"]')
 		expect(query).toContain('node["highway"="traffic_signals"]')
 		expect(query).toContain('node["traffic_sign"]')
-		expect(query).not.toContain('footway')
+		expect(query).toContain('cycleway')
 	})
 })
 
@@ -178,6 +187,25 @@ describe('parseOverpassResponse', () => {
 		expect(parsed.pointFeatures).toMatchObject([
 			{ kind: 'street-lamp', sourceId: 'node/30' },
 		])
+	})
+
+	test('extracts mapped road areas and supplemental street edges', () => {
+		const payload = {
+			elements: [
+				{ type: 'way', id: 20, tags: { 'area:highway': 'pedestrian' }, nodes: [1, 2, 3, 1], geometry: [{ lat: 0, lon: 0 }, { lat: 0, lon: 0.001 }, { lat: 0.001, lon: 0.001 }, { lat: 0, lon: 0 }] },
+				{ type: 'way', id: 21, tags: { highway: 'cycleway' }, nodes: [4, 5], geometry: [{ lat: 0, lon: 0 }, { lat: 0.001, lon: 0 }] },
+			],
+		}
+		const surfaces = parseOsmMappedSurfaces(payload)
+		expect(surfaces.map((surface) => surface.kind)).toEqual(['road-area', 'cycleway'])
+		expect(surfaces[0]!.points).toHaveLength(4)
+	})
+
+	test('extracts crossing nodes with kerb metadata', () => {
+		const crossings = parseOsmCrossingFeatures({ elements: [
+			{ type: 'node', id: 44, lat: 40, lon: -73, tags: { highway: 'crossing', crossing: 'zebra', kerb: 'lowered', tactile_paving: 'yes' } },
+		] })
+		expect(crossings).toEqual([{ id: 44, point: { lat: 40, lon: -73 }, tags: { highway: 'crossing', crossing: 'zebra', kerb: 'lowered', tactile_paving: 'yes' } }])
 	})
 })
 

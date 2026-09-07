@@ -205,7 +205,7 @@ function componentPoint(
   ) * (side === 'left' ? 1 : -1)
   return [
     frame.point[0] + frame.normal[0] * offset,
-    frame.point[1] + frame.interpolate(frame.first.surfaceThickness, frame.second.surfaceThickness) + elevationOffset,
+    frame.point[1] + elevationOffset,
     frame.point[2] + frame.normal[1] * offset,
   ]
 }
@@ -222,7 +222,7 @@ function cutPoint(
   const offset = (halfWidth + outward) * (side === 'left' ? 1 : -1)
   return [
     frame.point[0] + frame.normal[0] * offset,
-    frame.point[1] + frame.interpolate(frame.first.surfaceThickness, frame.second.surfaceThickness) + elevationOffset,
+    frame.point[1] + elevationOffset,
     frame.point[2] + frame.normal[1] * offset,
   ]
 }

@@ -313,7 +313,7 @@ function addJunctionLighting(
 					station: distance,
 					worldPosition: [
 						graphNode.position[0] + sample.point[0],
-						graphNode.position[1] + primaryStyle.surfaceThickness + VERGE_ELEVATION_OFFSET,
+						graphNode.position[1] + VERGE_ELEVATION_OFFSET,
 						graphNode.position[2] + sample.point[1],
 					],
 					worldRotationY,
@@ -490,7 +490,7 @@ export function buildRoadsideDecorationPreviews(node: RoadNetworkNode): Roadside
 				position: [
 					start[0] + dx * ratio - dz / horizontal * decoration.lateralOffset,
 					start[1] + (end[1] - start[1]) * ratio +
-						style.surfaceThickness + VERGE_ELEVATION_OFFSET,
+						VERGE_ELEVATION_OFFSET,
 					start[2] + dz * ratio + dx / horizontal * decoration.lateralOffset,
 				],
 				rotationY,

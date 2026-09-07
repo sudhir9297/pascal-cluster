@@ -224,3 +224,15 @@ describe('reviewOsmImport', () => {
 		])
 	})
 })
+
+
+test('overlap trimming discards arrows at newly cut endpoints', () => {
+  const incoming = lineNetwork([0, 0, 0], [100, 0, 0])
+  incoming.edges.edge!.osmSource = { wayId: 42, tags: {} }
+  incoming.edges.edge!.turnLanes = { start: 'left', end: 'right' }
+  const existing = lineNetwork([0, 0, 0], [50, 0, 0])
+  const review = reviewOsmImport(importResult(incoming), sceneContext([existing]))
+  const edge = Object.values(review.result.graphs[0]!.edges)[0]!
+  expect(edge.osmSource?.wayId).toBe(42)
+  expect(edge.turnLanes).toEqual({ start: undefined, end: 'right' })
+})

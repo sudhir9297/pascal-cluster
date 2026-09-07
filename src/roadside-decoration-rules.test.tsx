@@ -415,7 +415,7 @@ describe("semantic roadside decoration rules", () => {
 
 		expect(lamp.lateralOffset).toBe(verge.lateralOffset);
 		expect(preview.position[1]).toBeCloseTo(
-			style.surfaceThickness + vergeElevation,
+			vergeElevation,
 		);
 	});
 
@@ -436,7 +436,7 @@ describe("semantic roadside decoration rules", () => {
 
 		expect(sign.lateralOffset).toBe(verge.lateralOffset);
 		expect(preview.position[1]).toBeCloseTo(
-			style.surfaceThickness + ROAD_SIDE_COMPONENT_SPECS.find(
+			ROAD_SIDE_COMPONENT_SPECS.find(
 				(spec) => spec.kind === "verge",
 			)!.elevationOffset,
 		);
