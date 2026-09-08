@@ -9,6 +9,7 @@ import {
   type RoadTransitionSample,
 } from './road-transition-profile'
 import type { RoadGraphEdge, RoadNetworkNode, RoadStylePreset } from './schema'
+import { roadCarriagewayWidth, roadVehicleLaneWidth } from './road-cross-section'
 import { DEFAULT_ROAD_STYLE_PRESETS } from './road-style-presets'
 import { resolveRoadRegionalPack, type RoadRegionalPack } from './road-regional-packs'
 
@@ -43,10 +44,6 @@ function resolveStyle(node: RoadNetworkNode, edge: RoadGraphEdge): RoadStylePres
       | undefined) ??
     node.stylePresets[node.activeStyleId]
   )
-}
-
-function carriagewayWidth(style: RoadStylePreset): number {
-  return style.laneCount * style.laneWidth + style.shoulderWidth * 2 + style.medianWidth
 }
 
 function distanceXZ(first: Point3, second: Point3): number {
@@ -257,7 +254,7 @@ function approachControlWidth(
   const offsets = incomingLaneOffsets(edge, junctionId, style, drivingSide)
   if (offsets.length === 0) return null
   if (edge.direction !== 'both') {
-    return { centerOffset: 0, width: style.laneCount * style.laneWidth }
+    return { centerOffset: 0, width: roadVehicleLaneWidth(style) }
   }
   return {
 		centerOffset: offsets.reduce((sum, offset) => sum + offset, 0) / offsets.length,
@@ -282,7 +279,7 @@ function buildJunctionData(node: RoadNetworkNode) {
       return [{
         angle: Math.atan2(toward[2] - from[2], toward[0] - from[0]),
         edgeId: edge.id,
-        halfWidth: carriagewayWidth(style) / 2,
+        halfWidth: roadCarriagewayWidth(style) / 2,
       }]
     })
     const solution = buildJunctionBoundaryGeometry(approaches, junction.cornerRadii)
@@ -417,7 +414,7 @@ export function buildRoadNetworkMarkings(node: RoadNetworkNode): RoadMarkingPoly
           points: orientedRectangle(
             sample,
             0,
-            style.laneCount * style.laneWidth + style.medianWidth,
+            roadVehicleLaneWidth(style) + style.medianWidth,
             0.34,
           ),
         })

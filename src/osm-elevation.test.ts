@@ -57,6 +57,7 @@ describe('TerrainSampler', () => {
 		}))
 		await sampler.prefetch(bbox)
 		expect(sampler.elevationAt({ lat: 0, lon: 0 })).toBeCloseTo(250, 5)
+		expect(sampler.hasElevationAt({ lat: 0, lon: 0 })).toBe(true)
 		expect(sampler.failedTiles).toBe(0)
 	})
 
@@ -78,6 +79,7 @@ describe('TerrainSampler', () => {
 		const sampler = new TerrainSampler(15, async () => null)
 		await sampler.prefetch(bbox)
 		expect(sampler.failedTiles).toBeGreaterThan(0)
+		expect(sampler.hasElevationAt({ lat: 0, lon: 0 })).toBe(false)
 		expect(sampler.elevationAt({ lat: 0, lon: 0 })).toBe(0)
 	})
 

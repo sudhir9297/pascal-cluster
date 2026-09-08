@@ -9,6 +9,7 @@ import {
 } from "./road-network-geometry";
 import { DEFAULT_ROAD_STYLE_PRESETS } from "./road-style-presets";
 import type { RoadGraphEdge, RoadNetworkNode, RoadStylePreset } from "./schema";
+import { roadCarriagewayWidth } from "./road-cross-section";
 
 export type RoadManualBoundaryPoint = readonly [number, number];
 
@@ -23,14 +24,6 @@ function resolveStyle(
 			styleId as keyof typeof DEFAULT_ROAD_STYLE_PRESETS
 		] as RoadStylePreset | undefined) ??
 		node.stylePresets[node.activeStyleId]
-	);
-}
-
-function carriagewayWidth(style: RoadStylePreset): number {
-	return (
-		style.laneCount * style.laneWidth +
-		style.shoulderWidth * 2 +
-		style.medianWidth
 	);
 }
 
@@ -54,7 +47,7 @@ export function buildAutomaticRoadJunctionBoundary(
 			{
 				angle: Math.atan2(toward[2] - from[2], toward[0] - from[0]),
 				edgeId: edge.id,
-				halfWidth: carriagewayWidth(style) / 2,
+			halfWidth: roadCarriagewayWidth(style) / 2,
 			},
 		];
 	});

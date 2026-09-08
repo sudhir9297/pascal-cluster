@@ -29,7 +29,7 @@ type RoadNetworkDefinition = NodeDefinition<typeof RoadNetworkNode> &
 
 export const roadNetworkDefinition: RoadNetworkDefinition = {
 	kind: "streetscape:road-network",
-	schemaVersion: 33,
+	schemaVersion: 34,
 	schema: RoadNetworkNode,
 	category: "structure",
 	snapProfile: "structural",
@@ -408,6 +408,16 @@ export const roadNetworkDefinition: RoadNetworkDefinition = {
 				roadsideItemSuppressed: {},
 			};
 		},
+		33: (old: unknown) => {
+			if (!(old && typeof old === "object")) return old;
+			const previous = old as Record<string, unknown>;
+			return {
+				...previous,
+				osmLaneConnectivity: Array.isArray(previous.osmLaneConnectivity)
+					? previous.osmLaneConnectivity
+					: [],
+			};
+		},
 	},
 	defaults: () => ({
 		object: "node",
@@ -428,6 +438,7 @@ export const roadNetworkDefinition: RoadNetworkDefinition = {
 		junctions: {},
 		osmMappedSurfaces: [],
 		osmCrossings: [],
+		osmLaneConnectivity: [],
 		stylePresets: { ...DEFAULT_ROAD_STYLE_PRESETS },
 		activeStyleId: defaultStyle.id,
 		applyStyleToAll: true,

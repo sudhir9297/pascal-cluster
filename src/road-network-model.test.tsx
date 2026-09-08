@@ -36,16 +36,24 @@ function renderRoad(node: RoadNetworkNode): string {
 
 test('renders imported mapped sidewalk and cycleway geometry', () => {
   const result = insertRoadSegment(createEmptyRoadGraph(), [0, 0, 0], [20, 0, 0])
+  const edgeId = Object.keys(result.graph.edges)[0]!
   const node = RoadNetworkNode.parse({
     ...result.graph,
     osmMappedSurfaces: [
       { id: 101, kind: 'sidewalk', tags: { highway: 'footway', width: '2' }, points: [[0, 0, 3], [20, 0, 3]] },
       { id: 102, kind: 'cycleway', tags: { highway: 'cycleway' }, points: [[0, 0, -3], [20, 0, -3]] },
     ],
+    osmCrossings: [
+      { id: 103, associatedEdgeId: edgeId, point: [10, 0, 0], tags: { highway: 'crossing', kerb: 'lowered', tactile_paving: 'yes' } },
+      { id: 104, kind: 'kerb', associatedEdgeId: edgeId, point: [10, 0, 3], tags: { barrier: 'kerb', kerb: 'flush' } },
+    ],
   })
   const markup = renderRoad(node)
   expect(markup).toContain('name="road-mapped-sidewalk:101"')
   expect(markup).toContain('name="road-mapped-cycleway:102"')
+  expect(markup).toContain('name="road-mapped-crossing-ramp:103"')
+  expect(markup).toContain('name="road-mapped-kerb-ramp:104"')
+  expect(markup.match(/name="road-mapped-tactile-pad:103"/g)).toHaveLength(2)
 })
 
 function polygonContains(

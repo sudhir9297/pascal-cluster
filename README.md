@@ -27,10 +27,18 @@ to a third-party plugin.
   using mapped lane counts, pavement width, sidewalks, on-road cycle lanes and
   parking lanes. Widths in metres and feet are supported. Missing dimensions use
   estimated defaults; medians, cycle lanes and parking are not added without tags.
+  Lane-specific widths, directions and bus/bicycle uses retain their mapped
+  provenance. Separately mapped sidewalks, cycleways, crossings, kerbs and
+  `area:highway` polygons are matched to the full road corridor, clipped to the
+  selected radius and rendered as continuous solid surfaces without duplicating
+  inferred roadside strips. Multipolygon cut-outs and lane-connectivity relations
+  are retained with their source IDs.
   One-way streets use lane dividers without an opposing-traffic centerline.
   Curb returns shrink to fit closely spaced imported junctions.
-  Imports currently use a flat editor-floor datum. Common sign tags map to
-  the built-in sign catalog; unknown sign codes use the generic warning sign.
+  Live imports sample terrain relative to the selected origin, respect explicit
+  `ele` tags, and add clearly marked estimated clearance profiles where mapped
+  bridges or tunnels cross ordinary roads. Common sign tags map to the built-in
+  sign catalog; unknown sign codes use the generic warning sign.
   After import, the editor selects the new nodes and fits them in a north-up 2D
   view. The complete import is one
   undoable editor change. Imports on the same level share a geographic origin,

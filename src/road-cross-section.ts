@@ -97,10 +97,23 @@ export function withRoadSideComponents(
   }
 }
 
+export function resolveRoadLaneWidths(style: RoadStylePreset): number[] {
+  return style.laneWidths?.length === style.laneCount
+    ? style.laneWidths
+    : Array.from({ length: style.laneCount }, () => style.laneWidth)
+}
+
+export function roadVehicleLaneWidth(style: RoadStylePreset): number {
+  return resolveRoadLaneWidths(style).reduce((sum, width) => sum + width, 0)
+}
+
+export function roadCarriagewayWidth(style: RoadStylePreset): number {
+  return roadVehicleLaneWidth(style) + style.shoulderWidth * 2 + style.medianWidth
+}
+
 /** Resolve the complete ordered cross-section from one persisted road style. */
 export function buildRoadCrossSection(style: RoadStylePreset): RoadCrossSection {
-  const carriagewayWidth =
-    style.laneCount * style.laneWidth + style.shoulderWidth * 2 + style.medianWidth
+  const carriagewayWidth = roadCarriagewayWidth(style)
   const carriagewayHalfWidth = carriagewayWidth / 2
   const sides = Object.fromEntries(
     (['left', 'right'] as const).map((side) => {

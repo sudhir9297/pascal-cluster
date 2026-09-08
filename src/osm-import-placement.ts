@@ -6,7 +6,8 @@ import {
 	type MapImportOrigin,
 	readOsmFeatureSourceId,
 } from './osm-import-deduplication'
-import { projectToLocal, type OsmImportResult } from './osm-import'
+import type { OsmImportResult } from './osm-import'
+import { associateOsmCrossings, associateOsmMappedSurfaces } from './osm-road-corridors'
 import {
 	createRoadSignNode,
 	RoadNetworkNode,
@@ -146,56 +147,32 @@ export function placeOsmImport(
 	},
 ): AnyNodeId[] {
 	const floorOffset = getOsmImportFloorOffset(activeLevelId)
-	const surfacesByGraph = result.graphs.map(() => [] as Array<{ id: number; kind: NonNullable<OsmImportResult['mappedSurfaces']>[number]['kind']; tags: Record<string, string>; points: [number, number, number][] }>)
-	const crossingsByGraph = result.graphs.map(() => [] as Array<{ id: number; point: [number, number, number]; rotationY: number; tags: Record<string, string> }>)
-	for (const surface of result.mappedSurfaces ?? []) {
-		const points = surface.points.map((point) => {
-			const [x, z] = projectToLocal(point, result.source.center)
-			return [x, floorOffset, z] as [number, number, number]
-		})
-		const anchor = points[0]
-		if (!anchor) continue
-		let graphIndex = 0
-		let bestDistance = Number.POSITIVE_INFINITY
-		result.graphs.forEach((graph, index) => {
-			for (const node of Object.values(graph.graphNodes)) {
-				const distance = Math.hypot(node.position[0] - anchor[0], node.position[2] - anchor[2])
-				if (distance < bestDistance) { bestDistance = distance; graphIndex = index }
-			}
-		})
-		surfacesByGraph[graphIndex]!.push({ id: surface.id, kind: surface.kind, tags: surface.tags, points })
-	}
-	for (const crossing of result.crossings ?? []) {
-		const [x, z] = projectToLocal(crossing.point, result.source.center)
-		let graphIndex = 0
-		let bestDistance = Number.POSITIVE_INFINITY
-		result.graphs.forEach((graph, index) => Object.values(graph.graphNodes).forEach((node) => {
-			const distance = Math.hypot(node.position[0] - x, node.position[2] - z)
-			if (distance < bestDistance) { bestDistance = distance; graphIndex = index }
-		}))
-		let rotationY = 0
-		let edgeDistance = Number.POSITIVE_INFINITY
-		for (const edge of Object.values(result.graphs[graphIndex]!.edges)) {
-			const points = [result.graphs[graphIndex]!.graphNodes[edge.startNodeId]!.position, ...edge.alignment, result.graphs[graphIndex]!.graphNodes[edge.endNodeId]!.position]
-			for (let index = 0; index < points.length - 1; index++) {
-				const start = points[index]!
-				const end = points[index + 1]!
-				const distance = Math.min(Math.hypot(start[0] - x, start[2] - z), Math.hypot(end[0] - x, end[2] - z))
-				if (distance < edgeDistance) { edgeDistance = distance; rotationY = Math.atan2(end[2] - start[2], end[0] - start[0]) }
-			}
-		}
-		if (bestDistance <= 12) crossingsByGraph[graphIndex]!.push({ id: crossing.id, point: [x, floorOffset, z], rotationY, tags: crossing.tags })
-	}
+	const surfacesByGraph = associateOsmMappedSurfaces(
+		result.graphs,
+		result.mappedSurfaces ?? [],
+		result.source.center,
+		result.source.radiusMeters,
+		floorOffset,
+	)
+	const crossingsByGraph = associateOsmCrossings(
+		result.graphs,
+		result.crossings ?? [],
+		result.source.center,
+		result.source.radiusMeters,
+		floorOffset,
+	)
+	const connectivityByGraph = result.graphs.map((graph) => {
+		const wayIds = new Set(Object.values(graph.edges).flatMap((edge) => edge.osmSource ? [edge.osmSource.wayId] : []))
+		return (result.laneConnectivity ?? []).filter((relation) =>
+			relation.members.some((member) => member.type === 'way' && wayIds.has(member.ref)),
+		)
+	})
 	const networks = result.graphs.map((graph, graphIndex) =>
 		RoadNetworkNode.parse({
 			...liftGraph(graph, floorOffset),
-			osmMappedSurfaces: surfacesByGraph[graphIndex]!.map((surface) => ({
-				id: surface.id,
-				kind: surface.kind,
-				tags: surface.tags,
-				points: surface.points,
-			})),
+			osmMappedSurfaces: surfacesByGraph[graphIndex],
 			osmCrossings: crossingsByGraph[graphIndex],
+			osmLaneConnectivity: connectivityByGraph[graphIndex],
 			applyStyleToAll: false,
 			metadata: createMapImportMetadata(undefined, origin),
 			parentId: activeLevelId,

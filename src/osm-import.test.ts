@@ -1,23 +1,29 @@
 import { describe, expect, test } from 'bun:test'
 import {
 	applyElevations,
+	applyOsmStructureClearances,
 	buildOverpassQuery,
 	buildRoadGraphFromSegments,
 	buildSegmentsFromWays,
 	computeBoundingBox,
 	completeOsmStreetImport,
 	ensureSimpleSegments,
+	fetchOsmMapData,
 	getPreparedOsmStreetImportResult,
 	importStreetsFromOsm,
 	localToGeo,
 	mapOsmTags,
+	mergeOsmMapData,
+	normalizeOsmTags,
 	parseOverpassResponse,
 	parseOsmMappedSurfaces,
+	parseOsmLaneConnectivity,
 	parseOsmCrossingFeatures,
 	parseOsmMapResponse,
 	prepareOsmStreetImport,
 	projectToLocal,
 	simplifyPolyline,
+	splitOsmBoundingBox,
 	type OsmWay,
 } from './osm-import'
 import { reconcileRoadJunctions } from './road-network-topology'
@@ -96,6 +102,18 @@ describe('mapOsmTags', () => {
 	})
 })
 
+describe('normalizeOsmTags', () => {
+	test('turns OSM wikipedia references into persistable HTTPS URLs', () => {
+		expect(normalizeOsmTags({ wikipedia: 'en:Times_Square', network: 'US:NY' })).toEqual({
+			network: 'US%3ANY',
+			wikipedia: 'https://en.wikipedia.org/wiki/Times_Square',
+		})
+		expect(normalizeOsmTags({ wikipedia: 'not a valid reference', highway: 'primary' })).toEqual({
+			highway: 'primary',
+		})
+	})
+})
+
 describe('projection', () => {
 	test('round-trips and preserves distances near the center', () => {
 		const point = { lat: 51.5008, lon: -0.1247 }
@@ -125,6 +143,7 @@ describe('computeBoundingBox and query', () => {
 	test('overpass query filters road classes within the bbox', () => {
 		const query = buildOverpassQuery({ south: 1, west: 2, north: 3, east: 4 })
 		expect(query).toContain('way["highway"~')
+		expect(query).toContain('["area"!="yes"]')
 		expect(query).toContain('(1,2,3,4)')
 		expect(query).toContain('out geom')
 		expect(query).toContain('residential')
@@ -134,6 +153,134 @@ describe('computeBoundingBox and query', () => {
 		expect(query).toContain('node["highway"="traffic_signals"]')
 		expect(query).toContain('node["traffic_sign"]')
 		expect(query).toContain('cycleway')
+	})
+})
+
+describe('resilient OSM requests', () => {
+	test('splits a failed bounding box into four exact quadrants', () => {
+		expect(splitOsmBoundingBox({ south: 0, west: 10, north: 4, east: 18 })).toEqual([
+			{ south: 0, west: 10, north: 2, east: 14 },
+			{ south: 0, west: 14, north: 2, east: 18 },
+			{ south: 2, west: 10, north: 4, east: 14 },
+			{ south: 2, west: 14, north: 4, east: 18 },
+		])
+	})
+
+	test('deduplicates ways and mapped features returned by adjacent chunks', () => {
+		const sharedWay = way(200, { highway: 'residential' }, [[1, 0, 0], [2, 0, 0.001]])
+		const merged = mergeOsmMapData([0, 1].map(() => ({
+			ways: [sharedWay],
+			pointFeatures: [{ kind: 'street-lamp' as const, point: { lat: 0, lon: 0 }, sourceId: 'node/9', height: 6, tags: {} }],
+			mappedSurfaces: [{ id: 201, kind: 'sidewalk' as const, sourceType: 'way' as const, tags: {}, points: sharedWay.points }],
+			crossings: [{ id: 202, point: { lat: 0, lon: 0 }, tags: {} }],
+			laneConnectivity: [{ id: 203, tags: { type: 'connectivity' }, members: [] }],
+		})))
+		expect(merged.ways).toHaveLength(1)
+		expect(merged.pointFeatures).toHaveLength(1)
+		expect(merged.mappedSurfaces).toHaveLength(1)
+		expect(merged.crossings).toHaveLength(1)
+		expect(merged.laneConnectivity).toHaveLength(1)
+	})
+
+	test('retries a gateway timeout as four smaller requests', async () => {
+		const originalFetch = globalThis.fetch
+		let requests = 0
+		globalThis.fetch = (async () => {
+			requests += 1
+			if (requests === 1) return new Response('', { status: 504 })
+			return new Response(JSON.stringify({ elements: [] }), { status: 200 })
+		}) as unknown as typeof fetch
+		try {
+			await fetchOsmMapData({ south: 0, west: 0, north: 1, east: 1 })
+			expect(requests).toBe(5)
+		} finally {
+			globalThis.fetch = originalFetch
+		}
+	})
+})
+
+describe('terrain and explicit vertical reconstruction', () => {
+	const terrainSampler = {
+		failedTiles: 0,
+		successfulTiles: 1,
+		prefetch: async () => {},
+		elevationAt: (point: { lat: number; lon: number }) => 100 + point.lon * 1000,
+	}
+
+	test('imports terrain as elevation relative to the selected origin', async () => {
+		const result = await importStreetsFromOsm(CENTER, 100, {
+			loadTerrain: true,
+			terrainSampler,
+			loadStreets: async () => [way(300, { highway: 'residential' }, [
+				[1, 0, -0.0005],
+				[2, 0, 0.0005],
+			])],
+		})
+		const nodes = Object.values(result.graphs[0]!.graphNodes).sort((first, second) => first.position[0] - second.position[0])
+		expect(result.source.baseElevation).toBe(100)
+		expect(nodes[0]!.position[1]).toBeLessThan(0)
+		expect(nodes[1]!.position[1]).toBeGreaterThan(0)
+	})
+
+	test('uses OSM ele as an absolute fact relative to the origin elevation', async () => {
+		const result = await importStreetsFromOsm(CENTER, 100, {
+			loadTerrain: true,
+			terrainSampler,
+			loadStreets: async () => [way(301, { highway: 'primary', ele: '110' }, [
+				[1, 0, -0.0005],
+				[2, 0, 0.0005],
+			])],
+		})
+		const graph = result.graphs[0]!
+		const edge = Object.values(graph.edges)[0]!
+		expect(Object.values(graph.graphNodes).every((node) => Math.abs(node.position[1] - 10) < 1e-6)).toBe(true)
+		expect(edge.profileMode).toBe('designed')
+	})
+
+	test('keeps a flat local datum when the terrain tile at the origin is unavailable', async () => {
+		const result = await importStreetsFromOsm(CENTER, 100, {
+			loadTerrain: true,
+			terrainSampler: {
+				failedTiles: 1,
+				successfulTiles: 1,
+				hasElevationAt: () => false,
+				prefetch: async () => {},
+				elevationAt: () => 250,
+			},
+			loadStreets: async () => [way(302, { highway: 'residential' }, [
+				[1, 0, -0.0005],
+				[2, 0, 0.0005],
+			])],
+		})
+		expect(result.source.baseElevation).toBeNull()
+		expect(Object.values(result.graphs[0]!.graphNodes).every((node) => node.position[1] === 0)).toBe(true)
+	})
+
+	test('adds estimated clearance only for bridge and tunnel crossings', () => {
+		const makeSegment = (id: string, startId: string, endId: string, tags: Record<string, string>) => ({
+			startId,
+			endId,
+			interior: [],
+			props: mapOsmTags({ highway: 'primary', ...tags })!,
+			osmVertical: mapOsmTags({ highway: 'primary', ...tags })!.osmVertical,
+		})
+		const nodePositions = new Map<string, readonly [number, number]>([
+			['west', [-20, 0]], ['east', [20, 0]], ['north', [0, -20]], ['south', [0, 20]],
+		])
+		const { graph } = buildRoadGraphFromSegments([
+			makeSegment('bridge', 'west', 'east', { bridge: 'yes', layer: '1' }),
+			makeSegment('ground', 'north', 'south', {}),
+		], nodePositions as Map<string, [number, number]>)
+		applyOsmStructureClearances(graph)
+		const bridge = Object.values(graph.edges).find((edge) => edge.osmVertical?.bridge)!
+		expect(bridge.profileMode).toBe('designed')
+		expect(bridge.verticalSource).toEqual({ kind: 'estimated', clearanceMeters: 4.5 })
+		expect(bridge.verticalProfile[0]!.elevation).toBeCloseTo(4.5)
+
+		const ordinary = Object.values(graph.edges).find((edge) => !edge.osmVertical?.bridge)!
+		ordinary.osmVertical = { layer: 10 }
+		applyOsmStructureClearances(graph)
+		expect(ordinary.profileMode).toBe('legacy')
 	})
 })
 
@@ -164,6 +311,14 @@ describe('parseOverpassResponse', () => {
 	test('returns empty for junk payloads', () => {
 		expect(parseOverpassResponse(null)).toEqual([])
 		expect(parseOverpassResponse({ remark: 'timeout' })).toEqual([])
+	})
+
+	test('does not import closed highway areas as centerline roads', () => {
+		const elements = [{
+			type: 'way', id: 13, tags: { highway: 'service', area: 'yes' }, nodes: [1, 2, 3, 1],
+			geometry: [{ lat: 0, lon: 0 }, { lat: 0, lon: 0.001 }, { lat: 0.001, lon: 0 }, { lat: 0, lon: 0 }],
+		}]
+		expect(parseOverpassResponse({ elements })).toEqual([])
 	})
 
 	test('parses roads and supported point objects from one response', () => {
@@ -201,11 +356,83 @@ describe('parseOverpassResponse', () => {
 		expect(surfaces[0]!.points).toHaveLength(4)
 	})
 
+	test('does not misclassify generic paths, tracks, or steps as sidewalks', () => {
+		const elements = ['path', 'track', 'steps'].map((highway, index) => ({
+			type: 'way',
+			id: 100 + index,
+			tags: { highway },
+			nodes: [1, 2],
+			geometry: [{ lat: 0, lon: 0 }, { lat: 0, lon: 0.001 }],
+		}))
+		expect(parseOsmMappedSurfaces({ elements })).toEqual([])
+	})
+
+	test('parses explicit sidewalk and crossing ways', () => {
+		const elements = [
+			{ type: 'way', id: 110, tags: { highway: 'footway', footway: 'sidewalk' }, nodes: [1, 2], geometry: [{ lat: 0, lon: 0 }, { lat: 0, lon: 0.001 }] },
+			{ type: 'way', id: 111, tags: { highway: 'footway', footway: 'crossing' }, nodes: [3, 4], geometry: [{ lat: 0, lon: 0 }, { lat: 0.001, lon: 0 }] },
+		]
+		expect(parseOsmMappedSurfaces({ elements }).map((surface) => surface.kind)).toEqual(['sidewalk', 'crossing'])
+	})
+
+	test('stitches outer members and retains holes from area highway relations', () => {
+		const relation = {
+			type: 'relation', id: 120, tags: { type: 'multipolygon', 'area:highway': 'residential' },
+			members: [
+				{ type: 'way', role: 'outer', geometry: [{ lat: 0, lon: 0 }, { lat: 0, lon: 0.001 }, { lat: 0.001, lon: 0.001 }] },
+				{ type: 'way', role: 'outer', geometry: [{ lat: 0.001, lon: 0.001 }, { lat: 0.001, lon: 0 }, { lat: 0, lon: 0 }] },
+				{ type: 'way', role: 'inner', geometry: [{ lat: 0.0002, lon: 0.0002 }, { lat: 0.0002, lon: 0.0004 }, { lat: 0.0004, lon: 0.0004 }] },
+				{ type: 'way', role: 'inner', geometry: [{ lat: 0.0004, lon: 0.0004 }, { lat: 0.0004, lon: 0.0002 }, { lat: 0.0002, lon: 0.0002 }] },
+			],
+		}
+		expect(parseOsmMappedSurfaces({ elements: [relation] })).toMatchObject([
+			{ id: 120, kind: 'road-area', partIndex: 0, sourceType: 'relation', holes: [[{}, {}, {}, {}, {}]] },
+		])
+	})
+
+	test('keeps every disjoint outer ring in a multipolygon relation', () => {
+		const square = (west: number) => [
+			{ lat: 0, lon: west }, { lat: 0, lon: west + 0.001 },
+			{ lat: 0.001, lon: west + 0.001 }, { lat: 0.001, lon: west }, { lat: 0, lon: west },
+		]
+		const surfaces = parseOsmMappedSurfaces({ elements: [{
+			type: 'relation', id: 121, tags: { type: 'multipolygon', 'area:highway': 'service' },
+			members: [
+				{ type: 'way', role: 'outer', geometry: square(0) },
+				{ type: 'way', role: 'outer', geometry: square(0.01) },
+			],
+		}] })
+		expect(surfaces.map((surface) => surface.partIndex)).toEqual([0, 1])
+	})
+
+	test('preserves lane connectivity relation members', () => {
+		const relations = parseOsmLaneConnectivity({ elements: [{
+			type: 'relation', id: 130, tags: { type: 'connectivity', connectivity: '1:1' },
+			members: [
+				{ type: 'way', ref: 10, role: 'from' },
+				{ type: 'node', ref: 20, role: 'via' },
+				{ type: 'way', ref: 30, role: 'to' },
+			],
+		}] })
+		expect(relations).toEqual([{ id: 130, tags: { type: 'connectivity', connectivity: '1:1' }, members: [
+			{ type: 'way', ref: 10, role: 'from' },
+			{ type: 'node', ref: 20, role: 'via' },
+			{ type: 'way', ref: 30, role: 'to' },
+		] }])
+	})
+
 	test('extracts crossing nodes with kerb metadata', () => {
 		const crossings = parseOsmCrossingFeatures({ elements: [
 			{ type: 'node', id: 44, lat: 40, lon: -73, tags: { highway: 'crossing', crossing: 'zebra', kerb: 'lowered', tactile_paving: 'yes' } },
 		] })
-		expect(crossings).toEqual([{ id: 44, point: { lat: 40, lon: -73 }, tags: { highway: 'crossing', crossing: 'zebra', kerb: 'lowered', tactile_paving: 'yes' } }])
+		expect(crossings).toEqual([{ id: 44, kind: 'crossing', point: { lat: 40, lon: -73 }, tags: { highway: 'crossing', crossing: 'zebra', kerb: 'lowered', tactile_paving: 'yes' } }])
+	})
+
+	test('retains lowered kerb nodes even when the crossing is mapped separately', () => {
+		expect(parseOsmCrossingFeatures({ elements: [
+			{ type: 'node', id: 45, lat: 40, lon: -73, tags: { barrier: 'kerb', kerb: 'lowered', tactile_paving: 'yes' } },
+			{ type: 'node', id: 46, lat: 40, lon: -73, tags: { barrier: 'kerb', kerb: 'raised' } },
+		] })).toMatchObject([{ id: 45, kind: 'kerb' }])
 	})
 })
 

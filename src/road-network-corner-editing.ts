@@ -5,6 +5,7 @@ import {
   type JunctionBoundaryCorner,
 } from './road-network-geometry'
 import type { RoadGraphEdge, RoadNetworkNode, RoadStylePreset } from './schema'
+import { roadCarriagewayWidth } from './road-cross-section'
 import { DEFAULT_ROAD_STYLE_PRESETS } from './road-style-presets'
 
 export type RoadCurbCornerHandle = {
@@ -29,10 +30,6 @@ function resolveStyle(node: RoadNetworkNode, edge: RoadGraphEdge): RoadStylePres
   )
 }
 
-function carriagewayWidth(style: RoadStylePreset): number {
-  return style.laneCount * style.laneWidth + style.shoulderWidth * 2 + style.medianWidth
-}
-
 function junctionApproaches(
   node: RoadNetworkNode,
   junctionId: string,
@@ -47,7 +44,7 @@ function junctionApproaches(
     return [{
       angle: Math.atan2(toward[2] - from[2], toward[0] - from[0]),
       edgeId: edge.id,
-      halfWidth: carriagewayWidth(style) / 2,
+      halfWidth: roadCarriagewayWidth(style) / 2,
     }]
   })
 }

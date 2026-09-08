@@ -3,6 +3,7 @@ import {
 	sampleRoadEdgePoints,
 } from "./road-network-geometry";
 import { roadPlanPointAtStation } from "./road-network-vertical-profile";
+import { roadCarriagewayWidth } from "./road-cross-section";
 import type { RoadGraphEdge, RoadNetworkNode, RoadStylePreset } from "./schema";
 import {
 	quantize,
@@ -116,10 +117,7 @@ function sideWidth(
 }
 
 function roadHalfWidth(style: RoadStylePreset): number {
-	const carriageway =
-		style.laneCount * style.laneWidth +
-		style.shoulderWidth * 2 +
-		style.medianWidth;
+	const carriageway = roadCarriagewayWidth(style);
 	return (
 		carriageway / 2 +
 		Math.max(

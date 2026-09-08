@@ -624,8 +624,8 @@ function MapImportDialog({
 
 						<div className="map-card rounded-lg border border-border bg-muted/35 p-3 text-muted-foreground text-xs leading-relaxed">
 							Yellow, red, and blue dots preview lamps, traffic signals, and signs. The
-							first import sets this level's map origin; later areas line up with it and
-							keep imported geometry flat on the editor floor.
+							first import sets this level's map origin; later areas line up with it.
+							Available terrain and mapped elevations shape the imported road profiles.
 						</div>
 
 						{!activeLevelId && (

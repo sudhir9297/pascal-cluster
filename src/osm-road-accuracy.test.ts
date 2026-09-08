@@ -169,3 +169,47 @@ test('road import preserves the mapped surface through graph assembly', async ()
   expect(unknown.surfaceMaterial).toBeUndefined()
   expect(unknown.surfaceSource).toEqual({ kind: 'default', tag: 'paved' })
 })
+
+test('preserves lane-specific widths and dimension provenance', async () => {
+  const style = await street({
+    highway: 'primary',
+    lanes: '3',
+    'width:lanes': '3.0|3.2|3.6',
+    sidewalk: 'no',
+  })
+  expect(style.laneWidths).toEqual([3, 3.2, 3.6])
+  expect(buildRoadCrossSection(style).carriagewayWidth).toBeCloseTo(9.8)
+  expect(style.dimensionSources).toMatchObject({
+    laneCount: { kind: 'mapped', tag: 'lanes' },
+    laneWidth: { kind: 'mapped', tag: 'width%3Alanes' },
+    totalWidth: { kind: 'default' },
+  })
+})
+
+test('does not duplicate sidewalks declared as separately mapped geometry', async () => {
+  const style = await street({
+    highway: 'residential',
+    sidewalk: 'separate',
+  })
+  expect(style.leftSide!.sidewalkWidth).toBe(0)
+  expect(style.rightSide!.sidewalkWidth).toBe(0)
+  expect(style.dimensionSources).toMatchObject({
+    leftSidewalk: { kind: 'mapped' },
+    rightSidewalk: { kind: 'mapped' },
+  })
+})
+
+test('preserves directional per-lane transit and bicycle uses', async () => {
+  const style = await street({
+    highway: 'primary',
+    lanes: '3',
+    'lanes:forward': '2',
+    'lanes:backward': '1',
+    'bus:lanes:forward': 'designated|no',
+    'bus:lanes:backward': 'no',
+    'bicycle:lanes:forward': 'no|designated',
+    'bicycle:lanes:backward': 'designated',
+  })
+  expect(style.laneDirections).toEqual(['backward', 'forward', 'forward'])
+  expect(style.laneUses).toEqual(['bicycle', 'bus', 'bicycle'])
+})

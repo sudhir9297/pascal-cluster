@@ -21,6 +21,7 @@ import {
 import {
   buildRoadCrossSection,
   buildRoadJunctionBands,
+  roadCarriagewayWidth,
   ROAD_SIDE_COMPONENT_SPECS,
   type RoadJunctionBand,
 } from './road-cross-section'
@@ -132,17 +133,25 @@ function resolveStyle(node: RoadNetworkNode, edge: RoadGraphEdge): RoadStylePres
   )
 }
 
-function carriagewayWidth(style: RoadStylePreset): number {
-  return style.laneCount * style.laneWidth + style.shoulderWidth * 2 + style.medianWidth
-}
-
 export function maskMappedComponentsForProfile(node: RoadNetworkNode, profile: RoadTransitionProfile): RoadTransitionProfile {
   const masks = new Map<number, Map<string, number>>()
   const samples = profile.samples
   if (samples.length < 2) return profile
   for (const surface of node.osmMappedSurfaces) {
-    const component = surface.kind === 'cycleway' ? 'bike-lane' : surface.kind === 'kerb' ? 'curb' : surface.kind === 'sidewalk' ? 'sidewalk' : null
-    if (!component || surface.points.length < 2) continue
+	if (
+	  surface.associatedEdgeIds.length > 0 &&
+	  !surface.associatedEdgeIds.some((edgeId) => profile.edgeIds.includes(edgeId))
+	) continue
+	const components = surface.kind === 'cycleway'
+	  ? ['bike-lane'] as const
+	  : surface.kind === 'kerb'
+	    ? ['curb'] as const
+	    : surface.kind === 'sidewalk'
+	      ? ['sidewalk'] as const
+	      : surface.kind === 'crossing'
+	        ? ['curb', 'sidewalk'] as const
+	        : []
+	if (components.length === 0 || surface.points.length < 2) continue
     for (const point of surface.points) {
       let nearestDistance = Number.POSITIVE_INFINITY
       let nearestIndex = 0
@@ -156,15 +165,21 @@ export function maskMappedComponentsForProfile(node: RoadNetworkNode, profile: R
       const dx = next.point[0] - previous.point[0]
       const dz = next.point[2] - previous.point[2]
       const lateral = -dz * (point[0] - samples[nearestIndex]!.point[0]) + dx * (point[2] - samples[nearestIndex]!.point[2])
-      const side = lateral >= 0 ? 'left' : 'right'
-      const key = `${side}:${component}`
-      for (const [offset, strength] of [[0, 1], [-1, 0.5], [1, 0.5], [-2, 0.2], [2, 0.2]] as const) {
-        const index = nearestIndex + offset
-        if (index < 0 || index >= samples.length) continue
-        const station = masks.get(index) ?? new Map<string, number>()
-        station.set(key, Math.max(station.get(key) ?? 0, strength))
-        masks.set(index, station)
-      }
+	  const sides = surface.side === 'center'
+	    ? [lateral >= 0 ? 'left' : 'right'] as const
+	    : [surface.side] as const
+	  for (const side of sides) {
+	    for (const component of components) {
+	      const key = `${side}:${component}`
+	      for (const [offset, strength] of [[0, 1], [-1, 0.5], [1, 0.5], [-2, 0.2], [2, 0.2]] as const) {
+	        const index = nearestIndex + offset
+	        if (index < 0 || index >= samples.length) continue
+	        const station = masks.get(index) ?? new Map<string, number>()
+	        station.set(key, Math.max(station.get(key) ?? 0, strength))
+	        masks.set(index, station)
+	      }
+	    }
+	  }
     }
   }
   if (masks.size === 0) return profile
@@ -337,7 +352,7 @@ export function RoadRibbonSurface({
       elevationOffset,
       lateralOffset,
       surfaceThickness: style.surfaceThickness,
-      width: width ?? carriagewayWidth(style),
+      width: width ?? roadCarriagewayWidth(style),
     })
     if (mesh.positions.length === 0) return result
     result.setAttribute('position', new Float32BufferAttribute(mesh.positions, 3))
@@ -546,55 +561,77 @@ function RoadPolygonSurface({
 
 type MappedSurface = {
   id: number
-  kind: 'road-area' | 'sidewalk' | 'cycleway' | 'pedestrian-area' | 'kerb'
+  kind: 'road-area' | 'sidewalk' | 'cycleway' | 'pedestrian-area' | 'kerb' | 'crossing'
+  partIndex?: number
+  sourceType?: 'way' | 'relation'
+  widthMeters?: number
   tags: Record<string, string>
   points: Array<readonly [number, number, number]>
+  holes?: Array<Array<readonly [number, number, number]>>
 }
 
-function RoadMappedCrossing({ crossing, ghost = false }: { crossing: { id: number; point: readonly [number, number, number]; rotationY?: number; tags: Record<string, string> }; ghost?: boolean }) {
+function RoadMappedCrossing({ crossing, ghost = false, roadWidth = 7 }: { crossing: { id: number; kind?: 'crossing' | 'kerb'; point: readonly [number, number, number]; rotationY?: number; tags: Record<string, string> }; ghost?: boolean; roadWidth?: number }) {
   const lowered = crossing.tags.kerb === 'lowered' || crossing.tags.kerb === 'flush' || crossing.tags.kerb === 'no'
+  const kerbOnly = crossing.kind === 'kerb'
   const geometry = useMemo(() => {
     const result = createRoadGeometry()
-    const width = 2.4
-    const depth = 1.5
-    const sidewalkY = lowered ? 0.105 : 0.075
-    const roadY = lowered ? 0.025 : 0.045
-    const bottomY = -0.06
-    const positions = [
-      -width / 2, sidewalkY, -depth / 2, width / 2, sidewalkY, -depth / 2,
-      -width / 2, roadY, 0, width / 2, roadY, 0,
-      -width / 2, sidewalkY, depth / 2, width / 2, sidewalkY, depth / 2,
-      -width / 2, bottomY, -depth / 2, width / 2, bottomY, -depth / 2,
-      -width / 2, bottomY, 0, width / 2, bottomY, 0,
-      -width / 2, bottomY, depth / 2, width / 2, bottomY, depth / 2,
-    ]
-    const indices = [0, 2, 1, 1, 2, 3, 2, 4, 3, 3, 4, 5, 0, 1, 7, 0, 7, 6, 1, 3, 9, 1, 9, 7, 3, 5, 11, 3, 11, 9, 5, 4, 10, 5, 10, 11, 4, 0, 6, 4, 6, 10, 6, 7, 9, 6, 9, 10]
+    const width = kerbOnly ? 1.2 : 2.4
+    const sidewalkY = lowered ? 0.06 : 0.105
+    const roadY = 0.018
+    const rows = kerbOnly
+      ? [[-0.225, sidewalkY], [0, roadY], [0.225, sidewalkY]]
+      : [
+          [-(roadWidth / 2 + 0.8), sidewalkY],
+          [-roadWidth / 2, roadY],
+          [roadWidth / 2, roadY],
+          [roadWidth / 2 + 0.8, sidewalkY],
+        ]
+    const positions = rows.flatMap(([z, y]) => [-width / 2, y!, z!, width / 2, y!, z!])
+    const indices = rows.slice(1).flatMap((_, index) => {
+      const base = index * 2
+      return [base, base + 2, base + 1, base + 2, base + 3, base + 1]
+    })
     result.setAttribute('position', new Float32BufferAttribute(positions, 3))
     result.setIndex(indices)
     result.computeVertexNormals()
     result.computeBoundingBox()
     result.computeBoundingSphere()
     return result
-  }, [lowered])
+  }, [kerbOnly, lowered, roadWidth])
   useRoadGeometryLifecycle(geometry)
   return (
-    <mesh geometry={geometry} position={crossing.point} rotation={[0, crossing.rotationY ?? 0, 0]} name={`road-mapped-crossing:${crossing.id}`} raycast={NO_RAYCAST}>
-      <meshStandardMaterial color={lowered ? '#d6d0b5' : '#aaa79f'} depthWrite={!ghost} opacity={ghost ? 0.48 : 1} roughness={0.9} transparent={ghost} />
-    </mesh>
+    <group position={crossing.point} rotation={[0, crossing.rotationY ?? 0, 0]}>
+      <mesh geometry={geometry} name={`road-mapped-${kerbOnly ? 'kerb-ramp' : 'crossing-ramp'}:${crossing.id}`} raycast={NO_RAYCAST} receiveShadow>
+        <meshStandardMaterial color={lowered ? '#d6d0b5' : '#aaa79f'} depthWrite={!ghost} opacity={ghost ? 0.48 : 1} roughness={0.9} transparent={ghost} />
+      </mesh>
+      {!ghost ? <RoadPavementShell top={geometry} thickness={0.1} color={lowered ? '#aaa58f' : '#898780'} /> : null}
+      {!ghost && !kerbOnly && crossing.tags.tactile_paving === 'yes' ? [-1, 1].map((side) => (
+        <mesh key={side} name={`road-mapped-tactile-pad:${crossing.id}`} position={[0, 0.11, side * (roadWidth / 2 + 0.38)]} raycast={NO_RAYCAST} receiveShadow>
+          <boxGeometry args={[2.1, 0.025, 0.45]} />
+          <meshStandardMaterial color="#d4b94f" roughness={0.95} />
+        </mesh>
+      )) : null}
+    </group>
   )
 }
 
 function RoadMappedSurface({ surface, ghost = false }: { surface: MappedSurface; ghost?: boolean }) {
-  const width = Number.parseFloat(surface.tags.width ?? surface.tags.est_width ?? '') || (
-    surface.kind === 'cycleway' ? 2.2 : surface.kind === 'kerb' ? 0.18 : 1.8
+  const width = (surface.widthMeters ?? Number.parseFloat(surface.tags.width ?? surface.tags.est_width ?? '')) || (
+	  surface.kind === 'cycleway' ? 2.2 : surface.kind === 'kerb' ? 0.18 : surface.kind === 'crossing' ? 2.4 : 1.8
   )
   const geometry = useMemo(() => {
     const result = createRoadGeometry()
     const points = surface.points
-    if (points.length < 2 || surface.kind === 'road-area') return result
+    if (points.length < 2) return result
     const closed = points.length >= 3 && Math.hypot(points[0]![0] - points.at(-1)![0], points[0]![2] - points.at(-1)![2]) < 1e-5
-    if (closed && surface.kind === 'pedestrian-area') {
-      const mesh = triangulateRoadBoundary(points.slice(0, -1))
+    const isArea = closed && (
+      surface.sourceType === 'relation' ||
+      surface.kind === 'pedestrian-area' ||
+      surface.kind === 'road-area' ||
+      surface.tags.area === 'yes'
+    )
+    if (isArea) {
+      const mesh = triangulateRoadBoundary(points.slice(0, -1), surface.holes ?? [])
       result.setAttribute('position', new Float32BufferAttribute(mesh.positions, 3))
       result.setIndex(mesh.indices)
       result.computeVertexNormals()
@@ -602,23 +639,13 @@ function RoadMappedSurface({ surface, ghost = false }: { surface: MappedSurface;
       result.computeBoundingSphere()
       return result
     }
-    const source = closed ? points.slice(0, -1) : points
-    const positions: number[] = []
-    const indices: number[] = []
-    for (let index = 0; index < source.length - 1; index++) {
-      const start = source[index]!
-      const end = source[index + 1]!
-      const dx = end[0] - start[0]
-      const dz = end[2] - start[2]
-      const length = Math.max(Math.hypot(dx, dz), 1e-6)
-      const nx = -dz / length * width / 2
-      const nz = dx / length * width / 2
-      const base = positions.length / 3
-      positions.push(start[0] + nx, start[1] + 0.01, start[2] + nz, start[0] - nx, start[1] + 0.01, start[2] - nz, end[0] + nx, end[1] + 0.01, end[2] + nz, end[0] - nx, end[1] + 0.01, end[2] - nz)
-      indices.push(base, base + 2, base + 1, base + 2, base + 3, base + 1)
-    }
-    result.setAttribute('position', new Float32BufferAttribute(positions, 3))
-    result.setIndex(indices)
+    const mesh = buildRoadRibbonGeometry(points, {
+      elevationOffset: 0.01,
+      surfaceThickness: 0,
+      width,
+    })
+    result.setAttribute('position', new Float32BufferAttribute(mesh.positions, 3))
+    result.setIndex(mesh.indices)
     result.computeVertexNormals()
     result.computeBoundingBox()
     result.computeBoundingSphere()
@@ -626,11 +653,15 @@ function RoadMappedSurface({ surface, ghost = false }: { surface: MappedSurface;
   }, [surface, width])
   useRoadGeometryLifecycle(geometry)
   if ((geometry.getAttribute('position')?.count ?? 0) === 0) return null
-  const color = surface.kind === 'cycleway' ? '#4f8b72' : surface.kind === 'pedestrian-area' ? '#b7a98f' : surface.kind === 'kerb' ? '#777b7b' : '#9c9a91'
+  const color = surface.kind === 'cycleway' ? '#4f8b72' : surface.kind === 'pedestrian-area' ? '#b7a98f' : surface.kind === 'road-area' ? '#44474a' : surface.kind === 'kerb' ? '#777b7b' : surface.kind === 'crossing' ? '#d6d0b5' : '#9c9a91'
+  const solidDepth = surface.kind === 'kerb' ? 0.15 : surface.kind === 'road-area' ? 0.08 : 0.1
   return (
-    <mesh geometry={geometry} name={`road-mapped-${surface.kind}:${surface.id}`} raycast={NO_RAYCAST} receiveShadow>
-      <meshStandardMaterial color={color} depthWrite={!ghost} opacity={ghost ? 0.48 : 1} polygonOffset polygonOffsetFactor={-2} roughness={0.92} side={DoubleSide} transparent={ghost} />
-    </mesh>
+    <>
+      <mesh geometry={geometry} name={`road-mapped-${surface.kind}:${surface.id}${surface.partIndex ? `:${surface.partIndex}` : ''}`} raycast={NO_RAYCAST} receiveShadow>
+        <meshStandardMaterial color={color} depthWrite={!ghost} opacity={ghost ? 0.48 : 1} polygonOffset polygonOffsetFactor={-2} roughness={0.92} side={DoubleSide} transparent={ghost} />
+      </mesh>
+      {!ghost ? <RoadPavementShell top={geometry} thickness={solidDepth} color={color} /> : null}
+    </>
   )
 }
 
@@ -835,7 +866,7 @@ export function RoadNetworkModel({
           const style = resolveStyle(node, edge)
           return style ? [style] : []
         })
-        const radius = Math.max(...styles.map((style) => carriagewayWidth(style) / 2), 0)
+        const radius = Math.max(...styles.map((style) => roadCarriagewayWidth(style) / 2), 0)
         const junction = node.junctions?.[graphNode.id]
         const primaryStyle = junction?.primaryEdgeIds.flatMap((edgeId) => {
           const edge = node.edges[edgeId]
@@ -852,7 +883,7 @@ export function RoadNetworkModel({
           return [{
             angle: Math.atan2(toward[2] - from[2], toward[0] - from[0]),
             edgeId: edge.id,
-            halfWidth: carriagewayWidth(edgeStyle) / 2,
+            halfWidth: roadCarriagewayWidth(edgeStyle) / 2,
           }]
         })
         const sideBands = buildRoadJunctionBands(styles)
@@ -868,7 +899,15 @@ export function RoadNetworkModel({
           ? buildManualRoadJunctionBoundary(automaticSolution, manualBoundary)
           : automaticSolution
         const mappedHoles = node.osmMappedSurfaces
-          .filter((surface) => surface.kind === 'road-area' && surface.points.length >= 3)
+          .filter((surface) =>
+            surface.kind === 'road-area' &&
+            surface.points.length >= 3 &&
+            (
+              surface.tags['area:highway'] === 'traffic_island' ||
+              surface.tags.highway === 'traffic_island' ||
+              surface.tags.traffic_calming === 'island'
+            ),
+          )
           .map((surface) => surface.points.map((point) => [point[0] - graphNode.position[0], point[2] - graphNode.position[2]] as const))
           .filter((hole) => hole.every(([x, z]) => Math.hypot(x, z) <= solution.maxExtent + 0.5))
         return style && radius > 0
@@ -1100,10 +1139,16 @@ export function RoadNetworkModel({
           ))
         : null}
       {!ghost ? node.osmMappedSurfaces.map((surface) => (
-        <RoadMappedSurface key={`osm-surface:${surface.kind}:${surface.id}`} surface={surface} />
+        <RoadMappedSurface key={`osm-surface:${surface.kind}:${surface.id}:${surface.partIndex ?? 0}`} surface={surface} />
       )) : null}
       {!ghost ? node.osmCrossings.map((crossing) => (
-        <RoadMappedCrossing key={`osm-crossing:${crossing.id}`} crossing={crossing} />
+        <RoadMappedCrossing
+          key={`osm-crossing:${crossing.id}`}
+          crossing={crossing}
+          roadWidth={crossing.associatedEdgeId && node.edges[crossing.associatedEdgeId]
+            ? roadCarriagewayWidth(resolveStyle(node, node.edges[crossing.associatedEdgeId]!) ?? DEFAULT_ROAD_STYLE_PRESETS['local-street'])
+            : undefined}
+        />
       )) : null}
       {!ghost && !nonInteractive && onSelectElement
         ? Object.values(node.edges).map((edge) => {
@@ -1123,7 +1168,7 @@ export function RoadNetworkModel({
                 opacity={selected ? 0.3 : 0}
                 points={sampleRoadEdgePoints(node, edge)}
                 style={style}
-                width={carriagewayWidth(style) + 0.16}
+                width={roadCarriagewayWidth(style) + 0.16}
               />
             )
           })

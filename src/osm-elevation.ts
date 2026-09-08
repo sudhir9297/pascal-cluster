@@ -109,6 +109,15 @@ export class TerrainSampler {
 		private loadTile: TerrainTileLoader = fetchTerrariumTile,
 	) {}
 
+	get successfulTiles(): number {
+		return [...this.tiles.values()].filter((tile) => tile !== null).length
+	}
+
+	hasElevationAt(point: GeoPoint): boolean {
+		const fraction = latLonToTileFraction(point, this.zoom)
+		return Boolean(this.tiles.get(`${Math.floor(fraction.x)}/${Math.floor(fraction.y)}`))
+	}
+
 	async prefetch(bbox: GeoBoundingBox, signal?: AbortSignal): Promise<void> {
 		signal?.throwIfAborted()
 		const min = latLonToTileFraction({ lat: bbox.north, lon: bbox.west }, this.zoom)

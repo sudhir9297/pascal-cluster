@@ -5,6 +5,7 @@ import { SliderControl, ToggleControl } from "@pascal-app/editor";
 import {
 	buildRoadCrossSection,
 	buildRoadJunctionBands,
+	roadCarriagewayWidth,
 	resolveRoadSideComponents,
 	ROAD_SIDE_COMPONENT_SPECS,
 } from "./road-cross-section";
@@ -166,10 +167,6 @@ function lampClearanceKey(nodeId: string, edgeId: string): string {
 	return `${nodeId}:${edgeId}`;
 }
 
-function carriagewayWidth(style: RoadStylePreset): number {
-	return style.laneCount * style.laneWidth + style.shoulderWidth * 2 + style.medianWidth;
-}
-
 function junctionApproach(
 	node: RoadNetworkNode,
 	nodeId: string,
@@ -182,7 +179,7 @@ function junctionApproach(
 	return {
 		angle: Math.atan2(toward[2] - from[2], toward[0] - from[0]),
 		edgeId: edge.id,
-		halfWidth: carriagewayWidth(edgeStyle(node, edge)) / 2,
+		halfWidth: roadCarriagewayWidth(edgeStyle(node, edge)) / 2,
 	};
 }
 

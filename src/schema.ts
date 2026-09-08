@@ -848,6 +848,20 @@ export const RoadStylePreset = z.object({
   name: z.string().min(1).max(64),
   laneCount: z.number().int().min(1).max(12).default(2),
   laneWidth: z.number().min(2.4).max(5).default(3.25),
+  /** Ordered physical lane widths. Falls back to laneWidth for legacy styles. */
+  laneWidths: z.array(z.number().min(2.4).max(5)).max(12).optional(),
+  /** Ordered OSM traffic direction for each physical lane. */
+  laneDirections: z.array(z.enum(['forward', 'backward', 'both'])).max(12).optional(),
+  /** Imported lane use without forcing unsupported uses into roadside bands. */
+  laneUses: z.array(z.enum(['general', 'bus', 'bicycle', 'parking', 'turning'])).max(12).optional(),
+  /** Records whether imported dimensions came from OSM or from an estimate. */
+  dimensionSources: z.record(
+    z.string(),
+    z.object({
+      kind: z.enum(['mapped', 'derived', 'default']),
+      tag: z.string().optional(),
+    }),
+  ).optional(),
   shoulderWidth: z.number().min(0).max(4).default(0.5),
   sidewalkWidth: z.number().min(0).max(6).default(0.5),
   medianWidth: z.number().min(0).max(12).default(0),
@@ -904,12 +918,18 @@ const RoadGraphEdgeSchema = z.object({
 		bridge: z.boolean().optional(),
 		tunnel: z.boolean().optional(),
 	}).optional(),
+  /** How the imported vertical profile was established. */
+  verticalSource: z.object({
+    kind: z.enum(['mapped', 'terrain', 'estimated']),
+    clearanceMeters: z.number().positive().optional(),
+  }).optional(),
   overlapGroup: z.string().min(1).optional(),
   parentEdgeId: z.string().optional(),
   /** Original OSM facts, retained independently of editable road styles. */
   osmSource: z
     .object({
       wayId: z.number().int(),
+      nodeIds: z.array(z.number().int()).optional(),
       tags: z.record(z.string(), z.string()),
     })
     .optional(),
@@ -1052,15 +1072,37 @@ export const RoadNetworkNode = BaseNode.extend({
   /** Supplemental OSM geometry in network-local coordinates, retained for surface reconstruction. */
   osmMappedSurfaces: z.array(z.object({
     id: z.number().int(),
-    kind: z.enum(['road-area', 'sidewalk', 'cycleway', 'pedestrian-area', 'kerb']),
+    kind: z.enum(['road-area', 'sidewalk', 'cycleway', 'pedestrian-area', 'kerb', 'crossing']),
+	partIndex: z.number().int().min(0).optional(),
+    sourceType: z.enum(['way', 'relation']).default('way'),
+    sourceNodeIds: z.array(z.number().int()).default([]),
+    associatedEdgeIds: z.array(z.string()).default([]),
+    side: z.enum(['left', 'right', 'center']).default('center'),
+    confidence: z.enum(['high', 'medium']).default('medium'),
+    distanceMeters: z.number().min(0).default(0),
+    widthMeters: z.number().positive().optional(),
+    widthSource: z.enum(['mapped', 'estimated']).optional(),
     tags: z.record(z.string(), z.string()),
     points: z.array(z.tuple([z.number(), z.number(), z.number()])),
+    holes: z.array(z.array(z.tuple([z.number(), z.number(), z.number()]))).optional(),
   })).default([]),
   /** Mapped crossing nodes used to lower kerbs and place tactile transitions. */
   osmCrossings: z.array(z.object({
     id: z.number().int(),
+    kind: z.enum(['crossing', 'kerb']).default('crossing'),
+    associatedEdgeId: z.string().optional(),
     point: z.tuple([z.number(), z.number(), z.number()]),
     rotationY: z.number().default(0),
+    tags: z.record(z.string(), z.string()),
+  })).default([]),
+  /** Raw OSM connectivity relations whose from/to ways belong to this network. */
+  osmLaneConnectivity: z.array(z.object({
+    id: z.number().int(),
+    members: z.array(z.object({
+      type: z.enum(['node', 'way', 'relation']),
+      ref: z.number().int(),
+      role: z.string(),
+    })),
     tags: z.record(z.string(), z.string()),
   })).default([]),
   stylePresets: z.record(z.string(), RoadStylePreset).default({

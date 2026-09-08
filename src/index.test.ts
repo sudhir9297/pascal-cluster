@@ -238,6 +238,12 @@ describe('Streetscape plugin manifest', () => {
 		expect(regionalMigration({ edges: {} })).toMatchObject({
 			regionalPack: 'right-driving',
 		})
+		const connectivityMigration = (roadNetworkDefinition as unknown as {
+			migrate: Record<number, (value: unknown) => unknown>
+		}).migrate[33]!
+		expect(connectivityMigration({ edges: {} })).toMatchObject({
+			osmLaneConnectivity: [],
+		})
   })
 
   test('shows only visual road controls in the inspector', () => {

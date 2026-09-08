@@ -1,5 +1,8 @@
 import {
   ROAD_SIDE_COMPONENT_SPECS,
+  roadCarriagewayWidth,
+  roadVehicleLaneWidth,
+  resolveRoadLaneWidths,
   resolveRoadSideComponents,
   type RoadSide,
   type RoadSideComponentKind,
@@ -60,10 +63,6 @@ function resolveStyle(node: RoadNetworkNode, edge: RoadGraphEdge): RoadStylePres
   )
 }
 
-function carriagewayWidth(style: RoadStylePreset): number {
-  return style.laneCount * style.laneWidth + style.shoulderWidth * 2 + style.medianWidth
-}
-
 function distanceXZ(
   first: readonly [number, number, number],
   second: readonly [number, number, number],
@@ -108,12 +107,12 @@ function pointAtDistance(
 }
 
 function laneBoundaryOffsets(style: RoadStylePreset): number[] {
-  return Array.from({ length: Math.max(0, style.laneCount - 1) }, (_, index) => {
-    const boundary = index + 1
-    return (
-      (boundary - style.laneCount / 2) * style.laneWidth +
-      (Math.sign(boundary - style.laneCount / 2) * style.medianWidth) / 2
-    )
+  const widths = resolveRoadLaneWidths(style)
+  const total = roadVehicleLaneWidth(style)
+  let cursor = -total / 2
+  return widths.slice(0, -1).map((width) => {
+    cursor += width
+    return cursor + (Math.sign(cursor) * style.medianWidth) / 2
   })
 }
 
@@ -125,7 +124,7 @@ function targetLaneBoundaryOffsets(source: RoadStylePreset, target: RoadStylePre
     right: targetOffsets.filter((offset) => offset < -EPSILON).sort((a, b) => b - a),
   }
   const sourceRanks = { left: 0, right: 0 }
-  const targetLaneHalfWidth = target.medianWidth / 2 + (target.laneCount * target.laneWidth) / 2
+  const targetLaneHalfWidth = target.medianWidth / 2 + roadVehicleLaneWidth(target) / 2
   return sourceOffsets.map((offset) => {
     if (Math.abs(offset) <= EPSILON) return 0
     const side = offset > 0 ? 'left' : 'right'
@@ -170,7 +169,7 @@ function buildSample(
   const mix = Math.max(0, Math.min(1, targetMix))
   const targetStyle = target ?? style
   const halfWidth =
-    (carriagewayWidth(style) + (carriagewayWidth(targetStyle) - carriagewayWidth(style)) * mix) / 2
+    (roadCarriagewayWidth(style) + (roadCarriagewayWidth(targetStyle) - roadCarriagewayWidth(style)) * mix) / 2
   const sourceBoundaries = laneBoundaryOffsets(style)
   const targetBoundaries = targetLaneBoundaryOffsets(style, targetStyle)
   return {
@@ -202,8 +201,8 @@ function outwardDirectionAtNode(
 }
 
 function styleNeedsTaper(source: RoadStylePreset, target: RoadStylePreset): boolean {
-  const sourceWidth = carriagewayWidth(source)
-  const targetWidth = carriagewayWidth(target)
+  const sourceWidth = roadCarriagewayWidth(source)
+  const targetWidth = roadCarriagewayWidth(target)
   if (sourceWidth > targetWidth + 0.01) return true
   if (Math.abs(sourceWidth - targetWidth) > 0.01) return false
   if (source.laneCount !== target.laneCount) return source.laneCount > target.laneCount
@@ -215,7 +214,7 @@ export function roadTransitionLength(
   target: RoadStylePreset,
   availableLength: number,
 ): number {
-  const widthDelta = Math.abs(carriagewayWidth(source) - carriagewayWidth(target))
+  const widthDelta = Math.abs(roadCarriagewayWidth(source) - roadCarriagewayWidth(target))
   const laneDelta =
     Math.abs(source.laneCount - target.laneCount) * Math.min(source.laneWidth, target.laneWidth)
   const preferred = Math.max(8, Math.min(40, Math.max(widthDelta, laneDelta) * 6))
@@ -264,7 +263,7 @@ function profileForPath(node: RoadNetworkNode, path: RoadRenderPath): RoadTransi
     path.points,
     path.cornerPointIndices,
     path.cornerNodeIds.map(
-      (nodeId) => node.graphNodes[nodeId]?.curveRadius ?? carriagewayWidth(style) * 0.65,
+      (nodeId) => node.graphNodes[nodeId]?.curveRadius ?? roadCarriagewayWidth(style) * 0.65,
     ),
     10,
   )

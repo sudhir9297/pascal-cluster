@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import { clearSceneHistory, LevelNode, SlabNode, type AnyNodeId, useScene } from '@pascal-app/core'
-import { createEmptyRoadGraph } from './road-network-topology'
-import type { OsmImportResult } from './osm-import'
+import { createEmptyRoadGraph, insertRoadSegment } from './road-network-topology'
+import { localToGeo, type OsmImportResult } from './osm-import'
 import { RoadNetworkNode } from './schema'
 import {
 	getImportedStreetFocus,
@@ -152,6 +152,33 @@ describe('placeOsmImport', () => {
 			new Set(['node/11', 'node/12', 'node/13']),
 		)
 		expect(useScene.temporal.getState().pastStates).toHaveLength(1)
+	})
+
+	test('stores corridor associations, crossing ownership, and connectivity on the matched network', () => {
+		const result = importResult(1)
+		result.graphs = [insertRoadSegment(createEmptyRoadGraph(), [-20, 0, 0], [20, 0, 0]).graph]
+		const edge = Object.values(result.graphs[0]!.edges)[0]!
+		edge.osmSource = { wayId: 42, nodeIds: [1, 2], tags: { highway: 'residential' } }
+		result.mappedSurfaces = [{
+			id: 50,
+			kind: 'sidewalk',
+			tags: { highway: 'footway', footway: 'sidewalk', width: '2.2' },
+			points: [-15, 15].map((x, index) => ({ ...localToGeo([x, 3], result.source.center), nodeId: index + 10 })),
+		}]
+		result.crossings = [{ id: 51, point: localToGeo([0, 0], result.source.center), tags: { highway: 'crossing' } }]
+		result.laneConnectivity = [{ id: 52, tags: { type: 'connectivity' }, members: [{ type: 'way', ref: 42, role: 'from' }] }]
+
+		const [networkId] = placeOsmImport(result, LEVEL_ID)
+		const network = RoadNetworkNode.parse(useScene.getState().nodes[networkId!])
+		expect(network.osmMappedSurfaces[0]).toMatchObject({
+			associatedEdgeIds: [edge.id],
+			confidence: 'high',
+			side: 'left',
+			widthMeters: 2.2,
+			widthSource: 'mapped',
+		})
+		expect(network.osmCrossings[0]).toMatchObject({ associatedEdgeId: edge.id })
+		expect(network.osmLaneConnectivity).toHaveLength(1)
 	})
 })
 

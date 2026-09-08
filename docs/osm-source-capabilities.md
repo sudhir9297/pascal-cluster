@@ -1,6 +1,6 @@
 # OSM data available for road reconstruction
 
-Reviewed 2026-09-07 against OSM's own tagging documentation and this checkout's importer. This note describes capabilities and query coverage; it does not claim that every tag exists in the selected New York area.
+Reviewed 2026-09-08 against OSM's own tagging documentation and this checkout's importer. This note describes capabilities and query coverage; it does not claim that every tag exists in the selected area.
 
 ## What the map can supply
 
@@ -16,18 +16,18 @@ Reviewed 2026-09-07 against OSM's own tagging documentation and this checkout's 
 
 ## What this plugin actually fetches and uses
 
-- [The query](../src/osm-import.ts) selects motor-road highway ways and point lamps, traffic signals, traffic signs, stop and give-way nodes. It requests `out geom`; the parser retains way tags and latitude/longitude/node IDs.
-- It now selects `area:highway` ways, mapped footway/cycleway/pedestrian paths, and kerb ways alongside the motor-road query. Relations, kerb nodes and lane-connectivity relations are still outside the import. Parsed supplemental ways are retained as provenance-tagged `mappedSurfaces`, carried into placed road networks, and used as hole contours and tapered station-by-station overrides for nearby roadside strips without treating them as vehicle roads. [Query and parser](../src/osm-import.ts)
-- [Style conversion](../src/osm-road-style.ts) consumes total/directional lane counts, total width, a subset of sidewalk/bike/parking tags, and lane-marking presence. It reduces directional counts to a total and uses a single uniform lane width. It does not consume lane-specific widths, turn arrays, placement, separate cycle-track geometry or surface tags.
-- Missing urban sidewalks become 1.8 m strips; `sidewalk=separate` also becomes a strip. Cycle and parking widths have defaults. Explicit dimensions outside its accepted range fall back to estimates. These are generated design choices, not retrieved dimensions. [Style conversion](../src/osm-road-style.ts)
-- [Tag conversion](../src/osm-import.ts) retains bridge status, but clamps negative layers to zero and does not parse tunnel identity. [Graph construction](../src/osm-import.ts) initializes graph Y coordinates to zero. Its optional elevation baking samples terrain and linearly interpolates bridge alignment points between sampled endpoints; this is not a measured bridge-deck profile.
+- [The query](../src/osm-import.ts) selects motor-road ways; `area:highway` ways and relations; explicit sidewalks, crossings, cycleways, pedestrian areas and kerbs; lane-connectivity relations; and supported point objects. It requests `out geom`; the parser retains raw tags and source way/node/relation IDs. Gateway failures are retried as four smaller bounding boxes and merged by source identity.
+- [Corridor association](../src/osm-road-corridors.ts) compares each supplemental feature with complete road polylines, including distance, overlap, direction, side and bridge/tunnel/layer compatibility. It assigns one graph owner, records confidence and matched edges, clips geometry to the selected import radius, and prevents a nearby parallel road from claiming the feature.
+- [Style conversion](../src/osm-road-style.ts) consumes total and directional lane counts, total and per-lane widths, per-lane direction and bus/bicycle use, turn arrays, road surface, and a subset of sidewalk/cycle/parking tags. Each dimension records whether it was mapped, derived or defaulted. Variable lane widths feed the carriageway, markings, junctions, terrain and decoration offsets.
+- Missing ordinary urban sidewalks become 1.8 m estimated strips. `sidewalk=separate` does not create a synthetic strip; the separately mapped geometry is rendered when it can be associated. Cycle and parking widths use bounded defaults when their presence is tagged without a valid width. [Style conversion](../src/osm-road-style.ts)
+- Mapped line features render as joined ribbons with solid depth. Closed road and pedestrian areas are triangulated, including multipolygon holes. Mapped crossings locally suppress inferred curbs and sidewalks, and lowered/flush kerb nodes generate ramp geometry.
+- [Vertical reconstruction](../src/osm-import.ts) preserves signed OSM layer and bridge/tunnel identity as source facts. Live imports sample terrain relative to the import origin, apply explicit `ele` values, and generate a 4.5 m estimated clearance profile only at plan intersections between mapped structures and ordinary roads. `layer` is never treated as metres.
 
-## Recommendations inferred from the evidence
+## Remaining limits
 
-1. Keep the importer and editable graph; introduce a normalized road record that preserves raw tags, source way/node IDs, per-lane direction/use/width, signed layer and structure identity. Attach a source or estimate marker to dimensions before generating geometry.
-2. Expand fetching to separate sidewalks, crossings, kerbs, cycleways and available road-area polygons. Resolve their association with the road before rendering, so imported sidewalks do not duplicate synthetic strips.
-3. Use mapped outlines when available; otherwise solve contiguous carriageway and junction surfaces from centerlines and width constraints. Make curbs, sidewalks and markings share those boundaries. This is a mesh-generation problem even where map data is sparse.
-4. Treat turns, widths and placement as station-dependent profiles along the road instead of collapsing everything to one symmetric section. Preserve exact way shape unless a bounded smoothing operation is justified.
-5. Keep a clean flat reconstruction as a baseline. Add terrain and bridge profiles only with explicit vertical constraints. Never convert `layer=1` directly into a supposedly measured height.
+- OSM coverage is uneven. A missing width, kerb or outline remains an estimate or an omitted feature, not a surveyed fact.
+- Lane connectivity relations are retained for later editing and routing but are not yet a traffic-simulation model.
+- Estimated structure clearance is deliberately labeled as estimated. It is not a measured bridge deck, tunnel bore or engineering-grade vertical alignment.
+- The importer does not infer buildings, street furniture beyond the supported point catalog, or legal access rules into a full transport network.
 
-These are implementation proposals, not claims that OSM contains complete curb geometry or that richer queries alone fix the current 3D renderer. Check actual tag coverage in the captured payload before deciding which enhancements offer the most benefit.
+Check the retained raw tags and provenance before treating an imported scene as authoritative.
