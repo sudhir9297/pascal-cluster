@@ -46,8 +46,12 @@ Push this repository to your intended GitHub repository. In the editor's
 commit, for example:
 
 ```json
-"@pascal-app/plugin-landscape": "github:sudhir9297/landscape-pascal-plugin#COMMIT_OR_TAG"
+"@pascal-app/plugin-landscape": "git+ssh://git@github.com/sudhir9297/landscape-pascal-plugin.git#COMMIT_OR_TAG"
 ```
+
+The repository is private. Installing machines need GitHub access through an
+SSH key or a Git credential helper; CI needs credentials with access to this
+repository. Never put credentials in the dependency URL.
 
 Run `bun install` from the editor root and restart the editor. Its existing
 plugin registration, TypeScript transpilation, CSS scanning, and package
