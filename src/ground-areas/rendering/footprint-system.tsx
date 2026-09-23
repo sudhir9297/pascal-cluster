@@ -2,10 +2,9 @@
 
 import { useScene, type AnyNodeId } from '@pascal-app/core'
 import { useEffect } from 'react'
-import { PATHWAY_KIND } from '../../pathways/domain/schema'
 import { GROUND_AREA_KIND } from '../domain/schema'
 
-const footprintKinds = new Set([PATHWAY_KIND, GROUND_AREA_KIND, 'slab'])
+const footprintKinds = new Set([GROUND_AREA_KIND, 'slab'])
 
 export default function GrassFootprintSystem() {
   useEffect(() => useScene.subscribe((current, previous) => {

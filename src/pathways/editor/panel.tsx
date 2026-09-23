@@ -24,14 +24,19 @@ export function PathwayPanel() {
       if ((raw.type as string) !== PATHWAY_KIND || raw.parentId !== levelId) continue
       const node = PathwayNode.parse(raw)
       const parts = pathComponents(node)
-      if (parts.length < 2) continue
+      if (parts.length < 2) {
+        if ((raw as { finish?: string }).finish === 'curvedCobbles')
+          changes.update.push({ id: node.id as AnyNodeId,
+            data: { finish: 'riverStones', borderStyle: 'none' } as Partial<AnyNode> })
+        continue
+      }
       changes.update.push({ id: node.id as AnyNodeId, data: parts[0] as Partial<AnyNode> })
       for (const part of parts.slice(1)) {
         const sibling = PathwayNode.parse({ ...node, id: undefined, ...part })
         changes.create.push({ node: sibling as unknown as AnyNode, parentId: levelId as AnyNodeId })
       }
     }
-    if (changes.create.length) useScene.getState().applyNodeChanges(changes)
+    if (changes.create.length || changes.update.length) useScene.getState().applyNodeChanges(changes)
   }, [levelId, sceneNodes])
   const active = useEditor((s) => s.tool === PATHWAY_KIND)
   const status = usePathwayStatus()

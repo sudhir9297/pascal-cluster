@@ -186,7 +186,9 @@ test('saved graph round-trips, and generated mesh matches footprint and elevatio
   const restored = PathwayNode.parse(JSON.parse(JSON.stringify(node)))
   expect(restored).toEqual(node)
   const geometry = buildPathwayGeometry(restored)
-  const bounds = new Box3().setFromObject(geometry)
+  // The border cap deliberately projects beyond the paving by 8 mm.
+  // Check the paving mesh itself against the authored footprint.
+  const bounds = new Box3().setFromObject(geometry.children[0]!)
   expect(bounds.min.x).toBeCloseTo(2, 2)
   expect(bounds.min.z).toBeCloseTo(2.5, 2)
   expect(bounds.min.y).toBeCloseTo(2.005, 3)

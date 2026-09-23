@@ -1,7 +1,6 @@
 import type { NodeDefinition } from '@pascal-app/core'
 import { GROUND_AREA_KIND, GroundAreaNode } from './domain/schema'
 import { buildGroundAreaFloorplan, buildGroundAreaGeometry } from './rendering/geometry'
-import { PATHWAY_KIND } from '../pathways/domain/schema'
 
 export const groundAreaDefinition: NodeDefinition<typeof GroundAreaNode> = {
   kind: GROUND_AREA_KIND,
@@ -25,7 +24,7 @@ export const groundAreaDefinition: NodeDefinition<typeof GroundAreaNode> = {
   floorplan: buildGroundAreaFloorplan,
   floorplanDependencies: (node, nodes) => Object.values(nodes)
     .filter((candidate) => (candidate.id as string) !== node.id && candidate.parentId === node.parentId &&
-      ((candidate.type as string) === PATHWAY_KIND || (candidate.type as string) === GROUND_AREA_KIND || candidate.type === 'slab'))
+      ((candidate.type as string) === GROUND_AREA_KIND || candidate.type === 'slab'))
     .map((candidate) => candidate.id),
   tool: () => import('./editor/tool'),
   preview: () => import('./rendering/preview'),

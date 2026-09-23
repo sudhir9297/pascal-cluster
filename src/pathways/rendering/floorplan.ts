@@ -1,15 +1,24 @@
 import type { FloorplanGeometry, GeometryContext } from '@pascal-app/core'
-import type { PathwayNode } from '../domain/schema'
+import { currentPathway, isNaturalStoneFinish, type PathwayNode } from '../domain/schema'
 import { pathTerminalEnds } from '../domain/terminals'
 import { buildOutline } from './outline'
 import { pavingJoints, polygonsToPath } from './plan-finish'
 import { laidPavingTiles } from './laid-paving'
 import { pavingBorder } from './paving-border'
+import { naturalStones } from './natural-stones'
+
+function stoneShade(color: string, index: number, amount: number): string {
+  const delta = (index - 1.5) * amount * 12
+  const channels = [1, 3, 5].map((start) => Math.max(0, Math.min(255,
+    Math.round(Number.parseInt(color.slice(start, start + 2), 16) + delta))))
+  return `#${channels.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`
+}
 
 export function buildPathwayFloorplan(
   node: PathwayNode,
   ctx: GeometryContext,
 ): FloorplanGeometry {
+  node = currentPathway(node)
   const selected = ctx.viewState?.selected || ctx.viewState?.highlighted
   const outline = buildOutline(node)
   const paving: FloorplanGeometry = {
@@ -23,11 +32,17 @@ export function buildPathwayFloorplan(
     strokeWidth: selected ? 0.045 : 0.018,
   }
   const joints = pavingJoints(outline, node.finish ?? 'concrete')
-  const surface: FloorplanGeometry[] = node.finish === 'laidStone' ? [] : [paving]
-  const tiles = laidPavingTiles(node)
-  if (node.finish === 'laidStone') surface.push(...tiles.map(({ ring, holes, border, shade }): FloorplanGeometry => ({
+  const natural = isNaturalStoneFinish(node.finish)
+  const open = node.finish === 'laidStone' || natural
+  const surface: FloorplanGeometry[] = open ? [] : [paving]
+  const tiles = natural
+    ? naturalStones(node).map((stone) => ({ ...stone, border: false }))
+    : laidPavingTiles(node)
+  if (node.finish === 'laidStone' || natural) surface.push(...tiles.map(({ ring, holes, border, shade }): FloorplanGeometry => ({
     kind: 'path', d: [ring, ...(holes ?? [])].map((r) => `M ${r.map(([x, z]) => `${x} ${z}`).join(' L ')} Z`).join(' '), fillRule: 'evenodd',
-    fill: border ? '#9a9d88' : ['#adb09d', '#b6b8a5', '#bcbcab', '#aeb3a1'][shade]!,
+    fill: border ? '#9a9d88' : natural
+      ? stoneShade(node.color, shade, node.naturalStoneShade ?? 0.4)
+      : ['#adb09d', '#b6b8a5', '#bcbcab', '#aeb3a1'][shade]!,
     stroke: '#848977', strokeWidth: 0.004,
   })))
   else if (tiles.length) surface.push({ kind: 'path',

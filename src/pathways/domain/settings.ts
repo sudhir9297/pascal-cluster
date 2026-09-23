@@ -1,5 +1,7 @@
 import { finishOptions } from '../rendering/finishes'
 import type { PathwayNode } from './schema'
+import { isNaturalStoneFinish } from './schema'
+import { naturalStoneDefaults } from '../rendering/natural-stones'
 
 export const DEFAULT_PATHWAY_WIDTH = 1.2
 export const STONE_WALKWAY_PRESET = {
@@ -13,7 +15,14 @@ export const STONE_WALKWAY_PRESET = {
 /** Changing the primary width resizes the selected connected item. */
 export function derivePathwaySettings(next: PathwayNode, patch: Partial<PathwayNode>): Partial<PathwayNode> {
   return {
-    ...(patch.finish ? { color: finishOptions[next.finish].color } : {}),
+    ...(patch.finish ? {
+      color: finishOptions[next.finish].color,
+      ...(isNaturalStoneFinish(next.finish) ? {
+        naturalStoneSize: naturalStoneDefaults[next.finish].size,
+        naturalStoneGap: naturalStoneDefaults[next.finish].gap,
+        borderStyle: 'none' as const,
+      } : {}),
+    } : {}),
     ...(patch.defaultWidth !== undefined ? {
       edges: next.edges.map((edge) => ({ ...edge, width: next.defaultWidth })),
     } : {}),

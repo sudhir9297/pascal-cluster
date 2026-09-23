@@ -5,6 +5,7 @@ import { PathwayWidthControl } from './editor/width-control'
 import { PathwayBorderControl } from './editor/border-control'
 import { PathwayEdgeControl } from './editor/edge-control'
 import { StoneLayoutControl } from './editor/stone-layout-control'
+import { NaturalStoneControl } from './editor/natural-stone-control'
 import { buildPathwayFloorplan } from './rendering/floorplan'
 import { buildPathwayGeometry } from './rendering/geometry'
 import { derivePathwaySettings } from './domain/settings'
@@ -43,6 +44,7 @@ export const pathwayDefinition: NodeDefinition<typeof PathwayNode> = {
           { key: 'borderStyle', label: 'Path border', kind: 'custom', component: PathwayBorderControl },
           { key: 'stoneEdge', label: 'Edge profiles', kind: 'custom', component: PathwayEdgeControl },
           { key: 'stoneLength', label: 'Stone layout', kind: 'custom', component: StoneLayoutControl },
+          { key: 'naturalStoneSize', label: 'Natural stone layout', kind: 'custom', component: NaturalStoneControl },
           { key: 'cornerStyle', label: 'Corners', kind: 'enum', options: ['round', 'square'], display: 'segmented' },
           { key: 'color', label: 'Color', kind: 'color' },
           { key: 'defaultWidth', label: 'Width', kind: 'custom', component: PathwayWidthControl },

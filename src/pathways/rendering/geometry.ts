@@ -6,12 +6,13 @@ import {
   type BufferGeometry,
 } from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
-import { STONE_LAYOUT_DEFAULTS, type PathwayEdgeProfile, type PathwayNode } from '../domain/schema'
+import { STONE_LAYOUT_DEFAULTS, currentPathway, isNaturalStoneFinish, type PathwayEdgeProfile, type PathwayNode } from '../domain/schema'
 import { buildOutline } from './outline'
 import { createFinishTexture } from './finishes'
 import { laidPavingTiles } from './laid-paving'
 import { pavingPolygons } from './paving-polygons'
 import { pavingBorder } from './paving-border'
+import { naturalStones } from './natural-stones'
 
 function bevel(profile: PathwayEdgeProfile, depth: number) {
   const size = profile === 'sharp' ? 0 : profile === 'soft' ? 0.006 : 0.012
@@ -24,13 +25,16 @@ function bevel(profile: PathwayEdgeProfile, depth: number) {
 }
 
 export function buildPathwayGeometry(node: PathwayNode, _ctx?: unknown, suppliedMaterial?: MeshStandardMaterial): Group {
+  node = currentPathway(node)
   const group = new Group()
   const material = suppliedMaterial ?? createPathwayMaterial(node)
   group.userData.sourceMaterial = suppliedMaterial ? undefined : material
-  const laid = node.finish === 'laidStone' || node.finish === 'concreteSlabs'
+  const natural = isNaturalStoneFinish(node.finish)
+  const laid = node.finish === 'laidStone' || node.finish === 'concreteSlabs' || natural
   const ownedMaterials: MeshStandardMaterial[] = []
-  const baseMaterial = node.finish === 'concreteSlabs' ? new MeshStandardMaterial({ color: '#adab9c', roughness: 1 }) : material
-  if (node.finish === 'concreteSlabs') ownedMaterials.push(baseMaterial)
+  const baseMaterial = node.finish === 'concreteSlabs'
+    ? new MeshStandardMaterial({ color: '#adab9c', roughness: 1 }) : material
+  if (baseMaterial !== material) ownedMaterials.push(baseMaterial)
   group.userData.ownedMaterials = ownedMaterials
   const polygons = buildOutline(node)
   if (!polygons.length) {
@@ -41,7 +45,7 @@ export function buildPathwayGeometry(node: PathwayNode, _ctx?: unknown, supplied
     }
     return group
   }
-  for (const polygon of node.finish === 'laidStone' ? [] : polygons) {
+  for (const polygon of node.finish === 'laidStone' || natural ? [] : polygons) {
     const geometry = extrudePaving(polygon, {
       depth: node.thickness,
       bevelEnabled: false,
@@ -51,6 +55,7 @@ export function buildPathwayGeometry(node: PathwayNode, _ctx?: unknown, supplied
     geometry.rotateX(-Math.PI / 2)
     geometry.translate(0, node.elevation + 0.005, 0)
     const mesh = new Mesh(geometry, baseMaterial)
+    mesh.name = 'pathway-backing'
     mesh.receiveShadow = true
     mesh.castShadow = true
     group.add(mesh)
@@ -71,11 +76,12 @@ export function buildPathwayGeometry(node: PathwayNode, _ctx?: unknown, supplied
       for (const polygon of edgePolygons) {
         // Expand the cap a few millimetres past the path edge, then run it
         // from the underside of the paving to just above its top surface.
-        const edgeBevel = bevel(node.borderEdge ?? 'soft', node.thickness + 0.02)
+        const edgeDepth = node.thickness + 0.02
+        const edgeBevel = bevel(node.borderEdge ?? 'soft', edgeDepth)
         const expanded = pavingPolygons.inset(polygon, edgeBevel.bevelSize - 0.008)
         for (const piece of expanded) {
           const geometry = extrudePaving(piece, {
-            depth: node.thickness + 0.02,
+            depth: edgeDepth,
             ...edgeBevel,
             steps: 1,
           })
@@ -89,6 +95,7 @@ export function buildPathwayGeometry(node: PathwayNode, _ctx?: unknown, supplied
       geometries.forEach((part) => part.dispose())
       if (geometry) {
         const mesh = new Mesh(geometry, edgeMaterial)
+        mesh.name = 'pathway-border'
         mesh.castShadow = true
         mesh.receiveShadow = true
         group.add(mesh)
@@ -98,8 +105,9 @@ export function buildPathwayGeometry(node: PathwayNode, _ctx?: unknown, supplied
   if (laid) {
     const tileMaterials = Array.from({ length: 4 }, (_, i) => {
       const tileMaterial = material.clone()
-      tileMaterial.color.multiplyScalar(node.finish === 'laidStone'
-        ? 1 + (node.stoneVariation ?? STONE_LAYOUT_DEFAULTS.variation) * [-0.24, -0.08, 0.08, 0.24][i]!
+      tileMaterial.color.multiplyScalar(node.finish === 'laidStone' || natural
+        ? 1 + (natural ? node.naturalStoneShade ?? 0.4 : node.stoneVariation ?? STONE_LAYOUT_DEFAULTS.variation)
+          * [-0.3, -0.1, 0.1, 0.3][i]!
         : [0.98, 1, 1.02, 1][i]!)
       ownedMaterials.push(tileMaterial)
       return tileMaterial
@@ -108,14 +116,16 @@ export function buildPathwayGeometry(node: PathwayNode, _ctx?: unknown, supplied
     borderMaterial.color.multiplyScalar(0.94)
     ownedMaterials.push(borderMaterial)
     const batches = new Map<MeshStandardMaterial, BufferGeometry[]>()
-    const tiles = laidPavingTiles(node)
+    const tiles = natural
+      ? naturalStones(node).map((stone) => ({ ...stone, border: false }))
+      : laidPavingTiles(node)
     group.userData.pavingTileCount = tiles.length
     for (const tile of tiles) {
       // Extrusion bevels expand outward. Inset the source first so bevels
       // cannot grow through a neighboring stone or close a miter joint.
       const depth = tile.border
         ? node.thickness + 0.02
-        : node.finish === 'laidStone' ? Math.max(0.008, node.thickness - 0.012) : 0.012
+        : node.finish === 'laidStone' || natural ? Math.max(0.018, node.thickness - 0.012) : 0.012
       const tileBevel = bevel(tile.border ? node.borderEdge ?? 'soft' : node.stoneEdge ?? 'soft', depth)
       const pieces = pavingPolygons.inset([tile.ring, ...(tile.holes ?? [])],
         tile.border ? tileBevel.bevelSize - 0.008 : tileBevel.bevelSize)
@@ -128,7 +138,7 @@ export function buildPathwayGeometry(node: PathwayNode, _ctx?: unknown, supplied
         if (!geometry) continue
         geometry.rotateX(-Math.PI / 2)
         geometry.translate(0, tile.border ? node.elevation + 0.005
-          : node.finish === 'laidStone' ? node.elevation + 0.011 : node.elevation + node.thickness + 0.012, 0)
+          : node.finish === 'laidStone' || natural ? node.elevation + 0.011 : node.elevation + node.thickness + 0.012, 0)
         const tileMaterial = tile.border ? borderMaterial : tileMaterials[tile.shade]!
         const batch = batches.get(tileMaterial) ?? []
         batch.push(geometry)
@@ -154,8 +164,8 @@ export function createPathwayMaterial(node: PathwayNode) {
   return new MeshStandardMaterial({
     color: texture ? '#ffffff' : node.color,
     map: texture,
-    bumpMap: node.finish === 'laidStone' ? texture : null,
-    bumpScale: node.finish === 'laidStone' ? 0.012 : 0,
+    bumpMap: node.finish === 'laidStone' || isNaturalStoneFinish(node.finish) ? texture : null,
+    bumpScale: node.finish === 'laidStone' || isNaturalStoneFinish(node.finish) ? 0.012 : 0,
     roughness: 0.92,
   })
 }

@@ -1,7 +1,5 @@
 import type { AnyNode, AnyNodeId, GeometryContext } from '@pascal-app/core'
 import polygonClipping, { type MultiPolygon, type Polygon } from 'polygon-clipping'
-import { PATHWAY_KIND, type PathwayNode } from '../../pathways/domain/schema'
-import { buildOutline } from '../../pathways/rendering/outline'
 import { GROUND_AREA_KIND, type GroundAreaNode, type Point } from '../domain/schema'
 
 type Positioned = { position?: [number, number, number]; rotation?: number | [number, number, number] }
@@ -25,12 +23,7 @@ function blockerFootprint(node: SurfaceNode, area: GroundAreaNode): MultiPolygon
   if (node.visible === false) return []
   const localHeight = (node.position?.[1] ?? 0) - ((area as Positioned).position?.[1] ?? 0)
   let footprint: MultiPolygon = []
-  if ((node.type as string) === PATHWAY_KIND) {
-    const path = node as unknown as PathwayNode
-    if (path.elevation + path.thickness + localHeight < area.elevation + 0.015 ||
-        path.elevation + localHeight > area.elevation + 0.18) return []
-    footprint = buildOutline(path)
-  } else if ((node.type as string) === GROUND_AREA_KIND) {
+  if ((node.type as string) === GROUND_AREA_KIND) {
     const other = node as unknown as GroundAreaNode
     if (other.id === area.id || other.surface === 'grass' || other.outline.length < 3 ||
         Math.abs(other.elevation + localHeight - area.elevation) > 0.18) return []

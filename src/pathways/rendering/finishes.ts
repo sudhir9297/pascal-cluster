@@ -1,5 +1,5 @@
 import { CanvasTexture, RepeatWrapping, SRGBColorSpace } from 'three'
-import type { PathwayFinish } from '../domain/schema'
+import { isNaturalStoneFinish, type PathwayFinish } from '../domain/schema'
 
 export const finishOptions: Record<PathwayFinish, { label: string; color: string; description: string }> = {
   concrete: { label: 'Smooth concrete', color: '#c2b7a3', description: 'Continuous, quiet paving' },
@@ -8,6 +8,9 @@ export const finishOptions: Record<PathwayFinish, { label: string; color: string
   gravel: { label: 'Gravel path', color: '#b2a58d', description: 'Compacted aggregate look' },
   laidStone: { label: 'Laid stone', color: '#b5b7a5', description: 'Individual curved rows of beveled stone' },
   concreteSlabs: { label: 'Concrete slabs', color: '#bdbbaa', description: 'Large panels with expansion joints' },
+  grassFlagstones: { label: 'Grass flagstones', color: '#a8aca4', description: 'Loose irregular slabs with open grass joints' },
+  riverStones: { label: 'River stones', color: '#b6b4a8', description: 'Dense varied pebbles with smaller infill stones' },
+  steppingStones: { label: 'Stepping stones', color: '#c5c5bc', description: 'Single spaced stones following the centerline' },
 }
 
 function shade(hex: string, amount: number) {
@@ -43,7 +46,7 @@ export function createFinishTexture(finish: PathwayFinish, color: string): Canva
       }
     }
   } else {
-    if (finish === 'laidStone') for (let i = 0; i < 45; i++) {
+    if (finish === 'laidStone' || isNaturalStoneFinish(finish)) for (let i = 0; i < 45; i++) {
       const x = random() * 512, y = random() * 512, radius = 15 + random() * 60
       const cloud = ctx.createRadialGradient(x, y, 0, x, y, radius)
       cloud.addColorStop(0, random() > 0.5 ? 'rgba(255,255,240,0.07)' : 'rgba(58,65,48,0.06)')
@@ -51,7 +54,7 @@ export function createFinishTexture(finish: PathwayFinish, color: string): Canva
       ctx.fillStyle = cloud
       ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2)
     }
-    const count = finish === 'gravel' ? 8000 : finish === 'laidStone' ? 14000 : 1900
+    const count = finish === 'gravel' ? 8000 : finish === 'laidStone' || isNaturalStoneFinish(finish) ? 14000 : 1900
     for (let i = 0; i < count; i++) {
       const x = random() * 512, y = random() * 512
       const size = finish === 'gravel' ? 1 + random() * 3 : 1 + random() * 2

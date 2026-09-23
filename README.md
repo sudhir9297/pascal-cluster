@@ -21,6 +21,12 @@ stone columns, visible joints, and a continuous border. Standard drawing starts
 at 1.2 m. In the floating settings, **Width** resizes the entire selected
 walkway. Paving finishes are arranged in a two-column grid. Laid stone has no
 backing slab, and its stone dimensions stay consistent as the route gets longer.
+The finish picker also offers grass flagstones, river stones, and stepping stones.
+Their floating settings control size, spacing, shape and color variation, and
+a stable pattern seed. All three layouts reveal the ground between individual
+stones; none adds a full backing slab.
+Walkways sit over grass ground areas without cutting the grass surface away;
+open stone layouts show that grass between their individual pieces.
 
 The first version includes four posts, a perimeter beam frame, rafters, optional shade
 slats and knee braces, with paintable surfaces. Each enabled knee brace has shaped
