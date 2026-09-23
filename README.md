@@ -1,8 +1,78 @@
 # Pascal Landscape plugin
 
-Landscape design tools for the Pascal editor. This starter exports
-`landscapePlugin` and `landscapeHostPanel`; the panel currently has no tools.
-Requires Pascal core 1.0.1 or a compatible 1.x release.
+Landscape design tools for the Pascal editor. Exports `landscapePlugin` and
+`landscapeHostPanel`, with a freestanding open-slat pergola as the first tool.
+Requires compatible Pascal core, editor, and viewer 1.x packages.
+
+## Pergola
+
+Open **Landscape → Pergolas** and click the **Open-slat pergola** thumbnail,
+then click in the scene to place it. Use **R / T** to rotate the placement
+preview and **Escape** to cancel. Select a placed pergola to edit its dimensions
+and structure in the editor inspector. Use the editor paint tool for its finish.
+
+The Landscape sidebar starts with a two-column catalog. Each item opens its
+own scrollable view with placement thumbnails. Use **Landscape catalog** to
+return to the grid; this cancels active placement.
+Pathways offers **Straight / polyline** and **Smooth curve** thumbnails to start
+drawing with the current width and color.
+**Stone walkway · 1.8 m** starts the reference-style layout with three individual
+stone columns, visible joints, and a continuous border. Standard drawing starts
+at 1.2 m. In the floating settings, **Width** resizes the entire selected
+walkway. Paving finishes are arranged in a two-column grid. Laid stone has no
+backing slab, and its stone dimensions stay consistent as the route gets longer.
+
+The first version includes four posts, a perimeter beam frame, rafters, optional shade
+slats and knee braces, with paintable surfaces. Each enabled knee brace has shaped
+ends that meet the post and beam along the pergola's width and depth. It provides 3D geometry,
+a 2D floor-plan representation, and editor movement, rotation, and sizing
+controls. Placement is intended for level ground or a slab; individual post
+heights do not yet adapt to sloping terrain.
+
+The selected pergola's inspector offers flat, single-slope, gable, and curved
+roof forms. Single-slope uses separate front and back heights; gable and curved
+roofs use an adjustable rise. The inspector can also inset posts independently
+from each side and switch them between square, chamfered, round, and tapered
+profiles. All posts still sit on the same level surface.
+Gable roofs include a full-width curved timber arch under each pitched end beam
+by default. Its upper and lower edges rise together, and a center king post and
+short diagonal struts connect it to the gable above. The arch
+can instead be placed at the front, back, both ends, or removed on any roof
+form. Segmental, rounded, and pointed styles have adjustable drop, rise, and
+depth. Curved roofs have matching curved end beams, and their arches follow
+the beams. The roof profile follows the post positions when posts are inset.
+
+Roof member layout offers open rafters, close shade slats, and a two-direction
+grid. Rafter size and spacing are independent of the shade slats or grid cross
+members. The grid also lets either the rafters or cross members sit on top.
+Existing pergolas with the older Cross slats setting keep their previous roof
+layout until changed in the inspector.
+
+The post detail control adds only bands or top trim. Changing the post profile
+resets this detail to Plain. One post base control handles all bottom shaping,
+following the editor column's simple block, square plinth, stepped square,
+rounded rings, and panelled pedestal forms. The base can also be removed, and
+its width and height are adjustable. Bases use the post finish by default.
+The post shaft begins at the base's top tier, while the neck of each base
+adapts to the selected square, chamfered, round, or tapered post profile.
+Round and tapered posts expose straight, bulged, and hourglass shaft shapes
+below the profile selector. Tapered posts also expose taper strength, and the
+curved shapes expose shaft curve strength. Braces and base necks follow the
+resulting profile.
+
+Knee brace settings in the inspector include diagonal, arched, and swept
+styles, thickness, reach along the beam, and drop down the post. Brace ends
+follow the selected post profile, including tapered posts.
+
+Pergola code lives in `src/pergola/`:
+
+- `domain/`: validated node data and member layout.
+- `rendering/`: 3D geometry, floor-plan drawing, and placement preview.
+- `editor/`: placement tool, property controls, and panel illustration.
+- `definition.ts`: registration with the editor's node system.
+
+Pathway and walkway research, design notes, and future feature code live in
+[`src/pathways/`](./src/pathways/README.md).
 
 ## Local development
 

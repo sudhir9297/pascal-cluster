@@ -1,4 +1,8 @@
-import type { Plugin } from '@pascal-app/core'
+import type { AnyNodeDefinition, Plugin } from '@pascal-app/core'
+
+import { pergolaDefinition } from './pergola/definition'
+import { pathwayDefinition } from './pathways/definition'
+import { groundAreaDefinition } from './ground-areas/definition'
 
 type PluginHostPanel = {
   id: string
@@ -22,7 +26,11 @@ const LANDSCAPE_ICON =
 export const landscapePlugin: Plugin = {
   id: 'pascal:landscape',
   apiVersion: 1,
-  nodes: [],
+  nodes: [
+    pergolaDefinition as unknown as AnyNodeDefinition,
+    pathwayDefinition as unknown as AnyNodeDefinition,
+    groundAreaDefinition as unknown as AnyNodeDefinition,
+  ],
 }
 
 /** Editor panel entry point for the landscape plugin. */
@@ -37,3 +45,10 @@ export const landscapeHostPanel: PluginHostPanel = {
   pluginUrl: 'https://github.com/sudhir9297/landscape-pascal-plugin',
   defaultInstalled: true,
 }
+
+export { PergolaNode } from './pergola/domain/schema'
+export { pergolaDefinition } from './pergola/definition'
+export { PathwayNode } from './pathways/domain/schema'
+export { pathwayDefinition } from './pathways/definition'
+export { GroundAreaNode, GROUND_AREA_KIND } from './ground-areas/domain/schema'
+export { groundAreaDefinition } from './ground-areas/definition'
