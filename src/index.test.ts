@@ -12,6 +12,6 @@ describe('Landscape plugin manifest', () => {
     expect(landscapeHostPanel.pluginId).toBe(landscapePlugin.id)
     expect(landscapeHostPanel.label).toBe('Landscape')
     expect(landscapeHostPanel.defaultInstalled).toBe(true)
-    expect(landscapeHostPanel.pluginUrl).toBe('https://github.com/pascalorg/plugin-landscape')
+    expect(landscapeHostPanel.pluginUrl).toBe('https://github.com/sudhir9297/landscape-pascal-plugin')
   })
 })

@@ -33,7 +33,7 @@ export const landscapeHostPanel: PluginHostPanel = {
   component: () => import('./landscape-panel'),
   pluginId: landscapePlugin.id,
   description: 'Tools for designing landscape scenes.',
-  creator: { name: 'Pascal', url: 'https://github.com/pascalorg' },
-  pluginUrl: 'https://github.com/pascalorg/plugin-landscape',
+  creator: { name: 'Sudhir Yadav', url: 'https://github.com/sudhir9297' },
+  pluginUrl: 'https://github.com/sudhir9297/landscape-pascal-plugin',
   defaultInstalled: true,
 }
