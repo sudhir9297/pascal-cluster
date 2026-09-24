@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title desc">
+  <title id="title">Catenary suspended street light</title>
+  <desc id="desc">Two tapered support poles joined by a catenary cable carrying an aerodynamic twin-optic roadway luminaire.</desc>
+  <defs>
+    <linearGradient id="catenaryBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e9eef2"/>
+      <stop offset="1" stop-color="#cdd6de"/>
+    </linearGradient>
+    <linearGradient id="catenaryMetal" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#12171c"/>
+      <stop offset=".48" stop-color="#56616a"/>
+      <stop offset="1" stop-color="#20262c"/>
+    </linearGradient>
+    <linearGradient id="catenaryHousing" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#56616a"/>
+      <stop offset="1" stop-color="#20262c"/>
+    </linearGradient>
+    <linearGradient id="catenaryDiffuser" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9e0e4"/>
+      <stop offset="1" stop-color="#8f9aa1"/>
+    </linearGradient>
+    <filter id="catenaryShadow" x="-30%" y="-40%" width="160%" height="190%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+  </defs>
+  <rect width="640" height="640" rx="44" fill="url(#catenaryBg)"/>
+  <ellipse cx="320" cy="566" rx="232" ry="28" fill="#4b5660" opacity=".2" filter="url(#catenaryShadow)"/>
+
+  <!-- twin grounded support poles -->
+  <path d="M113 555 132 151h33l20 404z" fill="url(#catenaryMetal)"/>
+  <path d="M475 555 494 151h33l20 404z" fill="url(#catenaryMetal)"/>
+  <path d="M124 157h48M485 157h50" stroke="#151a1f" stroke-width="16" stroke-linecap="round"/>
+  <path d="M114 554h76l-14-24h-50zM476 554h76l-14-24h-50z" fill="#20262c"/>
+  <ellipse cx="151" cy="530" rx="37" ry="10" fill="#4d5861"/>
+  <ellipse cx="513" cy="530" rx="37" ry="10" fill="#4d5861"/>
+
+  <!-- overhead catenary with a readable, smooth sag -->
+  <path d="M149 157 Q320 235 511 157" fill="none" stroke="#11161b" stroke-width="11" stroke-linecap="round"/>
+  <path d="M149 154 Q320 229 511 154" fill="none" stroke="#6e7981" stroke-width="3" stroke-linecap="round" opacity=".7"/>
+  <circle cx="149" cy="157" r="12" fill="#20262c"/>
+  <circle cx="511" cy="157" r="12" fill="#20262c"/>
+
+  <!-- adjustable twin-clamp yoke and aerodynamic roadway fixture -->
+  <circle cx="278" cy="216" r="13" fill="none" stroke="#8e989e" stroke-width="8"/>
+  <circle cx="362" cy="216" r="13" fill="none" stroke="#8e989e" stroke-width="8"/>
+  <path d="M278 226 299 282M362 226l-21 56M299 282h42" fill="none" stroke="#4f5a62" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M288 281h64l-10 25h-44z" fill="#606b73" stroke="#252c31" stroke-width="5"/>
+  <path d="M207 337Q214 304 252 291h136q38 13 45 46l-15 58H222z" fill="url(#catenaryHousing)" stroke="#1d2328" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M237 377h166l-9 24H246z" fill="#c9d0d3" stroke="#59636a" stroke-width="5"/>
+  <rect x="258" y="378" width="54" height="23" rx="7" fill="url(#catenaryDiffuser)" stroke="#707a80" stroke-width="4"/>
+  <rect x="328" y="378" width="54" height="23" rx="7" fill="url(#catenaryDiffuser)" stroke="#707a80" stroke-width="4"/>
+  <g fill="#fff5d9">
+    <circle cx="269" cy="389" r="4"/><circle cx="285" cy="389" r="4"/><circle cx="301" cy="389" r="4"/>
+    <circle cx="339" cy="389" r="4"/><circle cx="355" cy="389" r="4"/><circle cx="371" cy="389" r="4"/>
+  </g>
+  <path d="M270 313h100" stroke="#8d979d" stroke-width="5" stroke-linecap="round" opacity=".7"/>
+  <circle cx="236" cy="344" r="6" fill="#a1aaaf"/><circle cx="404" cy="344" r="6" fill="#a1aaaf"/>
+
+  <!-- subtle ground contact cues -->
+  <circle cx="151" cy="555" r="7" fill="#11161b"/>
+  <circle cx="513" cy="555" r="7" fill="#11161b"/>
+</svg>

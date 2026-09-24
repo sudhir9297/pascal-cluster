@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title desc">
+  <title id="title">Truss roadway light</title>
+  <desc id="desc">A cobra-head lamp on a triangular braced outreach.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e9eef2"/><stop offset="1" stop-color="#d5dde3"/></linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1b2025"/><stop offset=".5" stop-color="#59636c"/><stop offset="1" stop-color="#252b31"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-50%" width="160%" height="200%"><feGaussianBlur stdDeviation="11"/></filter>
+  </defs>
+  <rect width="640" height="640" rx="44" fill="url(#bg)"/>
+  <ellipse cx="300" cy="558" rx="120" ry="27" fill="#59636d" opacity=".2" filter="url(#shadow)"/>
+  <path d="M235 555h136l-18-34h-100z" fill="#252b31"/><ellipse cx="303" cy="521" rx="48" ry="12" fill="#4b555e"/>
+  <path d="M278 522 291 175h28l13 347z" fill="url(#metal)"/>
+  <path d="M304 178h200" stroke="#252b31" stroke-width="22" stroke-linecap="round"/>
+  <path d="M290 224 410 178 502 178" fill="none" stroke="#3b444c" stroke-width="10"/>
+  <path d="M304 224h106M410 224V178" fill="none" stroke="#4d5860" stroke-width="8"/>
+  <path d="M474 169 528 142l35 13-17 54-63 8z" fill="#39424a"/>
+  <path d="M485 211h55l-10 18h-45z" fill="#9ca4a9"/>
+  <rect x="277" y="414" width="42" height="57" rx="5" fill="#11161b" opacity=".85"/>
+  <circle cx="290" cy="536" r="7" fill="#11161b"/><circle cx="320" cy="536" r="7" fill="#11161b"/>
+</svg>

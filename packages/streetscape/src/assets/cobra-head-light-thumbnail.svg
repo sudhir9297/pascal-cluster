@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title desc">
+  <title id="title">Classic cobra-head roadway light</title>
+  <desc id="desc">A straight mast arm with a broad, rounded roadway luminaire.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e9eef2"/>
+      <stop offset="1" stop-color="#d5dde3"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#1b2025"/>
+      <stop offset=".5" stop-color="#59636c"/>
+      <stop offset="1" stop-color="#252b31"/>
+    </linearGradient>
+    <linearGradient id="housing" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#58636c"/>
+      <stop offset="1" stop-color="#242b32"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-50%" width="160%" height="200%">
+      <feGaussianBlur stdDeviation="11"/>
+    </filter>
+  </defs>
+  <rect width="640" height="640" rx="44" fill="url(#bg)"/>
+  <ellipse cx="305" cy="558" rx="122" ry="29" fill="#59636d" opacity=".2" filter="url(#shadow)"/>
+  <path d="M238 555h139l-19-34h-101z" fill="#252b31"/>
+  <ellipse cx="307" cy="521" rx="49" ry="12" fill="#4b555e"/>
+  <path d="M281 522 294 170h29l13 352z" fill="url(#metal)"/>
+  <path d="M275 204h69l-7-36h-55z" fill="#343c44"/>
+  <rect x="270" y="413" width="50" height="57" rx="5" fill="#11161b" opacity=".85"/>
+  <path d="M305 174h206" stroke="#252b31" stroke-width="28" stroke-linecap="round"/>
+  <path d="M493 162h53l20 15-20 15h-53z" fill="#232930"/>
+  <path d="M477 149 537 119l38 14-19 58-70 8z" fill="url(#housing)"/>
+  <path d="m476 148 60-29 38 14-19 21c-28 11-52 15-79 10z" fill="#64717a" opacity=".55"/>
+  <path d="M486 192h60l-15 22h-49z" fill="#171c21"/>
+  <path d="M493 199h49l-8 16h-34z" fill="#9ca4a9"/>
+  <ellipse cx="525" cy="214" rx="16" ry="6" fill="#707b83"/>
+  <circle cx="292" cy="536" r="7" fill="#11161b"/>
+  <circle cx="327" cy="536" r="7" fill="#11161b"/>
+</svg>

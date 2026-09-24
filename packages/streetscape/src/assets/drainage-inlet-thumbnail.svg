@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">
+  <defs><linearGradient id="road" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#818887"/><stop offset="1" stop-color="#4a5151"/></linearGradient><filter id="s"><feDropShadow dx="0" dy="12" stdDeviation="12" flood-opacity=".3"/></filter></defs>
+  <rect width="640" height="640" rx="56" fill="#dcd9cf"/><path d="M0 224L640 80V640H0Z" fill="url(#road)"/><path d="M0 205L640 61" stroke="#bcb9ad" stroke-width="84"/>
+  <g transform="translate(320 362) rotate(-13)" filter="url(#s)">
+    <rect x="-218" y="-118" width="436" height="236" rx="18" fill="#272d2e" stroke="#15191a" stroke-width="25"/>
+    <rect x="-189" y="-90" width="378" height="180" rx="7" fill="#121718"/>
+    <g fill="#4d5657">
+      <rect x="-174" y="-84" width="22" height="168" rx="6"/><rect x="-125" y="-84" width="22" height="168" rx="6"/><rect x="-76" y="-84" width="22" height="168" rx="6"/><rect x="-27" y="-84" width="22" height="168" rx="6"/><rect x="22" y="-84" width="22" height="168" rx="6"/><rect x="71" y="-84" width="22" height="168" rx="6"/><rect x="120" y="-84" width="22" height="168" rx="6"/><rect x="169" y="-84" width="22" height="168" rx="6"/>
+    </g>
+    <rect x="-220" y="-190" width="440" height="78" rx="8" fill="#b3b1a8"/><rect x="-144" y="-180" width="288" height="45" rx="5" fill="#171b1c"/>
+  </g>
+</svg>

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title desc">
+  <title id="title">Road network</title>
+  <desc id="desc">A curved asphalt road joining a four-way intersection with sidewalks and lane markings.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b8dcf2"/>
+      <stop offset="1" stop-color="#eef5e8"/>
+    </linearGradient>
+    <linearGradient id="asphalt" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4b535b"/>
+      <stop offset="1" stop-color="#252b31"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="640" rx="44" fill="url(#sky)"/>
+  <path d="M0 420C118 398 188 355 250 282C319 202 399 170 640 170V332C458 332 401 349 354 409C297 482 200 548 0 584Z" fill="#aeb4b8"/>
+  <path d="M0 442C123 419 197 376 264 298C327 225 408 199 640 199V303C463 303 389 324 336 393C282 463 193 522 0 558Z" fill="url(#asphalt)"/>
+  <path d="M365 0H503V640H365Z" fill="#aeb4b8"/>
+  <path d="M383 0H485V640H383Z" fill="url(#asphalt)"/>
+  <path d="M434 0V640" stroke="#f3c84b" stroke-width="8" stroke-dasharray="34 24"/>
+  <path d="M0 500C136 477 225 427 300 340C366 264 449 251 640 251" fill="none" stroke="#f3c84b" stroke-width="8" stroke-dasharray="34 24"/>
+  <path d="M383 0V640M485 0V640" stroke="#e7e9e8" stroke-width="5" opacity=".9"/>
+  <circle cx="434" cy="270" r="42" fill="#596c45" stroke="#d8d3bd" stroke-width="10"/>
+  <circle cx="434" cy="270" r="8" fill="#e9d56c"/>
+</svg>

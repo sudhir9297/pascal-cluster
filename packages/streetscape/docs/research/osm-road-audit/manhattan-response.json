@@ -1,0 +1,2728 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-09-07T04:42:51Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "node",
+  "id": 42428287,
+  "lat": 40.7558193,
+  "lon": -73.9864249,
+  "tags": {
+    "highway": "traffic_signals"
+  }
+},
+{
+  "type": "node",
+  "id": 42428297,
+  "lat": 40.7579634,
+  "lon": -73.9855335,
+  "tags": {
+    "highway": "traffic_signals"
+  }
+},
+{
+  "type": "node",
+  "id": 42428303,
+  "lat": 40.7594380,
+  "lon": -73.9851371,
+  "tags": {
+    "highway": "traffic_signals"
+  }
+},
+{
+  "type": "node",
+  "id": 42428305,
+  "lat": 40.7601126,
+  "lon": -73.9848196,
+  "tags": {
+    "highway": "traffic_signals"
+  }
+},
+{
+  "type": "node",
+  "id": 42430342,
+  "lat": 40.7561421,
+  "lon": -73.9831665,
+  "tags": {
+    "highway": "traffic_signals"
+  }
+},
+{
+  "type": "node",
+  "id": 42430344,
+  "lat": 40.7567712,
+  "lon": -73.9827118,
+  "tags": {
+    "highway": "traffic_signals"
+  }
+},
+{
+  "type": "node",
+  "id": 42432700,
+  "lat": 40.7591595,
+  "lon": -73.9883858,
+  "tags": {
+    "highway": "traffic_signals"
+  }
+},
+{
+  "type": "node",
+  "id": 42435675,
+  "lat": 40.7597869,
+  "lon": -73.9879285,
+  "tags": {
+    "highway": "traffic_signals"
+  }
+},
+{
+  "type": "node",
+  "id": 42437363,
+  "lat": 40.7560361,
+  "lon": -73.9869489,
+  "tags": {
+    "highway": "traffic_signals"
+  }
+},
+{
+  "type": "node",
+  "id": 42439984,
+  "lat": 40.7573424,
+  "lon": -73.9860116,
+  "tags": {
+    "highway": "traffic_signals"
+  }
+},
+{
+  "type": "node",
+  "id": 42439990,
+  "lat": 40.7585968,
+  "lon": -73.9850795,
+  "tags": {
+    "highway": "traffic_signals"
+  }
+},
+{
+  "type": "node",
+  "id": 42439994,
+  "lat": 40.7592229,
+  "lon": -73.9846194,
+  "tags": {
+    "highway": "traffic_signals"
+  }
+},
+{
+  "type": "node",
+  "id": 42439996,
+  "lat": 40.7598410,
+  "lon": -73.9841740,
+  "tags": {
+    "crossing": "traffic_signals",
+    "highway": "traffic_signals",
+    "kerb": "lowered"
+  }
+},
+{
+  "type": "node",
+  "id": 10691086260,
+  "lat": 40.7566170,
+  "lon": -73.9883280,
+  "tags": {
+    "highway": "traffic_signals",
+    "traffic_signals": "signal",
+    "traffic_signals:direction": "forward"
+  }
+},
+{
+  "type": "node",
+  "id": 12055680088,
+  "lat": 40.7565023,
+  "lon": -73.9859627,
+  "tags": {
+    "highway": "traffic_signals",
+    "traffic_signals": "signal"
+  }
+},
+{
+  "type": "node",
+  "id": 12055680089,
+  "lat": 40.7568450,
+  "lon": -73.9863628,
+  "tags": {
+    "highway": "traffic_signals",
+    "traffic_signals": "signal"
+  }
+},
+{
+  "type": "node",
+  "id": 13996273719,
+  "lat": 40.7590870,
+  "lon": -73.9825356,
+  "tags": {
+    "highway": "street_lamp"
+  }
+},
+{
+  "type": "node",
+  "id": 13996274454,
+  "lat": 40.7592881,
+  "lon": -73.9828762,
+  "tags": {
+    "highway": "street_lamp"
+  }
+},
+{
+  "type": "node",
+  "id": 13996274766,
+  "lat": 40.7591813,
+  "lon": -73.9826894,
+  "tags": {
+    "highway": "street_lamp"
+  }
+},
+{
+  "type": "node",
+  "id": 13996286029,
+  "lat": 40.7599394,
+  "lon": -73.9846244,
+  "tags": {
+    "highway": "street_lamp"
+  }
+},
+{
+  "type": "node",
+  "id": 13996288108,
+  "lat": 40.7594269,
+  "lon": -73.9830649,
+  "tags": {
+    "highway": "street_lamp"
+  }
+},
+{
+  "type": "way",
+  "id": 5672036,
+  "bounds": {
+    "minlat": 40.7566594,
+    "minlon": -73.9846194,
+    "maxlat": 40.7592229,
+    "maxlon": -73.9785571
+  },
+  "nodes": [
+    42452353,
+    10166333044,
+    3944708050,
+    10166333085,
+    42430350,
+    8375496966,
+    1762438249,
+    10228962338,
+    42439994
+  ],
+  "geometry": [
+    { "lat": 40.7566594, "lon": -73.9785571 },
+    { "lat": 40.7567131, "lon": -73.9786807 },
+    { "lat": 40.7567187, "lon": -73.9786939 },
+    { "lat": 40.7579598, "lon": -73.9816625 },
+    { "lat": 40.7580163, "lon": -73.9817975 },
+    { "lat": 40.7580748, "lon": -73.9819359 },
+    { "lat": 40.7583143, "lon": -73.9825027 },
+    { "lat": 40.7591754, "lon": -73.9845091 },
+    { "lat": 40.7592229, "lon": -73.9846194 }
+  ],
+  "tags": {
+    "cycleway:both": "no",
+    "highway": "residential",
+    "lanes": "1",
+    "lit": "yes",
+    "maxspeed": "25 mph",
+    "name": "West 47th Street",
+    "name:ru": "Западная 47-я стрит",
+    "name_1": "West 47 Street",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "wikidata": "Q4638574",
+    "wikipedia": "en:47th Street (Manhattan)"
+  }
+},
+{
+  "type": "way",
+  "id": 35027229,
+  "bounds": {
+    "minlat": 40.7550539,
+    "minlon": -73.9866712,
+    "maxlat": 40.7558193,
+    "maxlon": -73.9864249
+  },
+  "nodes": [
+    42428287,
+    3974095817,
+    10173032937,
+    42428283
+  ],
+  "geometry": [
+    { "lat": 40.7558193, "lon": -73.9864249 },
+    { "lat": 40.7557155, "lon": -73.9864577 },
+    { "lat": 40.7551172, "lon": -73.9866505 },
+    { "lat": 40.7550539, "lon": -73.9866712 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "cycleway:right": "lane",
+    "highway": "residential",
+    "lanes": "1",
+    "lit": "yes",
+    "maxspeed": "25 mph",
+    "maxspeed:conditional": "5 mph @ (08:00-20:00)",
+    "motor_vehicle:conditional": "destination @ (08:00-20:00)",
+    "name": "Broadway",
+    "name:en": "Broadway",
+    "name:ja": "ブロードウェイ",
+    "name:ru": "Бродвей",
+    "name:zh": "百老匯",
+    "name:zh-Hans": "百老汇",
+    "name:zh-Hant": "百老匯",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "wikidata": "Q11260",
+    "wikipedia": "en:Broadway (Manhattan)"
+  }
+},
+{
+  "type": "way",
+  "id": 46522008,
+  "bounds": {
+    "minlat": 40.7580455,
+    "minlon": -73.9883858,
+    "maxlat": 40.7591595,
+    "maxlon": -73.9857320
+  },
+  "nodes": [
+    6597464445,
+    5522182777,
+    42432697,
+    6598535204,
+    42432700
+  ],
+  "geometry": [
+    { "lat": 40.7580455, "lon": -73.9857320 },
+    { "lat": 40.7582527, "lon": -73.9862271 },
+    { "lat": 40.7584619, "lon": -73.9867284 },
+    { "lat": 40.7591062, "lon": -73.9882592 },
+    { "lat": 40.7591595, "lon": -73.9883858 }
+  ],
+  "tags": {
+    "cycleway:right": "no",
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "1",
+    "lit": "yes",
+    "name": "West 45th Street",
+    "name:ru": "Западная 45-я стрит",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 127693103,
+  "bounds": {
+    "minlat": 40.7548420,
+    "minlon": -73.9841180,
+    "maxlat": 40.7561421,
+    "maxlon": -73.9831665
+  },
+  "nodes": [
+    42430333,
+    8375523266,
+    1751440889,
+    10173043408,
+    42430338,
+    10173043412,
+    10173121976,
+    42430342
+  ],
+  "geometry": [
+    { "lat": 40.7548420, "lon": -73.9841180 },
+    { "lat": 40.7549381, "lon": -73.9840473 },
+    { "lat": 40.7549599, "lon": -73.9840313 },
+    { "lat": 40.7554547, "lon": -73.9836688 },
+    { "lat": 40.7555160, "lon": -73.9836240 },
+    { "lat": 40.7555742, "lon": -73.9835813 },
+    { "lat": 40.7560847, "lon": -73.9832084 },
+    { "lat": 40.7561421, "lon": -73.9831665 }
+  ],
+  "tags": {
+    "alt_name:ko": "6번가",
+    "cycleway:left": "track",
+    "cycleway:left:oneway": "yes",
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "4",
+    "lanes:bus": "1",
+    "lit": "yes",
+    "name": "6th Avenue",
+    "name:en": "6th Avenue",
+    "name:ko": "6th 애비뉴",
+    "name:ru": "6-я авеню",
+    "official_name": "Avenue of the Americas",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "concrete",
+    "wikidata": "Q109873",
+    "wikipedia": "en:Sixth Avenue"
+  }
+},
+{
+  "type": "way",
+  "id": 167922070,
+  "bounds": {
+    "minlat": 40.7553730,
+    "minlon": -73.9874470,
+    "maxlat": 40.7560361,
+    "maxlon": -73.9869489
+  },
+  "nodes": [
+    42437363,
+    9235539549,
+    10168088452,
+    42439972
+  ],
+  "geometry": [
+    { "lat": 40.7560361, "lon": -73.9869489 },
+    { "lat": 40.7559487, "lon": -73.9870146 },
+    { "lat": 40.7554332, "lon": -73.9874021 },
+    { "lat": 40.7553730, "lon": -73.9874470 }
+  ],
+  "tags": {
+    "cycleway:left": "track",
+    "cycleway:left:oneway": "yes",
+    "cycleway:left:traffic_mode": "parking",
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "3",
+    "lanes:bus:forward": "1",
+    "lit": "yes",
+    "maxspeed": "25 mph",
+    "name": "7th Avenue",
+    "name:ru": "7-я Авеню",
+    "name_1": "7 Avenue",
+    "oneway": "yes",
+    "parking:both": "no",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "turn:lanes": "through|through|none",
+    "wikidata": "Q109926",
+    "wikipedia": "en:Seventh Avenue (Manhattan)"
+  }
+},
+{
+  "type": "way",
+  "id": 167922071,
+  "bounds": {
+    "minlat": 40.7592229,
+    "minlon": -73.9846194,
+    "maxlat": 40.7598410,
+    "maxlon": -73.9841740
+  },
+  "nodes": [
+    42439996,
+    10172901890,
+    10228962335,
+    42439994
+  ],
+  "geometry": [
+    { "lat": 40.7598410, "lon": -73.9841740 },
+    { "lat": 40.7597819, "lon": -73.9842169 },
+    { "lat": 40.7592703, "lon": -73.9845851 },
+    { "lat": 40.7592229, "lon": -73.9846194 }
+  ],
+  "tags": {
+    "cycleway:left": "track",
+    "foot": "designated",
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "3",
+    "lit": "yes",
+    "maxspeed": "25 mph",
+    "name": "7th Avenue",
+    "name:ru": "7-я Авеню",
+    "name_1": "7 Avenue",
+    "oneway": "yes",
+    "parking:both": "lane",
+    "parking:both:orientation": "parallel",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "wikidata": "Q109926",
+    "wikipedia": "en:Seventh Avenue (Manhattan)"
+  }
+},
+{
+  "type": "way",
+  "id": 167922073,
+  "bounds": {
+    "minlat": 40.7589801,
+    "minlon": -73.9841740,
+    "maxlat": 40.7598410,
+    "maxlon": -73.9821356
+  },
+  "nodes": [
+    42439996,
+    10172901888,
+    1745991210,
+    6167628291,
+    3971196620
+  ],
+  "geometry": [
+    { "lat": 40.7598410, "lon": -73.9841740 },
+    { "lat": 40.7597911, "lon": -73.9840570 },
+    { "lat": 40.7594093, "lon": -73.9831606 },
+    { "lat": 40.7593493, "lon": -73.9830173 },
+    { "lat": 40.7589801, "lon": -73.9821356 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "cycleway:left": "shared_lane",
+    "cycleway:left:lane": "pictogram",
+    "cycleway:left:oneway": "yes",
+    "cycleway:right": "no",
+    "highway": "residential",
+    "lanes": "1",
+    "lit": "yes",
+    "name": "West 48th Street",
+    "name:ru": "Западная 48-я стрит",
+    "name_1": "West 48 Street",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 167922074,
+  "bounds": {
+    "minlat": 40.7598410,
+    "minlon": -73.9848196,
+    "maxlat": 40.7601126,
+    "maxlon": -73.9841740
+  },
+  "nodes": [
+    42428305,
+    4322008118,
+    10173121980,
+    10172901884,
+    42439996
+  ],
+  "geometry": [
+    { "lat": 40.7601126, "lon": -73.9848196 },
+    { "lat": 40.7600919, "lon": -73.9847701 },
+    { "lat": 40.7600599, "lon": -73.9846937 },
+    { "lat": 40.7598970, "lon": -73.9843068 },
+    { "lat": 40.7598410, "lon": -73.9841740 }
+  ],
+  "tags": {
+    "access": "yes",
+    "bicycle": "yes",
+    "cycleway:left": "shared_lane",
+    "cycleway:left:lane": "pictogram",
+    "cycleway:left:oneway": "yes",
+    "cycleway:right": "no",
+    "highway": "residential",
+    "lanes": "3",
+    "lit": "yes",
+    "name": "West 48th Street",
+    "name:ru": "Западная 48-я стрит",
+    "name_1": "West 48 Street",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "turn:lanes": "through|through|right"
+  }
+},
+{
+  "type": "way",
+  "id": 167922076,
+  "bounds": {
+    "minlat": 40.7558193,
+    "minlon": -73.9869489,
+    "maxlat": 40.7560361,
+    "maxlon": -73.9864249
+  },
+  "nodes": [
+    42428287,
+    9235539555,
+    9235539548,
+    42437363
+  ],
+  "geometry": [
+    { "lat": 40.7558193, "lon": -73.9864249 },
+    { "lat": 40.7558542, "lon": -73.9865087 },
+    { "lat": 40.7559883, "lon": -73.9868306 },
+    { "lat": 40.7560361, "lon": -73.9869489 }
+  ],
+  "tags": {
+    "cycleway:both": "no",
+    "hgv": "local",
+    "highway": "primary",
+    "lanes:backward": "2",
+    "lanes:forward": "2",
+    "lit": "yes",
+    "maxspeed": "25 mph",
+    "name": "West 42nd Street",
+    "name:ru": "Западная 42-я стрит",
+    "oneway": "no",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "wikidata": "Q110061",
+    "wikipedia": "en:42nd Street (Manhattan)"
+  }
+},
+{
+  "type": "way",
+  "id": 194926851,
+  "bounds": {
+    "minlat": 40.7591595,
+    "minlon": -73.9883858,
+    "maxlat": 40.7597869,
+    "maxlon": -73.9879285
+  },
+  "nodes": [
+    42432700,
+    10168088482,
+    5849918503,
+    2435108451,
+    42435675
+  ],
+  "geometry": [
+    { "lat": 40.7591595, "lon": -73.9883858 },
+    { "lat": 40.7592227, "lon": -73.9883395 },
+    { "lat": 40.7595080, "lon": -73.9881318 },
+    { "lat": 40.7597310, "lon": -73.9879693 },
+    { "lat": 40.7597869, "lon": -73.9879285 }
+  ],
+  "tags": {
+    "cycleway:left": "track",
+    "cycleway:left:oneway": "yes",
+    "hgv": "local",
+    "highway": "secondary",
+    "lanes": "3",
+    "lit": "yes",
+    "maxspeed": "25 mph",
+    "name": "8th Avenue",
+    "name:ru": "8-я Авеню",
+    "name_1": "8 Avenue",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "turn:lanes": "through|through|right",
+    "wikidata": "Q109951",
+    "wikipedia": "en:Eighth Avenue (Manhattan)"
+  }
+},
+{
+  "type": "way",
+  "id": 195743209,
+  "bounds": {
+    "minlat": 40.7553730,
+    "minlon": -73.9902760,
+    "maxlat": 40.7565670,
+    "maxlon": -73.9874470
+  },
+  "nodes": [
+    42439972,
+    10168088454,
+    5022414760,
+    5022414759,
+    9538820160,
+    42435660
+  ],
+  "geometry": [
+    { "lat": 40.7553730, "lon": -73.9874470 },
+    { "lat": 40.7554111, "lon": -73.9875373 },
+    { "lat": 40.7557938, "lon": -73.9884441 },
+    { "lat": 40.7558347, "lon": -73.9885408 },
+    { "lat": 40.7565083, "lon": -73.9901369 },
+    { "lat": 40.7565670, "lon": -73.9902760 }
+  ],
+  "tags": {
+    "highway": "unclassified",
+    "name": "West 41st Street",
+    "name:ru": "Западная 41-я стрит",
+    "oneway": "yes",
+    "surface": "asphalt",
+    "wikidata": "Q65254678"
+  }
+},
+{
+  "type": "way",
+  "id": 226041025,
+  "bounds": {
+    "minlat": 40.7555160,
+    "minlon": -73.9857810,
+    "maxlat": 40.7564255,
+    "maxlon": -73.9836240
+  },
+  "nodes": [
+    42430338,
+    6598535224,
+    1752946328,
+    8396878498,
+    9647769356
+  ],
+  "geometry": [
+    { "lat": 40.7555160, "lon": -73.9836240 },
+    { "lat": 40.7555725, "lon": -73.9837577 },
+    { "lat": 40.7561388, "lon": -73.9851023 },
+    { "lat": 40.7562462, "lon": -73.9853559 },
+    { "lat": 40.7564255, "lon": -73.9857810 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "cycleway:left": "shared_lane",
+    "cycleway:left:lane": "pictogram",
+    "cycleway:left:oneway": "yes",
+    "cycleway:right": "no",
+    "highway": "residential",
+    "lanes": "3",
+    "lit": "yes",
+    "name": "West 43rd Street",
+    "name:ru": "Западная 43-я стрит",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 226041026,
+  "bounds": {
+    "minlat": 40.7561421,
+    "minlon": -73.9856903,
+    "maxlat": 40.7572084,
+    "maxlon": -73.9831665
+  },
+  "nodes": [
+    9235539560,
+    13915675578,
+    8396878495,
+    3944708047,
+    42430342
+  ],
+  "geometry": [
+    { "lat": 40.7572084, "lon": -73.9856903 },
+    { "lat": 40.7568771, "lon": -73.9849062 },
+    { "lat": 40.7565117, "lon": -73.9840416 },
+    { "lat": 40.7561970, "lon": -73.9832969 },
+    { "lat": 40.7561421, "lon": -73.9831665 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "cycleway": "shared_lane",
+    "cycleway:left": "lane",
+    "highway": "residential",
+    "lanes": "1",
+    "lit": "yes",
+    "name": "West 44th Street",
+    "name:ru": "Западная 44-я стрит",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 226041028,
+  "bounds": {
+    "minlat": 40.7601126,
+    "minlon": -73.9870177,
+    "maxlat": 40.7610365,
+    "maxlon": -73.9848196
+  },
+  "nodes": [
+    42435680,
+    10168088498,
+    1758380526,
+    12989986301,
+    2435108436,
+    42428305
+  ],
+  "geometry": [
+    { "lat": 40.7610365, "lon": -73.9870177 },
+    { "lat": 40.7609818, "lon": -73.9868876 },
+    { "lat": 40.7603603, "lon": -73.9854112 },
+    { "lat": 40.7601818, "lon": -73.9849829 },
+    { "lat": 40.7601651, "lon": -73.9849427 },
+    { "lat": 40.7601126, "lon": -73.9848196 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "cycleway:left": "shared_lane",
+    "cycleway:left:lane": "pictogram",
+    "cycleway:left:oneway": "yes",
+    "cycleway:right": "no",
+    "highway": "residential",
+    "lanes": "2",
+    "lit": "yes",
+    "name": "West 48th Street",
+    "name:ru": "Западная 48-я стрит",
+    "name_1": "West 48 Street",
+    "oneway": "yes",
+    "parking:both": "lane",
+    "parking:both:orientation": "parallel",
+    "sidewalk:both": "separate",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 397795463,
+  "bounds": {
+    "minlat": 40.7583669,
+    "minlon": -73.9852442,
+    "maxlat": 40.7585968,
+    "maxlon": -73.9850795
+  },
+  "nodes": [
+    42439990,
+    6598535188,
+    5475605303
+  ],
+  "geometry": [
+    { "lat": 40.7585968, "lon": -73.9850795 },
+    { "lat": 40.7585239, "lon": -73.9851316 },
+    { "lat": 40.7583669, "lon": -73.9852442 }
+  ],
+  "tags": {
+    "cycleway:left": "track",
+    "foot": "designated",
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "5",
+    "lit": "yes",
+    "maxspeed": "25 mph",
+    "name": "7th Avenue",
+    "name:ru": "7-я Авеню",
+    "name_1": "7 Avenue",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "turn:lanes": "through|through|through|through|right",
+    "wikidata": "Q109926",
+    "wikipedia": "en:Seventh Avenue (Manhattan)"
+  }
+},
+{
+  "type": "way",
+  "id": 397795464,
+  "bounds": {
+    "minlat": 40.7567100,
+    "minlon": -73.9864580,
+    "maxlat": 40.7573424,
+    "maxlon": -73.9860116
+  },
+  "nodes": [
+    42439984,
+    3974095826,
+    12055680089,
+    3974095825,
+    42439981
+  ],
+  "geometry": [
+    { "lat": 40.7573424, "lon": -73.9860116 },
+    { "lat": 40.7572793, "lon": -73.9860561 },
+    { "lat": 40.7568450, "lon": -73.9863628 },
+    { "lat": 40.7567954, "lon": -73.9863978 },
+    { "lat": 40.7567100, "lon": -73.9864580 }
+  ],
+  "tags": {
+    "cycleway:left": "track",
+    "cycleway:left:oneway": "yes",
+    "foot": "designated",
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "4",
+    "lit": "yes",
+    "maxspeed": "25 mph",
+    "name": "7th Avenue",
+    "name:ru": "7-я Авеню",
+    "name_1": "7 Avenue",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "turn:lanes": "through|through|through|right",
+    "wikidata": "Q109926",
+    "wikipedia": "en:Seventh Avenue (Manhattan)"
+  }
+},
+{
+  "type": "way",
+  "id": 420494981,
+  "bounds": {
+    "minlat": 40.7575793,
+    "minlon": -73.9850795,
+    "maxlat": 40.7585968,
+    "maxlon": -73.9827028
+  },
+  "nodes": [
+    42439990,
+    2435108452,
+    8250908767,
+    8318633104
+  ],
+  "geometry": [
+    { "lat": 40.7585968, "lon": -73.9850795 },
+    { "lat": 40.7585496, "lon": -73.9849674 },
+    { "lat": 40.7582569, "lon": -73.9842778 },
+    { "lat": 40.7575793, "lon": -73.9827028 }
+  ],
+  "tags": {
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "1",
+    "lit": "yes",
+    "name": "West 46th Street",
+    "name:ru": "Западная 46-я стрит",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 452322756,
+  "bounds": {
+    "minlat": 40.7594380,
+    "minlon": -73.9903162,
+    "maxlat": 40.7616052,
+    "maxlon": -73.9851371
+  },
+  "nodes": [
+    42428303,
+    10228962357,
+    10228962330,
+    8250892563,
+    10168088490,
+    42435677,
+    6210777836,
+    10168088493,
+    8646554909,
+    42445020
+  ],
+  "geometry": [
+    { "lat": 40.7594380, "lon": -73.9851371 },
+    { "lat": 40.7594657, "lon": -73.9852067 },
+    { "lat": 40.7595217, "lon": -73.9853457 },
+    { "lat": 40.7602340, "lon": -73.9870605 },
+    { "lat": 40.7603544, "lon": -73.9873463 },
+    { "lat": 40.7604088, "lon": -73.9874753 },
+    { "lat": 40.7604550, "lon": -73.9875851 },
+    { "lat": 40.7604685, "lon": -73.9876173 },
+    { "lat": 40.7615468, "lon": -73.9901804 },
+    { "lat": 40.7616052, "lon": -73.9903162 }
+  ],
+  "tags": {
+    "highway": "residential",
+    "lanes": "1",
+    "lit": "yes",
+    "maxspeed": "25 mph",
+    "name": "West 47th Street",
+    "name:ru": "Западная 47-я стрит",
+    "name_1": "West 47 Street",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "wikidata": "Q4638574",
+    "wikipedia": "en:47th Street (Manhattan)"
+  }
+},
+{
+  "type": "way",
+  "id": 452322757,
+  "bounds": {
+    "minlat": 40.7592229,
+    "minlon": -73.9851371,
+    "maxlat": 40.7594380,
+    "maxlon": -73.9846194
+  },
+  "nodes": [
+    42439994,
+    10228962331,
+    2435108448,
+    12989986305,
+    42428303
+  ],
+  "geometry": [
+    { "lat": 40.7592229, "lon": -73.9846194 },
+    { "lat": 40.7592729, "lon": -73.9847402 },
+    { "lat": 40.7593682, "lon": -73.9849694 },
+    { "lat": 40.7593906, "lon": -73.9850231 },
+    { "lat": 40.7594380, "lon": -73.9851371 }
+  ],
+  "tags": {
+    "cycleway:left": "track",
+    "cycleway:left:oneway": "-1",
+    "highway": "residential",
+    "lanes": "2",
+    "lit": "yes",
+    "maxspeed": "25 mph",
+    "name": "West 47th Street",
+    "name:ru": "Западная 47-я стрит",
+    "name_1": "West 47 Street",
+    "oneway": "yes",
+    "oneway:bicycle": "no",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "turn:lanes": "through|through",
+    "wikidata": "Q4638574",
+    "wikipedia": "en:47th Street (Manhattan)"
+  }
+},
+{
+  "type": "way",
+  "id": 464515890,
+  "bounds": {
+    "minlat": 40.7550013,
+    "minlon": -73.9831665,
+    "maxlat": 40.7561421,
+    "maxlon": -73.9804576
+  },
+  "nodes": [
+    42430342,
+    3944708045,
+    9666047678
+  ],
+  "geometry": [
+    { "lat": 40.7561421, "lon": -73.9831665 },
+    { "lat": 40.7560874, "lon": -73.9830373 },
+    { "lat": 40.7550013, "lon": -73.9804576 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "cycleway:left": "lane",
+    "highway": "residential",
+    "lanes": "1",
+    "lit": "yes",
+    "loc_name": "Clubhouse Row",
+    "name": "West 44th Street",
+    "name:ru": "Западная 44-я стрит",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 464516471,
+  "bounds": {
+    "minlat": 40.7561421,
+    "minlon": -73.9831665,
+    "maxlat": 40.7599106,
+    "maxlon": -73.9804176
+  },
+  "nodes": [
+    42430342,
+    10173121975,
+    10164937730,
+    42430344,
+    10164937728,
+    10166333059,
+    42430347,
+    10166333058,
+    10166333086,
+    42430350,
+    10166333087,
+    3971196607,
+    3971196618,
+    42430352,
+    10172901896,
+    3971196622,
+    42430356,
+    9674241493,
+    3971196625,
+    42430358
+  ],
+  "geometry": [
+    { "lat": 40.7561421, "lon": -73.9831665 },
+    { "lat": 40.7562045, "lon": -73.9831216 },
+    { "lat": 40.7567133, "lon": -73.9827538 },
+    { "lat": 40.7567712, "lon": -73.9827118 },
+    { "lat": 40.7568323, "lon": -73.9826670 },
+    { "lat": 40.7573223, "lon": -73.9823040 },
+    { "lat": 40.7573902, "lon": -73.9822537 },
+    { "lat": 40.7574544, "lon": -73.9822069 },
+    { "lat": 40.7579632, "lon": -73.9818362 },
+    { "lat": 40.7580163, "lon": -73.9817975 },
+    { "lat": 40.7580795, "lon": -73.9817517 },
+    { "lat": 40.7582175, "lon": -73.9816514 },
+    { "lat": 40.7585861, "lon": -73.9813835 },
+    { "lat": 40.7586450, "lon": -73.9813410 },
+    { "lat": 40.7587066, "lon": -73.9812962 },
+    { "lat": 40.7592178, "lon": -73.9809237 },
+    { "lat": 40.7592744, "lon": -73.9808828 },
+    { "lat": 40.7595223, "lon": -73.9807016 },
+    { "lat": 40.7598441, "lon": -73.9804662 },
+    { "lat": 40.7599106, "lon": -73.9804176 }
+  ],
+  "tags": {
+    "alt_name:ko": "6번가",
+    "cycleway:left": "track",
+    "cycleway:left:oneway": "yes",
+    "cycleway:right": "no",
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "4",
+    "lanes:bus": "1",
+    "lit": "yes",
+    "name": "6th Avenue",
+    "name:en": "6th Avenue",
+    "name:ko": "6th 애비뉴",
+    "name:ru": "6-я авеню",
+    "official_name": "Avenue of the Americas",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "smoothness": "good",
+    "surface": "concrete",
+    "wikidata": "Q109873",
+    "wikipedia": "en:Sixth Avenue"
+  }
+},
+{
+  "type": "way",
+  "id": 483360105,
+  "bounds": {
+    "minlat": 40.7585968,
+    "minlon": -73.9850795,
+    "maxlat": 40.7592229,
+    "maxlon": -73.9846194
+  },
+  "nodes": [
+    42439994,
+    6598535157,
+    6598535159,
+    42439990
+  ],
+  "geometry": [
+    { "lat": 40.7592229, "lon": -73.9846194 },
+    { "lat": 40.7591475, "lon": -73.9846758 },
+    { "lat": 40.7586679, "lon": -73.9850272 },
+    { "lat": 40.7585968, "lon": -73.9850795 }
+  ],
+  "tags": {
+    "cycleway:left": "lane",
+    "foot": "designated",
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "3",
+    "lit": "yes",
+    "maxspeed": "25 mph",
+    "name": "7th Avenue",
+    "name:ru": "7-я Авеню",
+    "name_1": "7 Avenue",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "wikidata": "Q109926",
+    "wikipedia": "en:Seventh Avenue (Manhattan)"
+  }
+},
+{
+  "type": "way",
+  "id": 525729008,
+  "bounds": {
+    "minlat": 40.7560361,
+    "minlon": -73.9897914,
+    "maxlat": 40.7572335,
+    "maxlon": -73.9869489
+  },
+  "nodes": [
+    42437363,
+    6597464529,
+    4770624001,
+    4770624002,
+    10691086260,
+    5651033419,
+    10691086259,
+    6167628293,
+    9235539540,
+    42435663
+  ],
+  "geometry": [
+    { "lat": 40.7560361, "lon": -73.9869489 },
+    { "lat": 40.7560868, "lon": -73.9870695 },
+    { "lat": 40.7561464, "lon": -73.9872107 },
+    { "lat": 40.7562616, "lon": -73.9874841 },
+    { "lat": 40.7566170, "lon": -73.9883280 },
+    { "lat": 40.7566551, "lon": -73.9884184 },
+    { "lat": 40.7566978, "lon": -73.9885199 },
+    { "lat": 40.7567704, "lon": -73.9886922 },
+    { "lat": 40.7571772, "lon": -73.9896581 },
+    { "lat": 40.7572335, "lon": -73.9897914 }
+  ],
+  "tags": {
+    "access": "yes",
+    "cycleway:both": "no",
+    "foot": "designated",
+    "hgv": "local",
+    "highway": "primary",
+    "lanes": "4",
+    "lanes:backward": "2",
+    "lanes:forward": "2",
+    "lit": "yes",
+    "maxspeed": "25 mph",
+    "name": "West 42nd Street",
+    "name:ru": "Западная 42-я стрит",
+    "oneway": "no",
+    "sidewalk:both": "separate",
+    "smoothness": "good",
+    "surface": "asphalt",
+    "wikidata": "Q110061",
+    "wikipedia": "en:42nd Street (Manhattan)"
+  }
+},
+{
+  "type": "way",
+  "id": 542258337,
+  "bounds": {
+    "minlat": 40.7592744,
+    "minlon": -73.9832392,
+    "maxlat": 40.7602667,
+    "maxlon": -73.9808828
+  },
+  "nodes": [
+    42430356,
+    3971196623,
+    4782506031,
+    3971196624,
+    1745991212,
+    9665064838
+  ],
+  "geometry": [
+    { "lat": 40.7592744, "lon": -73.9808828 },
+    { "lat": 40.7593366, "lon": -73.9810306 },
+    { "lat": 40.7594743, "lon": -73.9813574 },
+    { "lat": 40.7598101, "lon": -73.9821549 },
+    { "lat": 40.7600415, "lon": -73.9827044 },
+    { "lat": 40.7602667, "lon": -73.9832392 }
+  ],
+  "tags": {
+    "cycleway:right": "no",
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "2",
+    "lit": "yes",
+    "name": "West 49th Street",
+    "name:ru": "Западная 49-я стрит",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 569345540,
+  "bounds": {
+    "minlat": 40.7598410,
+    "minlon": -73.9841740,
+    "maxlat": 40.7610948,
+    "maxlon": -73.9832504
+  },
+  "nodes": [
+    42440001,
+    3977886256,
+    4782363334,
+    2435108438,
+    42432585,
+    2435108458,
+    10172901886,
+    42439996
+  ],
+  "geometry": [
+    { "lat": 40.7610948, "lon": -73.9832504 },
+    { "lat": 40.7610359, "lon": -73.9832927 },
+    { "lat": 40.7607932, "lon": -73.9834673 },
+    { "lat": 40.7605266, "lon": -73.9836628 },
+    { "lat": 40.7604633, "lon": -73.9837062 },
+    { "lat": 40.7604076, "lon": -73.9837477 },
+    { "lat": 40.7599028, "lon": -73.9841274 },
+    { "lat": 40.7598410, "lon": -73.9841740 }
+  ],
+  "tags": {
+    "cycleway:left": "track",
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "3",
+    "lit": "yes",
+    "maxspeed": "25 mph",
+    "name": "7th Avenue",
+    "name:ru": "7-я Авеню",
+    "name_1": "7 Avenue",
+    "oneway": "yes",
+    "parking:lane:both": "parallel",
+    "surface": "asphalt",
+    "wikidata": "Q109926",
+    "wikipedia": "en:Seventh Avenue (Manhattan)"
+  }
+},
+{
+  "type": "way",
+  "id": 569345542,
+  "bounds": {
+    "minlat": 40.7579634,
+    "minlon": -73.9855335,
+    "maxlat": 40.7583669,
+    "maxlon": -73.9852442
+  },
+  "nodes": [
+    5475605303,
+    4707407261,
+    42428297
+  ],
+  "geometry": [
+    { "lat": 40.7583669, "lon": -73.9852442 },
+    { "lat": 40.7580355, "lon": -73.9854818 },
+    { "lat": 40.7579634, "lon": -73.9855335 }
+  ],
+  "tags": {
+    "cycleway:left": "track",
+    "cycleway:left:oneway": "yes",
+    "cycleway:right": "no",
+    "foot": "designated",
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "5",
+    "lit": "yes",
+    "maxspeed": "25 mph",
+    "name": "7th Avenue",
+    "name:ru": "7-я Авеню",
+    "name_1": "7 Avenue",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "turn:lanes": "through|through|through|through|right",
+    "wikidata": "Q109926",
+    "wikipedia": "en:Seventh Avenue (Manhattan)"
+  }
+},
+{
+  "type": "way",
+  "id": 569345543,
+  "bounds": {
+    "minlat": 40.7567100,
+    "minlon": -73.9883815,
+    "maxlat": 40.7575242,
+    "maxlon": -73.9864580
+  },
+  "nodes": [
+    42439981,
+    3974095824,
+    8669764313
+  ],
+  "geometry": [
+    { "lat": 40.7567100, "lon": -73.9864580 },
+    { "lat": 40.7567549, "lon": -73.9865657 },
+    { "lat": 40.7575242, "lon": -73.9883815 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "cycleway:left": "shared_lane",
+    "cycleway:left:lane": "pictogram",
+    "cycleway:left:oneway": "yes",
+    "cycleway:right": "no",
+    "highway": "residential",
+    "lanes": "2",
+    "name": "West 43rd Street",
+    "name:ru": "Западная 43-я стрит",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 569345544,
+  "bounds": {
+    "minlat": 40.7560361,
+    "minlon": -73.9869489,
+    "maxlat": 40.7567100,
+    "maxlon": -73.9864580
+  },
+  "nodes": [
+    42439981,
+    3974095823,
+    3974095821,
+    42437363
+  ],
+  "geometry": [
+    { "lat": 40.7567100, "lon": -73.9864580 },
+    { "lat": 40.7566441, "lon": -73.9865075 },
+    { "lat": 40.7561306, "lon": -73.9868801 },
+    { "lat": 40.7560361, "lon": -73.9869489 }
+  ],
+  "tags": {
+    "cycleway:left": "track",
+    "cycleway:left:oneway": "yes",
+    "foot": "designated",
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "4",
+    "lit": "yes",
+    "maxspeed": "25 mph",
+    "name": "7th Avenue",
+    "name:ru": "7-я Авеню",
+    "name_1": "7 Avenue",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "wikidata": "Q109926",
+    "wikipedia": "en:Seventh Avenue (Manhattan)"
+  }
+},
+{
+  "type": "way",
+  "id": 575505274,
+  "bounds": {
+    "minlat": 40.7588019,
+    "minlon": -73.9858314,
+    "maxlat": 40.7588860,
+    "maxlon": -73.9857703
+  },
+  "nodes": [
+    5522182776,
+    6598535207,
+    5522182779
+  ],
+  "geometry": [
+    { "lat": 40.7588860, "lon": -73.9857703 },
+    { "lat": 40.7588261, "lon": -73.9858140 },
+    { "lat": 40.7588019, "lon": -73.9858314 }
+  ],
+  "tags": {
+    "highway": "service",
+    "lit": "yes",
+    "oneway": "yes",
+    "service": "driveway"
+  }
+},
+{
+  "type": "way",
+  "id": 575505275,
+  "bounds": {
+    "minlat": 40.7582527,
+    "minlon": -73.9862271,
+    "maxlat": 40.7583240,
+    "maxlon": -73.9861757
+  },
+  "nodes": [
+    5522182778,
+    9354852637,
+    5522182777
+  ],
+  "geometry": [
+    { "lat": 40.7583240, "lon": -73.9861757 },
+    { "lat": 40.7583137, "lon": -73.9861831 },
+    { "lat": 40.7582527, "lon": -73.9862271 }
+  ],
+  "tags": {
+    "highway": "service",
+    "oneway": "yes",
+    "service": "driveway",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 575505276,
+  "bounds": {
+    "minlat": 40.7583240,
+    "minlon": -73.9861757,
+    "maxlat": 40.7588019,
+    "maxlon": -73.9858314
+  },
+  "nodes": [
+    5522182779,
+    5522182778
+  ],
+  "geometry": [
+    { "lat": 40.7588019, "lon": -73.9858314 },
+    { "lat": 40.7583240, "lon": -73.9861757 }
+  ],
+  "tags": {
+    "highway": "service",
+    "layer": "-1",
+    "lit": "yes",
+    "maxheight": "below_default",
+    "maxheight:signed": "no",
+    "oneway": "yes",
+    "service": "driveway",
+    "tunnel": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 626514137,
+  "bounds": {
+    "minlat": 40.7594380,
+    "minlon": -73.9851371,
+    "maxlat": 40.7601126,
+    "maxlon": -73.9848196
+  },
+  "nodes": [
+    42428305,
+    2435108459,
+    10228962523,
+    42428303
+  ],
+  "geometry": [
+    { "lat": 40.7601126, "lon": -73.9848196 },
+    { "lat": 40.7600571, "lon": -73.9849081 },
+    { "lat": 40.7594960, "lon": -73.9851161 },
+    { "lat": 40.7594380, "lon": -73.9851371 }
+  ],
+  "tags": {
+    "cycleway:left": "lane",
+    "cycleway:left:oneway": "yes",
+    "highway": "living_street",
+    "lanes": "1",
+    "lit": "yes",
+    "maxspeed": "10 mph",
+    "maxspeed:advisory": "5 mph",
+    "motor_vehicle:conditional": "destination @ (08:00-20:00)",
+    "name": "Broadway",
+    "name:en": "Broadway",
+    "name:ja": "ブロードウェイ",
+    "name:ru": "Бродвей",
+    "name:zh": "百老匯",
+    "name:zh-Hans": "百老汇",
+    "name:zh-Hant": "百老匯",
+    "oneway": "yes",
+    "parking:both": "no",
+    "parking:left:restriction": "no_stopping",
+    "parking:right:restriction": "no_standing",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "turn:lanes": "none|right",
+    "wikidata": "Q11260",
+    "wikipedia": "en:Broadway (Manhattan)"
+  }
+},
+{
+  "type": "way",
+  "id": 682360554,
+  "bounds": {
+    "minlat": 40.7573424,
+    "minlon": -73.9860116,
+    "maxlat": 40.7579634,
+    "maxlon": -73.9855335
+  },
+  "nodes": [
+    42428297,
+    6597464486,
+    3974095829,
+    42439984
+  ],
+  "geometry": [
+    { "lat": 40.7579634, "lon": -73.9855335 },
+    { "lat": 40.7578917, "lon": -73.9855888 },
+    { "lat": 40.7574192, "lon": -73.9859523 },
+    { "lat": 40.7573424, "lon": -73.9860116 }
+  ],
+  "tags": {
+    "cycleway:left": "track",
+    "cycleway:left:oneway": "yes",
+    "foot": "designated",
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "4",
+    "lit": "yes",
+    "maxspeed": "25 mph",
+    "name": "7th Avenue",
+    "name:ru": "7-я Авеню",
+    "name_1": "7 Avenue",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "turn:lanes": "through|through|through|through",
+    "wikidata": "Q109926",
+    "wikipedia": "en:Seventh Avenue (Manhattan)"
+  }
+},
+{
+  "type": "way",
+  "id": 846142553,
+  "bounds": {
+    "minlat": 40.7585968,
+    "minlon": -73.9879285,
+    "maxlat": 40.7597869,
+    "maxlon": -73.9850795
+  },
+  "nodes": [
+    42435675,
+    6598535175,
+    8250892565,
+    2639531766,
+    5481885793,
+    5522182776,
+    6597429952,
+    10228962352,
+    10228962353,
+    42439990
+  ],
+  "geometry": [
+    { "lat": 40.7597869, "lon": -73.9879285 },
+    { "lat": 40.7597315, "lon": -73.9877973 },
+    { "lat": 40.7595723, "lon": -73.9874205 },
+    { "lat": 40.7595011, "lon": -73.9872519 },
+    { "lat": 40.7591968, "lon": -73.9865156 },
+    { "lat": 40.7588860, "lon": -73.9857703 },
+    { "lat": 40.7587665, "lon": -73.9854918 },
+    { "lat": 40.7587432, "lon": -73.9854346 },
+    { "lat": 40.7586401, "lon": -73.9851848 },
+    { "lat": 40.7585968, "lon": -73.9850795 }
+  ],
+  "tags": {
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "1",
+    "lit": "yes",
+    "name": "West 46th Street",
+    "name:ru": "Западная 46-я стрит",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 887433943,
+  "bounds": {
+    "minlat": 40.7602340,
+    "minlon": -73.9870605,
+    "maxlat": 40.7603108,
+    "maxlon": -73.9870076
+  },
+  "nodes": [
+    8250892563,
+    10228962576,
+    8250892564
+  ],
+  "geometry": [
+    { "lat": 40.7602340, "lon": -73.9870605 },
+    { "lat": 40.7603000, "lon": -73.9870150 },
+    { "lat": 40.7603108, "lon": -73.9870076 }
+  ],
+  "tags": {
+    "highway": "service",
+    "lit": "yes",
+    "service": "driveway"
+  }
+},
+{
+  "type": "way",
+  "id": 887433944,
+  "bounds": {
+    "minlat": 40.7595723,
+    "minlon": -73.9874205,
+    "maxlat": 40.7596857,
+    "maxlon": -73.9873443
+  },
+  "nodes": [
+    8250892565,
+    8250885536,
+    2639531794
+  ],
+  "geometry": [
+    { "lat": 40.7595723, "lon": -73.9874205 },
+    { "lat": 40.7596276, "lon": -73.9873834 },
+    { "lat": 40.7596857, "lon": -73.9873443 }
+  ],
+  "tags": {
+    "highway": "service",
+    "lit": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 887435959,
+  "bounds": {
+    "minlat": 40.7581740,
+    "minlon": -73.9843363,
+    "maxlat": 40.7582569,
+    "maxlon": -73.9842778
+  },
+  "nodes": [
+    8250908767,
+    8250912518,
+    8250908768
+  ],
+  "geometry": [
+    { "lat": 40.7582569, "lon": -73.9842778 },
+    { "lat": 40.7581960, "lon": -73.9843212 },
+    { "lat": 40.7581740, "lon": -73.9843363 }
+  ],
+  "tags": {
+    "highway": "service",
+    "service": "driveway"
+  }
+},
+{
+  "type": "way",
+  "id": 894927965,
+  "bounds": {
+    "minlat": 40.7569755,
+    "minlon": -73.9835588,
+    "maxlat": 40.7570948,
+    "maxlon": -73.9834777
+  },
+  "nodes": [
+    8318633102,
+    8318633107,
+    8318633103
+  ],
+  "geometry": [
+    { "lat": 40.7569755, "lon": -73.9835588 },
+    { "lat": 40.7570353, "lon": -73.9835181 },
+    { "lat": 40.7570948, "lon": -73.9834777 }
+  ],
+  "tags": {
+    "highway": "service"
+  }
+},
+{
+  "type": "way",
+  "id": 894927966,
+  "bounds": {
+    "minlat": 40.7574848,
+    "minlon": -73.9827717,
+    "maxlat": 40.7575793,
+    "maxlon": -73.9827028
+  },
+  "nodes": [
+    8318633104,
+    8318633106,
+    8318633105
+  ],
+  "geometry": [
+    { "lat": 40.7575793, "lon": -73.9827028 },
+    { "lat": 40.7575310, "lon": -73.9827380 },
+    { "lat": 40.7574848, "lon": -73.9827717 }
+  ],
+  "tags": {
+    "highway": "service"
+  }
+},
+{
+  "type": "way",
+  "id": 904036752,
+  "bounds": {
+    "minlat": 40.7581681,
+    "minlon": -73.9862843,
+    "maxlat": 40.7582527,
+    "maxlon": -73.9862271
+  },
+  "nodes": [
+    5522182777,
+    8396064851,
+    8396064852
+  ],
+  "geometry": [
+    { "lat": 40.7582527, "lon": -73.9862271 },
+    { "lat": 40.7581885, "lon": -73.9862703 },
+    { "lat": 40.7581681, "lon": -73.9862843 }
+  ],
+  "tags": {
+    "highway": "service",
+    "service": "driveway",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 904126541,
+  "bounds": {
+    "minlat": 40.7564413,
+    "minlon": -73.9840910,
+    "maxlat": 40.7565117,
+    "maxlon": -73.9840416
+  },
+  "nodes": [
+    8396878495,
+    8396878496,
+    8396878497
+  ],
+  "geometry": [
+    { "lat": 40.7565117, "lon": -73.9840416 },
+    { "lat": 40.7564530, "lon": -73.9840827 },
+    { "lat": 40.7564413, "lon": -73.9840910 }
+  ],
+  "tags": {
+    "highway": "service"
+  }
+},
+{
+  "type": "way",
+  "id": 904126542,
+  "bounds": {
+    "minlat": 40.7563173,
+    "minlon": -73.9853052,
+    "maxlat": 40.7568036,
+    "maxlon": -73.9849586
+  },
+  "nodes": [
+    8396878500,
+    1752942903
+  ],
+  "geometry": [
+    { "lat": 40.7563173, "lon": -73.9853052 },
+    { "lat": 40.7568036, "lon": -73.9849586 }
+  ],
+  "tags": {
+    "highway": "service",
+    "motor_vehicle": "customers",
+    "tunnel": "building_passage"
+  }
+},
+{
+  "type": "way",
+  "id": 935563658,
+  "bounds": {
+    "minlat": 40.7575242,
+    "minlon": -73.9883815,
+    "maxlat": 40.7575941,
+    "maxlon": -73.9883345
+  },
+  "nodes": [
+    8669764313,
+    8669764315,
+    8669764314
+  ],
+  "geometry": [
+    { "lat": 40.7575242, "lon": -73.9883815 },
+    { "lat": 40.7575828, "lon": -73.9883419 },
+    { "lat": 40.7575941, "lon": -73.9883345 }
+  ],
+  "tags": {
+    "highway": "service",
+    "service": "driveway"
+  }
+},
+{
+  "type": "way",
+  "id": 972926362,
+  "bounds": {
+    "minlat": 40.7601126,
+    "minlon": -73.9848196,
+    "maxlat": 40.7604717,
+    "maxlon": -73.9846012
+  },
+  "nodes": [
+    10942563109,
+    10942563108,
+    42428305
+  ],
+  "geometry": [
+    { "lat": 40.7604717, "lon": -73.9846012 },
+    { "lat": 40.7601677, "lon": -73.9847448 },
+    { "lat": 40.7601126, "lon": -73.9848196 }
+  ],
+  "tags": {
+    "cycleway:left": "lane",
+    "cycleway:left:oneway": "yes",
+    "highway": "living_street",
+    "lanes": "1",
+    "lit": "yes",
+    "maxspeed": "10 mph",
+    "maxspeed:advisory": "5 mph",
+    "motor_vehicle:conditional": "destination @ (08:00-20:00)",
+    "name": "Broadway",
+    "name:en": "Broadway",
+    "name:ja": "ブロードウェイ",
+    "name:ru": "Бродвей",
+    "name:zh": "百老匯",
+    "name:zh-Hans": "百老汇",
+    "name:zh-Hant": "百老匯",
+    "oneway": "yes",
+    "parking:left": "no",
+    "parking:left:restriction": "no_stopping",
+    "parking:right": "lane",
+    "parking:right:orientation": "parallel",
+    "parking:right:restriction": "no_standing",
+    "sidewalk": "both",
+    "sidewalk:both:surface": "asphalt",
+    "surface": "asphalt",
+    "wikidata": "Q11260",
+    "wikipedia": "en:Broadway (Manhattan)"
+  }
+},
+{
+  "type": "way",
+  "id": 1027189508,
+  "bounds": {
+    "minlat": 40.7601095,
+    "minlon": -73.9876912,
+    "maxlat": 40.7604088,
+    "maxlon": -73.9874753
+  },
+  "nodes": [
+    9469961217,
+    10168088492,
+    42435677
+  ],
+  "geometry": [
+    { "lat": 40.7601095, "lon": -73.9876912 },
+    { "lat": 40.7603605, "lon": -73.9875105 },
+    { "lat": 40.7604088, "lon": -73.9874753 }
+  ],
+  "tags": {
+    "cycleway:left": "track",
+    "cycleway:left:oneway": "yes",
+    "cycleway:right": "no",
+    "hgv": "local",
+    "highway": "secondary",
+    "lanes": "4",
+    "lit": "yes",
+    "maxspeed": "25 mph",
+    "name": "8th Avenue",
+    "name:ru": "8-я Авеню",
+    "name_1": "8 Avenue",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "turn:lanes": "left|||",
+    "wikidata": "Q109951",
+    "wikipedia": "en:Eighth Avenue (Manhattan)"
+  }
+},
+{
+  "type": "way",
+  "id": 1049844343,
+  "bounds": {
+    "minlat": 40.7565163,
+    "minlon": -73.9863565,
+    "maxlat": 40.7566673,
+    "maxlon": -73.9859959
+  },
+  "nodes": [
+    4578017557,
+    10222417558,
+    12055677929,
+    10222417542,
+    4578017558
+  ],
+  "geometry": [
+    { "lat": 40.7565163, "lon": -73.9859959 },
+    { "lat": 40.7565320, "lon": -73.9860335 },
+    { "lat": 40.7565845, "lon": -73.9861590 },
+    { "lat": 40.7566385, "lon": -73.9862881 },
+    { "lat": 40.7566673, "lon": -73.9863565 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "cycleway:both": "no",
+    "highway": "residential",
+    "lanes": "3",
+    "name": "West 43rd Street",
+    "name:ru": "Западная 43-я стрит",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "paving_stones",
+    "turn:lanes": "left|through|through"
+  }
+},
+{
+  "type": "way",
+  "id": 1049845754,
+  "bounds": {
+    "minlat": 40.7575242,
+    "minlon": -73.9892961,
+    "maxlat": 40.7579117,
+    "maxlon": -73.9883815
+  },
+  "nodes": [
+    8669764313,
+    6597498398,
+    5849918504
+  ],
+  "geometry": [
+    { "lat": 40.7575242, "lon": -73.9883815 },
+    { "lat": 40.7578580, "lon": -73.9891695 },
+    { "lat": 40.7579117, "lon": -73.9892961 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "cycleway:left": "shared_lane",
+    "cycleway:left:lane": "pictogram",
+    "cycleway:left:oneway": "yes",
+    "cycleway:right": "no",
+    "highway": "residential",
+    "lanes": "3",
+    "name": "West 43rd Street",
+    "name:ru": "Западная 43-я стрит",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "turn:lanes": "none|through|right"
+  }
+},
+{
+  "type": "way",
+  "id": 1051744070,
+  "bounds": {
+    "minlat": 40.7573902,
+    "minlon": -73.9827028,
+    "maxlat": 40.7575793,
+    "maxlon": -73.9822537
+  },
+  "nodes": [
+    8318633104,
+    3944708058,
+    42430347
+  ],
+  "geometry": [
+    { "lat": 40.7575793, "lon": -73.9827028 },
+    { "lat": 40.7574479, "lon": -73.9823908 },
+    { "lat": 40.7573902, "lon": -73.9822537 }
+  ],
+  "tags": {
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "2",
+    "lit": "yes",
+    "name": "West 46th Street",
+    "name:ru": "Западная 46-я стрит",
+    "oneway": "yes",
+    "parking:lane:left": "no",
+    "parking:lane:right": "parallel",
+    "parking:lane:right:parallel": "painted_area_only",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "turn:lanes": "left|through"
+  }
+},
+{
+  "type": "way",
+  "id": 1061622296,
+  "bounds": {
+    "minlat": 40.7566051,
+    "minlon": -73.9827118,
+    "maxlat": 40.7567712,
+    "maxlon": -73.9823131
+  },
+  "nodes": [
+    9753722445,
+    10164937729,
+    42430344
+  ],
+  "geometry": [
+    { "lat": 40.7566051, "lon": -73.9823131 },
+    { "lat": 40.7567152, "lon": -73.9825776 },
+    { "lat": 40.7567712, "lon": -73.9827118 }
+  ],
+  "tags": {
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "2",
+    "lit": "yes",
+    "name": "West 45th Street",
+    "name:ru": "Западная 45-я стрит",
+    "name_1": "West 45 Street",
+    "note": "thru street",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "turn:lanes": "through|right"
+  }
+},
+{
+  "type": "way",
+  "id": 1117867024,
+  "bounds": {
+    "minlat": 40.7564255,
+    "minlon": -73.9859959,
+    "maxlat": 40.7565163,
+    "maxlon": -73.9857810
+  },
+  "nodes": [
+    9647769356,
+    12055680088,
+    4578017557
+  ],
+  "geometry": [
+    { "lat": 40.7564255, "lon": -73.9857810 },
+    { "lat": 40.7565023, "lon": -73.9859627 },
+    { "lat": 40.7565163, "lon": -73.9859959 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "cycleway:left": "shared_lane",
+    "cycleway:left:lane": "pictogram",
+    "cycleway:left:oneway": "yes",
+    "cycleway:right": "no",
+    "highway": "residential",
+    "lanes": "3",
+    "name": "West 43rd Street",
+    "name:ru": "Западная 43-я стрит",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "turn:lanes": "left|through|through"
+  }
+},
+{
+  "type": "way",
+  "id": 1117867025,
+  "bounds": {
+    "minlat": 40.7566673,
+    "minlon": -73.9864580,
+    "maxlat": 40.7567100,
+    "maxlon": -73.9863565
+  },
+  "nodes": [
+    4578017558,
+    42439981
+  ],
+  "geometry": [
+    { "lat": 40.7566673, "lon": -73.9863565 },
+    { "lat": 40.7567100, "lon": -73.9864580 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "cycleway:left": "shared_lane",
+    "cycleway:left:lane": "pictogram",
+    "cycleway:left:oneway": "yes",
+    "cycleway:right": "no",
+    "highway": "residential",
+    "lanes": "3",
+    "name": "West 43rd Street",
+    "name:ru": "Западная 43-я стрит",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "turn:lanes": "left|through|through"
+  }
+},
+{
+  "type": "way",
+  "id": 1117867026,
+  "bounds": {
+    "minlat": 40.7573424,
+    "minlon": -73.9860883,
+    "maxlat": 40.7573741,
+    "maxlon": -73.9860116
+  },
+  "nodes": [
+    10224024813,
+    42439984
+  ],
+  "geometry": [
+    { "lat": 40.7573741, "lon": -73.9860883 },
+    { "lat": 40.7573424, "lon": -73.9860116 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "cycleway": "shared_lane",
+    "highway": "residential",
+    "lanes": "1",
+    "name": "West 44th Street",
+    "name:ru": "Западная 44-я стрит",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 1117867027,
+  "bounds": {
+    "minlat": 40.7573741,
+    "minlon": -73.9861699,
+    "maxlat": 40.7574076,
+    "maxlon": -73.9860883
+  },
+  "nodes": [
+    10224024814,
+    10224024815,
+    3974095828,
+    10224024813
+  ],
+  "geometry": [
+    { "lat": 40.7574076, "lon": -73.9861699 },
+    { "lat": 40.7574052, "lon": -73.9861640 },
+    { "lat": 40.7573856, "lon": -73.9861159 },
+    { "lat": 40.7573741, "lon": -73.9860883 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "cycleway": "shared_lane",
+    "highway": "residential",
+    "lanes": "1",
+    "name": "West 44th Street",
+    "name:ru": "Западная 44-я стрит",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1117867028,
+  "bounds": {
+    "minlat": 40.7572961,
+    "minlon": -73.9860116,
+    "maxlat": 40.7573424,
+    "maxlon": -73.9858994
+  },
+  "nodes": [
+    42439984,
+    10224024816
+  ],
+  "geometry": [
+    { "lat": 40.7573424, "lon": -73.9860116 },
+    { "lat": 40.7572961, "lon": -73.9858994 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "cycleway": "shared_lane",
+    "cycleway:left": "lane",
+    "highway": "residential",
+    "lanes": "1",
+    "name": "West 44th Street",
+    "name:ru": "Западная 44-я стрит",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 1117867029,
+  "bounds": {
+    "minlat": 40.7572084,
+    "minlon": -73.9858994,
+    "maxlat": 40.7572961,
+    "maxlon": -73.9856903
+  },
+  "nodes": [
+    10224024816,
+    10224024800,
+    12055677931,
+    6598535230,
+    9235539560
+  ],
+  "geometry": [
+    { "lat": 40.7572961, "lon": -73.9858994 },
+    { "lat": 40.7572809, "lon": -73.9858632 },
+    { "lat": 40.7572664, "lon": -73.9858286 },
+    { "lat": 40.7572239, "lon": -73.9857273 },
+    { "lat": 40.7572084, "lon": -73.9856903 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "cycleway": "shared_lane",
+    "cycleway:left": "lane",
+    "highway": "residential",
+    "lanes": "1",
+    "name": "West 44th Street",
+    "name:ru": "Западная 44-я стрит",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1117867038,
+  "bounds": {
+    "minlat": 40.7567712,
+    "minlon": -73.9853729,
+    "maxlat": 40.7578953,
+    "maxlon": -73.9827118
+  },
+  "nodes": [
+    42430344,
+    8373393481,
+    8318633103,
+    9665064784,
+    6597464446
+  ],
+  "geometry": [
+    { "lat": 40.7567712, "lon": -73.9827118 },
+    { "lat": 40.7568243, "lon": -73.9828376 },
+    { "lat": 40.7570948, "lon": -73.9834777 },
+    { "lat": 40.7576657, "lon": -73.9848288 },
+    { "lat": 40.7578953, "lon": -73.9853729 }
+  ],
+  "tags": {
+    "cycleway:right": "no",
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "1",
+    "lit": "yes",
+    "name": "West 45th Street",
+    "name:ru": "Западная 45-я стрит",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 1117867039,
+  "bounds": {
+    "minlat": 40.7580108,
+    "minlon": -73.9857320,
+    "maxlat": 40.7580455,
+    "maxlon": -73.9856493
+  },
+  "nodes": [
+    10224032629,
+    3974095832,
+    6597464445
+  ],
+  "geometry": [
+    { "lat": 40.7580108, "lon": -73.9856493 },
+    { "lat": 40.7580252, "lon": -73.9856837 },
+    { "lat": 40.7580455, "lon": -73.9857320 }
+  ],
+  "tags": {
+    "cycleway:right": "no",
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "1",
+    "name": "West 45th Street",
+    "name:ru": "Западная 45-я стрит",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1117867040,
+  "bounds": {
+    "minlat": 40.7579238,
+    "minlon": -73.9856493,
+    "maxlat": 40.7580108,
+    "maxlon": -73.9854396
+  },
+  "nodes": [
+    10224032630,
+    42428297,
+    10224032629
+  ],
+  "geometry": [
+    { "lat": 40.7579238, "lon": -73.9854396 },
+    { "lat": 40.7579634, "lon": -73.9855335 },
+    { "lat": 40.7580108, "lon": -73.9856493 }
+  ],
+  "tags": {
+    "cycleway:right": "no",
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "1",
+    "name": "West 45th Street",
+    "name:ru": "Западная 45-я стрит",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 1117867041,
+  "bounds": {
+    "minlat": 40.7578953,
+    "minlon": -73.9854396,
+    "maxlat": 40.7579238,
+    "maxlon": -73.9853729
+  },
+  "nodes": [
+    6597464446,
+    10224032638,
+    10224032630
+  ],
+  "geometry": [
+    { "lat": 40.7578953, "lon": -73.9853729 },
+    { "lat": 40.7579142, "lon": -73.9854172 },
+    { "lat": 40.7579238, "lon": -73.9854396 }
+  ],
+  "tags": {
+    "cycleway:right": "no",
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "1",
+    "name": "West 45th Street",
+    "name:ru": "Западная 45-я стрит",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "paving_stones"
+  }
+},
+{
+  "type": "way",
+  "id": 1136952921,
+  "bounds": {
+    "minlat": 40.7556053,
+    "minlon": -73.9864249,
+    "maxlat": 40.7558193,
+    "maxlon": -73.9859192
+  },
+  "nodes": [
+    10598594003,
+    4770624003,
+    3974095818,
+    42428287
+  ],
+  "geometry": [
+    { "lat": 40.7556053, "lon": -73.9859192 },
+    { "lat": 40.7556525, "lon": -73.9860306 },
+    { "lat": 40.7557622, "lon": -73.9862894 },
+    { "lat": 40.7558193, "lon": -73.9864249 }
+  ],
+  "tags": {
+    "access": "yes",
+    "foot": "designated",
+    "hgv": "local",
+    "highway": "primary",
+    "lanes": "5",
+    "lanes:backward": "2",
+    "lanes:forward": "3",
+    "lit": "yes",
+    "maxspeed": "25 mph",
+    "name": "West 42nd Street",
+    "name:ru": "Западная 42-я стрит",
+    "oneway": "no",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "turn:lanes:forward": "left|through|none",
+    "wikidata": "Q110061",
+    "wikipedia": "en:42nd Street (Manhattan)"
+  }
+},
+{
+  "type": "way",
+  "id": 1198594027,
+  "bounds": {
+    "minlat": 40.7574076,
+    "minlon": -73.9888429,
+    "maxlat": 40.7585323,
+    "maxlon": -73.9861699
+  },
+  "nodes": [
+    42435671,
+    10168088476,
+    42443559,
+    10224024814
+  ],
+  "geometry": [
+    { "lat": 40.7585323, "lon": -73.9888429 },
+    { "lat": 40.7584814, "lon": -73.9887219 },
+    { "lat": 40.7578359, "lon": -73.9871891 },
+    { "lat": 40.7574076, "lon": -73.9861699 }
+  ],
+  "tags": {
+    "bicycle": "yes",
+    "cycleway": "shared_lane",
+    "highway": "residential",
+    "lanes": "1",
+    "name": "West 44th Street",
+    "name:ru": "Западная 44-я стрит",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 1198594028,
+  "bounds": {
+    "minlat": 40.7591595,
+    "minlon": -73.9908914,
+    "maxlat": 40.7602164,
+    "maxlon": -73.9883858
+  },
+  "nodes": [
+    42432700,
+    10168088484,
+    9665064785
+  ],
+  "geometry": [
+    { "lat": 40.7591595, "lon": -73.9883858 },
+    { "lat": 40.7592205, "lon": -73.9885304 },
+    { "lat": 40.7602164, "lon": -73.9908914 }
+  ],
+  "tags": {
+    "cycleway:right": "no",
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "1",
+    "lit": "yes",
+    "name": "West 45th Street",
+    "name:ru": "Западная 45-я стрит",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 1198594029,
+  "bounds": {
+    "minlat": 40.7588204,
+    "minlon": -73.9886329,
+    "maxlat": 40.7591595,
+    "maxlon": -73.9883858
+  },
+  "nodes": [
+    11191334801,
+    10168088483,
+    42432700
+  ],
+  "geometry": [
+    { "lat": 40.7588204, "lon": -73.9886329 },
+    { "lat": 40.7591028, "lon": -73.9884271 },
+    { "lat": 40.7591595, "lon": -73.9883858 }
+  ],
+  "tags": {
+    "cycleway:left": "track",
+    "cycleway:left:oneway": "yes",
+    "hgv": "local",
+    "highway": "secondary",
+    "lanes": "3",
+    "lit": "yes",
+    "maxspeed": "25 mph",
+    "name": "8th Avenue",
+    "name:ru": "8-я Авеню",
+    "name_1": "8 Avenue",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "turn:lanes": "left||",
+    "wikidata": "Q109951",
+    "wikipedia": "en:Eighth Avenue (Manhattan)"
+  }
+},
+{
+  "type": "way",
+  "id": 1198594030,
+  "bounds": {
+    "minlat": 40.7597869,
+    "minlon": -73.9879285,
+    "maxlat": 40.7601095,
+    "maxlon": -73.9876912
+  },
+  "nodes": [
+    42435675,
+    2435108457,
+    9469961217
+  ],
+  "geometry": [
+    { "lat": 40.7597869, "lon": -73.9879285 },
+    { "lat": 40.7598511, "lon": -73.9878814 },
+    { "lat": 40.7601095, "lon": -73.9876912 }
+  ],
+  "tags": {
+    "cycleway:left": "track",
+    "cycleway:left:oneway": "yes",
+    "hgv": "local",
+    "highway": "secondary",
+    "lanes": "3",
+    "lit": "yes",
+    "maxspeed": "25 mph",
+    "name": "8th Avenue",
+    "name:ru": "8-я Авеню",
+    "name_1": "8 Avenue",
+    "oneway": "yes",
+    "sidewalk:both": "separate",
+    "surface": "asphalt",
+    "wikidata": "Q109951",
+    "wikipedia": "en:Eighth Avenue (Manhattan)"
+  }
+},
+{
+  "type": "way",
+  "id": 1413358692,
+  "bounds": {
+    "minlat": 40.7597869,
+    "minlon": -73.9883812,
+    "maxlat": 40.7599790,
+    "maxlon": -73.9879285
+  },
+  "nodes": [
+    12988501268,
+    9749419125,
+    6210777833,
+    42435675
+  ],
+  "geometry": [
+    { "lat": 40.7599790, "lon": -73.9883812 },
+    { "lat": 40.7598476, "lon": -73.9880713 },
+    { "lat": 40.7598331, "lon": -73.9880374 },
+    { "lat": 40.7597869, "lon": -73.9879285 }
+  ],
+  "tags": {
+    "cycleway:both": "no",
+    "foot": "use_sidepath",
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "1",
+    "lit": "yes",
+    "maxspeed:conditional": "5 mph @ (16:00-20:00)",
+    "motor_vehicle:conditional": "destination @ (Mo-Th 16:00-20:00; Fr 16:00-23:00; Sa-Su 12:00-23:00)",
+    "name": "West 46th Street",
+    "name:ru": "Западная 46-я стрит",
+    "oneway": "yes",
+    "parking:both": "lane",
+    "parking:both:orientation": "parallel",
+    "parking:left:restriction": "no_standing",
+    "parking:right:access:conditional": "goods @ (Mo-Sa 07:00-18:00)",
+    "parking:right:fee": "no",
+    "parking:right:fee:conditional": "yes @ (Mo-Sa 07:00-00:00)",
+    "parking:right:maxstay:conditional": "3 hours @ (Mo-Sa 07:00-18:00); 6 hours @ (Mo-Sa 18:00-00:00)",
+    "sidewalk:both": "separate",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 1413358696,
+  "bounds": {
+    "minlat": 40.7599790,
+    "minlon": -73.9886096,
+    "maxlat": 40.7600758,
+    "maxlon": -73.9883812
+  },
+  "nodes": [
+    12988501262,
+    12988501268
+  ],
+  "geometry": [
+    { "lat": 40.7600758, "lon": -73.9886096 },
+    { "lat": 40.7599790, "lon": -73.9883812 }
+  ],
+  "tags": {
+    "cycleway:both": "no",
+    "foot": "use_sidepath",
+    "hgv": "destination",
+    "highway": "secondary",
+    "lanes": "1",
+    "lit": "yes",
+    "maxspeed:conditional": "5 mph @ (16:00-20:00)",
+    "motor_vehicle:conditional": "destination @ (Mo-Th 16:00-20:00; Fr 16:00-23:00; Sa-Su 12:00-23:00)",
+    "name": "West 46th Street",
+    "name:ru": "Западная 46-я стрит",
+    "oneway": "yes",
+    "parking:both": "lane",
+    "parking:both:orientation": "parallel",
+    "parking:left:access": "customers",
+    "parking:left:access:conditional": "yes @ (Mo-Fr 07:00-18:00)",
+    "parking:left:restriction": "loading_only",
+    "parking:left:restriction:conditional": "no_standing @ (Mo-Fr 07:00-18:00)",
+    "parking:right:restriction": "no_parking",
+    "sidewalk:both": "separate",
+    "surface": "asphalt"
+  }
+},
+{
+  "type": "way",
+  "id": 1413518738,
+  "bounds": {
+    "minlat": 40.7600195,
+    "minlon": -73.9848196,
+    "maxlat": 40.7601126,
+    "maxlon": -73.9847805
+  },
+  "nodes": [
+    42428305,
+    12989986303,
+    12989986307
+  ],
+  "geometry": [
+    { "lat": 40.7601126, "lon": -73.9848196 },
+    { "lat": 40.7600374, "lon": -73.9847805 },
+    { "lat": 40.7600195, "lon": -73.9847887 }
+  ],
+  "tags": {
+    "highway": "living_street"
+  }
+},
+{
+  "type": "way",
+  "id": 1413518739,
+  "bounds": {
+    "minlat": 40.7593906,
+    "minlon": -73.9850231,
+    "maxlat": 40.7594945,
+    "maxlon": -73.9849847
+  },
+  "nodes": [
+    12989986304,
+    12989986306,
+    12989986305
+  ],
+  "geometry": [
+    { "lat": 40.7594945, "lon": -73.9849847 },
+    { "lat": 40.7594519, "lon": -73.9850004 },
+    { "lat": 40.7593906, "lon": -73.9850231 }
+  ],
+  "tags": {
+    "highway": "living_street",
+    "lit": "yes"
+  }
+},
+{
+  "type": "way",
+  "id": 1534680280,
+  "bounds": {
+    "minlat": 40.7568036,
+    "minlon": -73.9849586,
+    "maxlat": 40.7568771,
+    "maxlon": -73.9849062
+  },
+  "nodes": [
+    1752942903,
+    13915675577,
+    13915675578
+  ],
+  "geometry": [
+    { "lat": 40.7568036, "lon": -73.9849586 },
+    { "lat": 40.7568179, "lon": -73.9849484 },
+    { "lat": 40.7568771, "lon": -73.9849062 }
+  ],
+  "tags": {
+    "highway": "service",
+    "motor_vehicle": "customers"
+  }
+},
+{
+  "type": "way",
+  "id": 1534680281,
+  "bounds": {
+    "minlat": 40.7562462,
+    "minlon": -73.9853559,
+    "maxlat": 40.7563173,
+    "maxlon": -73.9853052
+  },
+  "nodes": [
+    8396878498,
+    8396878499,
+    8396878500
+  ],
+  "geometry": [
+    { "lat": 40.7562462, "lon": -73.9853559 },
+    { "lat": 40.7563017, "lon": -73.9853163 },
+    { "lat": 40.7563173, "lon": -73.9853052 }
+  ],
+  "tags": {
+    "highway": "service",
+    "motor_vehicle": "customers"
+  }
+}
+
+  ]
+}

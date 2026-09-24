@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title desc">
+  <title id="title">Modern pedestrian post-top lamp</title>
+  <desc id="desc">A dark tapered pole with a broad circular hat-shaped lamp.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#eef2f6"/>
+      <stop offset="1" stop-color="#dce4ec"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#171b21"/>
+      <stop offset="0.48" stop-color="#46505a"/>
+      <stop offset="1" stop-color="#232932"/>
+    </linearGradient>
+    <linearGradient id="cap" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5b6671"/>
+      <stop offset="1" stop-color="#242a31"/>
+    </linearGradient>
+    <radialGradient id="lens">
+      <stop offset="0" stop-color="#d8dde1"/>
+      <stop offset="1" stop-color="#78828a"/>
+    </radialGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feGaussianBlur stdDeviation="11"/>
+    </filter>
+  </defs>
+  <rect width="640" height="640" rx="44" fill="url(#background)"/>
+  <ellipse cx="334" cy="558" rx="120" ry="30" fill="#66717b" opacity=".2" filter="url(#shadow)"/>
+  <path d="M258 555h143l-18-31H277z" fill="#252b32"/>
+  <ellipse cx="329.5" cy="524" rx="53" ry="13" fill="#4d5862"/>
+  <path d="M302 521 313 190h34l12 331z" fill="url(#metal)"/>
+  <path d="M297 523h66l-7-48h-52z" fill="#303740"/>
+  <rect x="318" y="405" width="24" height="62" rx="5" fill="#11151a" opacity=".8"/>
+  <path d="M306 194h48l-8-43h-31z" fill="#303840"/>
+  <ellipse cx="330" cy="154" rx="104" ry="31" fill="#1e242b"/>
+  <ellipse cx="330" cy="147" rx="88" ry="23" fill="url(#lens)"/>
+  <path d="M226 143 269 92h122l43 51c-38 34-170 34-208 0z" fill="url(#cap)"/>
+  <ellipse cx="330" cy="92" rx="61" ry="18" fill="#64717c"/>
+  <ellipse cx="330" cy="88" rx="34" ry="9" fill="#75828c"/>
+  <rect x="324" y="72" width="12" height="17" rx="4" fill="#52606a"/>
+  <circle cx="289" cy="535" r="7" fill="#11151a"/>
+  <circle cx="370" cy="535" r="7" fill="#11151a"/>
+</svg>
