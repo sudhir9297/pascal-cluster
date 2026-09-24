@@ -41,9 +41,9 @@
     "zustand": "^5"
   },
   "devDependencies": {
-    "@pascal-app/core": "workspace:*",
-    "@pascal-app/editor": "workspace:*",
-    "@pascal-app/viewer": "workspace:*",
+    "@pascal-app/core": "1.0.1",
+    "@pascal-app/editor": "1.0.1",
+    "@pascal-app/viewer": "1.0.1",
     "@react-three/drei": "^10",
     "@react-three/fiber": "^9",
     "@react-three/xr": "^6",
