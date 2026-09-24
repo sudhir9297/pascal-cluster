@@ -82,22 +82,22 @@ Pathway and walkway research, design notes, and future feature code live in
 
 ## Local development
 
-Install dependencies in this repository and in the editor checkout once. Then,
-from this repository:
+Install dependencies from the monorepo root and in the sibling editor checkout
+once. From the monorepo root, run:
 
 ```bash
 bun run dev
 ```
 
-This links the source into the neighboring `../editor` checkout, rebuilds its
-built-in node packages, and starts the editor at http://localhost:3004. Source
-edits update through Next.js Fast Refresh. React and Pascal core resolve to the
-host's copies.
+Turborepo runs this package's dev task. It links `packages/landscape` into the
+neighboring `../editor` checkout, rebuilds its built-in node packages, and starts
+the editor at http://localhost:3004. Source edits update through Next.js Fast
+Refresh. React and Pascal core resolve to the host's copies.
 
 The link changes only `node_modules`. It does not edit the editor's dependency
 URL or lockfile and requires no global Bun link registration.
 
-To link without starting another server:
+To link without starting another server, run this from `packages/landscape`:
 
 ```bash
 bun run dev:link
@@ -117,17 +117,13 @@ In an existing scene, open **Plugins → Landscape → Install**, then select
 
 ## GitHub installation
 
-Push this repository to your intended GitHub repository. In the editor's
-`apps/editor/package.json`, set the dependency to its URL and a release tag or
-commit, for example:
-
-```json
-"@pascal-app/plugin-landscape": "git+ssh://git@github.com/sudhir9297/landscape-pascal-plugin.git#COMMIT_OR_TAG"
-```
-
-The repository is private. Installing machines need GitHub access through an
-SSH key or a Git credential helper; CI needs credentials with access to this
-repository. Never put credentials in the dependency URL.
+Landscape is now a package in the `pascal-cluster` monorepo. Once that monorepo
+has a GitHub remote, pin `@pascal-app/plugin-landscape` in the editor's
+`apps/editor/package.json` to a monorepo commit and the `packages/landscape`
+subdirectory. Keep the other plugin packages independently pinned. Installing
+machines need GitHub access through an SSH key or a Git credential helper; CI
+needs credentials with access to the monorepo. Never put credentials in the
+dependency URL.
 
 Run `bun install` from the editor root and restart the editor. Its existing
 plugin registration, TypeScript transpilation, CSS scanning, and package
@@ -140,7 +136,8 @@ is needed in this editor. A different host must transpile this source package
 and register its manifest and panel as described in the
 [Pascal plugin guide](https://editor.pascal.app/docs/developers/plugins).
 
-To return from local development to the editor's pinned GitHub version:
+To return from local development to the editor's pinned version, run this from
+`packages/landscape`:
 
 ```bash
 bun run dev:unlink
@@ -150,8 +147,8 @@ This removes the local override and reinstalls from the editor's frozen lockfile
 Restart the editor afterward. To resume local work, run `bun run dev` again.
 
 A GitHub push does not update a pinned installation automatically. To deploy a
-new release, update the tag/commit in the editor dependency, run `bun install`,
-and commit its package manifest and lockfile.
+new release, update the monorepo commit pin for this package in the editor,
+run `bun install`, and commit its package manifest and lockfile.
 
 ## Checks
 

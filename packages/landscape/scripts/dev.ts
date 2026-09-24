@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 const pluginRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const editorRoot = process.env.PASCAL_EDITOR_PATH
   ? path.resolve(process.env.PASCAL_EDITOR_PATH)
-  : path.resolve(pluginRoot, '../editor')
+  : path.resolve(pluginRoot, '../../../editor')
 const editorApp = path.join(editorRoot, 'apps/editor')
 const linkOnly = process.argv.includes('--link-only')
 const unlink = process.argv.includes('--unlink')
