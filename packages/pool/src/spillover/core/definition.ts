@@ -1,0 +1,92 @@
+import type { FloorplanGeometry, GeometryContext, NodeDefinition } from '@pascal-app/core'
+import { poolSpilloverParametrics } from '../editor/parametrics'
+import { firstPoolHintVisibility, secondPoolHintVisibility } from '../design/stage'
+import { DEFAULT_POOL_SPILLOVER, PoolSpilloverNode } from './schema'
+
+const poolSpilloverToolHints = [
+  { key: 'Click', label: 'Select the first pool', visible: firstPoolHintVisibility },
+  { key: 'Click', label: 'Select the second pool', visible: secondPoolHintVisibility },
+  { key: 'Move', label: 'Preview the connection', visible: secondPoolHintVisibility },
+  { key: 'Esc', label: 'Cancel spillover placement' },
+]
+
+function worldPointToLocal(node: PoolSpilloverNode, point: [number, number]) {
+  const angle = node.rotation[1] ?? 0
+  const dx = point[0] - node.position[0]
+  const dz = point[1] - node.position[2]
+  return [
+    dx * Math.cos(angle) - dz * Math.sin(angle),
+    dx * Math.sin(angle) + dz * Math.cos(angle),
+  ] as [number, number]
+}
+
+export function poolSpilloverFloorplan(
+  node: PoolSpilloverNode,
+  ctx?: GeometryContext,
+): FloorplanGeometry {
+  if (node.mergedSurface) return { kind: 'group', children: [] }
+  const source = node.connectionPath[0]
+    ? worldPointToLocal(node, node.connectionPath[0])
+    : [node.sourceSide * node.length / 2, 0] as [number, number]
+  const target = node.connectionPath[1]
+    ? worldPointToLocal(node, node.connectionPath[1])
+    : [-node.sourceSide * node.length / 2, 0] as [number, number]
+  const width = node.effectiveWidth ?? node.width
+  const selected = ctx?.viewState?.selected ?? false
+  return {
+    kind: 'group',
+    children: [
+      {
+        kind: 'line',
+        x1: source[0], y1: source[1], x2: target[0], y2: target[1],
+        stroke: node.surfaceColor,
+        strokeWidth: node.connectionMode === 'channel' ? width + node.lipThickness * 2 : width,
+        opacity: 0.7,
+        pointerEvents: 'stroke',
+      },
+      {
+        kind: 'line',
+        x1: source[0], y1: source[1], x2: target[0], y2: target[1],
+        stroke: selected ? (ctx?.viewState?.palette.selectedStroke ?? '#0284c7') : node.waterColor,
+        strokeWidth: Math.max(0.08, width - node.lipThickness * 2),
+        opacity: 0.9,
+        pointerEvents: 'stroke',
+      },
+    ],
+  }
+}
+
+export const poolSpilloverDefinition: NodeDefinition<typeof PoolSpilloverNode> = {
+  kind: 'pool:spillover',
+  schemaVersion: 1,
+  schema: PoolSpilloverNode,
+  category: 'furnish',
+  distributionRole: 'run',
+  snapProfile: 'item',
+  extensions: {
+    'pascal:editor/floorplan': {
+      tool: () => import('../editor/floorplan-tool'),
+    },
+  },
+  defaults: () => ({ object: 'node', parentId: null, visible: true, metadata: {}, ...DEFAULT_POOL_SPILLOVER }),
+  capabilities: {
+    movable: { axes: ['x', 'y', 'z'], gridSnap: true },
+    rotatable: { axes: ['y'] },
+    selectable: { hitVolume: 'bbox' },
+    duplicable: false,
+    deletable: true,
+    groupable: true,
+    snappable: {},
+  },
+  renderer: { kind: 'parametric', module: () => import('../editor/preview') },
+  floorplan: poolSpilloverFloorplan,
+  tool: () => import('../editor/tool'),
+  toolHints: poolSpilloverToolHints,
+  parametrics: poolSpilloverParametrics,
+  presentation: {
+    label: 'Pool spillover',
+    description: 'Directional water flow from a higher swimming pool into a lower pool.',
+    icon: { kind: 'iconify', name: 'lucide:move-down' },
+    paletteSection: 'furnish',
+  },
+}

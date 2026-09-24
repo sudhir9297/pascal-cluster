@@ -1,0 +1,95 @@
+{
+  "name": "@pascal-app/plugin-pool",
+  "version": "0.1.0",
+  "description": "Pascal swimming-pool plugin with procedural pool geometry and animated water.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pascalorg/plugin-pool.git"
+  },
+  "homepage": "https://editor.pascal.app/docs/developers/plugins",
+  "bugs": {
+    "url": "https://github.com/pascalorg/plugin-pool/issues"
+  },
+  "type": "module",
+  "packageManager": "bun@1.3.12",
+  "sideEffects": false,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": [
+    "src",
+    "docs",
+    "README.md",
+    "CONTRIBUTING.md",
+    "CONTEXT.md",
+    "CHANGELOG.md",
+    "SECURITY.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "check-docs": "bun run scripts/check-docs.ts",
+    "check-architecture": "bun run scripts/check-architecture.ts",
+    "check-package": "bun run scripts/check-package.ts",
+    "package:release": "bun run scripts/create-release-package.ts",
+    "check-release": "bun run scripts/check-release.ts",
+    "check-types": "tsc --noEmit",
+    "test": "bun test",
+    "test:coverage": "bun run scripts/test-coverage.ts",
+    "build": "bun run scripts/build.ts",
+    "check-build-reproducibility": "bun run scripts/check-build-reproducibility.ts",
+    "verify": "bun run scripts/verify.ts",
+    "release:check": "bun run scripts/release-check.ts"
+  },
+  "peerDependencies": {
+    "@pascal-app/core": ">=0.9.1 <1 || >=1.0.0-beta.0 <2",
+    "@pascal-app/editor": ">=0.9.1 <1 || >=1.0.0-beta.0 <2",
+    "@pascal-app/viewer": ">=0.9.1 <1 || >=1.0.0-beta.0 <2",
+    "@react-three/fiber": "^9",
+    "react": "^18 || ^19",
+    "three": "^0.186.0",
+    "zod": "^4",
+    "zustand": "^5"
+  },
+  "devDependencies": {
+    "@pascal-app/core": "1.0.0",
+    "@pascal-app/editor": "1.0.0",
+    "@pascal-app/viewer": "1.0.0",
+    "@react-three/fiber": "^9",
+    "@types/node": "^22.19.12",
+    "@types/blob-stream": "^0.1.33",
+    "@types/pdfkit": "^0.17.6",
+    "@types/bun": "^1.3.5",
+    "@types/howler": "^2.2.12",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "next": "16.3.4",
+    "react": "^19",
+    "three": "^0.186.0",
+    "typescript": "6.0.3",
+    "zod": "4.5.4",
+    "zustand": "^5"
+  },
+  "keywords": [
+    "pascal",
+    "3d",
+    "editor",
+    "plugin"
+  ],
+  "license": "MIT",
+  "overrides": {
+    "fflate": "0.8.3",
+    "nanoid": "3.3.18"
+  },
+  "dependencies": {
+    "three-bvh-csg": "^0.0.18",
+    "three-mesh-bvh": "^0.9.8"
+  }
+}

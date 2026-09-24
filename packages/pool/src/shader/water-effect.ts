@@ -1,0 +1,786 @@
+import {
+  ClampToEdgeWrapping,
+  Color,
+  FrontSide,
+  HalfFloatType,
+  LinearFilter,
+  MeshBasicNodeMaterial,
+  NodeMaterial,
+  QuadMesh,
+  RenderTarget,
+  Vector2,
+  Vector3,
+  type Texture,
+  type WebGPURenderer,
+} from 'three/webgpu'
+import {
+  cameraFar,
+  cameraNear,
+  cameraPosition,
+  color,
+  dot,
+  exp,
+  float,
+  max,
+  mix,
+  normalize,
+  perspectiveDepthToViewZ,
+  positionLocal,
+  positionView,
+  positionWorld,
+  pow,
+  reference,
+  reflect,
+  screenUV,
+  smoothstep,
+  step,
+  texture,
+  uniform,
+  uv,
+  vec2,
+  vec3,
+  vec4,
+  viewportDepthTexture,
+  viewportSharedTexture,
+} from 'three/tsl'
+import type { SceneAtmosphereSource } from '@pascal-app/viewer'
+import {
+  WATER_PRESET_SETTINGS,
+  type WaterPresetSettings,
+} from './water-presets'
+import {
+  loadWaterTexture,
+  resolveWaterStyle,
+  WATER_PRESET_TEXTURES,
+} from './water-presentation'
+
+const DEFAULTS = {
+  ...WATER_PRESET_SETTINGS['crystal-clear'],
+  sunElevation: 52,
+  sunAzimuth: 135,
+  waterColor: '#38bdf8',
+} as const
+
+/** Motion multipliers from the stylized-water panner equations. */
+const WATER_MOTION_RATES = {
+  normalPrimary: -0.05,
+  normalSecondary: 0.1,
+  caustics: 0.045,
+  causticsPrimaryY: 0.43,
+  causticsSecondaryX: -0.61,
+  causticsSecondaryY: 0.79,
+  displacement: 0.075,
+} as const
+
+const CALM_MOTION_INTENSITY = 0.45
+const CALM_SETTLE_DAMPING = 0.92
+const CALM_BREEZE = 0.08
+// The surface shader still animates every rendered frame. The height-field
+// simulation only needs a lower fixed rate, which avoids two render-target
+// passes per pool on every 60 Hz frame while remaining visually smooth.
+const WATER_SIMULATION_HZ = 30
+
+export type WaterSettings = WaterPresetSettings & {
+  waterMode?: 'base' | 'calm' | 'storm'
+  waterQuality?: 'low' | 'medium' | 'high' | 'ultra'
+  sunElevation: number
+  sunAzimuth: number
+  waterColor: string
+}
+
+// One base node shares the renderer's immutable depth copy across both the
+// straight and refracted samples. Creating one node per sample duplicates the
+// full viewport depth copy and is needlessly expensive.
+const viewportDepth = viewportDepthTexture()
+
+function finite(value: unknown, fallback: number, min: number, max: number) {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.max(min, Math.min(max, value))
+    : fallback
+}
+
+/** Resolve saved pools before values are uploaded as renderer uniforms. */
+function resolveWaterSettings(value: Partial<WaterSettings>): WaterSettings {
+  const preset = resolveWaterStyle(value)
+  return {
+    waterPreset: preset.waterPreset,
+    waterQuality: ['low', 'medium', 'high', 'ultra'].includes(String(value.waterQuality))
+      ? value.waterQuality as WaterSettings['waterQuality']
+      : 'high',
+    shallowWaterColor: typeof value.shallowWaterColor === 'string'
+      ? value.shallowWaterColor
+      : preset.shallowWaterColor,
+    deepWaterColor: typeof value.deepWaterColor === 'string'
+      ? value.deepWaterColor
+      : preset.deepWaterColor,
+    surfaceDetail: finite(value.surfaceDetail, preset.surfaceDetail, 0.4, 3),
+    viscosity: finite(value.viscosity, preset.viscosity, 0, 1),
+    rippleSize: finite(value.rippleSize, preset.rippleSize, 8, 80),
+    clarity: finite(value.clarity, preset.clarity, 0.3, 3),
+    rain: finite(value.rain, preset.rain, 0, 1),
+    breeze: finite(value.breeze, preset.breeze, 0, 1),
+    normalScale: finite(value.normalScale, preset.normalScale, 0.25, 20),
+    normalStrength: finite(value.normalStrength, preset.normalStrength, 0, 2),
+    normalSpeed: finite(value.normalSpeed, preset.normalSpeed, -3, 3),
+    reflectionStrength: finite(value.reflectionStrength, preset.reflectionStrength, 0, 2),
+    reflectionFresnel: finite(value.reflectionFresnel, preset.reflectionFresnel, 1, 12),
+    reflectionDistortion: finite(value.reflectionDistortion, preset.reflectionDistortion, 0, 4),
+    refractionStrength: finite(value.refractionStrength, preset.refractionStrength, 0, 1),
+    causticsStrength: finite(value.causticsStrength, preset.causticsStrength, 0, 4),
+    causticsScale: finite(value.causticsScale, preset.causticsScale, 0.25, 12),
+    causticsSpeed: finite(value.causticsSpeed, preset.causticsSpeed, -4, 4),
+    intersectionStrength: finite(value.intersectionStrength, preset.intersectionStrength, 0, 1),
+    intersectionColor: typeof value.intersectionColor === 'string'
+      ? value.intersectionColor
+      : preset.intersectionColor,
+    intersectionWidth: finite(value.intersectionWidth, preset.intersectionWidth, 0.05, 2),
+    shorelineStrength: finite(value.shorelineStrength, preset.shorelineStrength, 0, 1),
+    shorelineWidth: finite(value.shorelineWidth, preset.shorelineWidth, 0.02, 1),
+    shorelineSpeed: finite(value.shorelineSpeed, preset.shorelineSpeed, -3, 3),
+    specularStrength: finite(value.specularStrength, preset.specularStrength, 0, 4),
+    specularSize: finite(value.specularSize, preset.specularSize, 0, 1),
+    specularHardness: finite(value.specularHardness, preset.specularHardness, 0, 1),
+    sunElevation: finite(value.sunElevation, DEFAULTS.sunElevation, 14, 86),
+    sunAzimuth: finite(value.sunAzimuth, DEFAULTS.sunAzimuth, 0, 360),
+    waterColor: typeof value.waterColor === 'string' ? value.waterColor : DEFAULTS.waterColor,
+  }
+}
+
+/**
+ * XR-safe water presentation without viewport-copy or nested render-target nodes.
+ * The animated desktop material cannot share Three's immersive output target.
+ */
+export function createImmersiveXRPoolWaterMaterial(
+  settings: Partial<WaterSettings>,
+  atmosphere?: SceneAtmosphereSource | null,
+) {
+  const resolved = resolveWaterSettings(settings)
+  const material = new MeshBasicNodeMaterial({
+    color: resolved.waterColor,
+    depthWrite: false,
+    opacity: 0.72,
+    side: FrontSide,
+    transparent: true,
+  })
+  if (atmosphere) {
+    const ambient = reference('ambientIntensity', 'float', atmosphere)
+    const hemisphere = reference('hemisphereIntensity', 'float', atmosphere)
+    const illumination = ambient.add(hemisphere).add(0.25).clamp(0.25, 1.2)
+    material.colorNode = color(resolved.waterColor)
+      .mul(illumination)
+      .add(uniform(atmosphere.skyColor).mul(0.12))
+  }
+  return material
+}
+
+type TextureNodeLike = ReturnType<typeof texture> & { value: Texture }
+
+function makeTarget(resolution: number) {
+  const target = new RenderTarget(resolution, resolution, {
+    depthBuffer: false,
+    stencilBuffer: false,
+    type: HalfFloatType,
+    minFilter: LinearFilter,
+    magFilter: LinearFilter,
+  })
+  target.texture.wrapS = ClampToEdgeWrapping
+  target.texture.wrapT = ClampToEdgeWrapping
+  target.texture.generateMipmaps = false
+  return target
+}
+
+/**
+ * TSL water combining the supplied height-field solver with the Clear,
+ * Genshin, and Tropical normal/refraction/caustic material layers. The same
+ * graph compiles through WebGPURenderer for WebGPU or its WebGL 2 fallback.
+ */
+export class PoolWaterEffect {
+  readonly resolution: number
+  readonly stateNode: TextureNodeLike
+  readonly material: MeshBasicNodeMaterial
+
+  private read: RenderTarget
+  private write: RenderTarget
+  private readonly quad: QuadMesh
+  private readonly updateMaterial: NodeMaterial
+  private readonly dropMaterial: NodeMaterial
+  private readonly clearMaterial: NodeMaterial
+  private readonly inputNode: TextureNodeLike
+  private readonly normalTextureNode: TextureNodeLike
+  private readonly causticTextureNode: TextureNodeLike
+  private readonly distortionTextureNode: TextureNodeLike
+  private readonly shorelineTextureNode: TextureNodeLike
+  private readonly dropCenter: any
+  private readonly dropRadius: any
+  private readonly dropStrength: any
+  private readonly damping: any
+  private readonly settleDamping: any
+  private readonly simulationDetail: any
+  private readonly shallowColor: any
+  private readonly deepColor: any
+  private readonly normalScale: any
+  private readonly normalStrength: any
+  private readonly normalSpeed: any
+  private readonly reflectionStrength: any
+  private readonly reflectionFresnel: any
+  private readonly reflectionDistortion: any
+  private readonly refractionStrength: any
+  private readonly causticsStrength: any
+  private readonly causticsScale: any
+  private readonly causticsSpeed: any
+  private readonly intersectionStrength: any
+  private readonly intersectionColor: any
+  private readonly intersectionWidth: any
+  private readonly shorelineStrength: any
+  private readonly shorelineWidth: any
+  private readonly shorelineSpeed: any
+  private readonly specularStrength: any
+  private readonly specularSize: any
+  private readonly specularHardness: any
+  private readonly time: any
+  private readonly stormIntensity = uniform(0)
+  private readonly motionIntensity = uniform(1)
+  private readonly motionTime = uniform(0)
+  private readonly poolSize = uniform(new Vector2(12, 6))
+  private mode: 'base' | 'calm' | 'storm' = 'base'
+  private boundary: Array<[number, number]> = []
+  private holes: Array<Array<[number, number]>> = []
+  private origin: [number, number] = [0, 0]
+  private readonly sunDirection: any
+  private readonly absorption: any
+  private initialized = false
+  private accumulator = 0
+  private rainAccumulator = 0
+  private breezeAccumulator = 0
+  private drops: Array<[number, number, number, number]> = []
+  private settings: WaterSettings
+  private readonly atmosphere: SceneAtmosphereSource | null
+
+  get waterMode() {
+    return this.mode
+  }
+
+  constructor(
+    settingsInput: Partial<WaterSettings>,
+    resolution = 256,
+    atmosphere?: SceneAtmosphereSource | null,
+  ) {
+    this.settings = resolveWaterSettings(settingsInput)
+    this.atmosphere = atmosphere ?? null
+    this.mode = settingsInput.waterMode ?? 'base'
+    this.stormIntensity.value = this.mode === 'storm' ? 1 : 0
+    this.motionIntensity.value = this.mode === 'calm'
+      ? CALM_MOTION_INTENSITY
+      : this.mode === 'storm' ? 1.6 : 1
+    this.resolution = resolution
+    this.read = makeTarget(resolution)
+    this.write = makeTarget(resolution)
+    this.inputNode = texture(this.read.texture) as TextureNodeLike
+    this.stateNode = texture(this.read.texture) as TextureNodeLike
+
+    const selected = WATER_PRESET_TEXTURES[this.settings.waterPreset]
+    this.normalTextureNode = texture(loadWaterTexture(selected.normal, 'pool')) as TextureNodeLike
+    this.causticTextureNode = texture(loadWaterTexture(selected.caustic, 'pool')) as TextureNodeLike
+    this.distortionTextureNode = texture(loadWaterTexture(selected.distortion, 'pool')) as TextureNodeLike
+    this.shorelineTextureNode = texture(loadWaterTexture(selected.shoreline, 'pool')) as TextureNodeLike
+
+    const texel = vec2(1 / resolution, 1 / resolution)
+    const sampleUv = uv()
+    const current = this.inputNode.sample(sampleUv)
+    const left = this.inputNode.sample(sampleUv.sub(vec2(texel.x, 0)))
+    const right = this.inputNode.sample(sampleUv.add(vec2(texel.x, 0)))
+    const down = this.inputNode.sample(sampleUv.sub(vec2(0, texel.y)))
+    const up = this.inputNode.sample(sampleUv.add(vec2(0, texel.y)))
+    this.damping = uniform(this.computeDamping())
+    this.settleDamping = uniform(1)
+    this.simulationDetail = uniform(this.settings.surfaceDetail)
+
+    const average = left.r.add(right.r).add(down.r).add(up.r).mul(0.25)
+    const velocity = current.g
+      .add(average.sub(current.r).mul(2))
+      .mul(this.damping)
+      .mul(this.settleDamping)
+    const height = current.r.add(velocity).mul(this.settleDamping).clamp(-0.35, 0.35)
+    const gradientX = right.r.sub(left.r).mul(this.simulationDetail)
+    const gradientZ = up.r.sub(down.r).mul(this.simulationDetail)
+    this.updateMaterial = new NodeMaterial()
+    this.updateMaterial.fragmentNode = vec4(height as any, velocity as any, gradientX as any, gradientZ as any)
+    this.updateMaterial.depthTest = false
+    this.updateMaterial.depthWrite = false
+
+    this.dropCenter = uniform(new Vector2(0.5, 0.5))
+    this.dropRadius = uniform(0.03)
+    this.dropStrength = uniform(0.01)
+    const distance = sampleUv.sub(this.dropCenter).mul(this.poolSize).length().div(this.poolSize.y)
+    const influence = smoothstep(this.dropRadius, float(0), distance)
+    const shaped = float(0.5).sub(influence.mul(Math.PI).cos().mul(0.5))
+    this.dropMaterial = new NodeMaterial()
+    this.dropMaterial.fragmentNode = vec4(
+      current.r.add(shaped.mul(this.dropStrength)) as any,
+      current.g as any,
+      current.b as any,
+      current.a as any,
+    )
+    this.dropMaterial.depthTest = false
+    this.dropMaterial.depthWrite = false
+
+    this.clearMaterial = new NodeMaterial()
+    this.clearMaterial.fragmentNode = vec4(0, 0, 0, 0)
+    this.clearMaterial.depthTest = false
+    this.clearMaterial.depthWrite = false
+    this.quad = new QuadMesh(this.updateMaterial)
+
+    this.time = uniform(0)
+    this.shallowColor = uniform(new Color(this.settings.shallowWaterColor))
+    this.deepColor = uniform(new Color(this.settings.deepWaterColor))
+    this.normalScale = uniform(this.settings.normalScale)
+    this.normalStrength = uniform(this.settings.normalStrength)
+    this.normalSpeed = uniform(this.settings.normalSpeed)
+    this.reflectionStrength = uniform(this.settings.reflectionStrength)
+    this.reflectionFresnel = uniform(this.settings.reflectionFresnel)
+    this.reflectionDistortion = uniform(this.settings.reflectionDistortion)
+    this.refractionStrength = uniform(this.settings.refractionStrength)
+    this.causticsStrength = uniform(this.settings.causticsStrength)
+    this.causticsScale = uniform(this.settings.causticsScale)
+    this.causticsSpeed = uniform(this.settings.causticsSpeed)
+    this.intersectionStrength = uniform(this.settings.intersectionStrength)
+    this.intersectionColor = uniform(new Color(this.settings.intersectionColor))
+    this.intersectionWidth = uniform(this.settings.intersectionWidth)
+    this.shorelineStrength = uniform(this.settings.shorelineStrength)
+    this.shorelineWidth = uniform(this.settings.shorelineWidth)
+    this.shorelineSpeed = uniform(this.settings.shorelineSpeed)
+    this.specularStrength = uniform(this.settings.specularStrength)
+    this.specularSize = uniform(this.settings.specularSize)
+    this.specularHardness = uniform(this.settings.specularHardness)
+    this.absorption = uniform(-0.62 / this.settings.clarity)
+    this.sunDirection = uniform(new Vector3())
+    this.updateSunDirection()
+    this.material = this.createWaterMaterial()
+  }
+
+  private worldWaterUv() {
+    return positionWorld.xz.mul(vec2(0.1, -0.1))
+  }
+
+  private normalSample() {
+    const base = this.worldWaterUv()
+    const panA = this.motionTime.mul(WATER_MOTION_RATES.normalPrimary)
+    const panB = this.motionTime.mul(WATER_MOTION_RATES.normalSecondary)
+    const uvA = base.mul(this.normalScale.mul(0.5)).add(vec2(panA))
+    const uvB = base.mul(this.normalScale).add(vec2(panB))
+    return mix(
+      this.normalTextureNode.sample(uvA).rgb,
+      this.normalTextureNode.sample(uvB).rgb,
+      0.5,
+    ).mul(2).sub(1)
+  }
+
+  causticsAt(coordinate: any) {
+    const base = coordinate.mul(this.causticsScale)
+    const motion = this.time.mul(this.causticsSpeed).mul(WATER_MOTION_RATES.caustics)
+    const noise = this.distortionTextureNode.sample(base.add(vec2(
+      motion.negate(),
+      motion.mul(WATER_MOTION_RATES.causticsPrimaryY),
+    ))).r
+      .mul(2).sub(1).mul(0.035)
+    const uvA = base.add(vec2(
+      motion,
+      motion.mul(WATER_MOTION_RATES.causticsPrimaryY),
+    )).add(vec2(noise))
+    const uvB = base.add(vec2(
+      motion.mul(WATER_MOTION_RATES.causticsSecondaryX),
+      motion.mul(WATER_MOTION_RATES.causticsSecondaryY),
+    )).sub(vec2(noise))
+    const dual = this.causticTextureNode.sample(uvA).min(this.causticTextureNode.sample(uvB))
+    const directLight = this.atmosphere
+      ? reference('sunIntensity', 'float', this.atmosphere).mul(0.4).clamp(0, 1.25)
+      : float(1)
+    return dual.r.mul(this.causticsStrength).mul(directLight)
+  }
+
+  private environmentIllumination(): any {
+    if (!this.atmosphere) return float(1)
+    return (reference('ambientIntensity', 'float', this.atmosphere) as any)
+      .add(reference('hemisphereIntensity', 'float', this.atmosphere) as any)
+      .add(0.25)
+      .clamp(0.25, 1.2)
+  }
+
+  private computeDamping() {
+    return 0.9993 - this.settings.viscosity * 0.006
+  }
+
+  private updateSunDirection() {
+    const elevation = (this.settings.sunElevation * Math.PI) / 180
+    const azimuth = (this.settings.sunAzimuth * Math.PI) / 180
+    this.sunDirection.value.set(
+      Math.cos(elevation) * Math.cos(azimuth),
+      Math.sin(elevation),
+      Math.cos(elevation) * Math.sin(azimuth),
+    ).normalize()
+  }
+
+  private createWaterMaterial() {
+    const material = new MeshBasicNodeMaterial({
+      // Keep a real water colour as the base material fallback. Pascal's
+      // WebGPU node pipeline can reject an advanced viewport/depth node on
+      // some render paths; the previous implicit white default then made the
+      // excavated opening look as if the ground plane still covered it.
+      color: this.settings.waterColor,
+      opacity: 0.82,
+      transparent: true,
+      depthWrite: false,
+      side: FrontSide,
+    })
+    const state = this.stateNode.sample(uv())
+    const local = uv().mul(this.poolSize)
+    const phase = local.x.mul(2.1).add(local.y.mul(1.3)).sub(this.time.mul(3.4))
+    const phase2 = local.x.mul(-1.2).add(local.y.mul(2.8)).sub(this.time.mul(4.1))
+    const edge = uv().x.min(uv().y).min(uv().x.oneMinus()).min(uv().y.oneMinus())
+    const edgeFade = smoothstep(0, 0.08, edge)
+    const windHeight = phase.sin().mul(0.035).add(phase2.sin().mul(0.018))
+      .mul(this.stormIntensity).mul(edgeFade)
+    const displacement = float(WATER_MOTION_RATES.displacement)
+    material.positionNode = positionLocal.add(vec3(0,
+      state.r.mul(displacement).add(windHeight) as any, 0))
+
+    const mapped = this.normalSample()
+    const surfaceNormal = normalize(vec3(
+      mapped.x.mul(this.normalStrength).mul(this.motionIntensity).sub(state.b.mul(this.simulationDetail)).add(phase.cos().mul(this.stormIntensity).mul(0.18)) as any,
+      1,
+      mapped.y.mul(this.normalStrength).mul(this.motionIntensity).sub(state.a.mul(this.simulationDetail)).add(phase2.cos().mul(this.stormIntensity).mul(0.15)) as any,
+    ))
+    const eye = normalize(cameraPosition.sub(positionWorld))
+    const facing = max(dot(surfaceNormal, eye), 0)
+
+    const sceneEye = perspectiveDepthToViewZ(
+      viewportDepth.sample(screenUV),
+      cameraNear,
+      cameraFar,
+    ).negate()
+    const fragmentEye = positionView.z.negate()
+    const depthDelta = sceneEye.sub(fragmentEye).max(0)
+    const shallowMask = exp(depthDelta.negate().div(0.3)).clamp(0, 1)
+    // `shallowMask` is high when the floor is close to the surface. The old
+    // expression faded alpha in exactly that case, so tanning shelves and
+    // pool edges appeared to have no water. Fade only the zero-thickness
+    // pixels at the silhouette and keep a small floor-independent baseline
+    // for renderers whose depth copy is unavailable.
+    const shoreFade = smoothstep(0.005, 0.18, depthDelta).mul(0.78).add(0.22)
+
+    const refractionOffset = surfaceNormal.xz
+      .mul(this.refractionStrength)
+      .mul(this.reflectionDistortion.mul(0.025))
+    const offsetUv = screenUV.add(refractionOffset).clamp(0, 1)
+    const offsetDepth = perspectiveDepthToViewZ(
+      viewportDepth.sample(offsetUv),
+      cameraNear,
+      cameraFar,
+    ).negate()
+    const keepOffset = step(fragmentEye.sub(offsetDepth), float(0))
+    const refractedUv = screenUV.add(refractionOffset.mul(keepOffset)).clamp(0, 1)
+    const usesSceneRefraction = this.settings.waterQuality !== 'low'
+    const sceneColor = usesSceneRefraction
+      ? viewportSharedTexture(refractedUv).rgb
+      : vec3(0)
+
+    const baseColor = mix(this.deepColor, this.shallowColor, shallowMask)
+    const attenuation = exp(this.absorption.mul(depthDelta.min(4)))
+    const absorbedBase = mix(color('#064a61'), baseColor, attenuation)
+    const environmentIllumination = this.environmentIllumination()
+    const underwaterBounce: any = this.atmosphere
+      ? mix(uniform(this.atmosphere.groundColor), uniform(this.atmosphere.skyColor), 0.35)
+      : color('#000000')
+    const absorbed = absorbedBase
+      .mul(environmentIllumination)
+      .add(underwaterBounce.mul(this.atmosphere ? 0.08 : 0))
+    // Caustics belong on the submerged liner (see buildLinerMaterial), where
+    // refraction naturally reveals them through the water. Adding the same
+    // animated ridges here projected them onto the top plane as bright moving
+    // streaks that read as rain.
+    const refracted = usesSceneRefraction
+      ? mix(absorbed, sceneColor, this.refractionStrength)
+      : absorbed
+
+    const shorelinePhase = shallowMask.oneMinus().mul(8)
+      .sub(this.time.mul(this.shorelineSpeed).mul(0.35))
+    const shorelineTexture = this.shorelineTextureNode
+      .sample(this.worldWaterUv().mul(4).add(vec2(this.time.mul(0.01))))
+      .r
+    const shorelineBand = smoothstep(
+      float(1).sub(this.shorelineWidth),
+      float(1),
+      shorelinePhase.sin().mul(0.5).add(0.5).mul(shorelineTexture),
+    ).mul(shallowMask).mul(this.shorelineStrength)
+    const intersectionBand = smoothstep(
+      float(0.15),
+      this.intersectionWidth.min(1.95).mul(0.45).add(0.15),
+      shallowMask,
+    ).mul(smoothstep(0.82, 1, shallowMask).oneMinus())
+      .mul(this.intersectionStrength)
+
+    // A narrow depth-derived occlusion band anchors the transparent plane to
+    // walls, steps and shelves. It is deliberately separate from bright foam:
+    // contact should remain readable in calm water and dark environments.
+    const contactWidth = this.intersectionWidth.mul(0.16).add(0.025)
+    const contactOcclusion = smoothstep(0.008, contactWidth, depthDelta).oneMinus()
+      .mul(this.intersectionStrength.mul(0.42))
+
+    const reflectedDirection = reflect(eye.negate(), surfaceNormal)
+    const sky = this.atmosphere
+      ? this.atmosphere.reflectionRadiance(reflectedDirection)
+      : mix(color('#d8eef9'), color('#1260a6'), smoothstep(-0.1, 0.8, reflectedDirection.y))
+    // Distort Pascal's opaque scene copy with the animated normal field. This
+    // gives the water a moving screen-space reflection without a nested
+    // reflector render, which is incompatible with the host's multisampled
+    // WebGPU depth target.
+    const reflectionOffset = surfaceNormal.xz
+      .mul(this.reflectionDistortion.mul(0.035))
+    const reflectedUv = screenUV.add(vec2(
+      reflectionOffset.x.negate(),
+      reflectionOffset.y,
+    )).clamp(0, 1)
+    const usesLocalReflections = this.settings.waterQuality === 'high'
+      || this.settings.waterQuality === 'ultra'
+    const screenEdge = screenUV.x.min(screenUV.y)
+      .min(screenUV.x.oneMinus()).min(screenUV.y.oneMinus())
+    const reflectionConfidence = smoothstep(0.015, 0.12, screenEdge)
+      .mul(smoothstep(0.02, 0.3, facing.oneMinus()))
+    const nearbyScene = usesLocalReflections
+      ? viewportSharedTexture(reflectedUv).rgb
+      : sky
+    const localReflectionWeight = this.settings.waterQuality === 'ultra' ? 0.52 : 0.38
+    const reflectedScene = mix(sky, nearbyScene, reflectionConfidence.mul(localReflectionWeight))
+
+    const fresnel = pow(float(1).sub(facing).max(1e-5), this.reflectionFresnel)
+      .mul(this.reflectionStrength)
+
+    const activeSunDirection = this.atmosphere
+      ? uniform(this.atmosphere.sunDirection)
+      : this.sunDirection
+    const phong = pow(max(dot(reflectedDirection, activeSunDirection), 0), 96)
+    const hardSpecular = smoothstep(
+      float(1).sub(this.specularSize),
+      float(1.15).sub(this.specularSize),
+      phong,
+    )
+    const directLightColor: any = this.atmosphere
+      ? uniform(this.atmosphere.sunColor)
+        .mul(reference('sunIntensity', 'float', this.atmosphere).mul(0.4).clamp(0, 2))
+      : color('#fff8e7')
+    let specular: any = mix(phong, hardSpecular, this.specularHardness)
+      .mul(this.specularStrength)
+      .mul(directLightColor)
+    if (this.atmosphere) {
+      const moonPhong = pow(max(dot(reflectedDirection, uniform(this.atmosphere.moonDirection)), 0), 128)
+      specular = specular.add(
+        moonPhong
+          .mul(this.specularStrength)
+          .mul(uniform(this.atmosphere.moonColor))
+          .mul(reference('moonIntensity', 'float', this.atmosphere).mul(4).clamp(0, 1)),
+      )
+    }
+
+    const secondaryLight = environmentIllumination.clamp(0.3, 1.1)
+    const contactTint: any = this.atmosphere
+      ? uniform(this.atmosphere.groundColor).mul(0.22)
+      : color('#073b4c')
+    const layered: any = mix(refracted as any, contactTint as any, contactOcclusion as any)
+    const litLayered = layered
+      .add(intersectionBand.mul(this.intersectionColor).mul(secondaryLight))
+      .add(shorelineBand.mul(color('#f2ffff')).mul(secondaryLight))
+    const foamNoise = this.distortionTextureNode.sample(this.worldWaterUv().mul(18).add(vec2(this.time.mul(0.03)))).r
+    const foam = smoothstep(0.85, 1, phase.sin()).mul(this.stormIntensity).mul(0.22)
+      .mul(smoothstep(0.25, 0.7, foamNoise)).clamp(0, 0.8)
+    const foamColor: any = this.atmosphere
+      ? mix(color('#e9ffff'), uniform(this.atmosphere.skyColor), 0.18).mul(secondaryLight)
+      : color('#e9ffff')
+    material.colorNode = mix(
+      mix(litLayered as any, reflectedScene as any, fresnel as any).add(specular as any),
+      foamColor,
+      foam as any,
+    ) as any
+    material.opacityNode = shoreFade
+    return material
+  }
+
+  setSettings(settingsInput: Partial<WaterSettings>) {
+    if (settingsInput.waterMode !== undefined && settingsInput.waterMode !== this.mode) {
+      this.mode = settingsInput.waterMode
+      this.settleDamping.value = this.mode === 'calm' ? CALM_SETTLE_DAMPING : 1
+      if (this.mode === 'calm') this.drops.length = 0
+    }
+    const previousPreset = this.settings.waterPreset
+    this.settings = resolveWaterSettings(settingsInput)
+    this.damping.value = this.computeDamping()
+    this.simulationDetail.value = this.settings.surfaceDetail
+    this.shallowColor.value.set(this.settings.shallowWaterColor)
+    this.deepColor.value.set(this.settings.deepWaterColor)
+    this.normalScale.value = this.settings.normalScale
+    this.normalStrength.value = this.settings.normalStrength
+    this.normalSpeed.value = this.settings.normalSpeed
+    this.reflectionStrength.value = this.settings.reflectionStrength
+    this.reflectionFresnel.value = this.settings.reflectionFresnel
+    this.reflectionDistortion.value = this.settings.reflectionDistortion
+    this.refractionStrength.value = this.settings.refractionStrength
+    this.causticsStrength.value = this.settings.causticsStrength
+    this.causticsScale.value = this.settings.causticsScale
+    this.causticsSpeed.value = this.settings.causticsSpeed
+    this.intersectionStrength.value = this.settings.intersectionStrength
+    this.intersectionColor.value.set(this.settings.intersectionColor)
+    this.intersectionWidth.value = this.settings.intersectionWidth
+    this.shorelineStrength.value = this.settings.shorelineStrength
+    this.shorelineWidth.value = this.settings.shorelineWidth
+    this.shorelineSpeed.value = this.settings.shorelineSpeed
+    this.specularStrength.value = this.settings.specularStrength
+    this.specularSize.value = this.settings.specularSize
+    this.specularHardness.value = this.settings.specularHardness
+    this.absorption.value = -0.62 / this.settings.clarity
+    this.material.color.set(this.settings.waterColor)
+    this.updateSunDirection()
+    if (previousPreset !== this.settings.waterPreset) {
+      const selected = WATER_PRESET_TEXTURES[this.settings.waterPreset]
+      this.normalTextureNode.value = loadWaterTexture(selected.normal, 'pool')
+      this.causticTextureNode.value = loadWaterTexture(selected.caustic, 'pool')
+      this.distortionTextureNode.value = loadWaterTexture(selected.distortion, 'pool')
+      this.shorelineTextureNode.value = loadWaterTexture(selected.shoreline, 'pool')
+    }
+  }
+
+  addDrop(u: number, v: number, radius?: number, strength = 0.055) {
+    if (this.drops.length >= 16 || !this.contains(u, v)) return
+    const normalizedRadius = (radius ?? this.settings.rippleSize / 1000) * 1.5
+    this.drops.push([
+      Math.max(0, Math.min(1, u)),
+      Math.max(0, Math.min(1, v)),
+      Math.max(0.004, normalizedRadius),
+      strength,
+    ])
+  }
+
+  calm(settings: Partial<WaterSettings>) {
+    this.setSettings(settings)
+    this.mode = 'calm'
+    this.drops.length = 0
+    // Settle large waves without flattening the surface into a static plane.
+    this.settleDamping.value = CALM_SETTLE_DAMPING
+  }
+
+  storm() {
+    this.mode = 'storm'
+    this.settleDamping.value = 1
+  }
+
+  setBoundary(points: Array<[number, number]>, holes: Array<Array<[number, number]>> = []) {
+    this.boundary = points
+    this.holes = holes
+    this.origin = [Math.min(...points.map(p => p[0])), Math.min(...points.map(p => p[1]))]
+    this.poolSize.value.set(
+      Math.max(0.001, Math.max(...points.map(p => p[0])) - this.origin[0]),
+      Math.max(0.001, Math.max(...points.map(p => p[1])) - this.origin[1]),
+    )
+  }
+
+  private contains(u: number, v: number) {
+    if (!this.boundary.length) return true
+    const x = this.origin[0] + u * this.poolSize.value.x
+    const y = this.origin[1] + v * this.poolSize.value.y
+    const inside = (polygon: Array<[number, number]>) => {
+      let result = false
+      for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const a = polygon[i]!, b = polygon[j]!
+        if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) result = !result
+      }
+      return result
+    }
+    return inside(this.boundary) && !this.holes.some(inside)
+  }
+
+  reset() {
+    this.mode = 'base'
+    this.stormIntensity.value = 0
+    this.motionIntensity.value = 1
+    this.accumulator = this.rainAccumulator = this.breezeAccumulator = 0
+    this.initialized = false
+    this.drops.length = 0
+    this.settleDamping.value = 1
+  }
+
+  private swap() {
+    ;[this.read, this.write] = [this.write, this.read]
+    this.inputNode.value = this.read.texture
+    this.stateNode.value = this.read.texture
+  }
+
+  private pass(renderer: WebGPURenderer, material: NodeMaterial) {
+    this.quad.material = material
+    renderer.setRenderTarget(this.write)
+    this.quad.render(renderer)
+    this.swap()
+  }
+
+  update(renderer: WebGPURenderer, delta: number) {
+    delta = Math.max(0, Math.min(Number.isFinite(delta) ? delta : 0, 0.05))
+    const previousTarget = renderer.getRenderTarget()
+    const previousAutoClear = renderer.autoClear
+    renderer.autoClear = true
+    try {
+      this.time.value += Math.min(delta, 0.05)
+      const blend = 1 - Math.exp(-delta * 2)
+      this.stormIntensity.value += ((this.mode === 'storm' ? 1 : 0) - this.stormIntensity.value) * blend
+      const targetMotion = this.mode === 'calm'
+        ? CALM_MOTION_INTENSITY
+        : this.mode === 'storm' ? 1.6 : 1
+      this.motionIntensity.value += (targetMotion - this.motionIntensity.value) * blend
+      this.motionTime.value += delta * this.settings.normalSpeed * this.motionIntensity.value
+      this.settleDamping.value = Math.min(1, this.settleDamping.value + Math.min(delta, 0.05) * 0.1)
+      if (!this.initialized) {
+        this.pass(renderer, this.clearMaterial)
+        this.pass(renderer, this.clearMaterial)
+        this.initialized = true
+      }
+
+      this.rainAccumulator += delta * (this.mode === 'calm' ? 0 : this.mode === 'storm' ? this.stormIntensity.value * 0.75 : this.settings.rain) * 48
+      while (this.rainAccumulator >= 1) {
+        this.rainAccumulator -= 1
+        this.addDrop(Math.random(), Math.random(), 0.01 + Math.random() * 0.012, 0.025 + Math.random() * 0.04)
+      }
+      const breeze = this.mode === 'calm'
+        ? CALM_BREEZE
+        : this.mode === 'base' ? this.settings.breeze : 0
+      this.breezeAccumulator += delta * breeze * 18
+      while (this.breezeAccumulator >= 1) {
+        this.breezeAccumulator -= 1
+        this.addDrop(Math.random(), Math.random(), 0.05 + Math.random() * 0.08, (Math.random() - 0.5) * 0.012)
+      }
+
+      for (const [u, v, radius, strength] of this.drops.splice(0)) {
+        this.dropCenter.value.set(u, v)
+        this.dropRadius.value = radius
+        this.dropStrength.value = strength
+        this.pass(renderer, this.dropMaterial)
+      }
+
+      this.accumulator += Math.min(delta, 0.05)
+      let steps = 0
+      while (this.accumulator >= 1 / WATER_SIMULATION_HZ && steps < 1) {
+        this.pass(renderer, this.updateMaterial)
+        this.pass(renderer, this.updateMaterial)
+        this.accumulator -= 1 / WATER_SIMULATION_HZ
+        steps += 1
+      }
+    } finally {
+      renderer.setRenderTarget(previousTarget)
+      renderer.autoClear = previousAutoClear
+    }
+  }
+
+  dispose() {
+    this.read.dispose()
+    this.write.dispose()
+    this.updateMaterial.dispose()
+    this.dropMaterial.dispose()
+    this.clearMaterial.dispose()
+    this.material.dispose()
+  }
+}
