@@ -1,5 +1,5 @@
 'use client'
-import { type AnyNode, type AnyNodeId, useLiveNodeOverrides, useScene } from '@pascal-app/core'
+import { acquireSceneHistoryPause, type AnyNode, type AnyNodeId, useLiveNodeOverrides, useScene } from '@pascal-app/core'
 import { EDITOR_LAYER } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { type ThreeEvent, useThree } from '@react-three/fiber'
@@ -64,7 +64,8 @@ function ExtensionArrow({ node, terminal }: { node: PathwayNode; terminal: PathT
     const pointer = new Vector2()
     let latest: Pick<PathwayNode, 'vertices' | 'edges'> | null = null
     useViewer.getState().setInputDragging(true)
-    useScene.temporal.getState().pause()
+    const releaseHistory = useScene.temporal.getState().isTracking
+      ? acquireSceneHistoryPause(useScene) : () => {}
     document.body.style.cursor = 'ew-resize'
     const clearPreview = () => {
       useLiveNodeOverrides.getState().clear(id)
@@ -96,14 +97,14 @@ function ExtensionArrow({ node, terminal }: { node: PathwayNode; terminal: PathT
       useScene.getState().markDirty(id)
     }
     const onUp = () => {
-      useScene.temporal.getState().resume()
+      releaseHistory()
       if (latest) useScene.getState().updateNode(id, latest as Partial<AnyNode>)
       clearPreview()
       swallowNextClick()
       removeListeners()
     }
     const onCancel = () => {
-      useScene.temporal.getState().resume()
+      releaseHistory()
       clearPreview()
       removeListeners()
     }

@@ -20,6 +20,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { type Group, Vector3 } from 'three'
 import { PergolaNode, PERGOLA_KIND } from '../domain/schema'
+import { findPergolaSupportSurface, pergolaPointOnSupport, pergolaSupportPose, pergolaSupportSurfaceTop } from '../domain/support-surface'
 import PergolaPreview from '../rendering/preview'
 
 type PlacementEvent = GridEvent | NodeEvent<AnyNode>
@@ -62,16 +63,40 @@ export default function PergolaTool() {
         n as unknown as AnyNode,
         useScene.getState().nodes,
       )
-      return PergolaNode.parse({ ...n, ...patch })
+      const preferredId = 'node' in event ? event.node.id : undefined
+      const support = findPergolaSupportSurface(n, useScene.getState().nodes, preferredId, point.y)
+      const local = support ? pergolaPointOnSupport(support, [x, z]) : [x, z]
+      return PergolaNode.parse({
+        ...n,
+        ...patch,
+        parentId: support?.id ?? activeLevelId,
+        supportSlabId: support ? undefined : patch.supportSlabId,
+        supportSurfaceId: support?.id ?? null,
+        position: support
+          ? [local[0], pergolaSupportSurfaceTop(support, [x, z]) - (support.position?.[1] ?? 0), local[1]]
+          : [x, 0, z],
+        rotation: [0, yaw - (support ? pergolaSupportPose(support).yaw : 0), 0],
+      })
     }
     const move = (event: PlacementEvent) => {
       last = event
       const node = resolve(event)
-      const position = getFloorStackPreviewPosition({
-        node: node as unknown as AnyNode,
-        position: node.position,
-        levelId: activeLevelId,
-      })
+      const position = node.supportSurfaceId
+        ? (() => {
+            const host = useScene.getState().nodes[node.supportSurfaceId! as AnyNodeId] as { position?: [number, number, number]; rotation?: [number, number, number] } | undefined
+            const angle = host?.rotation?.[1] ?? 0
+            const c = Math.cos(angle), s = Math.sin(angle)
+            return [
+              (host?.position?.[0] ?? 0) + c * node.position[0] + s * node.position[2],
+              (host?.position?.[1] ?? 0) + node.position[1],
+              (host?.position?.[2] ?? 0) - s * node.position[0] + c * node.position[2],
+            ] as [number, number, number]
+          })()
+        : getFloorStackPreviewPosition({
+            node: node as unknown as AnyNode,
+            position: node.position,
+            levelId: activeLevelId,
+          })
       cursor.current?.position.set(...position)
       cursor.current?.rotation.set(0, yaw, 0)
       setVisible(true)
@@ -85,14 +110,14 @@ export default function PergolaTool() {
         event.nativeEvent.button !== 0
       )
         return
-      const node = resolve(last ?? event)
+      const node = resolve(event)
       // One gesture produces one persistent node; the ghost never enters history.
       const { id: _previewId, ...fields } = node
       const placed = PergolaNode.parse(fields)
       committed = true
       useScene
         .getState()
-        .createNode(placed as unknown as AnyNode, activeLevelId as AnyNodeId)
+        .createNode(placed as unknown as AnyNode, placed.parentId as AnyNodeId)
       selectNode(placed.id as AnyNodeId)
       event.nativeEvent?.stopPropagation()
       finish()
@@ -114,11 +139,13 @@ export default function PergolaTool() {
       }
     }
     emitter.on('grid:move', move)
+    emitter.on('node:move', move)
     emitter.on('grid:click', click)
     emitter.on('node:click', click)
     window.addEventListener('keydown', key)
     return () => {
       emitter.off('grid:move', move)
+      emitter.off('node:move', move)
       emitter.off('grid:click', click)
       emitter.off('node:click', click)
       window.removeEventListener('keydown', key)

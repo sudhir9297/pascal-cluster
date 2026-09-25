@@ -1,0 +1,150 @@
+'use client'
+import { type AnyNode, type AnyNodeId, useScene } from '@pascal-app/core'
+import { useEditor } from '@pascal-app/editor'
+import { useViewer } from '@pascal-app/viewer'
+import type { CSSProperties } from 'react'
+import { SurfaceDrawingPanel } from '../../shared/drawing-panel'
+import { surfaceOutline } from '../../shared/outline'
+import { DECK_MATERIAL_COLORS } from '../domain/settings'
+import { DECK_KIND, DeckNode } from '../domain/schema'
+
+const input: CSSProperties = { width: '100%', boxSizing: 'border-box', background: 'var(--background)',
+  color: 'inherit', border: '1px solid var(--border)', borderRadius: 6, padding: 7, fontSize: 12 }
+const label: CSSProperties = { display: 'block', fontSize: 12, marginTop: 10 }
+
+export function DeckPanel() {
+  const placing = useEditor((state) => state.tool === DECK_KIND)
+  const defaults = useEditor((state) => state.toolDefaults[DECK_KIND])
+  const selectedId = useViewer((state) => state.selection.selectedIds.length === 1
+    ? state.selection.selectedIds[0] : undefined)
+  const raw = useScene((state) => selectedId ? state.nodes[selectedId as AnyNodeId] : undefined)
+  const selected = !placing && (raw?.type as string | undefined) === DECK_KIND ? DeckNode.parse(raw) : null
+  const node = selected ?? DeckNode.parse(defaults ?? {})
+  const outline = surfaceOutline(node)
+  const update = (patch: Partial<DeckNode>) => {
+    if (selected) useScene.getState().updateNode(selected.id as AnyNodeId, patch as Partial<AnyNode>)
+    else useEditor.getState().setToolDefaults(DECK_KIND, { ...useEditor.getState().toolDefaults[DECK_KIND], ...patch })
+  }
+  const choose = <K extends 'deckType' | 'material' | 'boardDirection' | 'borderStyle' | 'skirtStyle' | 'railingStyle' | 'railingEdgeMode'>(
+    key: K, title: string, options: readonly { value: DeckNode[K]; label: string }[]) =>
+    <label style={label}>{title}
+      <select value={node[key]} style={{ ...input, marginTop: 4 }} onChange={(event) => {
+        const value = event.currentTarget.value as DeckNode[K]
+        if (key === 'material') {
+          const before = DECK_MATERIAL_COLORS[node.material]
+          const after = DECK_MATERIAL_COLORS[value as DeckNode['material']]
+          update({ material: value as DeckNode['material'],
+            boardColor: node.boardColor === before ? after : node.boardColor })
+        } else if (key === 'deckType') {
+          const raised = value === 'raised'
+          update({ deckType: value as DeckNode['deckType'],
+            thickness: raised ? Math.max(node.thickness, 1.2) : Math.min(node.thickness, 0.45),
+            supportPosts: raised })
+        } else if (key === 'railingEdgeMode' && value === 'selected') {
+          update({ railingEdgeMode: 'selected',
+            railingEdges: node.railingEdges.length ? node.railingEdges : outline.map((_, index) => index) })
+        } else update({ [key]: value })
+      }}>
+        {options.map((option) => <option key={String(option.value)} value={String(option.value)}>{option.label}</option>)}
+      </select>
+    </label>
+  const number = (key: 'boardWidth' | 'boardGap' | 'boardThickness' | 'frameDepth' |
+    'supportSpacing' | 'postSize' | 'railingHeight' | 'railingPostSpacing',
+    title: string, min: number, max: number, step: number) =>
+    <label style={label}>{title}
+      <input type="number" style={{ ...input, marginTop: 4 }} value={node[key]}
+        min={min} max={max} step={step} onChange={(event) => {
+          const value = event.currentTarget.valueAsNumber
+          if (Number.isFinite(value) && value >= min && value <= max) update({ [key]: value })
+        }} />
+    </label>
+  const color = (key: 'boardColor' | 'borderColor' | 'fasciaColor' | 'frameColor' | 'postColor' |
+    'skirtColor' | 'railingColor', title: string) =>
+    <label style={label}>{title}
+      <input type="color" style={{ ...input, marginTop: 4, padding: 2, height: 34 }} value={node[key]}
+        onChange={(event) => update({ [key]: event.currentTarget.value })} />
+    </label>
+  const toggle = (key: 'fascia' | 'supportPosts', title: string) =>
+    <label style={{ ...label, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <input type="checkbox" checked={node[key]} onChange={(event) => update({ [key]: event.currentTarget.checked })} />
+      {title}
+    </label>
+  return <>
+    <SurfaceDrawingPanel kind={DECK_KIND} />
+    <section aria-label="Deck design settings" style={{ marginTop: 20 }}>
+      <h3 style={{ fontSize: 14, margin: '0 0 5px' }}>Deck design</h3>
+      {choose('deckType', 'Deck type', [
+        { value: 'platform', label: 'Low platform' }, { value: 'raised', label: 'Raised deck' },
+      ])}
+      {choose('material', 'Board material', [
+        { value: 'pressure-treated', label: 'Pressure treated wood' },
+        { value: 'cedar', label: 'Cedar' }, { value: 'hardwood', label: 'Hardwood' },
+        { value: 'composite', label: 'Composite' }, { value: 'pvc', label: 'PVC' },
+      ])}
+      {choose('boardDirection', 'Board direction', [
+        { value: 'lengthwise', label: 'Along depth' }, { value: 'crosswise', label: 'Along width' },
+        { value: 'diagonal', label: 'Diagonal 45°' },
+      ])}
+      {number('boardWidth', 'Board width (m)', 0.09, 0.25, 0.005)}
+      {number('boardGap', 'Board gap (m)', 0.003, 0.025, 0.001)}
+      {number('boardThickness', 'Board thickness (m)', 0.018, 0.06, 0.002)}
+      {color('boardColor', 'Board color')}
+
+      <h4 style={{ fontSize: 12, margin: '20px 0 0' }}>Edges</h4>
+      {choose('borderStyle', 'Picture frame border', [
+        { value: 'none', label: 'None' }, { value: 'single', label: 'One board' },
+        { value: 'double', label: 'Two boards' },
+      ])}
+      {node.borderStyle !== 'none' && color('borderColor', 'Border color')}
+      {toggle('fascia', 'Show fascia on the rim')}
+      {node.fascia && color('fasciaColor', 'Fascia color')}
+      {choose('skirtStyle', 'Under-deck skirting', [
+        { value: 'none', label: 'Open' }, { value: 'solid', label: 'Solid' },
+        { value: 'slatted', label: 'Vertical slats' },
+      ])}
+      {node.skirtStyle !== 'none' && color('skirtColor', 'Skirting color')}
+
+      <h4 style={{ fontSize: 12, margin: '20px 0 0' }}>Frame and supports</h4>
+      {number('frameDepth', 'Frame depth (m)', 0.08, 0.4, 0.01)}
+      {color('frameColor', 'Frame color')}
+      {node.deckType === 'raised' && <>
+        {toggle('supportPosts', 'Show support posts')}
+        {node.supportPosts && <>
+          {number('supportSpacing', 'Post spacing (m)', 0.8, 4, 0.1)}
+          {number('postSize', 'Post width (m)', 0.07, 0.25, 0.01)}
+          {color('postColor', 'Post color')}
+        </>}
+      </>}
+
+      <h4 style={{ fontSize: 12, margin: '20px 0 0' }}>Railing</h4>
+      {choose('railingStyle', 'Style', [
+        { value: 'none', label: 'None' }, { value: 'wood', label: 'Wood balusters' },
+        { value: 'metal', label: 'Metal balusters' }, { value: 'cable', label: 'Cable' },
+        { value: 'glass', label: 'Glass panels' },
+      ])}
+      {node.railingStyle !== 'none' && <>
+        {number('railingHeight', 'Railing height (m)', 0.75, 1.3, 0.05)}
+        {number('railingPostSpacing', 'Railing post spacing (m)', 0.6, 2.5, 0.1)}
+        {color('railingColor', 'Railing color')}
+        {choose('railingEdgeMode', 'Railing edges', [
+          { value: 'all', label: 'Every edge' }, { value: 'selected', label: 'Choose edges' },
+        ])}
+        {node.railingEdgeMode === 'selected' && <div style={{ marginTop: 8, maxHeight: 220, overflowY: 'auto' }}>
+          {outline.map((a, index) => {
+            const b = outline[(index + 1) % outline.length]!
+            const length = Math.hypot(b[0] - a[0], b[1] - a[1]).toFixed(2)
+            return <label key={index} style={{ display: 'flex', gap: 8, fontSize: 11, marginTop: 4 }}>
+              <input type="checkbox" checked={node.railingEdges.includes(index)} onChange={(event) => {
+                const edges = new Set(node.railingEdges)
+                if (event.currentTarget.checked) edges.add(index)
+                else edges.delete(index)
+                update({ railingEdges: [...edges].sort((x, y) => x - y) })
+              }} />
+              Edge {index + 1} · {length} m
+            </label>
+          })}
+        </div>}
+      </>}
+    </section>
+  </>
+}

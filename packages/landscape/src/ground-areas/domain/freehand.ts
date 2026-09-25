@@ -61,7 +61,7 @@ function distanceToSegment(point: Point, start: Point, end: Point) {
   return Math.hypot(point[0] - start[0] - dx * t, point[1] - start[1] - dz * t)
 }
 
-function simplifyOpen(points: readonly Point[], tolerance: number): Point[] {
+export function simplifyOpen(points: readonly Point[], tolerance: number): Point[] {
   if (points.length <= 2) return points.map(([x, z]): Point => [x, z])
   let furthest = -1
   let maximum = tolerance
@@ -87,7 +87,7 @@ function ringSlice(points: readonly Point[], start: number, end: number): Point[
   }
 }
 
-function simplifyClosed(points: readonly Point[], tolerance: number): Point[] {
+export function simplifyClosed(points: readonly Point[], tolerance: number): Point[] {
   if (points.length <= 4) return [...points]
   let first = 0
   let second = 1

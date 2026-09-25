@@ -20,6 +20,8 @@ function inAreaSpace(point: readonly number[], source: Positioned, area: Positio
 }
 
 function blockerFootprint(node: SurfaceNode, area: GroundAreaNode): MultiPolygon {
+  // Access surfaces sit on top of the ground; only overlapping ground areas
+  // and editor slabs subtract from the grass footprint.
   if (node.visible === false) return []
   const localHeight = (node.position?.[1] ?? 0) - ((area as Positioned).position?.[1] ?? 0)
   let footprint: MultiPolygon = []
