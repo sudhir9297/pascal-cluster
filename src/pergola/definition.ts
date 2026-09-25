@@ -3,6 +3,8 @@ import { DEFAULT_ROOF_RISE, PergolaNode, PERGOLA_KIND } from './domain/schema'
 import { pergolaDimensions, pergolaPostPositions } from './domain/layout'
 import { pergolaParametrics } from './editor/parametrics'
 import { pergolaPaint } from './editor/paint'
+import { pergolaParentFrame } from './editor/parent-frame'
+import { pergolaFloorplanMoveTarget } from './editor/floorplan-move'
 import { buildPergolaFloorplan } from './rendering/floorplan'
 import { buildPergolaGeometry } from './rendering/geometry'
 
@@ -64,7 +66,7 @@ export const pergolaDefinition: NodeDefinition<typeof PergolaNode> = {
   capabilities: {
     selectable: { hitVolume: 'bbox' },
     paint: pergolaPaint,
-    movable: { axes: ['x', 'z'], gridSnap: true },
+    movable: { axes: ['x', 'z'], gridSnap: true, parentFrame: pergolaParentFrame },
     rotatable: {
       axes: ['y'],
       snapAngles: Array.from({ length: 8 }, (_, i) => (i * Math.PI) / 4),
@@ -74,6 +76,7 @@ export const pergolaDefinition: NodeDefinition<typeof PergolaNode> = {
     groupable: true,
     snappable: {},
     floorPlaced: {
+      applies: (raw) => !(raw as unknown as PergolaNode).supportSurfaceId,
       footprint: (raw) => {
         const n = raw as unknown as PergolaNode
         return { dimensions: pergolaDimensions(n), rotation: n.rotation }
@@ -82,7 +85,9 @@ export const pergolaDefinition: NodeDefinition<typeof PergolaNode> = {
     },
   },
   geometry: buildPergolaGeometry,
+  system: { module: () => import('./editor/support-surface-system') },
   floorplan: buildPergolaFloorplan,
+  floorplanMoveTarget: pergolaFloorplanMoveTarget,
   parametrics: pergolaParametrics,
   handles: (n) => [
     sizeHandle('x', 'width', 1.5, 10),

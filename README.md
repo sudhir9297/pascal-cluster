@@ -80,6 +80,11 @@ Pergola code lives in `src/pergola/`:
 Pathway and walkway research, design notes, and future feature code live in
 [`src/pathways/`](./src/pathways/README.md).
 
+Ground and access starter tools include patio, deck, concrete slab, steps,
+landing, edging, and retaining wall. Their status and next steps are tracked in
+[`src/ground-access/`](./src/ground-access/README.md). Paving and stepping stones
+remain in Pathways & walkways.
+
 ## Local development
 
 Install dependencies from the monorepo root and in the sibling editor checkout

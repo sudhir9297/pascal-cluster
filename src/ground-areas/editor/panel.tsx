@@ -1,9 +1,11 @@
 'use client'
+import { type AnyNode, type AnyNodeId, useScene } from '@pascal-app/core'
 import { useEditor } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useState, type CSSProperties } from 'react'
-import { GROUND_AREA_KIND, GROUND_SURFACES, type GroundSurface } from '../domain/schema'
-import { sendGroundAreaCommand, useGroundAreaStatus, type GroundAreaShape } from './session'
+import { ellipseBounds, ellipseOutline, isEllipseShape } from '../domain/ellipse'
+import { GROUND_AREA_KIND, GROUND_SURFACES, GroundAreaNode, type GroundSurface } from '../domain/schema'
+import { groundAreaDrawingMode } from './drawing-mode'
 
 const field: CSSProperties = {
   width: '100%',
@@ -15,11 +17,6 @@ const field: CSSProperties = {
   padding: '8px',
   fontSize: 12,
 }
-const help: CSSProperties = {
-  color: 'var(--muted-foreground)',
-  fontSize: 11,
-  lineHeight: 1.6,
-}
 const surfaces: { value: GroundSurface; label: string; color: string }[] = [
   { value: 'grass', label: 'Grass', color: '#718451' },
   { value: 'soil', label: 'Soil', color: '#5b5841' },
@@ -28,123 +25,79 @@ const surfaces: { value: GroundSurface; label: string; color: string }[] = [
   { value: 'sand', label: 'Sand', color: '#cbb78d' },
   { value: 'mud', label: 'Mud', color: '#614533' },
 ]
-const shapes: { value: GroundAreaShape; label: string; hint: string }[] = [
-  { value: 'rectangle', label: 'Rectangle', hint: 'Click two corners' },
-  { value: 'custom', label: 'Custom outline', hint: 'Click to add corners' },
-  { value: 'freehand', label: 'Freehand', hint: 'Drag a smooth loop' },
-]
-
-function ShapeDrawing({ shape }: { shape: GroundAreaShape }) {
-  const path = shape === 'rectangle'
-    ? 'M14 14H66V38H14Z'
-    : shape === 'custom'
-      ? 'M12 33 21 13 54 11 68 28 51 40 27 36Z'
-      : 'M12 30C13 17 25 11 37 15S64 9 69 26 53 42 39 37 17 42 12 30Z'
-  return (
-    <svg viewBox="0 0 80 52" aria-hidden="true" style={{ display: 'block', width: '100%', height: 60 }}>
-      <path d={path} fill="#718451" fillOpacity="0.22" stroke="#718451" strokeWidth="2.5" strokeLinejoin="round" />
-      {shape !== 'freehand' && (shape === 'rectangle'
-        ? [[14, 14], [66, 38]]
-        : [[12, 33], [21, 13], [54, 11], [68, 28], [51, 40], [27, 36]]
-      ).map(([x, y], index) => <circle key={index} cx={x} cy={y} r="2.5" fill="#fff" stroke="#718451" strokeWidth="1.5" />)}
-    </svg>
-  )
-}
-
 export function GroundAreaPanel() {
   const levelId = useViewer((state) => state.selection.levelId)
   const active = useEditor((state) => state.tool === GROUND_AREA_KIND)
   const defaults = useEditor((state) => state.toolDefaults[GROUND_AREA_KIND])
+  const selectedId = useViewer((state) => state.selection.selectedIds.length === 1
+    ? state.selection.selectedIds[0] : undefined)
+  const selectedRaw = useScene((state) => selectedId ? state.nodes[selectedId as AnyNodeId] : undefined)
+  const selected = !active && (selectedRaw?.type as string | undefined) === GROUND_AREA_KIND
+    ? GroundAreaNode.parse(selectedRaw) : null
+  const selectedBounds = selected && isEllipseShape(selected.shape) && selected.outline.length >= 3
+    ? ellipseBounds(selected.outline) : null
   const [surface, setSurface] = useState<GroundSurface>(() =>
     GROUND_SURFACES.find((value) => value === defaults?.surface) ?? 'grass',
   )
-  const [shape, setShape] = useState<GroundAreaShape>(() =>
-    defaults?.shape === 'custom' || defaults?.shape === 'freehand' ? defaults.shape
-      : defaults?.shape === 'polygon' ? 'custom' : 'rectangle',
-  )
-  const status = useGroundAreaStatus()
-  const displayedShape = active ? status.shape : shape
-
-  const start = (nextShape: GroundAreaShape) => {
+  const start = (nextSurface: GroundSurface) => {
     if (!levelId) return
-    setShape(nextShape)
+    setSurface(nextSurface)
     const editor = useEditor.getState()
-    editor.setToolDefaults(GROUND_AREA_KIND, { surface, shape: nextShape })
+    editor.setToolDefaults(GROUND_AREA_KIND, { surface: nextSurface, shape: groundAreaDrawingMode() })
     editor.setMode('build')
     editor.setTool(GROUND_AREA_KIND)
   }
-  const stop = () => sendGroundAreaCommand('cancel')
-
+  const resizeSelected = (key: 'width' | 'depth', value: number) => {
+    if (!selected || !selectedBounds || !Number.isFinite(value) || value < 0.2 || value > 500) return
+    const width = selected.shape === 'circle' ? value : key === 'width' ? value : selectedBounds.width
+    const depth = selected.shape === 'circle' ? value : key === 'depth' ? value : selectedBounds.depth
+    useScene.getState().updateNode(selected.id as AnyNodeId,
+      { outline: ellipseOutline(selectedBounds.center, width / 2, depth / 2) } as Partial<AnyNode>)
+  }
   return (
     <section aria-label="Ground areas">
-      <label style={{ display: 'block', fontSize: 12 }}>
-        Surface
-        <select
-          aria-label="Ground surface"
-          value={surface}
-          disabled={active}
-          onChange={(event) => setSurface(event.target.value as GroundSurface)}
-          style={{ ...field, marginTop: 5 }}
-        >
-          {GROUND_SURFACES.map((value) => (
-            <option key={value} value={value}>
-              {surfaces.find((item) => item.value === value)?.label ?? value}
-            </option>
-          ))}
-        </select>
-      </label>
-      <div style={{ marginTop: 16 }}>
-        <div style={{ fontSize: 12, marginBottom: 7, fontWeight: 600 }}>Draw a shape</div>
+      <div aria-label="Ground surface" role="group">
+        <div style={{ fontSize: 12, marginBottom: 7, fontWeight: 600 }}>Choose a surface to draw</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
-          {shapes.map((item) => (
+          {surfaces.map((item) => (
             <button
               type="button"
               key={item.value}
-              disabled={!levelId}
-              aria-pressed={displayedShape === item.value}
+              disabled={!levelId || active}
+              aria-pressed={surface === item.value}
               onClick={() => start(item.value)}
               style={{
                 ...field,
-                padding: 0,
-                overflow: 'hidden',
-                textAlign: 'left',
-                borderColor: displayedShape === item.value ? '#56745a' : 'var(--border)',
-                background: displayedShape === item.value ? 'var(--secondary)' : 'transparent',
-                cursor: levelId ? 'pointer' : 'default',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 9,
+                minHeight: 42,
+                borderColor: surface === item.value ? '#56745a' : 'var(--border)',
+                background: surface === item.value ? 'var(--secondary)' : 'transparent',
+                cursor: levelId && !active ? 'pointer' : 'default',
                 opacity: levelId ? 1 : 0.5,
+                textAlign: 'left',
               }}
             >
-              <ShapeDrawing shape={item.value} />
-              <span style={{ display: 'block', padding: '0 8px 9px' }}>
-                <span style={{ display: 'block', fontWeight: 600, fontSize: 12 }}>{item.label}</span>
-                <span style={help}>{item.hint}</span>
-              </span>
+              <span aria-hidden="true" style={{ width: 18, height: 18, flex: '0 0 18px', borderRadius: 4, background: item.color, border: '1px solid var(--border)' }} />
+              <span style={{ fontWeight: 600 }}>{item.label}</span>
             </button>
           ))}
         </div>
       </div>
-      {active && <button type="button" onClick={stop} style={{ ...field, marginTop: 14, fontWeight: 600 }}>Stop drawing</button>}
-      {active && (
-        <>
-          {displayedShape === 'custom' && (
-            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <button type="button" style={field} disabled={status.points === 0} onClick={() => sendGroundAreaCommand('back')}>
-                Undo point
-              </button>
-              <button type="button" style={field} disabled={status.points < 3} onClick={() => sendGroundAreaCommand('finish')}>
-                Finish area
-              </button>
-            </div>
-          )}
-          <p role="status" style={help}>
-            {status.message || (displayedShape === 'rectangle'
-              ? 'Click the first corner, then click the opposite corner to place the area.'
-              : displayedShape === 'custom'
-                ? 'Click each corner. Click the first point, double-click, or press Enter to finish. Backspace removes a point.'
-                : 'Press and drag a loop. Return to the start or release to finish a smooth area.')}
-          </p>
-        </>
-      )}
+      {selected?.shape === 'freehand' && <p style={{ fontSize: 12, marginTop: 16 }}>
+        Drag the larger dots to reshape. Drag purple handles to bend or smooth the curve. Click a midpoint dot to add a point.
+      </p>}
+      {selectedBounds && selected && <div style={{ marginTop: 16 }}>
+        <div style={{ fontSize: 12, fontWeight: 600 }}>Selected {selected.surface} size</div>
+        {(['width', 'depth'] as const).filter((key) => selected.shape !== 'circle' || key === 'width')
+          .map((key) => <label key={key} style={{ display: 'block', fontSize: 12, marginTop: 8 }}>
+            {selected.shape === 'circle' ? 'Diameter (m)' : key === 'width' ? 'Width (m)' : 'Depth (m)'}
+            <input type="number" min={0.2} max={500} step={0.1} style={{ ...field, marginTop: 4 }}
+              value={Number(selectedBounds[key].toFixed(2))}
+              onChange={(event) => resizeSelected(key, event.currentTarget.valueAsNumber)} />
+          </label>)}
+      </div>}
     </section>
   )
 }

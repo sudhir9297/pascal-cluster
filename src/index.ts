@@ -3,6 +3,12 @@ import type { AnyNodeDefinition, Plugin } from '@pascal-app/core'
 import { pergolaDefinition } from './pergola/definition'
 import { pathwayDefinition } from './pathways/definition'
 import { groundAreaDefinition } from './ground-areas/definition'
+import { patioDefinition } from './ground-access/patio/definition'
+import { deckDefinition } from './ground-access/deck/definition'
+import { concreteSlabDefinition } from './ground-access/concrete-slab/definition'
+import { landingDefinition } from './ground-access/landing/definition'
+import { edgingDefinition } from './ground-access/edging/definition'
+import { retainingWallDefinition } from './ground-access/retaining-wall/definition'
 
 type PluginHostPanel = {
   id: string
@@ -26,10 +32,25 @@ const LANDSCAPE_ICON =
 export const landscapePlugin: Plugin = {
   id: 'pascal:landscape',
   apiVersion: 1,
+  inspectorExtensions: [{
+    id: 'pascal:landscape:retaining-wall-finish',
+    pluginId: 'pascal:landscape',
+    kinds: ['wall'],
+    icon: { kind: 'iconify', name: 'lucide:brick-wall' },
+    title: 'Retaining wall',
+    component: () => import('./ground-access/retaining-wall/editor/finish-panel'),
+    primaryWhen: (node) => node.type === 'wall' && node.metadata?.landscapeRetainingWall === true,
+  }],
   nodes: [
     pergolaDefinition as unknown as AnyNodeDefinition,
     pathwayDefinition as unknown as AnyNodeDefinition,
     groundAreaDefinition as unknown as AnyNodeDefinition,
+    patioDefinition as unknown as AnyNodeDefinition,
+    deckDefinition as unknown as AnyNodeDefinition,
+    concreteSlabDefinition as unknown as AnyNodeDefinition,
+    landingDefinition as unknown as AnyNodeDefinition,
+    edgingDefinition as unknown as AnyNodeDefinition,
+    retainingWallDefinition as unknown as AnyNodeDefinition,
   ],
 }
 
@@ -52,3 +73,9 @@ export { PathwayNode } from './pathways/domain/schema'
 export { pathwayDefinition } from './pathways/definition'
 export { GroundAreaNode, GROUND_AREA_KIND } from './ground-areas/domain/schema'
 export { groundAreaDefinition } from './ground-areas/definition'
+export { PatioNode } from './ground-access/patio/domain/schema'
+export { DeckNode } from './ground-access/deck/domain/schema'
+export { ConcreteSlabNode } from './ground-access/concrete-slab/domain/schema'
+export { LandingNode } from './ground-access/landing/domain/schema'
+export { EdgingNode } from './ground-access/edging/domain/schema'
+export { RetainingWallNode } from './ground-access/retaining-wall/domain/schema'

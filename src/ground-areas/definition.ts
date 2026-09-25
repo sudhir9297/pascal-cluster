@@ -1,6 +1,8 @@
 import type { NodeDefinition } from '@pascal-app/core'
 import { GROUND_AREA_KIND, GroundAreaNode } from './domain/schema'
 import { buildGroundAreaFloorplan, buildGroundAreaGeometry } from './rendering/geometry'
+import { groundAreaFloorplanAffordances } from './editor/floorplan-affordances'
+import { groundAreaDrawingModeHint } from './editor/drawing-mode'
 
 export const groundAreaDefinition: NodeDefinition<typeof GroundAreaNode> = {
   kind: GROUND_AREA_KIND,
@@ -22,6 +24,7 @@ export const groundAreaDefinition: NodeDefinition<typeof GroundAreaNode> = {
   geometry: buildGroundAreaGeometry,
   system: { module: () => import('./rendering/footprint-system') },
   floorplan: buildGroundAreaFloorplan,
+  floorplanAffordances: groundAreaFloorplanAffordances,
   floorplanDependencies: (node, nodes) => Object.values(nodes)
     .filter((candidate) => (candidate.id as string) !== node.id && candidate.parentId === node.parentId &&
       ((candidate.type as string) === GROUND_AREA_KIND || candidate.type === 'slab'))
@@ -45,8 +48,9 @@ export const groundAreaDefinition: NodeDefinition<typeof GroundAreaNode> = {
     ],
   },
   toolHints: [
-    { key: 'Click', label: 'Set rectangle or custom outline corners' },
+    { key: 'Click', label: 'Set outline points, circle radius, or oval bounds' },
     { key: 'Drag', label: 'Draw a smooth freehand loop' },
+    groundAreaDrawingModeHint,
     { key: 'Enter', label: 'Finish custom outline' },
     { key: 'Backspace', label: 'Undo outline point' },
     { key: 'Esc', label: 'Stop drawing' },

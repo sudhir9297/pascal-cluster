@@ -1,3 +1,4 @@
+import { freehandFloorplanHandles } from '../domain/curve-edit'
 import type { FloorplanGeometry, GeometryContext } from '@pascal-app/core'
 import { DoubleSide, Group, Mesh, MeshStandardMaterial, Path, Shape, ShapeGeometry, Vector2 } from 'three'
 import type { Texture } from 'three'
@@ -92,7 +93,7 @@ export function buildGroundAreaFloorplan(
   if (!footprint.length) return { kind: 'group', children: [] }
   const d = footprint.flatMap((polygon) => polygon.map((ring) =>
     ring.map(([x, z], index) => `${index ? 'L' : 'M'}${x} ${z}`).join(' ') + ' Z')).join(' ')
-  return {
+  const shape: FloorplanGeometry = {
     kind: 'path',
     d,
     fillRule: 'evenodd',
@@ -101,6 +102,23 @@ export function buildGroundAreaFloorplan(
     strokeWidth: selected ? 0.045 : 0.018,
     opacity: 0.9,
   }
+  if (ctx.viewState?.selected && node.shape === 'freehand') return { kind: 'group', children: [shape, ...freehandFloorplanHandles(node)] }
+  if (!ctx.viewState?.selected || node.shape === 'circle' || node.shape === 'oval') return shape
+  const outline = node.outline
+  const handles: FloorplanGeometry[] = []
+  for (let index = 0; index < outline.length; index++) {
+    const a = outline[index]!, b = outline[(index + 1) % outline.length]!
+    handles.push({ kind: 'edge-handle', x1: a[0], y1: a[1], x2: b[0], y2: b[1],
+      affordance: 'move-edge', payload: { edgeIndex: index } })
+  }
+  for (let index = 0; index < outline.length; index++) {
+    const a = outline[index]!, b = outline[(index + 1) % outline.length]!
+    handles.push({ kind: 'midpoint-handle', point: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2],
+      affordance: 'add-vertex', payload: { edgeIndex: index } })
+  }
+  for (let index = 0; index < outline.length; index++) handles.push({ kind: 'endpoint-handle',
+    point: outline[index]!, state: 'idle', affordance: 'move-vertex', payload: { vertexIndex: index } })
+  return { kind: 'group', children: [shape, ...handles] }
 }
 
 export function disposeGroundAreaGeometry(group: Group) {

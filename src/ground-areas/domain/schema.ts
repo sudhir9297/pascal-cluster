@@ -1,5 +1,6 @@
 import { BaseNode, nodeType, objectId } from '@pascal-app/core'
 import { z } from 'zod'
+import { curvePointsSchema } from './freehand-curve'
 
 export const GROUND_AREA_KIND = 'landscape:ground-area'
 
@@ -17,6 +18,7 @@ export const GROUND_SURFACES = [
 export type GroundSurface = (typeof GROUND_SURFACES)[number]
 
 export const GroundAreaNode = BaseNode.extend({
+  children: z.array(z.string()).default([]),
   id: objectId('ground-area'),
   type: nodeType(GROUND_AREA_KIND),
   // The editor initializes the tool before the first point exists. Placement
@@ -27,6 +29,8 @@ export const GroundAreaNode = BaseNode.extend({
       message: 'A ground area needs at least three outline points.',
     })
     .default([]),
+  shape: z.enum(['rectangle', 'custom', 'freehand', 'circle', 'oval']).default('rectangle'),
+  curvePoints: curvePointsSchema,
   surface: z.enum(GROUND_SURFACES).default('grass'),
   elevation: z.number().finite().min(-100).max(100).default(0),
 })

@@ -22,11 +22,13 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { BufferAttribute, BufferGeometry, DoubleSide, Group, Mesh, MeshBasicMaterial } from 'three'
 import { advanceFreehandStroke, buildFreehandOutline } from '../domain/freehand'
 import { normalizeOutline, rectangleOutline, validateOutline } from '../domain/polygon'
+import { ellipseFromPoints, isEllipseShape } from '../domain/ellipse'
 import { GROUND_AREA_KIND, GROUND_SURFACES, GroundAreaNode, type GroundSurface, type Point } from '../domain/schema'
 import { groundSurfaceColor } from '../rendering/geometry'
 import GroundAreaPreview from '../rendering/preview'
 import { GROUND_AREA_DRAFT_COLOR, GroundAreaDraftOverlay } from './draft-overlay'
-import { onGroundAreaCommand, setGroundAreaStatus, type GroundAreaShape } from './session'
+import { onGroundAreaCommand, setGroundAreaStatus, type GroundAreaCommand, type GroundAreaShape } from './session'
+import { groundAreaModes } from './drawing-mode'
 
 function distance(a: Point, b: Point) {
   return Math.hypot(a[0] - b[0], a[1] - b[1])
@@ -129,13 +131,10 @@ export default function GroundAreaTool() {
 
   useEffect(() => {
     if (!levelId) return
-    const shape: GroundAreaShape = defaults?.shape === 'freehand'
-      ? 'freehand'
-      : defaults?.shape === 'custom' || defaults?.shape === 'polygon'
-        ? 'custom'
-        : 'rectangle'
+    let shape: GroundAreaShape = groundAreaModes.includes(defaults?.shape as GroundAreaShape)
+      ? defaults!.shape as GroundAreaShape : defaults?.shape === 'polygon' ? 'custom' : 'rectangle'
     const surface: GroundSurface = GROUND_SURFACES.find((value) => value === defaults?.surface) ?? 'grass'
-    const base = GroundAreaNode.parse({ parentId: levelId, surface })
+    const base = GroundAreaNode.parse({ parentId: levelId, surface, shape })
     const overlay = new GroundAreaDraftOverlay()
     let points: Point[] = []
     let current: Point | null = null
@@ -170,17 +169,22 @@ export default function GroundAreaTool() {
       return resolveSlabPlanPointSnap({ rawPoint, fallbackPoint: anglePoint, levelId }).point
     }
     const draftOutline = (): Point[] => {
+      if (isEllipseShape(shape)) return points[0] && current
+        ? ellipseFromPoints(points[0], current, shape).outline : []
       if (shape === 'rectangle') return points[0] && current ? rectangleOutline(points[0], current) : []
       if (shape === 'custom') return current && points.length ? [...points, current] : points
       return points
     }
     const refresh = () => {
-      const outline = normalizeOutline(draftOutline())
-      setPreview(shape !== 'freehand' && outline.length >= 3 && !validateOutline(outline)
-        ? GroundAreaNode.parse({ ...base, outline })
+      const outline = isEllipseShape(shape) ? draftOutline() : normalizeOutline(draftOutline())
+      setPreview(shape !== 'freehand' && outline.length >= 3 &&
+        (isEllipseShape(shape) || !validateOutline(outline))
+        ? GroundAreaNode.parse({ ...base, shape, outline })
         : null)
-      overlay.update(shape, points, current, groundSurfaceColor(surface))
-      const main: Point[] = shape === 'rectangle'
+      overlay.update(shape, isEllipseShape(shape) ? outline : points,
+        isEllipseShape(shape) ? null : current, groundSurfaceColor(surface), points[0])
+      const main: Point[] = isEllipseShape(shape) ? outline.length ? [...outline, outline[0]!] : []
+        : shape === 'rectangle'
         ? outline.length === 4 ? [...outline, outline[0]!] : []
         : shape === 'custom' && current && points.length ? [...points, current] : points
       updateStroke(mainStroke, main, 0.09)
@@ -189,8 +193,10 @@ export default function GroundAreaTool() {
         0.09)
     }
     const commit = (rawOutline: Point[]) => {
-      const outline = normalizeOutline(rawOutline)
-      const error = validateOutline(outline)
+      const outline = isEllipseShape(shape) ? rawOutline : normalizeOutline(rawOutline)
+      const error = isEllipseShape(shape)
+        ? outline.length < 3 ? 'Draw a circle or oval at least 0.2 m wide and deep.' : null
+        : validateOutline(outline)
       if (error) {
         closedMessage = error
         setStatus()
@@ -199,6 +205,7 @@ export default function GroundAreaTool() {
       const { id: _previewId, ...fields } = GroundAreaNode.parse({
         ...base,
         name: nextAreaName(surface, levelId as AnyNodeId),
+        shape,
         outline,
       })
       const node = GroundAreaNode.parse(fields)
@@ -253,13 +260,16 @@ export default function GroundAreaTool() {
       current = point
       setCursor(point)
       marker.current?.position.set(point[0], 0, point[1])
-      if (shape === 'rectangle') {
+      if (shape === 'rectangle' || isEllipseShape(shape)) {
         if (!points.length) {
           setPoints([point])
           refresh()
           return
         }
-        if (commit(rectangleOutline(points[0]!, point))) stop()
+        const outline = isEllipseShape(shape)
+          ? ellipseFromPoints(points[0]!, point, shape).outline
+          : rectangleOutline(points[0]!, point)
+        if (commit(outline)) stop()
         return
       }
       if (points.length >= 3 && distance(points[0]!, point) < 0.25) {
@@ -307,9 +317,23 @@ export default function GroundAreaTool() {
         refresh()
       }
     }
-    const command = (action: 'finish' | 'back' | 'cancel') => {
+    const command = (action: GroundAreaCommand) => {
+      if (typeof action === 'object') {
+        shape = action.mode
+        clearDraft()
+        const editor = useEditor.getState()
+        editor.setToolDefaults(GROUND_AREA_KIND, { ...editor.toolDefaults[GROUND_AREA_KIND], shape })
+        return
+      }
       if (action === 'cancel') stop()
       else if (action === 'finish') finish()
+      else if (action === 'cycle') {
+        const next = groundAreaModes[(groundAreaModes.indexOf(shape) + 1) % groundAreaModes.length]!
+        shape = next
+        clearDraft()
+        const editor = useEditor.getState()
+        editor.setToolDefaults(GROUND_AREA_KIND, { ...editor.toolDefaults[GROUND_AREA_KIND], shape: next })
+      }
       else if (points.length) {
         closedMessage = ''
         setPoints(shape === 'custom' ? points.slice(0, -1) : [])
@@ -321,6 +345,10 @@ export default function GroundAreaTool() {
       if (event.key === 'Enter') {
         finish()
         event.preventDefault()
+      } else if (event.key.toLowerCase() === 't') {
+        command('cycle')
+        event.preventDefault()
+        event.stopImmediatePropagation()
       } else if (event.key === 'Escape') {
         stop()
         event.preventDefault()
@@ -353,7 +381,10 @@ export default function GroundAreaTool() {
       useEditor.getState().setDraftVertexCount(0)
       setGroundAreaStatus({ points: 0, shape, message: '' })
     }
-  }, [levelId, defaults, setSelection, mainStroke, closingStroke])
+  // Defaults initialize a newly activated session. While active, mode changes
+  // are applied in place by the cycle command so drawing listeners stay live.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [levelId, setSelection, mainStroke, closingStroke])
 
   if (!levelId) return null
   return (

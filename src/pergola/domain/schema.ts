@@ -23,6 +23,8 @@ export const PergolaNode = BaseNode.extend({
     .tuple([z.literal(0), z.number().finite(), z.literal(0)])
     .default([0, 0, 0]),
   supportSlabId: z.string().nullable().optional(),
+  /** Landscape surface whose top elevation carries this pergola. */
+  supportSurfaceId: z.string().nullable().optional(),
   width: metres(1.5, 10, 4),
   depth: metres(1.5, 8, 3),
   height: metres(1.8, 4, 2.4),

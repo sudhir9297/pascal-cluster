@@ -3,6 +3,7 @@
 import { useScene, type AnyNodeId } from '@pascal-app/core'
 import { useEffect } from 'react'
 import { GROUND_AREA_KIND } from '../domain/schema'
+import GroundAreaBoundarySystem from '../editor/boundary-system'
 
 const footprintKinds = new Set([GROUND_AREA_KIND, 'slab'])
 
@@ -21,5 +22,5 @@ export default function GrassFootprintSystem() {
         current.markDirty(node.id)
     }
   }), [])
-  return null
+  return <GroundAreaBoundarySystem />
 }

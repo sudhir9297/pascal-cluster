@@ -9,6 +9,12 @@ describe('Landscape plugin manifest', () => {
       'landscape:pergola',
       'landscape:pathway',
       'landscape:ground-area',
+      'landscape:patio',
+      'landscape:deck',
+      'landscape:concrete-slab',
+      'landscape:landing',
+      'landscape:edging',
+      'landscape:retaining-wall',
     ])
   })
 

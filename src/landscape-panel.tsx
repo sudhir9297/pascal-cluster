@@ -8,9 +8,10 @@ import { PathwayIllustration } from './pathways/editor/illustration'
 import { GroundAreaPanel } from './ground-areas/editor/panel'
 import { GroundAreaIllustration } from './ground-areas/editor/illustration'
 import { CatalogCard } from './editor/catalog-card'
+import { GroundAccessPanel } from './ground-access/panel'
 
 export default function LandscapePanel() {
-  const [menu, setMenu] = useState<'root' | 'pergola' | 'pathway' | 'ground-area'>('root')
+  const [menu, setMenu] = useState<'root' | 'pergola' | 'pathway' | 'ground-area' | 'ground-access'>('root')
   const content = useRef<HTMLDivElement>(null)
   const heading = useRef<HTMLHeadingElement>(null)
   useEffect(() => {
@@ -22,7 +23,7 @@ export default function LandscapePanel() {
     if (
       editor.tool === 'landscape:pergola' ||
       editor.tool === 'landscape:pathway' ||
-      editor.tool === 'landscape:ground-area'
+      editor.tool === 'landscape:ground-area' || editor.tool?.startsWith('landscape:')
     )
       editor.setTool(null)
     setMenu('root')
@@ -74,7 +75,7 @@ export default function LandscapePanel() {
               ? 'Pergolas'
               : menu === 'pathway'
                 ? 'Pathways & walkways'
-                : 'Ground areas'}
+              : menu === 'ground-area' ? 'Ground areas' : 'Ground & access'}
         </h2>
         <p
           style={{
@@ -87,6 +88,8 @@ export default function LandscapePanel() {
             ? 'Choose an item to place in the scene.'
             : menu === 'pathway'
               ? 'Choose a drawing preset. Select a walkway for its floating settings.'
+            : menu === 'ground-access'
+              ? 'Place a starter surface, step, edge, or wall on the selected level.'
             : menu === 'ground-area'
               ? 'Choose a surface and shape, then draw it on the selected level.'
               : 'Choose a pergola to place in the scene.'}
@@ -123,6 +126,11 @@ export default function LandscapePanel() {
             <CatalogCard label="Ground areas" onClick={() => setMenu('ground-area')}>
               <GroundAreaIllustration />
             </CatalogCard>
+            <CatalogCard label="Ground & access" onClick={() => setMenu('ground-access')}>
+              <svg viewBox="0 0 100 100" aria-hidden="true" style={{ width: '100%', height: '100%' }}>
+                <path d="M12 55 52 33 88 53 48 76Z" fill="#b8aa93" stroke="#665b4d" strokeWidth="2" />
+              </svg>
+            </CatalogCard>
           </div>
         )}
         <div hidden={menu !== 'pergola'}>
@@ -133,6 +141,9 @@ export default function LandscapePanel() {
         </div>
         <div hidden={menu !== 'ground-area'}>
           <GroundAreaPanel />
+        </div>
+        <div hidden={menu !== 'ground-access'}>
+          <GroundAccessPanel />
         </div>
       </div>
     </section>
