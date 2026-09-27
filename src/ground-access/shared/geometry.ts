@@ -4,6 +4,7 @@ import { BoxGeometry, Group, Mesh, MeshStandardMaterial } from 'three'
 import type { MultiPolygon } from 'polygon-clipping'
 import { pavingPolygons } from '../../pathways/rendering/paving-polygons'
 import { extrudePaving } from '../../pathways/rendering/safe-extrusion'
+import { poolCutoutsFor } from '../../shared/pool-cutouts'
 import { isCurvedSurface, surfaceOutline, type DrawnSurface } from './outline'
 import type { AccessShape } from './schema'
 
@@ -74,7 +75,19 @@ function shapedAccessGeometry(node: DrawnSurface, kind: AccessKind): Group {
   return group
 }
 
-export function buildAccessGeometry(node: AccessShape, kind: AccessKind): Group {
+export function buildAccessGeometry(node: AccessShape, kind: AccessKind, ctx?: GeometryContext): Group {
+  const cutouts = poolCutoutsFor(node as AccessShape & { id: string; type: string; parentId: string | null }, ctx)
+  if (cutouts.length) {
+    const group = new Group()
+    const outline = isShaped(node) ? surfaceOutline(node) : [
+      [-node.width / 2, -node.depth / 2], [node.width / 2, -node.depth / 2],
+      [node.width / 2, node.depth / 2], [-node.width / 2, node.depth / 2],
+    ]
+    const regions = pavingPolygons.difference([[outline as [number, number][]]], ...cutouts)
+    const material = new MeshStandardMaterial({ color: colors[kind], roughness: 0.9 })
+    for (const polygon of regions) extruded(group, polygon, node.thickness, 0, material, `${kind}-surface`)
+    return group
+  }
   if (isShaped(node) && ['deck', 'concrete-slab', 'landing'].includes(kind))
     return shapedAccessGeometry(node, kind)
   const group = new Group()
@@ -142,7 +155,11 @@ export function buildAccessFloorplan(node: AccessShape, kind: AccessKind, ctx: G
   ]
   const children: FloorplanGeometry[] = [{
     kind: 'path',
-    d: outline.map(([x, z], index) => `${index ? 'L' : 'M'} ${x} ${z}`).join(' ') + ' Z',
+    d: poolCutoutsFor(node as AccessShape & { id: string; type: string; parentId: string | null }, ctx).length
+      ? pavingPolygons.difference([[outline as [number, number][]]], ...poolCutoutsFor(node as AccessShape & { id: string; type: string; parentId: string | null }, ctx))
+        .flatMap((polygon) => polygon.map((ring) => ring.map(([x, z], index) => `${index ? 'L' : 'M'} ${x} ${z}`).join(' ') + ' Z')).join(' ')
+      : outline.map(([x, z], index) => `${index ? 'L' : 'M'} ${x} ${z}`).join(' ') + ' Z',
+    fillRule: 'evenodd',
     fill: colors[kind],
     stroke: ctx.viewState?.selected ? (ctx.viewState.palette?.selectedStroke ?? '#f97316') : '#6d655c',
     strokeWidth: ctx.viewState?.selected ? 0.045 : 0.018,

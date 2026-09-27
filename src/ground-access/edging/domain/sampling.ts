@@ -43,7 +43,8 @@ export function edgingControlHandle(node: EdgingNode, index: number): Point {
 
 export function edgingRenderPoints(node: EdgingNode): Point[] {
   const points = node.points
-  if (node.drawMode === 'freehand' && node.curvePoints) return sampleCurve(node.curvePoints, node.closed)
+  if ((node.drawMode === 'freehand' || node.drawMode === 'curve') && node.curvePoints)
+    return sampleCurve(node.curvePoints, node.closed)
   if (node.drawMode === 'freehand' && !node.closed) return simplifyEdgingStroke(points)
   if (node.drawMode !== 'curve' || points.length < 2) return points
   const tangents = edgingCurveTangents(node)

@@ -1,22 +1,16 @@
 'use client'
 import type { AnyNode, AnyNodeId } from '@pascal-app/core'
 import { useScene } from '@pascal-app/core'
-import { useEditor } from '@pascal-app/editor'
+import { ActionButton, ActionGroup, SliderControl, useEditor } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
-import { useState, type CSSProperties } from 'react'
+import { useState } from 'react'
 import { pergolaDimensions } from '../../../pergola/domain/layout'
 import { PergolaNode, PERGOLA_KIND } from '../../../pergola/domain/schema'
 import { PatioNode, PATIO_KIND } from '../domain/schema'
 import { finishColor } from '../rendering/geometry'
 import { useDrawingStatus } from '../../shared/drawing-session'
-import { drawingModes } from '../../shared/drawing-mode'
+import { DrawingModeControl } from '../../shared/drawing-mode-control'
 import { circleSizePatch, isCurvedSurface } from '../../shared/outline'
-
-const input: CSSProperties = {
-  width: '100%', minWidth: 0, boxSizing: 'border-box', background: 'var(--background)',
-  color: 'inherit', border: '1px solid var(--border)', borderRadius: 6, padding: '7px', fontSize: 12,
-}
-const label: CSSProperties = { display: 'block', fontSize: 12, marginTop: 10 }
 
 export function PatioPanel() {
   const levelId = useViewer((state) => state.selection.levelId)
@@ -46,17 +40,14 @@ export function PatioPanel() {
   }
   const number = (key: 'width' | 'depth' | 'thickness' | 'elevation' | 'slopePercent' | 'paverWidth' | 'paverDepth' | 'jointWidth' | 'borderWidth',
     title: string, min: number, max: number, step: number) =>
-    <label style={label}>{title}
-      <input style={{ ...input, marginTop: 4 }} type="number" min={min} max={max} step={step}
-        value={patio[key]} onChange={(event) => {
-          const value = event.currentTarget.valueAsNumber
-          if (Number.isFinite(value) && value >= min && value <= max) update({ [key]: value })
-        }} />
-    </label>
+    <SliderControl label={title} min={min} max={max} step={step}
+      precision={Math.max(0, Math.ceil(-Math.log10(step)))} unit={key === 'slopePercent' ? '%' : 'm'}
+      value={patio[key]} onChange={(value) => update({ [key]: value })} />
   const select = <K extends 'finish' | 'pattern' | 'borderStyle' | 'drainDirection'>(key: K, title: string,
     options: readonly { value: PatioNode[K]; label: string }[]) =>
-    <label style={label}>{title}
-      <select style={{ ...input, marginTop: 4 }} value={patio[key]}
+    <div className="flex items-center justify-between gap-2 px-3 py-2">
+      <span className="text-xs text-foreground/80">{title}</span>
+      <select className="rounded-md border border-border/50 bg-[#2C2C2E] px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/30" value={patio[key]}
         onChange={(event) => {
           const value = event.currentTarget.value as PatioNode[K]
           if (key === 'finish') {
@@ -67,7 +58,7 @@ export function PatioPanel() {
         }}>
         {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
       </select>
-    </label>
+    </div>
   const fit = () => {
     if (!chosen || !levelId) return
     const pergola = PergolaNode.parse(chosen)
@@ -91,35 +82,21 @@ export function PatioPanel() {
       useEditor.getState().setMode('select')
     }
   }
-  return <section aria-label="Patio settings" style={{ marginTop: 20 }}>
-    <h3 style={{ fontSize: 14, margin: '0 0 5px' }}>{selected ? 'Selected patio' : 'New patio settings'}</h3>
-    <p style={{ fontSize: 11, color: 'var(--muted-foreground)', margin: 0 }}>
-      {selected ? 'Changes update this patio.' : 'Draw the next patio on the level. These settings apply to it.'}
-    </p>
+  return <section aria-label="Patio settings" className="flex flex-col gap-1.5">
+    {selected && <h3 style={{ fontSize: 14, margin: '0 0 5px' }}>Selected patio</h3>}
     {selected && patio.shape !== 'freehand' && !isCurvedSurface(patio.shape) && <p style={{ fontSize: 11,
       color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
-      Drag a corner dot to reshape the patio. Drag a midpoint dot to add a corner, or drag an edge to extend it. In the floor plan, double-click a corner dot to remove it.
+      Drag points to reshape; double-click a corner to remove it.
     </p>}
     {!selected && <div style={{ marginTop: 12 }}>
       <div style={{ fontSize: 12, marginBottom: 6 }}>Drawing mode</div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 5 }}>
-        {drawingModes.map((shape) =>
-          <button key={shape} type="button" aria-pressed={patio.shape === shape}
-            onClick={() => update({ shape })}
-            style={{ ...input, cursor: 'pointer',
-              borderColor: patio.shape === shape ? '#818cf8' : 'var(--border)',
-              textTransform: 'capitalize' }}>{shape}</button>)}
-      </div>
-      <p style={{ fontSize: 11, color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
-        Press T to switch modes. Rectangle: two corners. Custom: click points, then click the first point or press Enter. Freehand: drag a loop. Circle: click center and radius. Oval: click opposite bounds. Backspace removes the last point.
-      </p>
+      <DrawingModeControl value={patio.shape} onChange={(shape) => update({ shape })} />
       {placing && drawingStatus.message && <p role="status" style={{ fontSize: 11, color: '#dc6b61' }}>
         {drawingStatus.message}
       </p>}
     </div>}
-    {selected ? <>{number('width', patio.shape === 'circle' ? 'Diameter (m)' : 'Width (m)', 0.2, 30, 0.1)}
-      {patio.shape !== 'circle' && number('depth', 'Depth (m)', 0.2, 30, 0.1)}</> :
-      <p style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>Width and depth come from the outline you draw.</p>}
+    {selected && <>{number('width', patio.shape === 'circle' ? 'Diameter (m)' : 'Width (m)', 0.2, 30, 0.1)}
+      {patio.shape !== 'circle' && number('depth', 'Depth (m)', 0.2, 30, 0.1)}</>}
     {number('thickness', 'Base thickness (m)', 0.03, 2, 0.01)}
     {number('elevation', 'Base elevation (m)', -2, 2, 0.01)}
     {number('slopePercent', 'Drainage slope (%)', 0, 5, 0.25)}
@@ -136,8 +113,8 @@ export function PatioPanel() {
     {number('paverWidth', 'Paver width (m)', 0.2, 2, 0.05)}
     {number('paverDepth', 'Paver depth (m)', 0.2, 2, 0.05)}
     {number('jointWidth', 'Joint width (m)', 0.003, 0.04, 0.001)}
-    <label style={label}>Paver color
-      <input type="color" style={{ ...input, padding: 2, height: 35, marginTop: 4 }} value={patio.fieldColor}
+    <label className="flex items-center justify-between gap-2 px-3 py-2 text-xs text-foreground/80">Paver color
+      <input type="color" className="h-7 w-12 cursor-pointer rounded border border-border/50 bg-[#2C2C2E] p-0.5" value={patio.fieldColor}
         onChange={(event) => update({ fieldColor: event.currentTarget.value })} />
     </label>
     {select('borderStyle', 'Border', [
@@ -145,34 +122,25 @@ export function PatioPanel() {
     ])}
     {patio.borderStyle !== 'none' && <>
       {number('borderWidth', 'Border width (m)', 0.08, 0.6, 0.01)}
-      <label style={label}>Border color
-        <input type="color" style={{ ...input, padding: 2, height: 35, marginTop: 4 }} value={patio.borderColor}
+      <label className="flex items-center justify-between gap-2 px-3 py-2 text-xs text-foreground/80">Border color
+        <input type="color" className="h-7 w-12 cursor-pointer rounded border border-border/50 bg-[#2C2C2E] p-0.5" value={patio.borderColor}
           onChange={(event) => update({ borderColor: event.currentTarget.value })} />
       </label>
     </>}
     <h4 style={{ fontSize: 12, margin: '20px 0 0' }}>Fit around a pergola</h4>
-    <label style={label}>Pergola
-      <select style={{ ...input, marginTop: 4 }} value={chosen?.id ?? ''} disabled={!pergolas.length}
+    <label className="flex items-center justify-between gap-2 px-3 py-2 text-xs text-foreground/80">Pergola
+      <select className="rounded-md border border-border/50 bg-[#2C2C2E] px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/30" value={chosen?.id ?? ''} disabled={!pergolas.length}
         onChange={(event) => setPergolaId(event.currentTarget.value)}>
         {!pergolas.length && <option value="">No pergola on this level</option>}
         {pergolas.map((node) => <option key={node.id} value={node.id}>{node.name}</option>)}
       </select>
     </label>
-    <label style={label}>Clearance on each side (m)
-      <input style={{ ...input, marginTop: 4 }} type="number" min={0} max={3} step={0.05} value={margin}
-        onChange={(event) => {
-          const value = event.currentTarget.valueAsNumber
-          if (Number.isFinite(value) && value >= 0 && value <= 3) setMargin(value)
-        }} />
-    </label>
-    <button type="button" style={{ ...input, marginTop: 10, cursor: pergolas.length ? 'pointer' : 'default' }}
-      disabled={!chosen || fitTooLarge} onClick={fit}>{selected ? 'Fit selected patio' : 'Create patio around pergola'}</button>
+    <SliderControl label="Clearance each side" min={0} max={3} step={0.05} precision={2} unit="m" value={margin} onChange={setMargin} />
+    <ActionGroup className="mt-2">
+      <ActionButton type="button" label={selected ? 'Fit selected patio' : 'Create patio around pergola'} disabled={!chosen || fitTooLarge} onClick={fit} />
+    </ActionGroup>
     {fitTooLarge && <p role="status" style={{ fontSize: 11, color: 'var(--muted-foreground)' }}>
-      Reduce the clearance to keep the patio within its 30 m size limit.
+      Clearance exceeds the 30 m limit.
     </p>}
-    <p style={{ fontSize: 11, color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
-      Aligns the patio with the pergola roof footprint and makes the surface level under its posts.
-      Pergola posts remain independent of the paving.
-    </p>
   </section>
 }

@@ -255,7 +255,7 @@ export default function EdgingTool() {
     }
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.target instanceof HTMLElement && (event.target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName))) return
-      if (event.key.toLowerCase() === 't' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      if ((event.key.toLowerCase() === 'c' || event.key.toLowerCase() === 't') && !event.ctrlKey && !event.metaKey && !event.altKey) {
         const next = modes[(modes.indexOf(mode) + 1) % modes.length]!
         const editor = useEditor.getState()
         editor.setToolDefaults(EDGING_KIND, { ...editor.toolDefaults[EDGING_KIND], drawMode: next })
@@ -263,13 +263,6 @@ export default function EdgingTool() {
         event.stopImmediatePropagation()
       } else if (event.key === 'Enter') { finish(); event.preventDefault() }
       else if (event.key === 'Escape') {
-        if (mode === 'curve' && points.length) {
-          points = points.slice(0, -1)
-          redraw()
-          event.preventDefault()
-          event.stopImmediatePropagation()
-          return
-        }
         points = []
         setNode(null)
         setCursor(null)

@@ -10,6 +10,7 @@ import type { EdgingNode } from '../domain/schema'
 import { edgingTerminals } from '../domain/connections'
 import { edgingEditIndices } from '../domain/edit'
 import { edgingControlHandle, edgingLayoutPoints, edgingRenderPoints } from '../domain/sampling'
+import { edgingInsertPosition } from '../domain/insert-point'
 
 export type EdgingPoint = EdgingNode['points'][number]
 
@@ -310,8 +311,14 @@ export function buildEdgingFloorplan(node: EdgingNode, ctx: GeometryContext): Fl
     strokeWidth: Math.max(node.depth, selected ? 0.045 : 0.02),
     strokeLinecap: 'square', strokeLinejoin: 'miter',
   }] : []
-  if (selected && node.drawMode === 'freehand') children.push(...freehandFloorplanHandles(edgingCurveNode(node)))
-  if (selected && points.length >= 2 && node.drawMode !== 'freehand') {
+  if (selected && (node.drawMode === 'freehand' || node.curvePoints)) children.push(...freehandFloorplanHandles(edgingCurveNode(node)))
+  if (selected && points.length >= 2 && node.drawMode !== 'freehand' && !node.curvePoints) {
+    const spans = points.length - 1 + (node.closed ? 1 : 0)
+    for (let segment = 0; segment < spans; segment++) {
+      const point = edgingInsertPosition(node, segment)
+      if (point) children.push({ kind: 'midpoint-handle', point,
+        affordance: 'edging-insert-point', payload: { segment } })
+    }
     if (!node.closed && node.drawMode !== 'curve') {
       const siblings = Object.fromEntries(ctx.siblings.map((sibling) => [sibling.id, sibling])) as Record<string, AnyNode>
       const terminals = edgingTerminals(node, siblings)

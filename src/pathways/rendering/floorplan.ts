@@ -1,6 +1,8 @@
 import type { FloorplanGeometry, GeometryContext } from '@pascal-app/core'
 import { currentPathway, isNaturalStoneFinish, type PathwayNode } from '../domain/schema'
 import { pathTerminalEnds } from '../domain/terminals'
+import { edgeCurve, evaluate } from '../domain/curves'
+import { isCurvedPathEdge, showPathEdgeControls, visiblePathVertices } from '../domain/edit-curve'
 import { buildOutline } from './outline'
 import { pavingJoints, polygonsToPath } from './plan-finish'
 import { laidPavingTiles } from './laid-paving'
@@ -76,7 +78,7 @@ export function buildPathwayFloorplan(
         affordance: 'pathway-extend-endpoint',
         payload: { vertexId: terminal.vertexId },
       })),
-      ...node.vertices.map((vertex): FloorplanGeometry => ({
+      ...visiblePathVertices(node).map((vertex): FloorplanGeometry => ({
         kind: 'endpoint-handle',
         point: vertex.point,
         state: 'idle',
@@ -84,7 +86,21 @@ export function buildPathwayFloorplan(
         affordance: 'pathway-move-junction',
         payload: { vertexId: vertex.id },
       })),
-      ...node.vertices.map((v, i): FloorplanGeometry => ({
+      ...node.edges.flatMap((edge): FloorplanGeometry[] => {
+        if (!showPathEdgeControls(node, edge)) return []
+        const curve = edgeCurve(node, edge)
+        const midpoint: FloorplanGeometry = { kind: 'midpoint-handle', point: evaluate(curve, 0.5),
+          affordance: 'pathway-insert-point', payload: { edgeId: edge.id } }
+        if (!isCurvedPathEdge(node, edge)) return [midpoint]
+        return [midpoint, ...([['from', curve[0], curve[1]], ['to', curve[3], curve[2]]] as const)
+          .flatMap(([side, anchor, control]): FloorplanGeometry[] => [
+            { kind: 'line', x1: anchor[0], y1: anchor[1], x2: control[0], y2: control[1],
+              stroke: '#8381ed', strokeWidth: 1.25, vectorEffect: 'non-scaling-stroke' },
+            { kind: 'endpoint-handle', point: control, state: 'idle', variant: 'curve',
+              affordance: 'pathway-move-curve-handle', payload: { edgeId: edge.id, side } },
+          ])]
+      }),
+      ...(node.vertices.length <= 12 ? node.vertices.map((v, i): FloorplanGeometry => ({
         kind: 'text',
         x: v.point[0],
         y: v.point[1] - 0.38,
@@ -97,7 +113,7 @@ export function buildPathwayFloorplan(
         textAnchor: 'middle',
         dominantBaseline: 'central',
         upright: true,
-      })),
+      })) : []),
     ],
   }
 }

@@ -13,6 +13,8 @@ import { laidPavingTiles } from './laid-paving'
 import { pavingPolygons } from './paving-polygons'
 import { pavingBorder } from './paving-border'
 import { naturalStones } from './natural-stones'
+import type { GeometryContext } from '@pascal-app/core'
+import { subtractPoolCutouts } from '../../shared/pool-cutouts'
 
 function bevel(profile: PathwayEdgeProfile, depth: number) {
   const size = profile === 'sharp' ? 0 : profile === 'soft' ? 0.006 : 0.012
@@ -24,7 +26,7 @@ function bevel(profile: PathwayEdgeProfile, depth: number) {
   }
 }
 
-export function buildPathwayGeometry(node: PathwayNode, _ctx?: unknown, suppliedMaterial?: MeshStandardMaterial): Group {
+export function buildPathwayGeometry(node: PathwayNode, ctx?: GeometryContext, suppliedMaterial?: MeshStandardMaterial): Group {
   node = currentPathway(node)
   const group = new Group()
   const material = suppliedMaterial ?? createPathwayMaterial(node)
@@ -36,7 +38,7 @@ export function buildPathwayGeometry(node: PathwayNode, _ctx?: unknown, supplied
     ? new MeshStandardMaterial({ color: '#adab9c', roughness: 1 }) : material
   if (baseMaterial !== material) ownedMaterials.push(baseMaterial)
   group.userData.ownedMaterials = ownedMaterials
-  const polygons = buildOutline(node)
+  const polygons = subtractPoolCutouts(buildOutline(node), node as unknown as PathwayNode & { id: string; type: string; parentId: string | null }, ctx)
   if (!polygons.length) {
     for (const owned of ownedMaterials) owned.dispose()
     if (!suppliedMaterial) {

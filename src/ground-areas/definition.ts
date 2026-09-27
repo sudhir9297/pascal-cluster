@@ -27,7 +27,8 @@ export const groundAreaDefinition: NodeDefinition<typeof GroundAreaNode> = {
   floorplanAffordances: groundAreaFloorplanAffordances,
   floorplanDependencies: (node, nodes) => Object.values(nodes)
     .filter((candidate) => (candidate.id as string) !== node.id && candidate.parentId === node.parentId &&
-      ((candidate.type as string) === GROUND_AREA_KIND || candidate.type === 'slab'))
+      ((candidate.type as string) === GROUND_AREA_KIND || candidate.type === 'slab' ||
+        (candidate.type as string) === 'pool:pool'))
     .map((candidate) => candidate.id),
   tool: () => import('./editor/tool'),
   preview: () => import('./rendering/preview'),

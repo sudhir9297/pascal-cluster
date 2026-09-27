@@ -8,6 +8,7 @@ export type CurveNode = {
   curvePoints?: CurvePoint[]; width?: number; depth?: number;
   position?: [number, number, number]; rotation?: [number, number, number];
   closed?: boolean;
+  drawMode?: string;
 }
 export const CURVE_ARM_SCALE = 3
 const surface = (node: CurveNode) => node.type !== 'landscape:ground-area' && node.type !== 'landscape:edging'
@@ -32,7 +33,8 @@ export function curveEditPatch(node: CurveNode, levelCurve: CurvePoint[]) {
   })
   const outline = sampleCurve(local, node.closed !== false)
   if (node.closed !== false && validateOutline(outline)) return null
-  if (node.type === 'landscape:edging') return { curvePoints: local, points: outline, drawMode: 'freehand' as const }
+  if (node.type === 'landscape:edging') return { curvePoints: local, points: outline,
+    drawMode: node.drawMode === 'curve' ? 'curve' as const : 'freehand' as const }
   if (!surface(node)) return { shape: 'freehand' as const, curvePoints: local, outline }
   const minX = Math.min(...outline.map((p) => p[0])), maxX = Math.max(...outline.map((p) => p[0]))
   const minZ = Math.min(...outline.map((p) => p[1])), maxZ = Math.max(...outline.map((p) => p[1]))

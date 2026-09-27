@@ -10,31 +10,15 @@ export function ArchModeControl({
   onUpdate: (patch: Partial<PergolaNode>) => void
 }) {
   return (
-    <label
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: 8,
-        padding: '8px 12px',
-        fontSize: 12,
-      }}
-    >
-      <span>Placement</span>
+    <label className="flex items-center justify-between gap-2 px-3 py-2 text-xs text-foreground/80">
+      <span>Arch placement</span>
       <select
         aria-label="Full-width arch placement"
+        className="max-w-[150px] rounded-md border border-border/50 bg-[#2C2C2E] px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/30"
         value={pergolaArchMode(node)}
         onChange={(event) =>
           onUpdate({ archMode: event.target.value as NonNullable<PergolaNode['archMode']> })
         }
-        style={{
-          maxWidth: 150,
-          border: '1px solid var(--border)',
-          borderRadius: 6,
-          padding: '5px 7px',
-          background: 'var(--background)',
-          color: 'inherit',
-        }}
       >
         <option value="none">None</option>
         <option value="front">Front</option>

@@ -1,5 +1,6 @@
 'use client'
 import { type AnyNode, type AnyNodeId, useScene } from '@pascal-app/core'
+import { useEditor } from '@pascal-app/editor'
 import { useEffect } from 'react'
 import { RetainingWallNode, RETAININGWALL_KIND } from '../domain/schema'
 
@@ -34,6 +35,7 @@ export function createRetainingWallFinishSync() {
       for (const node of Object.values(current.nodes)) {
         if (!isRetainingWall(node) || !node.parentId || byWall.has(node.id)) continue
         const finish = RetainingWallNode.parse({
+          ...useEditor.getState().toolDefaults[RETAININGWALL_KIND],
           hostWallId: node.id,
           parentId: node.parentId,
           position: [0, 0, 0],

@@ -19,6 +19,7 @@ export const concreteSlabDefinition: NodeDefinition<typeof ConcreteSlabNode> = {
   },
   capabilities: {
     selectable: { hitVolume: 'mesh' },
+    surfaces: { top: { height: (raw) => (raw as unknown as ConcreteSlabNode).thickness } },
     movable: { axes: ['x', 'z'], gridSnap: true },
     rotatable: { axes: ['y'] },
     duplicable: true,
@@ -27,6 +28,9 @@ export const concreteSlabDefinition: NodeDefinition<typeof ConcreteSlabNode> = {
   geometry: buildConcreteSlabGeometry,
   system: { module: () => import('./editor/boundary-system') },
   floorplan: buildConcreteSlabFloorplan,
+  floorplanDependencies: (node, nodes) => Object.values(nodes)
+    .filter((candidate) => candidate.parentId === node.parentId && (candidate.type as string) === 'pool:pool')
+    .map((candidate) => candidate.id),
   floorplanAffordances: surfaceFloorplanAffordances(CONCRETESLAB_KIND),
   tool: () => import('../shared/drawing-tool'),
   preview: () => import('../shared/preview'),

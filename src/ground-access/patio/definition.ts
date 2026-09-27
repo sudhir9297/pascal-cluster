@@ -28,6 +28,10 @@ export const patioDefinition: NodeDefinition<typeof PatioNode> = {
   },
   capabilities: {
     selectable: { hitVolume: 'mesh' },
+    surfaces: { top: { height: (raw) => {
+      const patio = raw as unknown as PatioNode
+      return patio.elevation + patio.thickness + Math.min(0.045, patio.thickness / 3)
+    } } },
     movable: { axes: ['x', 'z'], gridSnap: true },
     rotatable: { axes: ['y'] },
     duplicable: true,
@@ -41,6 +45,9 @@ export const patioDefinition: NodeDefinition<typeof PatioNode> = {
   geometry: buildPatioGeometry,
   system: { module: () => import('./editor/boundary-system') },
   floorplan: buildPatioFloorplan,
+  floorplanDependencies: (node, nodes) => Object.values(nodes)
+    .filter((candidate) => candidate.parentId === node.parentId && (candidate.type as string) === 'pool:pool')
+    .map((candidate) => candidate.id),
   floorplanAffordances: patioFloorplanAffordances,
   tool: () => import('../shared/drawing-tool'),
   preview: () => import('../shared/preview'),

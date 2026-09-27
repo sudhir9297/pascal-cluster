@@ -9,7 +9,10 @@ import { NaturalStoneControl } from './editor/natural-stone-control'
 import { buildPathwayFloorplan } from './rendering/floorplan'
 import { buildPathwayGeometry } from './rendering/geometry'
 import { derivePathwaySettings } from './domain/settings'
-import { pathwayExtendEndpointAffordance, pathwayMoveJunctionAffordance } from './editor/extension-affordance'
+import { pathwayExtendEndpointAffordance, pathwayMoveJunctionAffordance,
+  pathwayMoveCurveHandleAffordance, pathwayInsertPointAffordance } from './editor/extension-affordance'
+import { pathwayDrawingModeHint } from './editor/drawing-mode'
+import { PathwayJunctionModeControl } from './editor/junction-mode-control'
 
 export const pathwayDefinition: NodeDefinition<typeof PathwayNode> = {
   kind: PATHWAY_KIND,
@@ -28,11 +31,17 @@ export const pathwayDefinition: NodeDefinition<typeof PathwayNode> = {
   },
   capabilities: { selectable: { hitVolume: 'mesh' }, deletable: true },
   geometry: buildPathwayGeometry,
+  system: { module: () => import('../shared/pool-cutout-system') },
   renderer: { kind: 'parametric', module: () => import('./rendering/renderer') },
   floorplan: buildPathwayFloorplan,
+  floorplanDependencies: (node, nodes) => Object.values(nodes)
+    .filter((candidate) => candidate.parentId === node.parentId && (candidate.type as string) === 'pool:pool')
+    .map((candidate) => candidate.id),
   floorplanAffordances: {
     'pathway-extend-endpoint': pathwayExtendEndpointAffordance,
     'pathway-move-junction': pathwayMoveJunctionAffordance,
+    'pathway-move-curve-handle': pathwayMoveCurveHandleAffordance,
+    'pathway-insert-point': pathwayInsertPointAffordance,
   },
   parametrics: {
     derive: derivePathwaySettings,
@@ -46,6 +55,8 @@ export const pathwayDefinition: NodeDefinition<typeof PathwayNode> = {
           { key: 'stoneLength', label: 'Stone layout', kind: 'custom', component: StoneLayoutControl },
           { key: 'naturalStoneSize', label: 'Natural stone layout', kind: 'custom', component: NaturalStoneControl },
           { key: 'cornerStyle', label: 'Corners', kind: 'enum', options: ['round', 'square'], display: 'segmented' },
+          { key: 'vertices', label: 'Curve junctions', kind: 'custom', component: PathwayJunctionModeControl },
+          { key: 'showAllEditPoints', label: 'Show all edit points', kind: 'boolean' },
           { key: 'color', label: 'Color', kind: 'color' },
           { key: 'defaultWidth', label: 'Width', kind: 'custom', component: PathwayWidthControl },
           {
@@ -74,9 +85,10 @@ export const pathwayDefinition: NodeDefinition<typeof PathwayNode> = {
   preview: () => import('./rendering/preview'),
   toolHints: [
     { key: 'Left click', label: 'Add walkway or spline point' },
+    pathwayDrawingModeHint,
     { key: 'Enter', label: 'Finish current walkway' },
     { key: 'Double click', label: 'Finish current walkway' },
-    { key: 'C', label: 'Switch straight / spline' },
+    { key: 'Backspace', label: 'Undo draft point' },
     { key: 'L', label: 'Enter exact length' },
     { key: 'A', label: 'Enter exact bearing' },
     { key: 'Alt', label: 'Bypass snapping' },

@@ -10,6 +10,7 @@ import { getMudTexture } from './mud'
 import { makeMulchChips, mulchTexture } from './mulch'
 import { sandTexture } from './sand'
 import { makeSoilClods, soilTexture } from './soil'
+import { subtractPoolCutouts } from '../../shared/pool-cutouts'
 
 const SURFACE_STYLE: Record<GroundSurface, { color: string; roughness: number }> = {
   grass: { color: '#718451', roughness: 0.98 },
@@ -35,9 +36,12 @@ export function groundSurfaceColor(surface: GroundSurface) {
 function buildGroundAreaSurface(node: GroundAreaNode, includeDetails: boolean, ctx?: GeometryContext): Group {
   const group = new Group()
   if (node.outline.length < 3) return group
-  const footprint = node.surface === 'grass' && includeDetails
-    ? visibleGrassFootprint(node, ctx)
-    : [[node.outline]]
+  const original = [[node.outline]] as import('polygon-clipping').MultiPolygon
+  const footprint = subtractPoolCutouts(
+    node.surface === 'grass' && includeDetails ? visibleGrassFootprint(node, ctx) : original,
+    node as unknown as import('../../shared/pool-cutouts').PoolCutoutSurface,
+    ctx,
+  )
   if (!footprint.length) return group
   const material = new MeshStandardMaterial({
     color: '#ffffff',
@@ -64,11 +68,12 @@ function buildGroundAreaSurface(node: GroundAreaNode, includeDetails: boolean, c
     const blades = makeGrassBlades(node.outline, node.elevation, (x, z) => grassContainsPoint(footprint, x, z))
     if (blades) group.add(blades)
   }
-  if (node.surface === 'soil' && includeDetails) {
+  const hasPoolCutout = footprint.length !== 1 || footprint[0]?.length !== 1
+  if (node.surface === 'soil' && includeDetails && !hasPoolCutout) {
     const clods = makeSoilClods(node.outline, node.elevation)
     if (clods) group.add(clods)
   }
-  if (node.surface === 'mulch' && includeDetails) {
+  if (node.surface === 'mulch' && includeDetails && !hasPoolCutout) {
     const chips = makeMulchChips(node.outline, node.elevation)
     if (chips) group.add(chips)
   }
@@ -89,7 +94,11 @@ export function buildGroundAreaFloorplan(
 ): FloorplanGeometry {
   if (node.outline.length < 3) return { kind: 'group', children: [] }
   const selected = ctx.viewState?.selected || ctx.viewState?.highlighted
-  const footprint = node.surface === 'grass' ? visibleGrassFootprint(node, ctx) : [[node.outline]]
+  const footprint = subtractPoolCutouts(
+    node.surface === 'grass' ? visibleGrassFootprint(node, ctx) : [[node.outline]],
+    node as unknown as import('../../shared/pool-cutouts').PoolCutoutSurface,
+    ctx,
+  )
   if (!footprint.length) return { kind: 'group', children: [] }
   const d = footprint.flatMap((polygon) => polygon.map((ring) =>
     ring.map(([x, z], index) => `${index ? 'L' : 'M'}${x} ${z}`).join(' ') + ' Z')).join(' ')

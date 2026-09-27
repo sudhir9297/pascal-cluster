@@ -21,7 +21,6 @@ function straight(a: Point, b: Point): Curve {
 }
 export default function PathwayTool({ render3D = true }: { render3D?: boolean } = {}) {
   const activeLevelId = useViewer((s) => s.selection.levelId)
-  const defaults = useEditor((s) => s.toolDefaults[PATHWAY_KIND])
   const [preview, setPreview] = useState<PathwayNode | null>(null)
   const [cursor, setCursor] = useState<Point | null>(null)
   const [levelY, setLevelY] = useState(0)
@@ -29,10 +28,12 @@ export default function PathwayTool({ render3D = true }: { render3D?: boolean } 
   const marker = useRef<Group>(null)
   useEffect(() => {
     if (!activeLevelId) return
-    const mode: PathwayMode = defaults?.drawMode === 'curve' ? 'curve' : 'straight'
+    const defaults = useEditor.getState().toolDefaults[PATHWAY_KIND]
+    let mode: PathwayMode = defaults?.drawMode === 'curve' ? 'curve' : 'straight'
     const configuredWidth = drawingWidth(defaults)
-    const base = PathwayNode.parse({ color: defaults?.color, defaultWidth: configuredWidth, finish: defaults?.finish,
-      cornerStyle: 'square', parentId: activeLevelId, name: 'Walkways' })
+    let base = PathwayNode.parse({ color: defaults?.color, defaultWidth: configuredWidth, finish: defaults?.finish,
+      thickness: defaults?.thickness, elevation: defaults?.elevation, borderStyle: defaults?.borderStyle,
+      cornerStyle: defaults?.cornerStyle, parentId: activeLevelId, name: 'Walkways' })
     let start: Point | null = null, alignment: Point[] = [], currentCursor: Point | null = null
     let activeNetworkId: string | null = null
     let targetKind: 'vertex' | 'edge' | null = null
@@ -192,11 +193,22 @@ export default function PathwayTool({ render3D = true }: { render3D?: boolean } 
         numericField = key === 'l' ? 'length' : 'bearing'; typed = ''; status()
         event.preventDefault(); event.stopImmediatePropagation(); return
       }
-      if (key === 'c') { command('toggle'); event.preventDefault(); return }
+      if (key === 't' || key === 'c') { command('toggle'); event.preventDefault(); return }
       if (key === 'enter') { finish(); event.preventDefault(); return }
       if (key === 'escape') { stop(); event.preventDefault(); return }
       if (key === 'backspace') { command('back'); event.preventDefault() }
     }
+    const unsubscribeDefaults = useEditor.subscribe((state, previous) => {
+      const nextDefaults = state.toolDefaults[PATHWAY_KIND]
+      if (nextDefaults === previous.toolDefaults[PATHWAY_KIND]) return
+      mode = nextDefaults?.drawMode === 'curve' ? 'curve' : 'straight'
+      width = drawingWidth(nextDefaults)
+      base = PathwayNode.parse({ ...base, color: nextDefaults?.color, defaultWidth: width,
+        finish: nextDefaults?.finish, thickness: nextDefaults?.thickness, elevation: nextDefaults?.elevation,
+        borderStyle: nextDefaults?.borderStyle, cornerStyle: nextDefaults?.cornerStyle })
+      if (start || alignment.length) renderDraft()
+      else status()
+    })
     const unsubscribe = onPathwayCommand(command)
     emitter.on('grid:move', onMove); emitter.on('grid:click', onClick)
     emitter.on('grid:double-click', finish)
@@ -206,10 +218,10 @@ export default function PathwayTool({ render3D = true }: { render3D?: boolean } 
       emitter.off('grid:move', onMove); emitter.off('grid:click', onClick)
       emitter.off('grid:double-click', finish)
       window.removeEventListener('keydown', onKeyDown, true)
-      unsubscribe(); usePlacementPreview.getState().clear(); useAlignmentGuides.getState().clear()
+      unsubscribe(); unsubscribeDefaults(); usePlacementPreview.getState().clear(); useAlignmentGuides.getState().clear()
       setPathwayStatus({ points: 0, mode, snap: false, message: '' })
     }
-  }, [activeLevelId, defaults])
+  }, [activeLevelId])
   if (!activeLevelId || !render3D) return null
   return <group layers={EDITOR_LAYER} position={[0, levelY, 0]}>
     {preview && <PathwayPreview node={preview} />}
