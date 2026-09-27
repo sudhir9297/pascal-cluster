@@ -1,15 +1,10 @@
 'use client'
 import { type AnyNode, type AnyNodeId, useScene } from '@pascal-app/core'
-import { useEditor } from '@pascal-app/editor'
+import { SegmentedControl, SliderControl, ToggleControl, useEditor } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
-import type { CSSProperties } from 'react'
 import { SurfaceDrawingPanel } from '../../shared/drawing-panel'
 import { deckMinimumHeight } from '../domain/settings'
 import { DECK_KIND, DeckNode } from '../domain/schema'
-
-const input: CSSProperties = { width: '100%', boxSizing: 'border-box', background: 'var(--background)',
-  color: 'inherit', border: '1px solid var(--border)', borderRadius: 6, padding: 7, fontSize: 12 }
-const label: CSSProperties = { display: 'block', fontSize: 12, marginTop: 10 }
 
 export function DeckPanel() {
   const placing = useEditor((state) => state.tool === DECK_KIND)
@@ -29,38 +24,30 @@ export function DeckPanel() {
   }
   const choose = <K extends 'deckType' | 'boardDirection' | 'borderStyle' | 'skirtStyle'>(
     key: K, title: string, options: readonly { value: DeckNode[K]; label: string }[]) =>
-    <label style={label}>{title}
-      <select value={node[key]} style={{ ...input, marginTop: 4 }} onChange={(event) => {
-        const value = event.currentTarget.value as DeckNode[K]
+    <div className="py-1">
+      <div className="mb-1 px-2 text-xs text-foreground/80">{title}</div>
+      <SegmentedControl value={node[key]} options={options.map((option) => ({ ...option, value: String(option.value) }))}
+        onChange={(value) => {
+        const selected = value as DeckNode[K]
         if (key === 'deckType') {
-          const raised = value === 'raised'
-          update({ deckType: value as DeckNode['deckType'],
-            thickness: Math.max(deckMinimumHeight({ ...node, deckType: value as DeckNode['deckType'] }),
+          const raised = selected === 'raised'
+          update({ deckType: selected as DeckNode['deckType'],
+            thickness: Math.max(deckMinimumHeight({ ...node, deckType: selected as DeckNode['deckType'] }),
               raised ? Math.max(node.thickness, 1.2) : Math.min(node.thickness, 0.45)),
             supportPosts: raised })
-        } else update({ [key]: value })
-      }}>
-        {options.map((option) => <option key={String(option.value)} value={String(option.value)}>{option.label}</option>)}
-      </select>
-    </label>
+        } else update({ [key]: selected })
+      }} />
+    </div>
   const number = (key: 'boardWidth' | 'boardGap' | 'boardThickness' | 'frameDepth' |
     'supportSpacing' | 'postSize',
     title: string, min: number, max: number, step: number) =>
-    <label style={label}>{title}
-      <input type="number" style={{ ...input, marginTop: 4 }} value={node[key]}
-        min={min} max={max} step={step} onChange={(event) => {
-          const value = event.currentTarget.valueAsNumber
-          if (Number.isFinite(value) && value >= min && value <= max) update({ [key]: value })
-        }} />
-    </label>
+    <SliderControl label={title} value={node[key]} min={min} max={max} step={step}
+      precision={Math.max(0, Math.ceil(-Math.log10(step)))} unit="m" onChange={(value) => update({ [key]: value })} />
   const toggle = (key: 'fascia' | 'supportPosts', title: string) =>
-    <label style={{ ...label, display: 'flex', alignItems: 'center', gap: 8 }}>
-      <input type="checkbox" checked={node[key]} onChange={(event) => update({ [key]: event.currentTarget.checked })} />
-      {title}
-    </label>
+    <ToggleControl label={title} checked={node[key]} onChange={(checked) => update({ [key]: checked })} />
   return <>
     <SurfaceDrawingPanel kind={DECK_KIND} minThickness={deckMinimumHeight(node)} />
-    <section aria-label="Deck design settings" style={{ marginTop: 20 }}>
+    <section aria-label="Deck design settings" className="mt-3 flex flex-col gap-1.5">
       <h3 style={{ fontSize: 14, margin: '0 0 5px' }}>Deck design</h3>
       {choose('deckType', 'Deck type', [
         { value: 'platform', label: 'Low platform' }, { value: 'raised', label: 'Raised deck' },

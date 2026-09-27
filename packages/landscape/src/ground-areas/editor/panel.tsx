@@ -1,22 +1,15 @@
 'use client'
 import { type AnyNode, type AnyNodeId, useScene } from '@pascal-app/core'
-import { useEditor } from '@pascal-app/editor'
+import { SliderControl, useEditor } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
-import { useState, type CSSProperties } from 'react'
+import { useState } from 'react'
 import { ellipseBounds, ellipseOutline, isEllipseShape } from '../domain/ellipse'
 import { GROUND_AREA_KIND, GROUND_SURFACES, GroundAreaNode, type GroundSurface } from '../domain/schema'
-import { groundAreaDrawingMode } from './drawing-mode'
+import { groundAreaDrawingMode, setGroundAreaDrawingMode } from './drawing-mode'
+import { DrawingModeControl } from '../../ground-access/shared/drawing-mode-control'
+import { GROUND_SURFACE_THUMBNAILS } from '../../editor/catalog-thumbnails'
+import { CatalogListRow } from '../../editor/catalog-list-row'
 
-const field: CSSProperties = {
-  width: '100%',
-  minWidth: 0,
-  background: 'var(--background)',
-  color: 'inherit',
-  border: '1px solid var(--border)',
-  borderRadius: 6,
-  padding: '8px',
-  fontSize: 12,
-}
 const surfaces: { value: GroundSurface; label: string; color: string }[] = [
   { value: 'grass', label: 'Grass', color: '#718451' },
   { value: 'soil', label: 'Soil', color: '#5b5841' },
@@ -54,49 +47,28 @@ export function GroundAreaPanel() {
     useScene.getState().updateNode(selected.id as AnyNodeId,
       { outline: ellipseOutline(selectedBounds.center, width / 2, depth / 2) } as Partial<AnyNode>)
   }
+  const resizeLabel = (key: 'width' | 'depth') => selected?.shape === 'circle'
+    ? 'Diameter' : key === 'width' ? 'Width' : 'Depth'
   return (
     <section aria-label="Ground areas">
-      <div aria-label="Ground surface" role="group">
-        <div style={{ fontSize: 12, marginBottom: 7, fontWeight: 600 }}>Choose a surface to draw</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
-          {surfaces.map((item) => (
-            <button
-              type="button"
-              key={item.value}
-              disabled={!levelId || active}
-              aria-pressed={surface === item.value}
-              onClick={() => start(item.value)}
-              style={{
-                ...field,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 9,
-                minHeight: 42,
-                borderColor: surface === item.value ? '#56745a' : 'var(--border)',
-                background: surface === item.value ? 'var(--secondary)' : 'transparent',
-                cursor: levelId && !active ? 'pointer' : 'default',
-                opacity: levelId ? 1 : 0.5,
-                textAlign: 'left',
-              }}
-            >
-              <span aria-hidden="true" style={{ width: 18, height: 18, flex: '0 0 18px', borderRadius: 4, background: item.color, border: '1px solid var(--border)' }} />
-              <span style={{ fontWeight: 600 }}>{item.label}</span>
-            </button>
-          ))}
-        </div>
+      {!selected && <div className="mb-3">
+        <div className="mb-1.5 text-xs font-medium">Drawing mode</div>
+        <DrawingModeControl value={groundAreaDrawingMode()} onChange={setGroundAreaDrawingMode} />
+      </div>}
+      <div aria-label="Ground surface" role="group" className="flex flex-col">
+        {surfaces.map((item) => <CatalogListRow key={item.value} label={item.label} disabled={!levelId}
+          active={surface === item.value} onClick={() => start(item.value)}
+          thumbnail={<img src={GROUND_SURFACE_THUMBNAILS[item.value]} alt="" width={36} height={36}
+            style={{ width: 36, height: 36, flex: '0 0 36px', objectFit: 'cover', borderRadius: 4,
+              border: '1px solid color-mix(in srgb, var(--foreground) 15%, transparent)' }} />} />)}
       </div>
-      {selected?.shape === 'freehand' && <p style={{ fontSize: 12, marginTop: 16 }}>
-        Drag the larger dots to reshape. Drag purple handles to bend or smooth the curve. Click a midpoint dot to add a point.
+      {selected?.shape === 'freehand' && <p className="mt-3 text-xs text-muted-foreground">
+        Drag orange points to reshape, purple handles to bend curves, and green dots to add points.
       </p>}
-      {selectedBounds && selected && <div style={{ marginTop: 16 }}>
-        <div style={{ fontSize: 12, fontWeight: 600 }}>Selected {selected.surface} size</div>
+      {selectedBounds && selected && <div className="mt-3 flex flex-col gap-1.5">
         {(['width', 'depth'] as const).filter((key) => selected.shape !== 'circle' || key === 'width')
-          .map((key) => <label key={key} style={{ display: 'block', fontSize: 12, marginTop: 8 }}>
-            {selected.shape === 'circle' ? 'Diameter (m)' : key === 'width' ? 'Width (m)' : 'Depth (m)'}
-            <input type="number" min={0.2} max={500} step={0.1} style={{ ...field, marginTop: 4 }}
-              value={Number(selectedBounds[key].toFixed(2))}
-              onChange={(event) => resizeSelected(key, event.currentTarget.valueAsNumber)} />
-          </label>)}
+          .map((key) => <SliderControl key={key} label={resizeLabel(key)} min={0.2} max={500} step={0.1} precision={2} unit="m"
+            value={Number(selectedBounds[key].toFixed(2))} onChange={(value) => resizeSelected(key, value)} />)}
       </div>}
     </section>
   )

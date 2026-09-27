@@ -1,15 +1,16 @@
 'use client'
-import { useEditor } from '@pascal-app/editor'
+import { SliderControl, useEditor } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useScene } from '@pascal-app/core'
 import { useEffect, useState } from 'react'
-import { PATHWAY_KIND, PathwayNode } from '../domain/schema'
+import { PATHWAY_KIND, PathwayNode, pathwayFinishes } from '../domain/schema'
 import { pathComponents } from '../domain/components'
 import type { AnyNode, AnyNodeId } from '@pascal-app/core'
-import { CatalogCard } from '../../editor/catalog-card'
-import { PathwayIllustration } from './illustration'
+import { CatalogListRow } from '../../editor/catalog-list-row'
+import { WALKWAY_THUMBNAILS } from '../../editor/catalog-thumbnails'
 import { sendPathwayCommand, usePathwayStatus } from './session'
 import { drawingWidth, STONE_WALKWAY_PRESET } from '../domain/settings'
+import { finishOptions } from '../rendering/finishes'
 
 export function PathwayPanel() {
   const levelId = useViewer((s) => s.selection.levelId)
@@ -39,6 +40,11 @@ export function PathwayPanel() {
     if (changes.create.length || changes.update.length) useScene.getState().applyNodeChanges(changes)
   }, [levelId, sceneNodes])
   const active = useEditor((s) => s.tool === PATHWAY_KIND)
+  const defaults = useEditor((s) => s.toolDefaults[PATHWAY_KIND])
+  const pathway = PathwayNode.parse(defaults ?? {})
+  const selectedIds = useViewer((s) => s.selection.selectedIds)
+  const selectedPathway = selectedIds.length === 1 &&
+    (sceneNodes[selectedIds[0] as AnyNodeId]?.type as string | undefined) === PATHWAY_KIND
   const status = usePathwayStatus()
   const [mode, setMode] = useState<'straight' | 'curve'>('straight')
   useEffect(() => { if (active) setMode(status.mode) }, [active, status.mode])
@@ -56,27 +62,57 @@ export function PathwayPanel() {
       ...(stone ? STONE_WALKWAY_PRESET : {}), drawMode: nextMode })
     editor.setTool(PATHWAY_KIND)
   }
+  const updateDefaults = (patch: Partial<PathwayNode>) => {
+    const editor = useEditor.getState()
+    const finishColor = patch.finish ? finishOptions[patch.finish].color : undefined
+    editor.setToolDefaults(PATHWAY_KIND, { ...editor.toolDefaults[PATHWAY_KIND], ...patch,
+      ...(patch.finish && (pathway.color === finishOptions[pathway.finish].color || !editor.toolDefaults[PATHWAY_KIND]?.color)
+        ? { color: finishColor } : {}),
+    })
+  }
+  const select = <K extends 'finish' | 'borderStyle' | 'cornerStyle'>(key: K, label: string,
+    options: readonly { value: PathwayNode[K]; label: string }[]) => <label className="flex min-h-9 items-center justify-between gap-3 border-b border-border/50 px-2 text-xs text-foreground/80">
+      <span>{label}</span>
+      <select className="max-w-[58%] rounded-md border border-border/50 bg-[#2C2C2E] px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/30"
+        value={pathway[key]} onChange={(event) => updateDefaults({ [key]: event.currentTarget.value } as Pick<PathwayNode, K>)}>
+        {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+      </select>
+    </label>
   return <section aria-label="Pathways and walkways">
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 8 }}>
-      <CatalogCard label="Straight / polyline" active={active && !stonePreset && status.mode === 'straight'}
-        disabled={!levelId} onClick={() => choose('straight')}>
-        <PathwayIllustration curved={false} />
-      </CatalogCard>
-      <CatalogCard label="Smooth curve" active={active && !stonePreset && status.mode === 'curve'}
-        disabled={!levelId} onClick={() => choose('curve')}>
-        <PathwayIllustration />
-      </CatalogCard>
-      <CatalogCard label="Stone walkway · 1.8 m" active={active && stonePreset}
-        disabled={!levelId} onClick={() => choose('curve', true)}>
-        <PathwayIllustration paved />
-      </CatalogCard>
+    <div className="mb-1.5 text-xs font-medium">Drawing mode and preset</div>
+    <div className="flex flex-col">
+      <CatalogListRow label="Straight / polyline" active={active && !stonePreset && status.mode === 'straight'}
+        disabled={!levelId} onClick={() => choose('straight')}
+        thumbnail={<img src={WALKWAY_THUMBNAILS.straight} alt="" width={36} height={36} style={{ width: 36, height: 36, flex: '0 0 36px', objectFit: 'cover', borderRadius: 4 }} />} />
+      <CatalogListRow label="Smooth curve" active={active && !stonePreset && status.mode === 'curve'}
+        disabled={!levelId} onClick={() => choose('curve')}
+        thumbnail={<img src={WALKWAY_THUMBNAILS.curve} alt="" width={36} height={36} style={{ width: 36, height: 36, flex: '0 0 36px', objectFit: 'cover', borderRadius: 4 }} />} />
+      <CatalogListRow label="Stone walkway · 1.8 m" active={active && stonePreset}
+        disabled={!levelId} onClick={() => choose('curve', true)}
+        thumbnail={<img src={WALKWAY_THUMBNAILS.stone} alt="" width={36} height={36} style={{ width: 36, height: 36, flex: '0 0 36px', objectFit: 'cover', borderRadius: 4 }} />} />
     </div>
-    <p role="status" style={{ color: 'var(--muted-foreground)', fontSize: 12, lineHeight: 1.5 }}>
-      {!levelId ? 'Select a level to draw.' : active
-        ? status.message || `${status.points} points. ${status.mode === 'curve'
-          ? 'Click spline points, then press Enter or double-click to finish.'
-          : 'Each click saves a straight leg. Press Enter or double-click to finish.'} Esc stops drawing.`
-        : 'Choose a drawing preset. Select a finished walkway to open its floating settings.'}
+    <p role="status" className="mt-2 text-xs text-muted-foreground">
+      {!levelId ? 'Select a level first.' : active ? status.message || 'Click to draw. C switches modes; Enter finishes; Esc stops drawing.' : 'Select a style to start drawing.'}
     </p>
+    <div className="mt-3 flex flex-col gap-1.5 border-t border-border/70 pt-3">
+      <h3 className="px-2 text-xs font-medium text-foreground">Placement defaults</h3>
+      <SliderControl label="Path width" value={pathway.defaultWidth} min={0.3} max={10} step={0.1} precision={1} unit="m"
+        onChange={(defaultWidth) => updateDefaults({ defaultWidth })} />
+      <SliderControl label="Thickness" value={pathway.thickness} min={0.02} max={0.5} step={0.01} precision={2} unit="m"
+        onChange={(thickness) => updateDefaults({ thickness })} />
+      <SliderControl label="Elevation" value={pathway.elevation} min={-2} max={2} step={0.01} precision={2} unit="m"
+        onChange={(elevation) => updateDefaults({ elevation })} />
+      {select('finish', 'Paving finish', pathwayFinishes.map((finish) => ({ value: finish, label: finishOptions[finish].label })))}
+      {select('borderStyle', 'Path border', [
+        { value: 'none', label: 'None' }, { value: 'stone', label: 'Stone' }, { value: 'smooth', label: 'Smooth' },
+      ])}
+      {select('cornerStyle', 'Corners', [
+        { value: 'square', label: 'Square' }, { value: 'round', label: 'Round' },
+      ])}
+    </div>
+    {selectedPathway && !active && <p className="mt-2 text-xs text-muted-foreground">
+      Drag orange junction dots, purple curve handles, or green insert dots. End arrows change length.
+      Choose Smooth or Corner for curved junctions in the settings. Show all edit points to inspect a dense route.
+    </p>}
   </section>
 }

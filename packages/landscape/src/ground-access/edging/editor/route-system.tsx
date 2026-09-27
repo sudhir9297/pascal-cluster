@@ -12,6 +12,8 @@ import { EdgingNode, EDGING_KIND, type EdgingNode as Edging } from '../domain/sc
 import { clearEdgingSnapFeedback, resolveEdgingSnap } from './snap'
 import { edgingControlHandle, edgingCurveTangents } from '../domain/sampling'
 import { edgingEditIndices, moveEdgingControls } from '../domain/edit'
+import { edgingInsertPosition, insertEdgingPoint } from '../domain/insert-point'
+import { editHandleColors } from '../../../shared/edit-handle-style'
 
 function arrowGeometry() {
   const shape = new Shape()
@@ -149,7 +151,7 @@ function RouteControl({ node, index, endIndex, controls, edge, tangent = 0 }: {
     scale={scale * (hovered ? 1.12 : 1)}>
     <mesh geometry={edge ? geometry : undefined} raycast={() => null} renderOrder={1010}>
       {!edge && <sphereGeometry args={[tangent ? 0.11 : 0.18, 16, 12]} />}
-      <meshBasicMaterial color={hovered ? '#a5b4fc' : '#8381ed'} depthTest={false} depthWrite={false} />
+      <meshBasicMaterial color={hovered ? editHandleColors.hover : tangent ? editHandleColors.tangent : editHandleColors.anchor} depthTest={false} depthWrite={false} />
     </mesh>
     <mesh visible={false} onPointerDown={onPointerDown}
       onPointerEnter={() => { if (!cleanup.current) document.body.style.cursor = 'grab'; setHovered(true) }}
@@ -170,7 +172,7 @@ function TangentGuide({ node, index }: { node: Edging; index: number }) {
       : node.profile === 'low' ? Math.min(node.thickness, 0.12) : node.thickness
     const line = new Line(new BufferGeometry().setFromPoints(ends.map(([x, z]) =>
       new Vector3(x, node.position[1] + height + 0.16, z))),
-      new LineBasicMaterial({ color: '#8381ed', depthTest: false, depthWrite: false }))
+      new LineBasicMaterial({ color: editHandleColors.tangent, depthTest: false, depthWrite: false }))
     line.layers.set(EDITOR_LAYER)
     line.renderOrder = 1009
     line.raycast = () => {}
@@ -178,6 +180,32 @@ function TangentGuide({ node, index }: { node: Edging; index: number }) {
   }, [node, index])
   useEffect(() => () => { object.geometry.dispose(); object.material.dispose() }, [object])
   return <primitive object={object} />
+}
+
+function InsertControl({ node, segment }: { node: Edging; segment: number }) {
+  const { camera } = useThree()
+  const point = edgingInsertPosition(node, segment)
+  if (!point) return null
+  const [x, z] = levelPoints({ ...node, points: [point] })[0]!
+  const scale = (camera instanceof OrthographicCamera ? 1 / camera.zoom : 1)
+  return <group layers={EDITOR_LAYER} position={[x, node.position[1] + node.thickness + 0.17, z]}>
+    <mesh raycast={() => null} renderOrder={1011}>
+      <sphereGeometry args={[0.11 * scale, 12, 8]} />
+      <meshBasicMaterial color={editHandleColors.insert} depthTest={false} depthWrite={false} />
+    </mesh>
+    <mesh visible={false} onPointerDown={(event: ThreeEvent<PointerEvent>) => {
+      if (event.button !== 0) return
+      event.stopPropagation()
+      const patch = insertEdgingPoint(node, segment)
+      if (!patch) return
+      useScene.getState().updateNode(node.id as AnyNodeId, patch as Partial<AnyNode>)
+      swallowNextClick()
+    }} onPointerEnter={() => { document.body.style.cursor = 'crosshair' }}
+      onPointerLeave={() => { document.body.style.cursor = '' }}>
+      <boxGeometry args={[0.5 * scale, 0.18 * scale, 0.5 * scale]} />
+      <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+    </mesh>
+  </group>
 }
 
 export default function EdgingRouteSystem() {
@@ -189,12 +217,14 @@ export default function EdgingRouteSystem() {
   const node = (raw?.type as string | undefined) === EDGING_KIND && mode === 'select'
     ? EdgingNode.parse({ ...raw, ...overrides }) : null
   if (!node || node.points.length < 2) return null
-  if (node.drawMode === 'freehand') return <FreehandCurveEditor
+  if (node.drawMode === 'freehand' || (node.drawMode === 'curve' && node.curvePoints)) return <FreehandCurveEditor
     node={edgingCurveNode(EdgingNode.parse(raw))}
     height={node.position[1] + node.thickness} />
   const controls = edgingEditIndices(node)
   const segments = controls.length - 1 + (node.closed ? 1 : 0)
   return <group>
+    {Array.from({ length: segments }, (_, segment) =>
+      <InsertControl key={`insert-${segment}`} node={node} segment={controls[segment]!} />)}
     {controls.map((index) => <RouteControl key={`point-${index}`} node={node} index={index}
       endIndex={index} controls={controls} edge={false} />)}
     {node.drawMode === 'curve' && controls.map((index) => <group key={`tangent-${index}`}>

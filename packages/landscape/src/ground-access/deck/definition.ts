@@ -21,6 +21,7 @@ export const deckDefinition: NodeDefinition<typeof DeckNode> = {
   },
   capabilities: {
     selectable: { hitVolume: 'mesh' },
+    surfaces: { top: { height: (raw) => (raw as unknown as DeckNode).thickness } },
     paint: deckPaint,
     movable: { axes: ['x', 'z'], gridSnap: true },
     rotatable: { axes: ['y'] },
@@ -30,6 +31,9 @@ export const deckDefinition: NodeDefinition<typeof DeckNode> = {
   geometry: buildDeckGeometry,
   system: { module: () => import('./editor/boundary-system') },
   floorplan: buildDeckFloorplan,
+  floorplanDependencies: (node, nodes) => Object.values(nodes)
+    .filter((candidate) => candidate.parentId === node.parentId && (candidate.type as string) === 'pool:pool')
+    .map((candidate) => candidate.id),
   floorplanAffordances: surfaceFloorplanAffordances(DECK_KIND),
   tool: () => import('../shared/drawing-tool'),
   preview: () => import('../shared/preview'),

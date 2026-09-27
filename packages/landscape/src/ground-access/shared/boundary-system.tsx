@@ -9,11 +9,12 @@ import { isCurvedSurface, surfaceEditPatch, surfaceLevelOutline, type DrawnSurfa
 import { drawnAccessItemFor, type DrawnAccessKind } from './items'
 import StairAttachmentSystem from './stair-attachment-system'
 import { FreehandCurveEditor } from '../../ground-areas/editor/freehand-curve-editor'
+import { PoolCutoutDirtySystem } from '../../shared/pool-cutout-system'
 
 type SurfaceNode = DrawnSurface & { id: string; type: string; parentId: string | null }
 
 export default function SurfaceBoundarySystem({ kind }: { kind: DrawnAccessKind }) {
-  return <><StairAttachmentSystem /><BoundaryEditor kind={kind} /></>
+  return <><PoolCutoutDirtySystem /><StairAttachmentSystem /><BoundaryEditor kind={kind} /></>
 }
 
 function BoundaryEditor({ kind }: { kind: DrawnAccessKind }) {

@@ -38,7 +38,10 @@ interpreted as a walkway approaching an entrance; door modeling is not planned.
    plan view to see junction labels. In plan and 3D views, drag an arrow at an
    open end to lengthen or shorten that leg along its outgoing tangent. Drag a
    junction grip to reshape an end, L bend, or T branch freely in the plane;
-   every attached leg follows. Branch junctions have no length arrow.
+   every attached leg follows. Branch junctions have no length arrow. In plan
+   or 3D, drag purple handles to reshape a spline and use a green midpoint
+   to insert a junction without changing the curve. A two-leg spline junction
+   can be set to Smooth or Corner in the inspector.
 
 Disconnected drawings are separate scene items: selecting or deleting one does
 not affect the others. A stroke joining two existing items merges them into one
@@ -63,8 +66,8 @@ paths without a corner setting now resolve to square corners.
 
 - One network per connected item, with one elevation and paving color. Segment
   widths are independent. Level-separated networks never connect to each other.
-- Curves use multi-point spline interpolation. Dedicated arcs, tangent dragging,
-  mixed straight/curve gestures, and terrain following are not implemented.
+- Curves use multi-point spline interpolation. Dedicated arcs, mixed
+  straight/curve gestures, and terrain following are not implemented.
 - Junctions can be moved on canvas or through numeric controls. Screen-space
   snap distance for reshaping remains follow-up work.
 - Rounded outer joins are supported; custom junction fillet radii and border

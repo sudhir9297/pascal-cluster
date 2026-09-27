@@ -32,8 +32,14 @@ export default function PergolaTool() {
     () => PergolaNode.parse({ ...defaults, name: 'Pergola' }),
     [defaults],
   )
+  const previewRef = useRef(preview)
+  const refreshPreview = useRef<() => void>(() => {})
   const cursor = useRef<Group>(null)
   const [visible, setVisible] = useState(false)
+  useEffect(() => {
+    previewRef.current = preview
+    refreshPreview.current()
+  }, [preview])
   useEffect(() => {
     if (!activeLevelId) return
     let last: PlacementEvent | null = null
@@ -54,7 +60,7 @@ export default function PergolaTool() {
         ? snapPointToGrid([point.x, point.z], useEditor.getState().gridSnapStep)
         : [point.x, point.z]
       const n = PergolaNode.parse({
-        ...preview,
+        ...previewRef.current,
         parentId: activeLevelId,
         position: [x, 0, z],
         rotation: [0, yaw, 0],
@@ -102,6 +108,7 @@ export default function PergolaTool() {
       setVisible(true)
       usePlacementPreview.getState().set(node as unknown as AnyNode)
     }
+    refreshPreview.current = () => { if (last) move(last) }
     const click = (event: PlacementEvent) => {
       if (committed || isCameraDragging()) return
       if (
@@ -150,8 +157,9 @@ export default function PergolaTool() {
       emitter.off('node:click', click)
       window.removeEventListener('keydown', key)
       usePlacementPreview.getState().clear()
+      refreshPreview.current = () => {}
     }
-  }, [activeLevelId, preview, selectNode, isCameraDragging])
+  }, [activeLevelId, selectNode, isCameraDragging])
   return (
     <group ref={cursor} visible={visible}>
       <PergolaPreview node={preview} />

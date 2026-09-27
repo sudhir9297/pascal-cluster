@@ -9,6 +9,7 @@ import { extrudePaving } from '../../../pathways/rendering/safe-extrusion'
 import { isCurvedSurface, surfaceOutline } from '../../shared/outline'
 import { deckBorderWidth } from '../domain/settings'
 import { DeckNode } from '../domain/schema'
+import { poolCutoutsFor } from '../../../shared/pool-cutouts'
 
 type Point = [number, number]
 
@@ -174,11 +175,13 @@ function applyPaintedMaterials(node: DeckNode, group: Group) {
   for (const material of replaced) material.dispose()
 }
 
-export function buildDeckGeometry(raw: DeckNode): Group {
+export function buildDeckGeometry(raw: DeckNode, ctx?: GeometryContext): Group {
   const node = DeckNode.parse(raw)
   const group = new Group()
   const outline = surfaceOutline(node)
-  const outer: MultiPolygon = [[outline]]
+  const initial: MultiPolygon = [[outline]]
+  const cutouts = poolCutoutsFor(node as unknown as DeckNode & { id: string; type: string; parentId: string | null }, ctx)
+  const outer = cutouts.length ? pavingPolygons.difference(initial, ...cutouts) : initial
   const boardT = Math.min(node.boardThickness, node.thickness / 3)
   const frameTop = node.thickness - boardT
   const frameBottom = Math.max(0, frameTop - node.frameDepth)

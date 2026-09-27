@@ -7,6 +7,7 @@ import type { PathwayNode } from '../domain/schema'
 import { PATHWAY_KIND } from '../domain/schema'
 import { PathwayExtensionControls } from '../editor/extension-controls'
 import { PathwayJunctionControls } from '../editor/junction-controls'
+import { PathwayCurveControls } from '../editor/curve-controls'
 import { buildPathwayGeometry, createPathwayMaterial, disposePathwayGeometry } from './geometry'
 
 export default function PathwayRenderer({ node }: { node: PathwayNode }) {
@@ -26,5 +27,6 @@ export default function PathwayRenderer({ node }: { node: PathwayNode }) {
     <primitive object={geometry} />
     {selected && !drawing && <PathwayExtensionControls node={renderedNode} />}
     {selected && !drawing && <PathwayJunctionControls node={renderedNode} />}
+    {selected && !drawing && <PathwayCurveControls node={renderedNode} />}
   </group>
 }

@@ -43,7 +43,7 @@ export const edgingDefinition: NodeDefinition<typeof EdgingNode> = {
     { key: 'depth', label: 'Border width', kind: 'number', unit: 'm', min: 0.2, max: 3, step: 0.05 },
     { key: 'thickness', label: 'Height', kind: 'number', unit: 'm', min: 0.03, max: 2, step: 0.01 },
   ] }] },
-  toolHints: [{ key: 'T', label: 'Drawing mode', chip: {
+  toolHints: [{ key: 'C', label: 'Drawing mode', chip: {
     subscribe: (onChange) => useEditor.subscribe((state, previous) => {
       if (state.toolDefaults[EDGING_KIND]?.drawMode !== previous.toolDefaults[EDGING_KIND]?.drawMode) onChange()
     }),
@@ -51,7 +51,7 @@ export const edgingDefinition: NodeDefinition<typeof EdgingNode> = {
     cycle: cycleEdgingMode,
     labels: { straight: 'Mode: Straight', curve: 'Mode: Smooth curve', freehand: 'Mode: Freehand' },
     icons: { straight: 'lucide:minus', curve: 'lucide:spline', freehand: 'lucide:lasso' },
-    tooltip: 'Drawing mode — click or press T to switch',
+    tooltip: 'Drawing mode — click or press C to switch',
   } }, { key: 'Click / drag', label: 'Place points or draw freehand' }, { key: 'Enter / Double-click', label: 'Finish run' },
     { key: 'Backspace', label: 'Undo point' }, { key: 'Esc', label: 'Cancel run' }],
   presentation: { label: 'Edging', description: 'Draw strips, pavers, stones, posts, or capped borders with straight, curved, or freehand paths; finish them with Paint.', icon: { kind: 'iconify', name: 'lucide:minus' }, paletteSection: 'site', hidden: true },

@@ -7,6 +7,7 @@ import { EdgingNode } from '../domain/schema'
 import { clearEdgingSnapFeedback, resolveEdgingSnap } from './snap'
 import { edgingCurveTangents } from '../domain/sampling'
 import { edgingEditIndices, moveEdgingControls } from '../domain/edit'
+import { insertEdgingPoint } from '../domain/insert-point'
 
 type Payload = { index?: number; id?: 'start' | 'end' }
 
@@ -60,6 +61,15 @@ function edit(mode: 'point' | 'end'): FloorplanAffordance<EdgingNode> {
 }
 
 export const edgingFloorplanAffordances = {
+  'edging-insert-point': {
+    start({ node: raw, payload }) {
+      const node = EdgingNode.parse(raw)
+      const id = node.id as AnyNodeId
+      const patch = insertEdgingPoint(node, (payload as { segment: number }).segment)
+      return { affectedIds: [id], apply() {}, canCommit: () => patch !== null,
+        commit() { if (patch) useScene.getState().updateNode(id, patch as Partial<AnyNode>) } }
+    },
+  } satisfies FloorplanAffordance<EdgingNode>,
   'freehand-curve': {
     start(args) {
       return freehandCurveAffordance.start({ ...args, node: edgingCurveNode(EdgingNode.parse(args.node)) })

@@ -1,8 +1,8 @@
 import type { PergolaNode } from '../domain/schema'
-import flatThumbnail from '../assets/flat-pergola-thumbnail.webp'
-import singleSlopeThumbnail from '../assets/single-slope-pergola-thumbnail-v2.webp'
-import gableThumbnail from '../assets/gable-pergola-thumbnail-v2.webp'
-import curvedThumbnail from '../assets/curved-pergola-thumbnail-v2.webp'
+import flatThumbnail from '../../assets/catalog/pergola-flat-photo-thumbnail.webp'
+import singleSlopeThumbnail from '../../assets/catalog/pergola-single-slope-photo-thumbnail.webp'
+import gableThumbnail from '../../assets/catalog/pergola-gable-photo-thumbnail.webp'
+import curvedThumbnail from '../../assets/catalog/pergola-curved-photo-thumbnail.webp'
 
 const thumbnails: Record<PergolaNode['roofForm'], { src: string }> = {
   flat: flatThumbnail,

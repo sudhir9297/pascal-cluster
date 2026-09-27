@@ -8,6 +8,8 @@ import { OrthographicCamera, Plane, Vector2, Vector3 } from 'three'
 import { movePathJunction } from '../domain/terminals'
 import type { PathVertex, PathwayNode, Point } from '../domain/schema'
 import { buildOutline } from '../rendering/outline'
+import { editHandleColors } from '../../shared/edit-handle-style'
+import { visiblePathVertices } from '../domain/edit-curve'
 
 function swallowNextClick() {
   const swallow = (event: Event) => { event.stopPropagation(); event.preventDefault() }
@@ -88,7 +90,7 @@ function JunctionGrip({ node, vertex }: { node: PathwayNode; vertex: PathVertex 
     scale={scale * (hovered ? 1.12 : 1)}>
     <mesh raycast={() => null} renderOrder={1010}>
       <sphereGeometry args={[0.2, 16, 12]} />
-      <meshBasicMaterial color={hovered ? '#a5b4fc' : '#8381ed'} depthTest={false} depthWrite={false} />
+      <meshBasicMaterial color={hovered ? editHandleColors.hover : editHandleColors.anchor} depthTest={false} depthWrite={false} />
     </mesh>
     <mesh visible={false} onPointerDown={onPointerDown}
       onPointerEnter={() => { if (!cleanup.current) document.body.style.cursor = 'grab'; setHovered(true) }}
@@ -100,5 +102,5 @@ function JunctionGrip({ node, vertex }: { node: PathwayNode; vertex: PathVertex 
 }
 
 export function PathwayJunctionControls({ node }: { node: PathwayNode }) {
-  return node.vertices.map((vertex) => <JunctionGrip key={vertex.id} node={node} vertex={vertex} />)
+  return visiblePathVertices(node).map((vertex) => <JunctionGrip key={vertex.id} node={node} vertex={vertex} />)
 }

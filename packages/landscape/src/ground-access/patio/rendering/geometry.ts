@@ -8,6 +8,7 @@ import { extrudePaving } from '../../../pathways/rendering/safe-extrusion'
 import { patioOutline } from '../domain/outline'
 import { isCurvedSurface } from '../../shared/outline'
 import { PatioNode } from '../domain/schema'
+import { poolCutoutsFor } from '../../../shared/pool-cutouts'
 
 export const finishColor = { concrete: '#aeaca5', stone: '#b8aa93', brick: '#aa705a' } as const
 export const patioFieldColor = (node: PatioNode) => node.fieldColor
@@ -97,9 +98,10 @@ function polygonMesh(polygon: MultiPolygon[number], depth: number, y: number,
   return mesh
 }
 
-function buildShapedPatio(node: PatioNode): Group {
+function buildShapedPatio(node: PatioNode, cutouts: MultiPolygon = []): Group {
   const group = new Group()
-  const outline: MultiPolygon = [[patioOutline(node)]]
+  const baseOutline: MultiPolygon = [[patioOutline(node)]]
+  const outline = cutouts.length ? pavingPolygons.difference(baseOutline, ...cutouts) : baseOutline
   const [gx, gz] = slopeGradient(node)
   const baseMaterial = new MeshStandardMaterial({ color: '#746b60', roughness: 1 })
   for (const polygon of outline) {
@@ -152,10 +154,12 @@ function buildShapedPatio(node: PatioNode): Group {
   return group
 }
 
-export function buildPatioGeometry(raw: PatioNode): Group {
+export function buildPatioGeometry(raw: PatioNode, ctx?: GeometryContext): Group {
   // Saved starter patios predate the paving and drainage fields. The scene
   // renderer can pass those raw nodes here without reparsing their schema.
   const node = PatioNode.parse(raw)
+  const cutouts = poolCutoutsFor(node as unknown as PatioNode & { id: string; type: string; parentId: string | null }, ctx)
+  if (cutouts.length) return buildShapedPatio(node, cutouts)
   if (isCurvedSurface(node.shape) || (node.shape !== 'rectangle' && node.outline.length >= 3))
     return buildShapedPatio(node)
   const group = new Group()
