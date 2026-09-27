@@ -114,7 +114,7 @@ export const poolParametrics: ParametricDescriptor<PoolNode> = {
     const derived = {
       ...('visualPreset' in patch ? getPoolVisualPreset(next.visualPreset) : {}),
       ...(!isDrawnPoolShape(next.shape) && ('length' in patch || 'width' in patch || 'shape' in patch)
-        ? { polygon: createPoolShapePolygon(next.shape, next.length, next.width), outlineControlPoints: [] }
+        ? { polygon: createPoolShapePolygon(next.shape, next.length, next.width), outlineControlPoints: [], outlineTangents: [] }
         : {}),
     }
     return 'waterPreset' in patch

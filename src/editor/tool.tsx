@@ -39,6 +39,7 @@ import { findPoolHostSlabId, localizePoolPolygon } from '../design/opening-sync'
 import { worldPointToPoolLevel } from '../design/level-coordinates'
 import { PoolLevelPreviewGroup } from './level-preview-group'
 import { PoolNode } from '../core/schema'
+import { alignPoolCopingToSurface } from '../design/coping-rise'
 import { isPlacementRotationKey, rotatePlanPoint } from './placement-rotation'
 import {
   createPoolShapePolygon,
@@ -100,7 +101,7 @@ function commitPoolDrawing(
     settings.shellThickness + settings.openingClearance,
   )
   const supportSlabId = constructionPlane?.supportSlabId ?? detectedSlabId
-  const pool = PoolNode.parse({
+  const draft = PoolNode.parse({
     ...settings,
     ...placement,
     rotation: [0, rotationY, 0],
@@ -111,6 +112,9 @@ function commitPoolDrawing(
     position,
     supportSlabId,
   })
+  // Placement picks the finished slab or ground surface. Recess the shell so
+  // the highest coping point meets that surface instead of rising above it.
+  const pool = alignPoolCopingToSurface(draft)
   createPoolPluginNode(pool, levelId)
   const nearbyPool = getPoolNodes(scene.nodes)
     .find((candidate) => candidate.id !== pool.id && findSharedPoolJoint(candidate, pool))
@@ -249,7 +253,7 @@ export default function PoolTool() {
 
     const pointedSurfaceFor = (event: GridEvent) =>
       event.nativeEvent?.target instanceof HTMLCanvasElement
-        ? resolvePointerSupportSurface(cameraRef.current, event.position)
+        ? resolvePointerSupportSurface(cameraRef.current, event.position, { includeNodeTopSurfaces: true })
         : null
 
     const setDraftPoints = (nextPoints: Point[]) => {
@@ -329,8 +333,8 @@ export default function PoolTool() {
         resolveEventConstructionPlane(event, pointed),
         displayPoint,
       )
-      levelYRef.current = localPosition[1]
-      setLevelY(localPosition[1])
+      levelYRef.current = hoverPlane.elevation ?? localPosition[1]
+      setLevelY(levelYRef.current)
       useFloorplanDraftPreview.getState().setCursorPoint(displayPoint)
       setSnappedCursorPosition(displayPoint)
       if (
@@ -395,7 +399,7 @@ export default function PoolTool() {
           currentLevelId,
           translated,
           plane,
-          levelYRef.current,
+          plane.elevation ?? levelYRef.current,
           { shape, length, width, rotationY: placementYawRef.current },
         )
         setSelection({ selectedIds: [poolId] })
@@ -420,7 +424,7 @@ export default function PoolTool() {
           clickPoint,
         )
         constructionPlaneRef.current = plane
-        const nextLevelY = worldPointToPoolLevel(
+        const nextLevelY = plane.elevation ?? worldPointToPoolLevel(
           sceneRegistry.nodes.get(currentLevelId as never),
           event.position,
         )[1]
@@ -444,7 +448,7 @@ export default function PoolTool() {
         startPoint,
       )
       constructionPlaneRef.current = plane
-      const nextLevelY = worldPointToPoolLevel(
+      const nextLevelY = plane.elevation ?? worldPointToPoolLevel(
         sceneRegistry.nodes.get(currentLevelId as never),
         gridEvent.position,
       )[1]
@@ -482,6 +486,12 @@ export default function PoolTool() {
       resetDraft()
     }
     const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.target as HTMLElement | null)?.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]')) return
+      if (event.key === 'Backspace' && isCustom && pointsRef.current.length > 0) {
+        event.preventDefault()
+        setDraftPoints(pointsRef.current.slice(0, -1))
+        return
+      }
       if (isPlacementRotationKey(event)) {
         event.preventDefault()
         event.stopPropagation()

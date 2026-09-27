@@ -1,87 +1,27 @@
 'use client'
 
 import { useScene } from '@pascal-app/core'
-import { SegmentedControl, SliderControl, ToggleControl, useEditor } from '@pascal-app/editor'
-import { ArrowLeft } from 'lucide-react'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
-import { useShallow } from 'zustand/react/shallow'
 import { useViewer } from '@pascal-app/viewer'
-import { usePoolStore } from './store'
-import { POOL_SHAPE_OPTIONS, type PoolShape } from '../design/shapes'
-import { POOL_STAIR_CATALOG, POOL_STAIR_VARIANTS, type PoolStairVariant } from '../stair/data/catalog'
-import { usePoolStairStore } from '../stair/editor/store'
-import { countPoolPluginNodes } from './scene-nodes'
-
-const THUMBNAILS = {
-  pool: new URL('./assets/swimming-pool-thumbnail-v3.webp', import.meta.url).href,
-  stairs: new URL('./assets/pool-stairs-thumbnail.webp', import.meta.url).href,
-  waterfall: new URL('./assets/waterfall-thumbnail.webp', import.meta.url).href,
-  spillover: new URL('./assets/spillover-thumbnail.webp', import.meta.url).href,
-  filter: new URL('./assets/filter-thumbnail.webp', import.meta.url).href,
-  heater: new URL('./assets/heater-thumbnail.webp', import.meta.url).href,
-  pump: new URL('./assets/pump-thumbnail.webp', import.meta.url).href,
-  drain: new URL('./assets/drain-thumbnail.webp', import.meta.url).href,
-  valve: new URL('./assets/valve-thumbnail.webp', import.meta.url).href,
-  skimmer: new URL('./assets/skimmer-thumbnail.webp', import.meta.url).href,
-  inlet: new URL('./assets/inlet-thumbnail.webp', import.meta.url).href,
-} as const
-
-const POOL_SHAPE_THUMBNAILS: Record<PoolShape, string> = {
-  circle: new URL('./assets/pool-circle-thumbnail.webp', import.meta.url).href,
-  rectangle: new URL('./assets/pool-rectangle-thumbnail.webp', import.meta.url).href,
-  'lap-rectangle': new URL('./assets/pool-lap-rectangle-thumbnail.webp', import.meta.url).href,
-  kidney: new URL('./assets/pool-kidney-thumbnail-v3.webp', import.meta.url).href,
-  lagoon: new URL('./assets/pool-lagoon-thumbnail.webp', import.meta.url).href,
-  roman: new URL('./assets/pool-roman-thumbnail-v3.webp', import.meta.url).href,
-  'l-shape': new URL('./assets/pool-l-shape-thumbnail.webp', import.meta.url).href,
-  spline: new URL('./assets/pool-freehand-thumbnail.webp', import.meta.url).href,
-  custom: new URL('./assets/pool-custom-thumbnail.webp', import.meta.url).href,
-}
-
-const POOL_STAIR_THUMBNAILS: Record<PoolStairVariant, string> = {
-  extended: new URL('./assets/stair-tall-angled-thumbnail-v3.webp', import.meta.url).href,
-  classic: new URL('./assets/stair-round-arch-thumbnail-v3.webp', import.meta.url).href,
-  square: new URL('./assets/stair-low-square-thumbnail-v3.webp', import.meta.url).href,
-  compact: new URL('./assets/stair-short-compact-thumbnail-v3.webp', import.meta.url).href,
-}
-
-const POOL_NODE_TO_TOOL = new Set([
-  'pool:pool', 'pool:stair', 'pool:waterfall', 'pool:spillover',
-  'pool:pump', 'pool:filter', 'pool:heater', 'pool:drain',
-  'pool:valve', 'pool:skimmer', 'pool:inlet',
-])
+import { useEffect, useMemo, useState } from 'react'
+import { useEditor } from '@pascal-app/editor'
+import { PoolShellSettings } from './shell-settings'
+import { PoolSystemsPanel } from './systems-panel'
+import { PoolReviewPanel } from './review-panel'
+import { getSelectedPool } from './pool-selection'
+import { planPoolFittings } from '../design/pool-fitting-layout'
 
 export default function PoolPanel() {
-  const [menu, setMenu] = useState<'root' | 'pool-types' | 'stair-types' | 'water-features'>('root')
+  const [step, setStep] = useState<'shell' | 'systems' | 'review'>('shell')
   const selectedIds = useViewer((state) => state.selection.selectedIds)
-  const shape = usePoolStore((state) => state.shape)
-  const copingStyle = usePoolStore((state) => state.copingStyle)
-  const floorProfile = usePoolStore((state) => state.floorProfile)
-  const length = usePoolStore((state) => state.length)
-  const width = usePoolStore((state) => state.width)
-  const stairVariant = usePoolStairStore((state) => state.variant)
-  const counts = useScene(useShallow((state) => countPoolPluginNodes(state.nodes)))
-  const nodes = useScene((state) => state.nodes)
-  const poolCount = counts['pool:pool']
-  const stairCount = counts['pool:stair']
-  const skimmerCount = counts['pool:skimmer']
-  const inletCount = counts['pool:inlet']
-  const valveCount = counts['pool:valve']
-  const pumpCount = counts['pool:pump']
-  const filterCount = counts['pool:filter']
-  const heaterCount = counts['pool:heater']
-  const drainCount = counts['pool:drain']
-  const waterfallCount = counts['pool:waterfall']
-  const spilloverCount = counts['pool:spillover']
-  const selectedPoolTool = selectedIds
-    .map((id) => String(nodes[id as keyof typeof nodes]?.type))
-    .find((tool) => POOL_NODE_TO_TOOL.has(tool)) ?? null
-  useEffect(() => {
-    if (selectedPoolTool === 'pool:pool') setMenu('pool-types')
-    else if (selectedPoolTool === 'pool:stair') setMenu('stair-types')
-    else if (selectedPoolTool === 'pool:waterfall' || selectedPoolTool === 'pool:spillover') setMenu('water-features')
-    else if (selectedPoolTool) setMenu('root')
-  }, [selectedPoolTool])
+  const activeLevelId = useViewer((state) => state.selection.levelId)
+  const pool = useScene((state) => getSelectedPool(state.nodes, selectedIds))
+  const poolPlan = useMemo(() => pool ? planPoolFittings(pool) : null, [pool])
+  const activeLevelName = useScene((state) => {
+    const level = activeLevelId ? state.nodes[activeLevelId] : null
+    if (!level || level.type !== 'level') return null
+    return level.name || (level.level === 0 ? 'Ground floor' : `Level ${level.level}`)
+  })
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Alt' || event.repeat || event.metaKey || event.ctrlKey || event.shiftKey) return
@@ -92,181 +32,41 @@ export default function PoolPanel() {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [])
-  const activateTool = (tool: 'pool:pool' | 'pool:waterfall' | 'pool:spillover' | 'pool:filter' | 'pool:heater' | 'pool:pump' | 'pool:drain' | 'pool:valve' | 'pool:skimmer' | 'pool:inlet') => {
-    useEditor.getState().setTool(tool)
-    useEditor.getState().setMode('build')
-  }
-  const activate = () => activateTool('pool:pool')
-  const waterFeatureCount = waterfallCount + spilloverCount
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden text-sidebar-foreground">
-      {menu === 'root' ? (
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-4">
-          <section className="flex flex-col gap-2">
-            <h2 className="font-semibold text-base">Swimming pool</h2>
-            <p className="text-xs text-sidebar-foreground/60">Build the pool, then add its systems and details.</p>
-            <div className="grid grid-cols-2 gap-2">
-              <CatalogCard className="col-span-2" count={poolCount} image={THUMBNAILS.pool} label="Swimming pool" onClick={() => { setMenu('pool-types'); activate() }} wide />
-              <CatalogCard count={stairCount} image={THUMBNAILS.stairs} label="Pool stairs" onClick={() => setMenu('stair-types')} />
-            </div>
-          </section>
-          <section className="flex flex-col gap-2 border-t border-sidebar-border pt-4">
-            <h3 className="font-medium text-sm">Water features</h3>
-            <p className="text-xs text-sidebar-foreground/60">Add movement and visual interest to the pool.</p>
-            <div className="grid grid-cols-2 gap-2">
-              <CatalogCard count={waterfallCount} image={THUMBNAILS.waterfall} label="Waterfall" onClick={() => { setMenu('water-features'); activateTool('pool:waterfall') }} />
-              <CatalogCard count={spilloverCount} image={THUMBNAILS.spillover} label="Pool spillover" onClick={() => { setMenu('water-features'); activateTool('pool:spillover') }} />
-            </div>
-          </section>
-          <section className="flex flex-col gap-2 border-t border-sidebar-border pt-4">
-            <h3 className="font-medium text-sm">Circulation equipment</h3>
-            <p className="text-xs text-sidebar-foreground/60">Place the equipment that keeps the water clean and comfortable.</p>
-            <div className="grid grid-cols-2 gap-2">
-              <CatalogCard count={pumpCount} image={THUMBNAILS.pump} label="Pool pump" onClick={() => activateTool('pool:pump')} />
-              <CatalogCard count={filterCount} image={THUMBNAILS.filter} label="Pool filter" onClick={() => activateTool('pool:filter')} />
-              <CatalogCard count={heaterCount} image={THUMBNAILS.heater} label="Pool heater" onClick={() => activateTool('pool:heater')} />
-            </div>
-          </section>
-          <section className="flex flex-col gap-2 border-t border-sidebar-border pt-4">
-            <h3 className="font-medium text-sm">Pool fittings</h3>
-            <p className="text-xs text-sidebar-foreground/60">Connect the pool to its suction, drain, and return lines.</p>
-            <div className="grid grid-cols-2 gap-2">
-              <CatalogCard count={skimmerCount} image={THUMBNAILS.skimmer} label="Pool skimmer" onClick={() => activateTool('pool:skimmer')} />
-              <CatalogCard count={inletCount} image={THUMBNAILS.inlet} label="Pool return inlet" onClick={() => activateTool('pool:inlet')} />
-              <CatalogCard count={drainCount} image={THUMBNAILS.drain} label="Pool drain" onClick={() => activateTool('pool:drain')} />
-              <CatalogCard count={valveCount} image={THUMBNAILS.valve} label="Suction valve" onClick={() => activateTool('pool:valve')} />
-            </div>
-          </section>
-        </div>
-      ) : (
-        <PoolDetailPanel
-          title={menu === 'pool-types' ? 'Swimming pool' : menu === 'stair-types' ? 'Pool stairs' : 'Water features'}
-          description={menu === 'pool-types' ? 'Choose a shape and configure the pool before placing it.' : menu === 'stair-types' ? 'Choose a stair style to place inside the pool.' : 'Add a waterfall or connect two pools with a spillover.'}
-          count={menu === 'pool-types' ? poolCount : menu === 'stair-types' ? stairCount : waterFeatureCount}
-          onBack={() => setMenu('root')}
-        >
-          {menu === 'water-features' && <section className="flex flex-col gap-3">
-            <p className="text-xs leading-relaxed text-sidebar-foreground/70">Waterfalls are placed along a pool edge. Spillovers connect a source pool to a receiving pool.</p>
-            <div className="grid grid-cols-2 gap-2">
-              <CatalogCard count={waterfallCount} image={THUMBNAILS.waterfall} label="Waterfall" onClick={() => activateTool('pool:waterfall')} />
-              <CatalogCard count={spilloverCount} image={THUMBNAILS.spillover} label="Pool spillover" onClick={() => activateTool('pool:spillover')} />
-            </div>
-          </section>}
-          {menu === 'pool-types' && <PresetGrid selected={shape} onPick={(value) => { usePoolStore.getState().setShape(value); activate() }} />}
-          {menu === 'pool-types' && <section className="flex flex-col gap-3 rounded-xl border border-sidebar-border bg-sidebar-accent/20 p-3">
-            <h3 className="font-medium text-sm">Pool settings</h3>
-            <div className="flex flex-col gap-1.5">
-              <span className="text-sidebar-foreground/60 text-xs">Border style</span>
-              <SegmentedControl className="h-11 p-1" value={copingStyle} options={[{ label: 'Standard', value: 'continuous' }, { label: 'Rock border', value: 'rock' }]} onChange={usePoolStore.getState().setCopingStyle} />
-            </div>
-            <ToggleControl checked={floorProfile === 'shallow-to-deep'} className="h-11 px-4" label="Shallow to deep" onChange={(enabled) => usePoolStore.getState().setFloorProfile(enabled ? 'shallow-to-deep' : 'flat')} />
-          </section>}
-          {menu === 'stair-types' && <section className="flex flex-col gap-2"><StairPresetGrid selected={stairVariant} onPick={(variant) => { usePoolStairStore.getState().selectVariant(variant); useEditor.getState().setTool('pool:stair'); useEditor.getState().setMode('build') }} /></section>}
-          {menu === 'pool-types' && <SliderControl label={shape === 'circle' ? 'Diameter' : 'Length'} min={0.5} max={100} step={0.1} unit="m" value={length} onChange={usePoolStore.getState().setLength} />}
-          {menu === 'pool-types' && shape !== 'circle' && <SliderControl label="Width" min={0.5} max={100} step={0.1} unit="m" value={width} onChange={usePoolStore.getState().setWidth} />}
-        </PoolDetailPanel>
-      )}
-    </div>
-  )
-}
-
-function PoolDetailPanel({
-  title,
-  description,
-  count,
-  onBack,
-  children,
-}: {
-  title: string
-  description: string
-  count: number
-  onBack: () => void
-  children: ReactNode
-}) {
-  const heading = useRef<HTMLHeadingElement>(null)
-
-  useEffect(() => {
-    heading.current?.focus({ preventScroll: true })
-  }, [])
-
-  return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <header className="flex shrink-0 flex-col gap-3 border-b border-sidebar-border/70 px-3 pb-3 pt-2">
-        <button
-          aria-label="Back to pool catalog"
-          className="-ml-1.5 flex min-h-8 self-start items-center gap-1.5 rounded-lg px-1.5 text-sidebar-foreground/60 text-xs hover:bg-sidebar-accent/50 hover:text-sidebar-foreground focus-visible:outline-2 focus-visible:outline-ring"
-          onClick={onBack}
-          type="button"
-        >
-          <ArrowLeft aria-hidden size={14} />
-          Pool catalog
-        </button>
+      <header className="flex shrink-0 flex-col gap-3 border-b border-sidebar-border/70 px-3 pb-3 pt-3">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <h2 ref={heading} tabIndex={-1} className="rounded font-semibold text-sm focus-visible:outline-2 focus-visible:outline-ring">
-              {title}
-            </h2>
-            <p className="mt-0.5 text-xs leading-relaxed text-sidebar-foreground/60">{description}</p>
+            <h2 className="font-semibold text-base">Pool design</h2>
+            {pool && <p className="mt-0.5 truncate text-[11px] text-sidebar-foreground/55">
+              {(pool as { name?: string }).name || 'Swimming pool'} · {pool.shape.replaceAll('-', ' ')} · {pool.shape === 'circle' ? `Ø ${pool.length.toFixed(2)} m` : `${pool.length.toFixed(2)} × ${pool.width.toFixed(2)} m`}{poolPlan ? ` · ${poolPlan.volume.toFixed(1)} m³` : ''}
+            </p>}
           </div>
-          <span className="shrink-0 text-sidebar-foreground/60 text-xs">{count} placed</span>
+          <span className="shrink-0 rounded-full bg-sidebar-accent/60 px-2.5 py-1 text-[11px] text-sidebar-foreground/70">
+            <span aria-hidden="true" className={`mr-1.5 inline-block size-1.5 rounded-full ${activeLevelName ? 'bg-emerald-400' : 'bg-sidebar-foreground/35'}`} />
+            {activeLevelName ? `Placed · ${activeLevelName}` : 'No floor selected'}
+          </span>
+        </div>
+        <div aria-label="Pool design steps" className="grid grid-cols-3 rounded-xl bg-sidebar-accent/30 p-1" role="tablist">
+          <button aria-selected={step === 'shell'} className={`min-h-9 rounded-lg px-2 text-xs font-medium transition-colors ${step === 'shell' ? 'bg-sidebar-accent text-sidebar-foreground shadow-sm ring-1 ring-sidebar-foreground/35' : 'text-sidebar-foreground/55 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'}`} onClick={() => setStep('shell')} role="tab" type="button">
+            Shell
+          </button>
+          <button aria-selected={step === 'systems'} className={`min-h-9 rounded-lg px-2 text-xs font-medium transition-colors ${step === 'systems' ? 'bg-sidebar-accent text-sidebar-foreground shadow-sm ring-1 ring-sidebar-foreground/35' : 'text-sidebar-foreground/55 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'}`} onClick={() => setStep('systems')} role="tab" type="button">
+            Systems
+          </button>
+          <button aria-selected={step === 'review'} className={`min-h-9 rounded-lg px-2 text-xs font-medium transition-colors ${step === 'review' ? 'bg-sidebar-accent text-sidebar-foreground shadow-sm ring-1 ring-sidebar-foreground/35' : 'text-sidebar-foreground/55 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'}`} onClick={() => setStep('review')} role="tab" type="button">
+            Review
+          </button>
         </div>
       </header>
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain p-3">
-        {children}
-      </div>
+      {step === 'shell' ? <PoolShellSettings /> : step === 'systems' ? <PoolSystemsPanel /> : <PoolReviewPanel onOpenSystems={() => setStep('systems')} />}
+      <footer className="flex shrink-0 items-center justify-between gap-2 border-t border-sidebar-border bg-sidebar px-3 py-2.5">
+        {step === 'shell' ? <span className="text-[11px] text-sidebar-foreground/45">Shell design</span> : <button className="min-h-9 rounded-lg px-3 text-xs text-sidebar-foreground/65 hover:bg-sidebar-accent/50" onClick={() => setStep(step === 'review' ? 'systems' : 'shell')} type="button">← {step === 'review' ? 'Systems' : 'Shell'}</button>}
+        {step !== 'review' && <button className="min-h-9 rounded-lg bg-sidebar-accent px-3 text-xs font-medium hover:bg-sidebar-accent/80 active:scale-[0.98]" onClick={() => setStep(step === 'shell' ? 'systems' : 'review')} type="button">
+          Continue to {step === 'shell' ? 'systems' : 'review'} →
+        </button>}
+      </footer>
     </div>
   )
-}
-
-function PresetGrid({ selected, onPick }: { selected: PoolShape; onPick: (shape: PoolShape) => void }) {
-  return <div className="grid grid-cols-2 gap-2">{POOL_SHAPE_OPTIONS.map((option) => <button
-    aria-pressed={selected === option.value}
-    className={`group min-w-0 overflow-hidden rounded-xl border bg-sidebar-accent/20 text-left ${selected === option.value ? 'border-primary ring-1 ring-primary/30' : 'border-sidebar-border hover:border-primary'}`}
-    key={option.value}
-    onClick={() => onPick(option.value)}
-    type="button"
-  >
-    <div className="overflow-hidden">
-      <img alt="" className="aspect-square w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]" src={POOL_SHAPE_THUMBNAILS[option.value]} />
-    </div>
-    <span className="block truncate px-2 py-2 font-medium text-xs">{option.label}</span>
-  </button>)}</div>
-}
-
-function StairPresetGrid({ selected, onPick }: { selected: PoolStairVariant; onPick: (variant: PoolStairVariant) => void }) {
-  return <div className="grid grid-cols-2 gap-2">{POOL_STAIR_VARIANTS.map((variant) => {
-    const preset = POOL_STAIR_CATALOG[variant]
-    return <button
-      aria-pressed={selected === variant}
-      className={`group min-w-0 overflow-hidden rounded-xl border bg-sidebar-accent/20 text-left ${selected === variant ? 'border-primary ring-1 ring-primary/30' : 'border-sidebar-border hover:border-primary'}`}
-      key={variant}
-      onClick={() => onPick(variant)}
-      type="button"
-    >
-      <div className="overflow-hidden">
-        <img alt="" className="aspect-square w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]" src={POOL_STAIR_THUMBNAILS[variant]} />
-      </div>
-      <span className="block truncate px-2 py-2 font-medium text-xs">{preset.label}</span>
-    </button>
-  })}</div>
-}
-
-function CatalogCard({ className = '', count, image, label, onClick, wide = false }: {
-  className?: string
-  count?: number
-  image: string
-  label: string
-  onClick: () => void
-  wide?: boolean
-}) {
-  return <button className={`group min-w-0 overflow-hidden rounded-xl border border-sidebar-border bg-sidebar-accent/20 text-left hover:border-primary ${className}`} onClick={onClick} type="button">
-    <div className="overflow-hidden">
-      <img alt="" className={`${wide ? 'aspect-[16/9]' : 'aspect-square'} w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]`} src={image} />
-    </div>
-      <span className="flex min-w-0 items-center justify-between gap-2 px-2 py-2">
-        <span className="truncate font-medium text-xs">{label}</span>
-        {count !== undefined && <span className="shrink-0 text-sidebar-foreground/50 text-[11px]">{count}</span>}
-      </span>
-  </button>
 }

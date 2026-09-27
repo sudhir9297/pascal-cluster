@@ -38,6 +38,20 @@ describe('shared pool joints', () => {
     expect(changes.create).toEqual([])
   })
 
+  test('keeps an existing intersecting joint aligned when its pool water changes', () => {
+    const polygon: [number, number][] = [[-2, -1.5], [2, -1.5], [2, 1.5], [-2, 1.5]]
+    const first = PoolNode.parse({ id: 'pool_existing_a', parentId: 'level_a', polygon,
+      position: [0, 1, 0], designWaterElevation: -0.3 })
+    const second = PoolNode.parse({ id: 'pool_existing_b', parentId: 'level_a', polygon,
+      position: [3.5, 1, 0], designWaterElevation: -0.3 })
+    const joint = PoolSharedJointNode.parse({ id: 'pool-shared-joint_pool_existing_a_pool_existing_b',
+      parentId: 'level_a', poolIds: [first.id, second.id], ...findSharedPoolJoint(first, second)!,
+      waterElevation: -0.12 })
+    const changes = syncSharedPoolJoints({ [first.id]: first, [second.id]: second, [joint.id]: joint } as never)
+    expect(changes.delete).toEqual([])
+    expect(changes.update.find((entry) => entry.id === joint.id)?.data.waterElevation).toBeCloseTo(-0.3)
+  })
+
   test('detects the same joint when the second pool is on the opposite side', () => {
     const rectangle = [[-2, -1.5], [2, -1.5], [2, 1.5], [-2, 1.5]]
     const first = PoolNode.parse({ position: [3.5, 0, 0], polygon: rectangle })
@@ -112,6 +126,25 @@ describe('shared pool joints', () => {
       polygon: rectangle,
     })
     expect(findSharedPoolJoint(first, second)?.position[1]).toBeCloseTo(0.6)
+  })
+
+  test('places connection water at the connected custom pools water elevation', () => {
+    const polygon: [number, number][] = [[-2, -1.5], [2, -1.5], [2, 1.5], [-2, 1.5]]
+    const first = PoolNode.parse({ id: 'pool_joint_water_a', shape: 'custom',
+      polygon, position: [0, 1, 0], finishedDeckElevation: -0.08, designWaterElevation: -0.2 })
+    const second = PoolNode.parse({ id: 'pool_joint_water_b', shape: 'custom',
+      polygon, position: [3.5, 1, 0], finishedDeckElevation: -0.08, designWaterElevation: -0.2 })
+    const joint = findSharedPoolJoint(first, second)!
+    const node = PoolSharedJointNode.parse({ ...joint, poolIds: [first.id, second.id] })
+    const geometry = buildSharedJointGeometry(node)
+    const passage = geometry.getObjectByName('pool-connection-water-passage')!
+    const waterTop = Math.max(...passage.children.map((child) => {
+      const mesh = child as import('three').Mesh
+      mesh.geometry.computeBoundingBox()
+      return child.position.y + mesh.geometry.boundingBox!.max.y
+    }))
+    expect(node.position[1] + waterTop).toBeCloseTo(first.position[1] + first.designWaterElevation)
+    geometry.userData.waterEffect.dispose()
   })
 
   test('removes an automatic joint when an explicit spillover connects the same pools', () => {

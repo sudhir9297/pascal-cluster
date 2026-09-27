@@ -17,6 +17,7 @@ const DEFAULT_POOL_SHARED_JOINT = {
   transitionHeight: 0.18,
   transitionColor: '#2b7182',
   commonFloorDepth: 1.5,
+  waterElevation: -0.12,
   rockSeed: 9733,
   surfaceColor: '#b8b7b0',
 }

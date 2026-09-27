@@ -19,6 +19,7 @@ export const PoolSharedJointNode = BaseNode.extend({
   transitionHeight: z.number().min(0.05).max(0.5).default(0.18),
   transitionColor: z.string().default('#2b7182'),
   commonFloorDepth: z.number().min(0.1).max(4).default(1.5),
+  waterElevation: z.number().finite().default(-0.12),
   rockSeed: z.number().int().default(9733),
   surfaceColor: z.string().default('#b8b7b0'),
 })

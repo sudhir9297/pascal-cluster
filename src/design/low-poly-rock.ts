@@ -30,12 +30,12 @@ type ProfileSettings = {
 }
 
 const PROFILE_SETTINGS: Record<LowPolyRockProfile, ProfileSettings> = {
-  boulder: { sides: 8, lowerScale: 1.03, shoulderScale: 0.94, crownScale: 0.5, crownHeight: 0.92, topOffsetX: 0.05, topOffsetZ: -0.03 },
-  ledge: { sides: 7, lowerScale: 1.05, shoulderScale: 1, crownScale: 0.78, crownHeight: 0.82, topOffsetX: 0.12, topOffsetZ: 0 },
-  pillar: { sides: 7, lowerScale: 0.9, shoulderScale: 0.82, crownScale: 0.48, crownHeight: 0.96, topOffsetX: -0.08, topOffsetZ: 0.04 },
-  peak: { sides: 6, lowerScale: 1.02, shoulderScale: 0.78, crownScale: 0.2, crownHeight: 1.04, topOffsetX: 0.2, topOffsetZ: -0.1 },
-  wedge: { sides: 7, lowerScale: 1.06, shoulderScale: 0.9, crownScale: 0.42, crownHeight: 0.92, topOffsetX: 0.28, topOffsetZ: 0.08 },
-  shard: { sides: 5, lowerScale: 0.96, shoulderScale: 0.68, crownScale: 0.16, crownHeight: 1.08, topOffsetX: -0.22, topOffsetZ: 0.16 },
+  boulder: { sides: 13, lowerScale: 1.03, shoulderScale: 0.94, crownScale: 0.5, crownHeight: 0.92, topOffsetX: 0.05, topOffsetZ: -0.03 },
+  ledge: { sides: 12, lowerScale: 1.05, shoulderScale: 1, crownScale: 0.78, crownHeight: 0.82, topOffsetX: 0.12, topOffsetZ: 0 },
+  pillar: { sides: 11, lowerScale: 0.9, shoulderScale: 0.82, crownScale: 0.48, crownHeight: 0.96, topOffsetX: -0.08, topOffsetZ: 0.04 },
+  peak: { sides: 10, lowerScale: 1.02, shoulderScale: 0.78, crownScale: 0.2, crownHeight: 1.04, topOffsetX: 0.2, topOffsetZ: -0.1 },
+  wedge: { sides: 12, lowerScale: 1.06, shoulderScale: 0.9, crownScale: 0.42, crownHeight: 0.92, topOffsetX: 0.28, topOffsetZ: 0.08 },
+  shard: { sides: 10, lowerScale: 0.96, shoulderScale: 0.68, crownScale: 0.16, crownHeight: 1.08, topOffsetX: -0.22, topOffsetZ: 0.16 },
 }
 
 function seededRandom(seed: number) {
@@ -85,6 +85,7 @@ export function createLowPolyRockGeometry(
   const ringDefinitions = [
     { y: 0, scale: 0.82, centerX: 0, centerZ: 0 },
     { y: 0.16, scale: settings.lowerScale, centerX: (random() - 0.5) * 0.08, centerZ: (random() - 0.5) * 0.08 },
+    { y: 0.38, scale: (settings.lowerScale + settings.shoulderScale) * 0.52, centerX: (random() - 0.5) * 0.11, centerZ: (random() - 0.5) * 0.11 },
     { y: 0.62, scale: settings.shoulderScale, centerX: (random() - 0.5) * 0.13, centerZ: (random() - 0.5) * 0.13 },
     { y: settings.crownHeight, scale: settings.crownScale, centerX: settings.topOffsetX, centerZ: settings.topOffsetZ },
   ]

@@ -45,11 +45,13 @@ function poolWallLength(pool: PoolNode, wallIndex: number) {
 
 /** Small, proportional defaults for a waterfall mounted on a pool wall. */
 export function getMountedWaterfallDimensions(pool: PoolNode, wallIndex: number) {
-  const wallLength = poolWallLength(pool, wallIndex)
+  // A circular wall is split into short chords for rendering. One chord is
+  // not the usable span of wall available to a waterfall.
+  const wallLength = pool.shape === 'circle' ? pool.length : poolWallLength(pool, wallIndex)
   const width = Math.max(0.8, Math.min(1.8, wallLength * 0.24))
   return {
     width,
-    height: Math.max(0.55, Math.min(1.05, width * 0.58)),
+    height: Math.max(0.6, Math.min(1.05, width * 0.58)),
     depth: Math.max(0.45, Math.min(0.85, width * 0.46)),
   }
 }
@@ -157,7 +159,9 @@ export function placementOnPoolBoundary(pool: PoolNode, wallIndex: number, wallT
     poolId: pool.id,
     wallIndex: index,
     wallT: t,
-    edgeCurve: sampleBoundaryCurve(polygon, index, t, width, localAngle, ccw, anchor),
+    edgeCurve: pool.shape === 'circle'
+      ? sampleCircularBoundaryCurve(polygon, width, localAngle, anchor)
+      : sampleBoundaryCurve(polygon, index, t, width, localAngle, ccw, anchor),
     landingInset: getPoolWaterLandingInset(pool),
     targetWaterOffset: pool.designWaterElevation - pool.finishedDeckElevation,
     waterPreset: pool.waterPreset,
@@ -165,6 +169,34 @@ export function placementOnPoolBoundary(pool: PoolNode, wallIndex: number, wallT
     deepWaterColor: pool.deepWaterColor,
     poolRockSeed: pool.copingSeed,
   }
+}
+
+/** Intersect each waterfall-width sample with the nearby side of the pool rim. */
+function sampleCircularBoundaryCurve(
+  polygon: readonly (readonly [number, number])[], width: number,
+  localAngle: number, anchor: readonly [number, number],
+): Array<[number, number]> {
+  const cos = Math.cos(localAngle)
+  const sin = Math.sin(localAngle)
+  const local = polygon.map(([x, z]) => {
+    const dx = x - anchor[0]
+    const dz = z - anchor[1]
+    return [dx * cos - dz * sin, dx * sin + dz * cos] as const
+  })
+  return Array.from({ length: 9 }, (_, sample): [number, number] => {
+    const x = (sample / 8 - 0.5) * width * 1.15
+    let nearest: number | null = null
+    for (let index = 0; index < local.length; index += 1) {
+      const a = local[index]!
+      const b = local[(index + 1) % local.length]!
+      if (x < Math.min(a[0], b[0]) || x > Math.max(a[0], b[0])) continue
+      const dx = b[0] - a[0]
+      if (Math.abs(dx) < 1e-9) continue
+      const z = a[1] + (b[1] - a[1]) * (x - a[0]) / dx
+      if (nearest === null || Math.abs(z) < Math.abs(nearest)) nearest = z
+    }
+    return [x, nearest ?? 0]
+  })
 }
 
 export function resolveMountedWaterfall(node: PoolWaterfallNode, pool: PoolNode | null | undefined): PoolWaterfallNode {

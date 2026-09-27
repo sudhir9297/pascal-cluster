@@ -125,6 +125,7 @@ export type SharedPoolJoint = {
   width: number
   intersection: PoolPoint[][]
   commonFloorDepth: number
+  waterElevation: number
   copingStyle: PoolSharedJointNode['copingStyle']
   surfaceColor: string
   poolPoints: [PoolPoint, PoolPoint]
@@ -292,16 +293,21 @@ export function findSharedPoolJoint(
   const normalCoordinates = intersection.flatMap((region) => region.map((point) => dot(point, normal)))
   const intersectionWidth = Math.max(...tangentCoordinates) - Math.min(...tangentCoordinates)
   const intersectionDepth = Math.max(...normalCoordinates) - Math.min(...normalCoordinates)
+  const jointDeckHeight = Math.min(poolDeckHeight(first), poolDeckHeight(second))
   return {
     // Anchor the connection at the lower finished deck. This keeps the
     // transition aligned when either pool is moved vertically or has a
     // different finished-deck elevation.
-    position: [center[0], Math.min(poolDeckHeight(first), poolDeckHeight(second)), center[1]],
+    position: [center[0], jointDeckHeight, center[1]],
     rotation: [0, Math.atan2(tangent[0], tangent[1]), 0],
     length: Math.max(0.12, intersectionDepth),
     width: Math.max(0.12, intersectionWidth),
     intersection,
     commonFloorDepth: Math.max(poolFloorDepth(first), poolFloorDepth(second)),
+    waterElevation: Math.min(
+      first.position[1] + first.designWaterElevation,
+      second.position[1] + second.designWaterElevation,
+    ) - jointDeckHeight,
     copingStyle: first.copingStyle,
     surfaceColor: first.copingColor,
     poolPoints: best.poolPoints,
@@ -318,6 +324,7 @@ function jointNeedsUpdate(node: PoolSharedJointNode, joint: SharedPoolJoint) {
     node.length !== joint.length ||
     node.width !== joint.width ||
     node.commonFloorDepth !== joint.commonFloorDepth ||
+    node.waterElevation !== joint.waterElevation ||
     node.copingStyle !== joint.copingStyle ||
     node.surfaceColor !== joint.surfaceColor ||
     JSON.stringify(node.intersection) !== JSON.stringify(joint.intersection)
@@ -362,6 +369,19 @@ export function syncSharedPoolJoints(nodes: Record<string, AnyNode>): SharedPool
       if (!joint) continue
       expected.set(id, { first, second, joint })
     }
+  }
+
+  // Existing joints may have been placed while two basins intersected. Keep
+  // their connection geometry in sync even though new intersecting pairs
+  // require an explicit user-created connection.
+  for (const node of existing) {
+    if (expected.has(node.id) || explicitSpilloverPairs.has(node.id)) continue
+    const [firstId, secondId] = node.poolIds
+    const first = pools.find((pool) => pool.id === firstId)
+    const second = pools.find((pool) => pool.id === secondId)
+    if (!first || !second || first.parentId !== second.parentId) continue
+    const joint = findSharedPoolJoint(first, second)
+    if (joint) expected.set(node.id, { first, second, joint })
   }
 
   const create: PoolSharedJointNode[] = []

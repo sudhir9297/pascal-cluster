@@ -4,10 +4,13 @@ import {
   cameraNear,
   cameraPosition,
   color,
+  fract,
+  abs,
   dot,
   float,
   mix,
   normalLocal,
+  normalWorld,
   normalize,
   perspectiveDepthToViewZ,
   positionView,
@@ -81,12 +84,23 @@ export class WaterfallWaterEffect {
     const presetSpeed = Math.max(0.55, Math.abs(settings.causticsSpeed))
     const time = this.time.mul(-0.15 * speed * presetSpeed / 1.3)
     const detailScale = settings.surfaceDetail / 1.6
-
+    // Reset two staggered flow phases before the sampled detail stretches.
+    const phaseA = fract(this.time.mul(speed * presetSpeed / 0.85))
+    const phaseB = fract(this.time.mul(speed * presetSpeed / 0.85).add(0.5))
+    const phaseMix = abs(phaseA.mul(2).sub(1))
+    const fallAcceleration = smoothstep(0.22, 0.86, coordinates.y).mul(0.65).add(1)
+    const flowA = coordinates.y.sub(phaseA.mul(0.24).mul(fallAcceleration))
+    const flowB = coordinates.y.sub(phaseB.mul(0.24).mul(fallAcceleration))
     // The bundle bends x with three frequencies before sampling the masks.
     const distortedX = coordinates.x
       .add(sin(coordinates.y.mul(63 * detailScale).add(time)).mul(0.005))
       .add(sin(coordinates.y.mul(39 * detailScale).add(time)).mul(0.01))
       .sub(sin(coordinates.y.mul(1.9).add(time)).mul(0.01))
+    const flowSample = (source: typeof maskTexture, scaleX: number, scaleY: number, offset = 0) => mix(
+      source.sample(vec2(distortedX.mul(scaleX).add(offset), flowA.mul(scaleY))),
+      source.sample(vec2(distortedX.mul(scaleX).add(offset), flowB.mul(scaleY))),
+      phaseMix,
+    )
     const flow = coordinates.y.add(time)
     const slowFlow = coordinates.y.add(time.mul(0.7))
     const fastFlow = coordinates.y.add(time.mul(1.5))
@@ -97,24 +111,18 @@ export class WaterfallWaterEffect {
     const normalB = normalTexture.sample(
       vec2(coordinates.x.mul(normalScale * 1.7).sub(time.mul(0.14)), coordinates.y.mul(normalScale * 0.72).add(time.mul(-0.82))),
     ).rgb
-    const flowNormal = normalize(vec3(
-      normalA.r.add(normalB.r).sub(1).mul(settings.normalStrength * 0.42),
-      1,
-      normalA.g.add(normalB.g).sub(1).mul(settings.normalStrength * 0.42),
-    ))
+    const flowNormal = normalize(normalWorld.add(vec3(
+      normalA.r.add(normalB.r).sub(1).mul(settings.normalStrength * 0.22),
+      normalA.g.add(normalB.g).sub(1).mul(settings.normalStrength * 0.22),
+      normalA.b.add(normalB.b).sub(1).mul(settings.normalStrength * 0.22),
+    )))
 
     const primaryScale = Math.max(1.35, settings.causticsScale * 0.72)
     const secondaryScale = Math.max(2.1, settings.causticsScale * 1.08)
-    const maskA = maskTexture.sample(vec2(distortedX, slowFlow).mul(primaryScale)).g.min(0.3)
-    const maskB = maskTexture.sample(
-      vec2(distortedX, flow).mul(secondaryScale).add(vec2(1.7)),
-    ).g.min(0.3)
-    const broadFlow = detailNoise.sample(
-      vec2(distortedX.mul(0.72), flow.mul(0.58)).mul(1.35 * detailScale),
-    ).r
-    const streakNoise = maskTexture.sample(
-      vec2(distortedX.mul(3.8), fastFlow.mul(1.55)).mul(1.15 * detailScale),
-    ).r
+    const maskA = flowSample(maskTexture, primaryScale, primaryScale).g.min(0.3)
+    const maskB = flowSample(maskTexture, secondaryScale, secondaryScale, 1.7).g.min(0.3)
+    const broadFlow = flowSample(detailNoise, 0.72 * 1.35 * detailScale, 0.58 * 1.35 * detailScale).r
+    const streakNoise = flowSample(maskTexture, 3.8 * 1.15 * detailScale, 1.55 * 1.15 * detailScale).r
     const streaks = smoothstep(0.58, 0.92, streakNoise)
     const filaments = smoothstep(
       0.62,

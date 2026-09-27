@@ -14,7 +14,7 @@ export const POOL_SHAPE_OPTIONS: ReadonlyArray<{
   { label: 'Roman', value: 'roman' },
   { label: 'L-shape', value: 'l-shape' },
   { label: 'Freehand', value: 'spline' },
-  { label: 'Custom', value: 'custom' },
+  { label: 'Custom outline', value: 'custom' },
 ]
 
 export const DEFAULT_POOL_SHAPE_DIMENSIONS: Record<PoolShape, {
@@ -102,6 +102,22 @@ export function sampleClosedPoolSpline(
       control2,
       end,
       sampleIndex / steps,
+    ))
+  })
+}
+
+/** Samples explicitly authored handles; each pair uses absolute local pool coordinates. */
+export function sampleClosedPoolSplineWithTangents(
+  anchors: readonly PoolPoint[],
+  tangents: readonly { incoming: PoolPoint; outgoing: PoolPoint }[],
+  segmentsPerSpan = SPLINE_SEGMENTS_PER_SPAN,
+): PoolPoint[] {
+  if (anchors.length < 3 || tangents.length !== anchors.length) return [...anchors]
+  const steps = Math.max(1, Math.floor(segmentsPerSpan))
+  return anchors.flatMap((start, index) => {
+    const next = (index + 1) % anchors.length
+    return Array.from({ length: steps }, (_, sampleIndex) => cubicBezier(
+      start, tangents[index]!.outgoing, tangents[next]!.incoming, anchors[next]!, sampleIndex / steps,
     ))
   })
 }
