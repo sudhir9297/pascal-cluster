@@ -1,7 +1,8 @@
 'use client'
 
-import { type AnyNode, useLiveNodeOverrides, useScene } from '@pascal-app/core'
+import { type AnyNode, useLiveNodeOverrides, useLiveTransforms, useScene } from '@pascal-app/core'
 import { NodeRenderer, useSceneAtmosphere, useViewer } from '@pascal-app/viewer'
+import { useEditor } from '@pascal-app/editor'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { Box3, Frustum, Matrix4, Mesh, Sphere, type Group, type Material } from 'three'
@@ -13,6 +14,7 @@ import { getPoolOverlaps } from '../design/pool-overlap'
 import { getPoolSpilloverNotches } from '../design/spillover-notch'
 import { getPoolConnectionRegions } from '../design/shared-joint'
 import { subscribePoolWaterActions } from '../shader/water-actions'
+import { registerPoolWaterEffect } from '../shader/water-effect-registry'
 import {
   createImmersiveXRPoolWaterMaterial,
   type PoolWaterEffect,
@@ -27,12 +29,14 @@ import {
   getPoolResizePreviewTransform,
   getPoolWaterResolution,
   getPoolWaterSettingsSignature,
+  getPoolRenderPose,
   selectPoolConnectedPipes,
   selectPoolRenderNodes,
 } from './pool-render-plan'
 import { shouldAdvancePoolWater } from './pool-render-state'
 import { usePoolNodeHost } from './node-host'
 import { AttachmentPoolContext } from './attachment-pool'
+import { PoolOutlineControls } from './outline-controls'
 
 const NO_CONNECTED_PIPES: AnyNode[] = []
 
@@ -49,10 +53,15 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
     () => (liveOverride ? ({ ...storeNode, ...liveOverride } as PoolNode) : storeNode),
     [storeNode, liveOverride],
   )
+  const liveTransform = useLiveTransforms((state) => state.get(storeNode.id as never))
+  const renderPose = getPoolRenderPose(node, liveTransform)
   nodeRef.current = node
   const inputDragging = useViewer((state) => state.inputDragging)
+  const outlineSelected = useViewer((state) => state.selection.selectedIds.includes(storeNode.id as never))
+  const selecting = useEditor((state) => state.mode === 'select')
   const horizontalResizeInProgress = Boolean(
     liveOverride
+    && !('outlineTangents' in liveOverride)
     && ('length' in liveOverride || 'width' in liveOverride)
     && ('polygon' in liveOverride || 'outlineControlPoints' in liveOverride),
   )
@@ -174,6 +183,7 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
   // the runtime event key is still the namespaced pool kind.
   const handlers = usePoolNodeHost(node, ref, geometrySignature)
   const waterEffect = pool.userData.waterEffect as PoolWaterEffect
+  useEffect(() => registerPoolWaterEffect(node.id, waterEffect), [node.id, waterEffect])
   const immersiveWaterMaterial = useMemo(
     () => createImmersiveXRPoolWaterMaterial({ waterColor: node.waterColor }, atmosphere),
     [node.waterColor, atmosphere],
@@ -298,8 +308,8 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
   return (
     <group
       ref={ref}
-      position={node.position}
-      rotation={node.rotation}
+      position={renderPose.position}
+      rotation={renderPose.rotation}
       visible={node.visible !== false}
       {...handlers}
     >
@@ -312,6 +322,8 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
       <AttachmentPoolContext.Provider value={storeNode}>{node.children?.map((childId) => (
         <NodeRenderer key={`${node.id}:${childId}`} nodeId={childId as never} />
       ))}</AttachmentPoolContext.Provider>
+      {outlineSelected && selecting && (node.shape === 'custom' || node.shape === 'spline') &&
+        <PoolOutlineControls node={node} />}
     </group>
   )
 }

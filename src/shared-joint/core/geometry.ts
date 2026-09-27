@@ -84,7 +84,7 @@ function buildConnectionFootprint(
         : createTransitionShelfGeometry(node.length, Math.max(0.08, node.width - node.rockWidth * 2), height),
       waterEffect?.material ?? new MeshStandardMaterial({ color, transparent: name.includes('water'), opacity: name.includes('water') ? 0.72 : 1, roughness: 0.82, metalness: 0 }),
     )
-    fallback.position.y = y
+    fallback.position.y = name === 'pool-connection-water-passage' ? y + height / 2 : y
     group.add(fallback)
     return group
   }
@@ -146,7 +146,7 @@ export function buildSharedJointGeometry(node: PoolSharedJointNode) {
   })
   group.userData.waterEffect = waterEffect
   group.add(buildCommonFloor(node))
-  group.add(buildConnectionFootprint(node, 'pool-connection-water-passage', 0.025, -0.12, '#168ca8', false, waterEffect))
+  group.add(buildConnectionFootprint(node, 'pool-connection-water-passage', 0.025, node.waterElevation - 0.025, '#168ca8', false, waterEffect))
 
   if (node.copingStyle === 'continuous') {
     group.add(buildConnectionFootprint(

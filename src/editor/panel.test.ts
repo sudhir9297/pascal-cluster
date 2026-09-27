@@ -1,51 +1,46 @@
 import { expect, test } from 'bun:test'
 
-test('opening the pool picker arms the highlighted shape without resetting its settings', async () => {
-  // Isolate hook mocks so other tests retain real React and editor stores.
+test('pool design steps navigate without changing the active editor tool', async () => {
+  // Isolate hook mocks so other tests retain the real React and editor stores.
   const panelPath = import.meta.resolve('./panel')
-  const storePath = import.meta.resolve('./store')
-  const stairStorePath = import.meta.resolve('../stair/editor/store')
-  const sceneNodesPath = import.meta.resolve('./scene-nodes')
+  const shellPath = import.meta.resolve('./shell-settings')
+  const systemsPath = import.meta.resolve('./systems-panel')
+  const reviewPath = import.meta.resolve('./review-panel')
+  const selectionPath = import.meta.resolve('./pool-selection')
+  const fittingPath = import.meta.resolve('../design/pool-fitting-layout')
   const process = Bun.spawn([Bun.which('bun')!, '-e', `
     import { mock } from 'bun:test'
     import * as React from 'react'
-    const actualReact = { ...React }
-    let menu = 'root'
-    let tool = null
-    let mode = 'select'
-    const settings = { shape: 'rectangle', length: 12, width: 6 }
-    const editor = { tool, mode, setTool(value) { tool = value; editor.tool = value }, setMode(value) { mode = value; editor.mode = value } }
-    const useEditor = Object.assign(selector => selector(editor), { getState: () => editor })
-    mock.module('react', () => ({ ...actualReact, useEffect() {}, useState() { return [menu, value => { menu = value }] } }))
-    mock.module('zustand/react/shallow', () => ({ useShallow: selector => selector }))
-    mock.module(${JSON.stringify(sceneNodesPath)}, () => ({ countPoolPluginNodes: () => ({}) }))
-    mock.module('@pascal-app/core', () => ({ useScene: selector => selector({ nodes: {} }) }))
-    mock.module('@pascal-app/viewer', () => ({ useViewer: selector => selector({ selection: { selectedIds: [] } }) }))
-    mock.module('@pascal-app/editor', () => ({
-      useEditor,
-      SegmentedControl() {}, SliderControl() {}, ToggleControl() {},
+    let step = 'shell'
+    const tool = 'pool:pool'
+    const useEditor = Object.assign(() => ({}), { getState: () => ({ tool, cycleRotationAxis() {} }) })
+    mock.module('react', () => ({
+      ...React,
+      useEffect() {},
+      useMemo: callback => callback(),
+      useState: () => [step, next => { step = next }],
     }))
-    mock.module(${JSON.stringify(storePath)}, () => ({ usePoolStore: Object.assign(selector => selector(settings), { getState: () => settings }) }))
-    mock.module(${JSON.stringify(stairStorePath)}, () => ({ usePoolStairStore: selector => selector({ variant: 'classic' }) }))
+    mock.module('@pascal-app/core', () => ({ useScene: selector => selector({ nodes: {} }) }))
+    mock.module('@pascal-app/viewer', () => ({ useViewer: selector => selector({ selection: { selectedIds: [], levelId: null } }) }))
+    mock.module('@pascal-app/editor', () => ({ useEditor }))
+    mock.module(${JSON.stringify(shellPath)}, () => ({ PoolShellSettings() {} }))
+    mock.module(${JSON.stringify(systemsPath)}, () => ({ PoolSystemsPanel() {} }))
+    mock.module(${JSON.stringify(reviewPath)}, () => ({ PoolReviewPanel() {} }))
+    mock.module(${JSON.stringify(selectionPath)}, () => ({ getSelectedPool: () => null }))
+    mock.module(${JSON.stringify(fittingPath)}, () => ({ planPoolFittings: () => null }))
     const { default: Panel } = await import(${JSON.stringify(panelPath)})
-    function find(element, predicate) {
-      if (!element || typeof element !== 'object') return
-      if (predicate(element)) return element
-      for (const child of [element.props?.children].flat(Infinity)) {
-        const match = find(child, predicate)
-        if (match) return match
-      }
+    function findAll(element, predicate) {
+      if (!element || typeof element !== 'object') return []
+      return [...(predicate(element) ? [element] : []),
+        ...[element.props?.children].flat(Infinity).flatMap(child => findAll(child, predicate))]
     }
-    for (const shape of ['rectangle', 'circle']) {
-      settings.shape = shape
-      menu = 'root'; tool = null; mode = 'select'
-      find(Panel(), element => element.props?.label === 'Swimming pool').props.onClick()
-      if (menu !== 'pool-types' || tool !== 'pool:pool' || mode !== 'build') {
-        throw new Error('Picker opened but placement is not armed: ' + JSON.stringify({ menu, tool, mode }))
-      }
-      const picker = find(Panel(), element => element.props?.selected === shape)
-      if (!picker || settings.length !== 12 || settings.width !== 6) throw new Error('Selected preset or dimensions were reset')
-    }
+    let tabs = findAll(Panel(), element => element.props?.role === 'tab')
+    if (tabs.length !== 3 || tabs[0].props['aria-selected'] !== true) throw new Error('Shell step is not active')
+    const continueButton = findAll(Panel(), element => element.type === 'button' && typeof element.props?.onClick === 'function' && JSON.stringify(element.props?.children ?? '').includes('Continue to ') && JSON.stringify(element.props?.children ?? '').includes('systems'))[0]
+    if (!continueButton) throw new Error('Systems navigation is missing')
+    continueButton.props.onClick()
+    tabs = findAll(Panel(), element => element.props?.role === 'tab')
+    if (step !== 'systems' || tabs[1].props['aria-selected'] !== true) throw new Error('Systems step did not open')
   `], { stdout: 'pipe', stderr: 'pipe' })
   const [exitCode, stderr] = await Promise.all([process.exited, new Response(process.stderr).text()])
   expect(stderr).toBe('')

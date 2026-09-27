@@ -4,7 +4,7 @@ import { useFrame } from '@react-three/fiber'
 import { useLiveNodeOverrides } from '@pascal-app/core'
 import { useSceneAtmosphere } from '@pascal-app/viewer'
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
-import type { Group, Mesh } from 'three'
+import { Vector3, type Group, type Mesh } from 'three'
 import { useAttachmentPool } from '../../../editor/attachment-pool'
 import { usePoolNodeHost } from '../../../editor/node-host'
 import type {
@@ -13,7 +13,8 @@ import type {
   WaterfallPoolEffect,
   WaterfallWaterEffect,
 } from '../../../shader/waterfall-effect'
-import { buildWaterfallGeometry } from '../core/geometry'
+import { getPoolWaterEffect } from '../../../shader/water-effect-registry'
+import { buildWaterfallGeometry, getWaterfallImpactLocalPoint } from '../core/geometry'
 import type { PoolWaterfallNode } from '../core/schema'
 import { canReuseWaterfallGeometryDuringLiveEdit, getWaterfallLiveWidthScale, resolveMountedWaterfall } from '../design/placement'
 import { disposeWaterfallVisual } from './dispose-visual'
@@ -58,6 +59,8 @@ export default function PoolWaterfallPreview({ node }: { node: PoolWaterfallNode
     }
   }, [geometry, widthScale])
   const simulationAccumulator = useRef(0)
+  const impactAccumulator = useRef(0)
+  const impactWorld = useRef(new Vector3())
   const effects = useMemo(() => {
     const result = [] as WaterfallEffect[]
     geometry.traverse((child) => {
@@ -73,6 +76,27 @@ export default function PoolWaterfallPreview({ node }: { node: PoolWaterfallNode
       const simulationDelta = simulationAccumulator.current
       simulationAccumulator.current = 0
       for (const effect of effects) effect.update(simulationDelta)
+    }
+    if (mounted.showFlow && pool && mounted.poolId) {
+      impactAccumulator.current += Math.max(0, delta)
+      if (impactAccumulator.current >= 0.11) {
+        impactAccumulator.current = 0
+        const water = getPoolWaterEffect(mounted.poolId)
+        if (water && rootRef.current) {
+          const width = mounted.waterfallType === 'modern' ? mounted.width - 0.08
+            : mounted.width * (mounted.waterfallType === 'spillover' ? 0.72 : 0.3)
+          for (const across of [-0.55, 0, 0.55]) {
+            const [x, z] = getWaterfallImpactLocalPoint(mounted, across)
+            rootRef.current.updateWorldMatrix(true, false)
+            impactWorld.current.set(x, mounted.targetWaterOffset, z)
+            rootRef.current.localToWorld(impactWorld.current)
+            impactWorld.current.sub(new Vector3(...pool.position))
+              .applyAxisAngle(new Vector3(0, 1, 0), -(pool.rotation[1] ?? 0))
+            water.addDropAt(impactWorld.current.x, impactWorld.current.z,
+              Math.max(0.008, width * 0.012), 0.015 * mounted.flowStrength)
+          }
+        }
+      }
     }
     invalidate()
   })

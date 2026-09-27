@@ -107,6 +107,13 @@ function transformPolygonToSiteCoordinates(
     visited.add(ancestorId)
     const ancestor = nodes[ancestorId]
     if (!ancestor || ancestor.type === 'site') break
+    // LevelRenderer is an identity group: storey elevation is handled by the
+    // viewer separately, and legacy position/rotation fields on a level do
+    // not transform its children. The site opening must follow the same frame.
+    if (ancestor.type === 'level') {
+      ancestorId = ancestor.parentId
+      continue
+    }
     const candidate = ancestor as PoolSceneNode & {
       position?: [number, number, number]
       rotation?: [number, number, number]

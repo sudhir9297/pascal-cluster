@@ -10,6 +10,7 @@ import {
   RenderTarget,
   Vector2,
   Vector3,
+  Vector4,
   type Texture,
   type WebGPURenderer,
 } from 'three/webgpu'
@@ -21,6 +22,8 @@ import {
   dot,
   exp,
   float,
+  Fn,
+  Loop,
   max,
   mix,
   normalize,
@@ -36,6 +39,7 @@ import {
   step,
   texture,
   uniform,
+  uniformArray,
   uv,
   vec2,
   vec3,
@@ -79,6 +83,7 @@ const CALM_BREEZE = 0.08
 // simulation only needs a lower fixed rate, which avoids two render-target
 // passes per pool on every 60 Hz frame while remaining visually smooth.
 const WATER_SIMULATION_HZ = 30
+const MAX_QUEUED_DROPS = 16
 
 export type WaterSettings = WaterPresetSettings & {
   waterMode?: 'base' | 'calm' | 'storm'
@@ -92,6 +97,10 @@ export type WaterSettings = WaterPresetSettings & {
 // straight and refracted samples. Creating one node per sample duplicates the
 // full viewport depth copy and is needlessly expensive.
 const viewportDepth = viewportDepthTexture()
+// The viewport node performs the copy for refraction. Reflection samples its
+// framebuffer as an ordinary texture, so it does not request a second copy.
+const viewportColor = viewportSharedTexture()
+const viewportColorSample = texture(viewportColor.value)
 
 function finite(value: unknown, fallback: number, min: number, max: number) {
   return typeof value === 'number' && Number.isFinite(value)
@@ -195,9 +204,9 @@ function makeTarget(resolution: number) {
  * graph compiles through WebGPURenderer for WebGPU or its WebGL 2 fallback.
  */
 export class PoolWaterEffect {
-  readonly resolution: number
+  resolution: number
   readonly stateNode: TextureNodeLike
-  readonly material: MeshBasicNodeMaterial
+  material: MeshBasicNodeMaterial
 
   private read: RenderTarget
   private write: RenderTarget
@@ -205,17 +214,18 @@ export class PoolWaterEffect {
   private readonly updateMaterial: NodeMaterial
   private readonly dropMaterial: NodeMaterial
   private readonly clearMaterial: NodeMaterial
+  private readonly copyMaterial: NodeMaterial
   private readonly inputNode: TextureNodeLike
   private readonly normalTextureNode: TextureNodeLike
   private readonly causticTextureNode: TextureNodeLike
   private readonly distortionTextureNode: TextureNodeLike
   private readonly shorelineTextureNode: TextureNodeLike
-  private readonly dropCenter: any
-  private readonly dropRadius: any
-  private readonly dropStrength: any
+  private readonly dropData: Vector4[]
+  private readonly dropCount: any
   private readonly damping: any
   private readonly settleDamping: any
   private readonly simulationDetail: any
+  private readonly simulationTexel: any
   private readonly shallowColor: any
   private readonly deepColor: any
   private readonly normalScale: any
@@ -250,6 +260,10 @@ export class PoolWaterEffect {
   private readonly absorption: any
   private initialized = false
   private accumulator = 0
+  private slowFrames = 0
+  private fastFrames = 0
+  private resolutionCooldown = 0
+  private readonly maxResolution: number
   private rainAccumulator = 0
   private breezeAccumulator = 0
   private drops: Array<[number, number, number, number]> = []
@@ -273,6 +287,7 @@ export class PoolWaterEffect {
       ? CALM_MOTION_INTENSITY
       : this.mode === 'storm' ? 1.6 : 1
     this.resolution = resolution
+    this.maxResolution = resolution
     this.read = makeTarget(resolution)
     this.write = makeTarget(resolution)
     this.inputNode = texture(this.read.texture) as TextureNodeLike
@@ -284,7 +299,8 @@ export class PoolWaterEffect {
     this.distortionTextureNode = texture(loadWaterTexture(selected.distortion, 'pool')) as TextureNodeLike
     this.shorelineTextureNode = texture(loadWaterTexture(selected.shoreline, 'pool')) as TextureNodeLike
 
-    const texel = vec2(1 / resolution, 1 / resolution)
+    this.simulationTexel = uniform(new Vector2(1 / resolution, 1 / resolution))
+    const texel = this.simulationTexel
     const sampleUv = uv()
     const current = this.inputNode.sample(sampleUv)
     const left = this.inputNode.sample(sampleUv.sub(vec2(texel.x, 0)))
@@ -308,19 +324,21 @@ export class PoolWaterEffect {
     this.updateMaterial.depthTest = false
     this.updateMaterial.depthWrite = false
 
-    this.dropCenter = uniform(new Vector2(0.5, 0.5))
-    this.dropRadius = uniform(0.03)
-    this.dropStrength = uniform(0.01)
-    const distance = sampleUv.sub(this.dropCenter).mul(this.poolSize).length().div(this.poolSize.y)
-    const influence = smoothstep(this.dropRadius, float(0), distance)
-    const shaped = float(0.5).sub(influence.mul(Math.PI).cos().mul(0.5))
+    this.dropData = Array.from({ length: MAX_QUEUED_DROPS }, () => new Vector4())
+    this.dropCount = uniform(0, 'int')
+    const drops = uniformArray(this.dropData, 'vec4')
     this.dropMaterial = new NodeMaterial()
-    this.dropMaterial.fragmentNode = vec4(
-      current.r.add(shaped.mul(this.dropStrength)) as any,
-      current.g as any,
-      current.b as any,
-      current.a as any,
-    )
+    this.dropMaterial.fragmentNode = Fn(() => {
+      const total = float(0).toVar()
+      Loop({ start: 0, end: this.dropCount }, ({ i }: { i: any }) => {
+        const drop = drops.element(i)
+        const distance = sampleUv.sub(drop.xy).mul(this.poolSize).length().div(this.poolSize.y)
+        const influence = smoothstep(drop.z, float(0), distance)
+        const shaped = float(0.5).sub(influence.mul(Math.PI).cos().mul(0.5))
+        total.addAssign(shaped.mul(drop.w))
+      })
+      return vec4(current.r.add(total), current.g, current.b, current.a)
+    })()
     this.dropMaterial.depthTest = false
     this.dropMaterial.depthWrite = false
 
@@ -328,6 +346,10 @@ export class PoolWaterEffect {
     this.clearMaterial.fragmentNode = vec4(0, 0, 0, 0)
     this.clearMaterial.depthTest = false
     this.clearMaterial.depthWrite = false
+    this.copyMaterial = new NodeMaterial()
+    this.copyMaterial.fragmentNode = this.inputNode.sample(sampleUv)
+    this.copyMaterial.depthTest = false
+    this.copyMaterial.depthWrite = false
     this.quad = new QuadMesh(this.updateMaterial)
 
     this.time = uniform(0)
@@ -367,6 +389,9 @@ export class PoolWaterEffect {
     const panA = this.motionTime.mul(WATER_MOTION_RATES.normalPrimary)
     const panB = this.motionTime.mul(WATER_MOTION_RATES.normalSecondary)
     const uvA = base.mul(this.normalScale.mul(0.5)).add(vec2(panA))
+    if (this.settings.waterQuality === 'low' || this.settings.waterQuality === 'medium') {
+      return this.normalTextureNode.sample(uvA).rgb.mul(2).sub(1)
+    }
     const uvB = base.mul(this.normalScale).add(vec2(panB))
     return mix(
       this.normalTextureNode.sample(uvA).rgb,
@@ -481,7 +506,7 @@ export class PoolWaterEffect {
     const refractedUv = screenUV.add(refractionOffset.mul(keepOffset)).clamp(0, 1)
     const usesSceneRefraction = this.settings.waterQuality !== 'low'
     const sceneColor = usesSceneRefraction
-      ? viewportSharedTexture(refractedUv).rgb
+      ? viewportColor.sample(refractedUv).rgb
       : vec3(0)
 
     const baseColor = mix(this.deepColor, this.shallowColor, shallowMask)
@@ -547,7 +572,7 @@ export class PoolWaterEffect {
     const reflectionConfidence = smoothstep(0.015, 0.12, screenEdge)
       .mul(smoothstep(0.02, 0.3, facing.oneMinus()))
     const nearbyScene = usesLocalReflections
-      ? viewportSharedTexture(reflectedUv).rgb
+      ? viewportColorSample.sample(reflectedUv).rgb
       : sky
     const localReflectionWeight = this.settings.waterQuality === 'ultra' ? 0.52 : 0.38
     const reflectedScene = mix(sky, nearbyScene, reflectionConfidence.mul(localReflectionWeight))
@@ -611,6 +636,7 @@ export class PoolWaterEffect {
       if (this.mode === 'calm') this.drops.length = 0
     }
     const previousPreset = this.settings.waterPreset
+    const previousQuality = this.settings.waterQuality
     this.settings = resolveWaterSettings(settingsInput)
     this.damping.value = this.computeDamping()
     this.simulationDetail.value = this.settings.surfaceDetail
@@ -645,10 +671,15 @@ export class PoolWaterEffect {
       this.distortionTextureNode.value = loadWaterTexture(selected.distortion, 'pool')
       this.shorelineTextureNode.value = loadWaterTexture(selected.shoreline, 'pool')
     }
+    if (previousQuality !== this.settings.waterQuality) {
+      const previousMaterial = this.material
+      this.material = this.createWaterMaterial()
+      previousMaterial.dispose()
+    }
   }
 
   addDrop(u: number, v: number, radius?: number, strength = 0.055) {
-    if (this.drops.length >= 16 || !this.contains(u, v)) return
+    if (this.drops.length >= MAX_QUEUED_DROPS || !this.contains(u, v)) return
     const normalizedRadius = (radius ?? this.settings.rippleSize / 1000) * 1.5
     this.drops.push([
       Math.max(0, Math.min(1, u)),
@@ -656,6 +687,15 @@ export class PoolWaterEffect {
       Math.max(0.004, normalizedRadius),
       strength,
     ])
+  }
+
+  addDropAt(x: number, z: number, radius?: number, strength = 0.055) {
+    this.addDrop(
+      (x - this.origin[0]) / this.poolSize.value.x,
+      (z - this.origin[1]) / this.poolSize.value.y,
+      radius,
+      strength,
+    )
   }
 
   calm(settings: Partial<WaterSettings>) {
@@ -712,6 +752,52 @@ export class PoolWaterEffect {
     this.stateNode.value = this.read.texture
   }
 
+  private adaptResolution(renderer: WebGPURenderer, delta: number) {
+    // Spend less on the ripple field only after sustained low frame rate.
+    // Recover more slowly so the water does not repeatedly resize near 60 FPS.
+    this.resolutionCooldown = Math.max(0, this.resolutionCooldown - delta)
+    if (delta > 1 / 42) {
+      this.slowFrames += delta
+      this.fastFrames = 0
+    } else if (delta < 1 / 55) {
+      this.fastFrames += delta
+      this.slowFrames = 0
+    } else {
+      this.slowFrames = 0
+      this.fastFrames = 0
+    }
+    if (this.resolutionCooldown > 0) return
+    const minimum = Math.min(64, this.maxResolution)
+    const next = this.slowFrames >= 2
+      ? Math.max(minimum, Math.floor(this.resolution / 2))
+      : this.fastFrames >= 8
+        ? Math.min(this.maxResolution, this.resolution * 2)
+        : this.resolution
+    if (next === this.resolution) return
+    const oldRead = this.read
+    const oldWrite = this.write
+    const nextRead = makeTarget(next)
+    const nextWrite = makeTarget(next)
+    if (this.initialized) {
+      // Resample the current height and velocity into the new target so a
+      // quality change does not erase active ripples.
+      this.quad.material = this.copyMaterial
+      renderer.setRenderTarget(nextRead)
+      this.quad.render(renderer)
+    }
+    this.read = nextRead
+    this.write = nextWrite
+    this.inputNode.value = nextRead.texture
+    this.stateNode.value = nextRead.texture
+    oldRead.dispose()
+    oldWrite.dispose()
+    this.resolution = next
+    this.simulationTexel.value.set(1 / next, 1 / next)
+    this.slowFrames = 0
+    this.fastFrames = 0
+    this.resolutionCooldown = 3
+  }
+
   private pass(renderer: WebGPURenderer, material: NodeMaterial) {
     this.quad.material = material
     renderer.setRenderTarget(this.write)
@@ -725,6 +811,7 @@ export class PoolWaterEffect {
     const previousAutoClear = renderer.autoClear
     renderer.autoClear = true
     try {
+      this.adaptResolution(renderer, delta)
       this.time.value += Math.min(delta, 0.05)
       const blend = 1 - Math.exp(-delta * 2)
       this.stormIntensity.value += ((this.mode === 'storm' ? 1 : 0) - this.stormIntensity.value) * blend
@@ -754,10 +841,12 @@ export class PoolWaterEffect {
         this.addDrop(Math.random(), Math.random(), 0.05 + Math.random() * 0.08, (Math.random() - 0.5) * 0.012)
       }
 
-      for (const [u, v, radius, strength] of this.drops.splice(0)) {
-        this.dropCenter.value.set(u, v)
-        this.dropRadius.value = radius
-        this.dropStrength.value = strength
+      if (this.drops.length) {
+        this.dropCount.value = this.drops.length
+        for (let index = 0; index < this.drops.length; index++) {
+          this.dropData[index]!.set(...this.drops[index]!)
+        }
+        this.drops.length = 0
         this.pass(renderer, this.dropMaterial)
       }
 
@@ -781,6 +870,7 @@ export class PoolWaterEffect {
     this.updateMaterial.dispose()
     this.dropMaterial.dispose()
     this.clearMaterial.dispose()
+    this.copyMaterial.dispose()
     this.material.dispose()
   }
 }

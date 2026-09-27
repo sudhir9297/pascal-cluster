@@ -11,6 +11,7 @@ import {
   Vector3,
 } from 'three'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
+import { MeshStandardNodeMaterial } from 'three/webgpu'
 import type { SceneAtmosphereSource } from '@pascal-app/viewer'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import {
@@ -24,6 +25,7 @@ import {
   createLowPolyRockGeometry,
   type LowPolyRockProfile,
 } from '../../../design/low-poly-rock'
+import { createPoolRockMaterial } from '../../../design/rock-material'
 import { PoolWaterfallNode } from './schema'
 
 type RockPlacement = {
@@ -37,6 +39,10 @@ type RockPlacement = {
   yaw?: number
   roll?: number
 }
+
+type RockMaterial = MeshStandardMaterial | MeshStandardNodeMaterial
+
+const NO_RAYCAST = () => {}
 
 const MOUND_ROCKS: readonly RockPlacement[] = [
   { x: -0.47, y: 0, z: -0.04, width: 0.27, height: 0.27, depth: 0.58, profile: 'ledge', yaw: 0.12, roll: -0.03 },
@@ -139,6 +145,10 @@ export function buildWaterfallGeometry(
   const definedNode = Object.fromEntries(
     Object.entries(node).filter(([, value]) => value !== undefined),
   )
+  // Earlier auto-sizing saved 0.55 m on short walls, below the schema minimum.
+  if (typeof definedNode.height === 'number' && Number.isFinite(definedNode.height)) {
+    definedNode.height = Math.max(0.6, definedNode.height)
+  }
   const normalized = PoolWaterfallNode.parse(definedNode)
   const group = normalized.waterfallType === 'modern' ? buildModernWaterfallGeometry(normalized, atmosphere)
     : normalized.waterfallType === 'spillover' ? buildSpilloverWaterfallGeometry(normalized, atmosphere)
@@ -150,7 +160,7 @@ export function buildWaterfallGeometry(
     object.geometry.deleteAttribute('color')
     const materials = Array.isArray(object.material) ? object.material : [object.material]
     for (const material of materials) {
-      if (!(material instanceof MeshStandardMaterial)) continue
+      if (!(material instanceof MeshStandardMaterial) && !(material instanceof MeshStandardNodeMaterial)) continue
       material.vertexColors = false
       material.color.set(normalized.rockColor)
       material.roughness = 0.88
@@ -193,13 +203,17 @@ function buildRockWaterfallGeometry(node: PoolWaterfallNode, atmosphere?: SceneA
   addReceivingPool(group, node, atmosphere)
 
   const moundRocks = adaptiveMoundRocks(node)
-  const moundMaterial = createRockMaterial(0.96)
+  const moundMaterial = createPoolRockMaterial(node.rockColor, node.showFlow ? {
+    halfWidth: fallWidthForNode(node) * 0.5,
+    frontZ: getWaterfallLipZ(node),
+    topY: node.height * 0.82,
+  } : undefined)
   group.add(mergeRockMeshes(
     moundRocks.map((rock, index) => createRock(node, rock, index, moundMaterial)),
     'waterfall-rock-mound',
     moundMaterial,
   ))
-  if (!node.poolId) group.add(createPondEdgeRocks(node, moundRocks.length, createRockMaterial(0.82)))
+  if (!node.poolId) group.add(createPondEdgeRocks(node, moundRocks.length, createPoolRockMaterial(node.rockColor)))
 
   const topY = node.height * 0.82
   const fallZ = getWaterfallLipZ(node)
@@ -221,14 +235,18 @@ function buildSpilloverWaterfallGeometry(node: PoolWaterfallNode, atmosphere?: S
   addReceivingPool(group, node, atmosphere)
 
   const rocks = adaptiveMoundRocks(node).filter((rock) => rock.y < 0.35)
-  const rockMaterial = createRockMaterial(0.96)
+  const rockMaterial = createPoolRockMaterial(node.rockColor, node.showFlow ? {
+    halfWidth: node.width * 0.36,
+    frontZ: getWaterfallLipZ(node),
+    topY: node.height * 0.38,
+  } : undefined)
   group.add(mergeRockMeshes(rocks.map((rock, index) => createRock(node, {
       ...rock,
       y: rock.y * 0.62,
       height: rock.height * 0.58,
       depth: rock.depth * 0.82,
     }, index, rockMaterial)), 'waterfall-rock-spillover', rockMaterial))
-  if (!node.poolId) group.add(createPondEdgeRocks(node, rocks.length, createRockMaterial(0.82)))
+  if (!node.poolId) group.add(createPondEdgeRocks(node, rocks.length, createPoolRockMaterial(node.rockColor)))
 
   const topY = node.height * 0.38
   const fallZ = getWaterfallLipZ(node)
@@ -239,21 +257,15 @@ function buildSpilloverWaterfallGeometry(node: PoolWaterfallNode, atmosphere?: S
   return group
 }
 
-function createRockMaterial(roughness: number) {
-  return new MeshStandardMaterial({
-    color: '#ffffff',
-    roughness,
-    metalness: 0,
-    flatShading: true,
-    vertexColors: true,
-  })
+function fallWidthForNode(node: PoolWaterfallNode) {
+  return node.width * (node.waterfallType === 'spillover' ? 0.72 : 0.3)
 }
 
 function createRock(
   node: PoolWaterfallNode,
   rock: RockPlacement,
   index: number,
-  material: MeshStandardMaterial,
+  material: RockMaterial,
 ) {
   const seed = node.rockSeed + index * 7919
   const color = waterfallRockColor(node.rockColor, node.poolRockSeed, node.rockSeed, index)
@@ -284,7 +296,7 @@ function createRock(
 function createPondEdgeRocks(
   node: PoolWaterfallNode,
   startIndex: number,
-  material: MeshStandardMaterial,
+  material: RockMaterial,
 ) {
   const rocks: Mesh[] = []
   for (const [offset, rock] of POND_EDGE_ROCKS.entries()) {
@@ -311,7 +323,7 @@ function createPondEdgeRocks(
   return mergeRockMeshes(rocks, 'waterfall-rock-pond-edge', material)
 }
 
-function mergeRockMeshes(rocks: readonly Mesh[], name: string, material: MeshStandardMaterial) {
+function mergeRockMeshes(rocks: readonly Mesh[], name: string, material: RockMaterial) {
   const geometries = rocks.map((rock) => {
     rock.updateMatrix()
     return rock.geometry.clone().applyMatrix4(rock.matrix)
@@ -518,6 +530,7 @@ function addReceivingPool(group: Group, node: PoolWaterfallNode, atmosphere?: Sc
   water.userData.waterPreset = node.waterPreset
   water.userData.shallowWaterColor = node.shallowWaterColor
   water.userData.deepWaterColor = node.deepWaterColor
+  water.raycast = NO_RAYCAST
   group.add(water)
 }
 
@@ -551,6 +564,7 @@ function addWaterSheet(
   water.userData.waterPreset = node.waterPreset
   water.userData.shallowWaterColor = node.shallowWaterColor
   water.userData.deepWaterColor = node.deepWaterColor
+  water.raycast = NO_RAYCAST
   group.add(water)
 
   const lineEffect = new WaterfallLineEffect(node, node.flowStrength, atmosphere)
@@ -561,6 +575,7 @@ function addWaterSheet(
   lines.name = 'waterfall-flow-lines'
   lines.renderOrder = 4
   lines.userData.waterfallEffect = lineEffect
+  lines.raycast = NO_RAYCAST
   group.add(lines)
 
   addBubbleCloud(group, width, node)
@@ -574,7 +589,7 @@ function bubbleRandom(seed: number, index: number, salt: number) {
 function addBubbleCloud(group: Group, width: number, node: PoolWaterfallNode) {
   const depth = Math.max(0.3, width * 0.28)
   const layerCounts: Record<WaterfallBubbleFamily, number> = {
-    foam: Math.max(9, Math.min(16, Math.round(9 + width * 3))),
+    foam: Math.max(16, Math.min(28, Math.round(16 + width * 4))),
     aeration: Math.max(60, Math.min(112, Math.round(64 + width * 20))),
     microstream: Math.max(16, Math.min(28, Math.round(16 + width * 6))),
   }
@@ -585,6 +600,7 @@ function addBubbleCloud(group: Group, width: number, node: PoolWaterfallNode) {
     effect.mesh.name = `waterfall-bubble-cloud-${family}`
     effect.mesh.userData.bubbleFamily = family
     effect.mesh.userData.waterfallEffect = effect
+    effect.mesh.raycast = NO_RAYCAST
     effect.mesh.renderOrder = family === 'foam' ? 8 : family === 'microstream' ? 7 : 6
     effect.mesh.castShadow = false
     effect.mesh.receiveShadow = false
@@ -594,7 +610,10 @@ function addBubbleCloud(group: Group, width: number, node: PoolWaterfallNode) {
       const spread = family === 'foam' ? 0.78 : family === 'aeration' ? 1.12 : 0.66
       const xRandomA = bubbleRandom(node.rockSeed, seedIndex, 1)
       const xRandomB = bubbleRandom(node.rockSeed, seedIndex, 14)
-      const x = ((xRandomA + xRandomB) * 0.5 - 0.5) * width * spread
+      const ringAngle = Math.PI * 2 * (index + xRandomA * 0.3) / count
+      const x = family === 'foam'
+        ? Math.cos(ringAngle) * width * 0.34
+        : ((xRandomA + xRandomB) * 0.5 - 0.5) * width * spread
       const across = x / Math.max(0.001, width * 0.5)
       const impact = getWaterfallImpactLocalPoint(node, across)
       const randomRadius = bubbleRandom(node.rockSeed, seedIndex, 2)
@@ -605,7 +624,9 @@ function addBubbleCloud(group: Group, width: number, node: PoolWaterfallNode) {
           : 0.011 + randomRadius * 0.018
       const zSpread = family === 'microstream' ? depth * 0.32 : family === 'foam' ? depth * 0.38 : depth
       const zBias = family === 'foam' ? 0.5 : family === 'microstream' ? 0.3 : 0.18
-      const z = impact[1] + (bubbleRandom(node.rockSeed, seedIndex, 3) - zBias) * zSpread
+      const z = impact[1] + (family === 'foam'
+        ? Math.sin(ringAngle) * depth * 0.3 + (bubbleRandom(node.rockSeed, seedIndex, 3) - 0.5) * depth * 0.04
+        : (bubbleRandom(node.rockSeed, seedIndex, 3) - zBias) * zSpread)
       const familyPhase = family === 'foam' ? 0 : family === 'aeration' ? 0.28 : 0.46
       effect.addParticle({
         x,
@@ -915,7 +936,7 @@ export function getWaterfallImpactLocalPoint(node: PoolWaterfallNode, across = 0
   const lipZ = getWaterfallLipZ(node)
   const flowWidth = node.waterfallType === 'modern'
     ? Math.max(0.24, node.width - 0.08)
-    : node.width * 0.3
+    : node.width * (node.waterfallType === 'spillover' ? 0.72 : 0.3)
   const x = Math.max(-1, Math.min(1, across)) * flowWidth * 0.5
   return [x, getSpillwayLandingZ(lipZ, node.sheetDepth) + sampleEdgeCurve(node.edgeCurve, x).z]
 }

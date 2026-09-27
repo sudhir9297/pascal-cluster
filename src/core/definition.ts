@@ -4,6 +4,8 @@ import { getPoolDepthRange } from '../design/depth-profile'
 import { poolParametrics } from '../editor/parametrics'
 import { DEFAULT_POOL, PoolNode, resolvePoolPolygon } from './schema'
 import { createPoolShapePolygon, getPoolPolygonDimensions, isDrawnPoolShape } from '../design/shapes'
+import { poolOutlineAnchors, poolOutlineMidpoint, poolOutlineTangents } from '../design/outline-edit'
+import { poolOutlineAffordances } from '../editor/outline-affordances'
 
 type PoolDefinition = NodeDefinition<typeof PoolNode> & Record<string, unknown>
 
@@ -37,10 +39,11 @@ function resizePoolOutline(
   node: PoolNode,
   length: number,
   width: number,
-): Pick<PoolNode, 'outlineControlPoints' | 'polygon'> {
+): Pick<PoolNode, 'outlineControlPoints' | 'outlineTangents' | 'polygon'> {
   if (!isDrawnPoolShape(node.shape)) {
     return {
       outlineControlPoints: [],
+      outlineTangents: [],
       polygon: createPoolShapePolygon(node.shape, length, width),
     }
   }
@@ -64,6 +67,9 @@ function resizePoolOutline(
   )
   return {
     outlineControlPoints: scale(node.outlineControlPoints),
+    outlineTangents: node.outlineTangents.map((tangent) => ({
+      incoming: scale([tangent.incoming])[0]!, outgoing: scale([tangent.outgoing])[0]!,
+    })),
     polygon: scale(polygon),
   }
 }
@@ -416,12 +422,36 @@ export function poolFloorplan(node: PoolNode, ctx?: GeometryContext): FloorplanG
     stroke: selected ? (ctx?.viewState?.palette.selectedStroke ?? '#22c55e') : node.copingColor,
     strokeWidth: selected ? Math.max(0.12, outlineWidth * 1.5) : outlineWidth,
   }
-  return basin
+  if (!selected || !isDrawnPoolShape(node.shape)) return basin
+  const anchors = poolOutlineAnchors(node)
+  const tangents = node.shape === 'spline' ? poolOutlineTangents(node) : []
+  return { kind: 'group', children: [basin,
+    ...anchors.map((point, index): FloorplanGeometry => ({
+      kind: 'endpoint-handle', point, state: 'idle', variant: 'endpoint',
+      affordance: 'pool-outline-move', payload: { index },
+    })),
+    ...anchors.map((_, index): FloorplanGeometry => ({
+      kind: 'midpoint-handle', point: poolOutlineMidpoint(node, index),
+      affordance: 'pool-outline-insert', payload: { index },
+    })),
+    ...tangents.flatMap((tangent, index): FloorplanGeometry[] => [
+      { kind: 'line', x1: anchors[index]![0], y1: anchors[index]![1],
+        x2: tangent.incoming[0], y2: tangent.incoming[1], stroke: '#8381ed',
+        strokeWidth: 1.25, vectorEffect: 'non-scaling-stroke' },
+      { kind: 'line', x1: anchors[index]![0], y1: anchors[index]![1],
+        x2: tangent.outgoing[0], y2: tangent.outgoing[1], stroke: '#8381ed',
+        strokeWidth: 1.25, vectorEffect: 'non-scaling-stroke' },
+      { kind: 'endpoint-handle', point: tangent.incoming, state: 'idle', variant: 'curve',
+        affordance: 'pool-outline-incoming', payload: { index } },
+      { kind: 'endpoint-handle', point: tangent.outgoing, state: 'idle', variant: 'curve',
+        affordance: 'pool-outline-outgoing', payload: { index } },
+    ]),
+  ] }
 }
 
 export const poolDefinition: PoolDefinition = {
   kind: 'pool:pool',
-  schemaVersion: 25,
+  schemaVersion: 26,
   schema: PoolNode,
   category: 'furnish',
   snapProfile: 'item',
@@ -458,6 +488,7 @@ export const poolDefinition: PoolDefinition = {
   parametrics: poolParametrics,
   handles: poolHandles,
   floorplan: poolFloorplan,
+  floorplanAffordances: poolOutlineAffordances,
   renderer: { kind: 'parametric', module: () => import('../editor/renderer') },
   system: { module: () => import('../editor/opening-system'), priority: 3 },
   preview: () => import('../editor/preview'),
@@ -465,6 +496,7 @@ export const poolDefinition: PoolDefinition = {
   toolHints: [
     { key: 'Left click / drag', label: 'Place preset, add corner, or sketch freehand' },
     { key: 'Release / Enter', label: 'Finish the drawn pool outline' },
+    { key: 'Backspace', label: 'Remove last custom outline point' },
     { key: 'Esc', label: 'Cancel pool drawing' },
   ],
   presentation: {
