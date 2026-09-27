@@ -1,10 +1,50 @@
 import { describe, expect, test } from 'bun:test'
-import type { BufferAttribute, Material, Mesh } from 'three'
+import { Group, Mesh as ThreeMesh, MeshBasicMaterial, Raycaster, Vector3, type BufferAttribute, type Material, type Mesh } from 'three'
 import { MeshStandardNodeMaterial } from 'three/webgpu'
 import { PoolNode } from './schema'
 import { buildPoolGeometry } from './geometry'
 
 describe('pool connection wall openings', () => {
+  test.each([false, true])('custom pool water follows the basin outline at the saved elevation, reversed=%s', (reversed) => {
+    const polygon: [number, number][] = [
+      [-3, -2], [3, -2], [3, -0.5], [1, -0.5],
+      [1, 2], [-1.5, 2], [-1.5, 0.5], [-3, 0.5],
+    ]
+    const pool = PoolNode.parse({ shape: 'custom', polygon: reversed ? [...polygon].reverse() : polygon,
+      position: [8, 1.4, -5], rotation: [0, 0.6, 0],
+      finishedDeckElevation: -0.08, designWaterElevation: -0.2 })
+    const geometry = buildPoolGeometry(pool)
+    const water = geometry.getObjectByName('pool-water') as Mesh
+    const probeMaterial = new MeshBasicMaterial()
+    const probe = new ThreeMesh(water.geometry, probeMaterial)
+    probe.position.copy(water.position)
+    geometry.add(probe)
+    const root = new Group()
+    root.position.set(...pool.position)
+    root.rotation.set(...pool.rotation)
+    root.add(geometry)
+    root.updateMatrixWorld(true)
+
+    const rayAt = (x: number, z: number) => {
+      const world = new Vector3(x, 0, z).applyEuler(root.rotation).add(root.position)
+      return new Raycaster(new Vector3(world.x, 4, world.z), new Vector3(0, -1, 0))
+        .intersectObject(probe, false)[0]?.point.y
+    }
+    expect(rayAt(-2, -1)).toBeCloseTo(pool.position[1] + pool.designWaterElevation)
+    expect(rayAt(0, 1)).toBeCloseTo(pool.position[1] + pool.designWaterElevation)
+    expect(rayAt(2, 1)).toBeUndefined()
+    expect(rayAt(-2, 1)).toBeUndefined()
+    geometry.remove(probe)
+    probeMaterial.dispose()
+    geometry.userData.waterEffect.dispose()
+    geometry.traverse((child) => {
+      const mesh = child as Mesh
+      if (!mesh.isMesh) return
+      mesh.geometry.dispose()
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+      for (const material of materials as Material[]) material.dispose()
+    })
+  })
   test('uses lit materials and shadows for the shell walls, floor, and coping', () => {
     const pool = PoolNode.parse({ shellColor: '#123456', copingColor: '#654321' })
     const geometry = buildPoolGeometry(pool, { waterResolution: 16 })

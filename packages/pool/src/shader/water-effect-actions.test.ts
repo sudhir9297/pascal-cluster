@@ -31,13 +31,23 @@ function rendererStub() {
   }
 }
 
-  test('repeated queued disturbances and a resumed frame have bounded simulation work', () => {
+test('queued disturbances are combined into one render pass', () => {
   const effect = new PoolWaterEffect({}, 16)
   const { renderer, passes } = rendererStub()
   for (let i = 0; i < 100; i++) effect.addDrop(0.5, 0.5)
   effect.storm()
   effect.update(renderer, 120)
-  expect(passes()).toBeLessThanOrEqual(22)
+  expect(passes()).toBe(5)
   expect(renderer.autoClear).toBe(false)
+  effect.dispose()
+})
+
+test('sustained slow frames lower simulation resolution and recovery restores it', () => {
+  const effect = new PoolWaterEffect({}, 128)
+  const { renderer } = rendererStub()
+  for (let i = 0; i < 50; i++) effect.update(renderer, 0.05)
+  expect(effect.resolution).toBe(64)
+  for (let i = 0; i < 970; i++) effect.update(renderer, 1 / 120)
+  expect(effect.resolution).toBe(128)
   effect.dispose()
 })

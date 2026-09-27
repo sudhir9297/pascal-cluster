@@ -73,3 +73,12 @@ test('low quality omits environment and local scene reflection nodes', () => {
   expect(effect.resolution).toBe(16)
   effect.dispose()
 })
+
+test('changing quality rebuilds the shader even when simulation resolution stays fixed', () => {
+  const effect = new PoolWaterEffect({ waterQuality: 'high' }, 64)
+  const highMaterial = effect.material
+  effect.setSettings({ waterQuality: 'medium' })
+  expect(effect.material).not.toBe(highMaterial)
+  expect(effect.resolution).toBe(64)
+  effect.dispose()
+})

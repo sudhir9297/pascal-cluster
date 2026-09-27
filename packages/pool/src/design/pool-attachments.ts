@@ -71,7 +71,7 @@ export function resolvePoolAttachment(value: unknown, pool: PoolNode) {
       ]
       const x = minX + floorAnchor[0] * (maxX - minX)
       const z = minZ + floorAnchor[1] * (maxZ - minZ)
-      return { ...child, floorAnchor, position: [x, -getPoolDepthResolver(pool, polygon).depthAtX(x), z] as [number, number, number] }
+      return { ...child, floorAnchor, position: [x, pool.finishedDeckElevation - getPoolDepthResolver(pool, polygon).depthAtX(x), z] as [number, number, number] }
     }
   }
 }

@@ -89,6 +89,21 @@ export function countPools(nodes: Record<string, AnyNode>) {
   return count
 }
 
+/** Match the host renderer's live move pose for pool-owned shell and water. */
+export function getPoolRenderPose(
+  node: PoolNode,
+  liveTransform?: { position?: readonly [number, number, number]; rotation?: number } | null,
+) {
+  return {
+    position: liveTransform?.position
+      ? [...liveTransform.position] as [number, number, number]
+      : node.position,
+    rotation: liveTransform?.rotation === undefined
+      ? node.rotation
+      : [node.rotation[0], liveTransform.rotation, node.rotation[2]] as [number, number, number],
+  }
+}
+
 /** Water cost drops in steps, so adding a pool only rebuilds existing pools at a threshold. */
 export function getPoolWaterResolution(
   visiblePoolCount: number,

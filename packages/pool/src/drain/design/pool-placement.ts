@@ -1,4 +1,4 @@
-import { Euler, Vector3 } from 'three'
+import { Euler, Quaternion, Vector3 } from 'three'
 import { resolvePoolPolygon, type PoolNode } from '../../core/schema'
 import { getPoolDepthResolver } from '../../design/depth-profile'
 
@@ -20,13 +20,14 @@ function pointInPolygon(x: number, z: number, polygon: readonly (readonly [numbe
 /** Converts a level-space click into a point flush with the selected pool floor. */
 export function getPoolDrainPlacement(pool: PoolNode, levelPoint: readonly [number, number, number]): PoolDrainPlacement | null {
   const poolOrigin = new Vector3(...pool.position)
-  const localPoint = new Vector3(...levelPoint).sub(poolOrigin).applyEuler(new Euler(-pool.rotation[0], -pool.rotation[1], -pool.rotation[2], 'XYZ'))
+  const rotation = new Quaternion().setFromEuler(new Euler(...pool.rotation, 'XYZ'))
+  const localPoint = new Vector3(...levelPoint).sub(poolOrigin).applyQuaternion(rotation.clone().invert())
   const polygon = resolvePoolPolygon(pool)
   if (!pointInPolygon(localPoint.x, localPoint.z, polygon)) return null
 
   const depth = getPoolDepthResolver(pool, polygon).depthAtX(localPoint.x)
-  const floorPoint = new Vector3(localPoint.x, -depth, localPoint.z)
-    .applyEuler(new Euler(...pool.rotation, 'XYZ'))
+  const floorPoint = new Vector3(localPoint.x, pool.finishedDeckElevation - depth, localPoint.z)
+    .applyQuaternion(rotation)
     .add(poolOrigin)
   return { position: [floorPoint.x, floorPoint.y, floorPoint.z], poolId: pool.id }
 }

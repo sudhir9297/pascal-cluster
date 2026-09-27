@@ -15,6 +15,7 @@ import { syncSharedPoolJoints } from '../design/shared-joint'
 import { syncPoolSpillovers } from '../spillover/design/sync'
 import { syncAutomaticPoolFittings } from '../design/sync-pool-fittings'
 import { poolAttachmentUpdates } from '../design/pool-attachments'
+import { poolParentLinkUpdates } from '../design/pool-parent-links'
 import {
   getPoolChildResizePreviewPosition,
   getPoolLevelResizePreviewPath,
@@ -68,6 +69,7 @@ export function initializePoolOpeningSync() {
   let syncing = false
 
   const applyUpdates = (nodes: Record<string, AnyNode>, previousNodes: Record<string, AnyNode> = {}) => {
+    const parentLinkUpdates = poolParentLinkUpdates(nodes)
     const genericChildUpdates: { id: string; data: Record<string, unknown> }[] = []
     for (const previousValue of Object.values(previousNodes)) {
       const previousPool = PoolNode.safeParse(previousValue)
@@ -130,6 +132,7 @@ export function initializePoolOpeningSync() {
       && fittingChanges.create.length === 0
       && fittingChanges.update.length === 0
       && fittingChanges.delete.length === 0
+      && parentLinkUpdates.length === 0
     ) return
 
     syncing = true
@@ -143,7 +146,7 @@ export function initializePoolOpeningSync() {
           node: node as unknown as AnyNode,
           parentId: node.parentId ?? undefined,
         }))) as unknown as never,
-      update: [...slabUpdates, ...groundChanges.update, ...connectionChanges.update, ...spilloverChanges.update, ...fittingChanges.update, ...attachmentUpdates, ...genericChildUpdates] as never,
+      update: [...parentLinkUpdates, ...slabUpdates, ...groundChanges.update, ...connectionChanges.update, ...spilloverChanges.update, ...fittingChanges.update, ...attachmentUpdates, ...genericChildUpdates] as never,
         delete: [...groundChanges.delete, ...connectionChanges.delete, ...spilloverChanges.delete, ...fittingChanges.delete] as never,
       })
     } finally {

@@ -35,6 +35,15 @@ describe('pool child attachments', () => {
     expect(resolvePoolAttachment(child, resized)?.position).toEqual([4, -2.5, 2])
   })
 
+  test('keeps a drain flush with an elevated custom pool floor', () => {
+    const pool = PoolNode.parse({ id: 'pool_elevated_custom', shape: 'custom',
+      polygon: [[-3, -2], [3, -2], [3, 1], [0, 1], [0, 2], [-3, 2]],
+      finishedDeckElevation: 0.35, depth: 1.8 })
+    const drain = PoolDrainNode.parse({ poolId: pool.id, parentId: pool.id,
+      floorAnchor: [0.25, 0.5] })
+    expect(resolvePoolAttachment(drain, pool)?.position[1]).toBeCloseTo(-1.45)
+  })
+
   test('remaps a stale wall index to the nearest custom-outline segment', () => {
     const pool = PoolNode.parse({
       id: 'pool_custom_anchor',

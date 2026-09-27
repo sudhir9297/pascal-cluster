@@ -91,6 +91,56 @@ describe('pool waterfall placement', () => {
     expect(Math.max(...depths) - Math.min(...depths)).toBeGreaterThan(0.1)
   })
 
+  test('mounts a waterfall across the actual circular rim', () => {
+    const pool = PoolNode.parse({
+      id: 'pool_waterfall_circle',
+      shape: 'circle',
+      length: 6,
+      width: 6,
+      polygon: createPoolShapePolygon('circle', 6, 6),
+      position: [4, 0, -2],
+      rotation: [0, 0.4, 0],
+    })
+    const dimensions = getMountedWaterfallDimensions(pool, 0)
+    expect(dimensions.width).toBeGreaterThan(1.3)
+
+    const placement = placementOnPoolBoundary(pool, 0, 0.5, dimensions.width)!
+    const cursorPoint: [number, number] = [
+      placement.position[0] + Math.cos(placement.rotation[1] - Math.PI / 2) * 0.2,
+      placement.position[2] - Math.sin(placement.rotation[1] - Math.PI / 2) * 0.2,
+    ]
+    expect(findNearestWaterfallPlacement(cursorPoint, [pool], 3.6)?.poolId).toBe(pool.id)
+    const mounted = resolveMountedWaterfall(PoolWaterfallNode.parse({
+      ...placement,
+      waterfallType: 'modern',
+      autoSizeOnPool: true,
+    }), pool)
+    expect(mounted.poolId).toBe(pool.id)
+    expect(mounted.width).toBe(dimensions.width)
+    expect(mounted.edgeCurve).toHaveLength(9)
+
+    const polygon = pool.polygon
+    const angle = placement.rotation[1] - pool.rotation[1]
+    const origin: [number, number] = [
+      (polygon[0]![0] + polygon[1]![0]) / 2,
+      (polygon[0]![1] + polygon[1]![1]) / 2,
+    ]
+    for (const [x, z] of mounted.edgeCurve) {
+      const point: [number, number] = [
+        origin[0] + Math.cos(angle) * x + Math.sin(angle) * z,
+        origin[1] - Math.sin(angle) * x + Math.cos(angle) * z,
+      ]
+      const distance = Math.min(...polygon.map((a, index) => {
+        const b = polygon[(index + 1) % polygon.length]!
+        const dx = b[0] - a[0]
+        const dz = b[1] - a[1]
+        const t = Math.max(0, Math.min(1, ((point[0] - a[0]) * dx + (point[1] - a[1]) * dz) / (dx * dx + dz * dz)))
+        return Math.hypot(point[0] - a[0] - dx * t, point[1] - a[1] - dz * t)
+      }))
+      expect(distance).toBeLessThan(1e-6)
+    }
+  })
+
   test('keeps a square pool edge ordered across a sharp corner', () => {
     const pool = PoolNode.parse({
       id: 'pool_waterfall_square',

@@ -1,8 +1,8 @@
 import { Group, Mesh } from 'three'
-import { MeshStandardNodeMaterial } from 'three/webgpu'
 import type { PoolPoint } from '../core/schema'
 import { createRockGeometry } from './coping'
 import { getPoolRockColor } from './rock-colors'
+import { createPoolRockMaterial } from './rock-material'
 
 export type SubmergedFeatureCopingOptions = {
   width: number
@@ -45,7 +45,7 @@ export function buildSubmergedFeatureCopingGeometry(
       options.seed + index * 7919,
     )
     const color = getPoolRockColor(options.seed, index)
-    const material = new MeshStandardNodeMaterial({ color, roughness: 0.9, metalness: 0 })
+    const material = createPoolRockMaterial(color)
     const stone = new Mesh(geometry, material)
     stone.name = `pool-submerged-feature-rock-${index + 1}`
     stone.position.set(

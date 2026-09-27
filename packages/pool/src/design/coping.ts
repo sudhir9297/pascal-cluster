@@ -9,13 +9,13 @@ import {
   Shape,
 } from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
-import { MeshStandardNodeMaterial } from 'three/webgpu'
 import type { PoolPoint } from '../core/schema'
 import {
   layoutNaturalCopingStones,
   type NaturalCopingLayoutOptions,
 } from './coping-layout'
 import { getPoolRockColor } from './rock-colors'
+import { createPoolRockMaterial } from './rock-material'
 
 export type NaturalCopingOptions = NaturalCopingLayoutOptions & {
   color: string
@@ -385,19 +385,11 @@ export function buildNaturalCopingGeometry(
     // each boulder's closed end face when cutting an opening. Natural stone
     // coping (the common tiled mode) is safely merged below.
     if (options.rockLike) {
-      const rockMaterial = new MeshStandardNodeMaterial({
-        color,
-        roughness: 0.78,
-        metalness: 0,
-      })
+      const rockMaterial = createPoolRockMaterial(color)
       stone.material = options.smoothBoundary
         ? [
             rockMaterial,
-            new MeshStandardNodeMaterial({
-              color: color.clone().multiplyScalar(0.72),
-              roughness: 0.9,
-              metalness: 0,
-            }),
+            createPoolRockMaterial(color.clone().multiplyScalar(0.72)),
           ]
         : rockMaterial
       stone.name = `pool-coping-stone-${index + 1}`

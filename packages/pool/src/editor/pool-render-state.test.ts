@@ -4,6 +4,7 @@ import { PoolNode } from '../core/schema'
 import {
   countPools,
   getPoolGeometrySignature,
+  getPoolRenderPose,
   getPoolDepthResizePreviewTransform,
   getPoolResizePreviewTransform,
   getPoolChildResizePreviewPosition,
@@ -88,6 +89,17 @@ describe('pool render state', () => {
     })
 
     expect(getPoolGeometrySignature(moved)).toBe(getPoolGeometrySignature(original))
+  })
+
+  test('moves the custom pool shell and water with the editor live transform', () => {
+    const original = PoolNode.parse({ shape: 'custom', position: [1, 0.5, 2],
+      rotation: [0.1, 0.2, 0.3] })
+    expect(getPoolRenderPose(original, { position: [8, 0.5, -4], rotation: 1.1 })).toEqual({
+      position: [8, 0.5, -4], rotation: [0.1, 1.1, 0.3],
+    })
+    expect(getPoolRenderPose(original, null)).toEqual({
+      position: original.position, rotation: original.rotation,
+    })
   })
 
   test('does not reset water uniforms for a live dimension preview', () => {

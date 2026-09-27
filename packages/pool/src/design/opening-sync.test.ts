@@ -1,10 +1,13 @@
 import { describe, expect, test } from 'bun:test'
-import { SlabNode } from '@pascal-app/core'
+import { pointInPolygon2D, SlabNode } from '@pascal-app/core'
+import { generateSlabGeometry } from '@pascal-app/viewer'
+import { Group, Mesh, Vector3 } from 'three'
+import { buildPoolGeometry } from '../core/geometry'
 import { poolDefinition } from '../core/definition'
 import { PoolNode } from '../core/schema'
 import { PoolSharedJointNode } from '../shared-joint/core/schema'
 import { PoolSpilloverNode } from '../spillover/core/schema'
-import { syncPoolGroundOpenings, syncPoolSlabOpenings } from './opening-sync'
+import { localizePoolPolygon, syncPoolGroundOpenings, syncPoolSlabOpenings } from './opening-sync'
 
 describe('swimming pool floor openings', () => {
   test('creates a recessed helper for the site and shadow receiver', () => {
@@ -21,6 +24,74 @@ describe('swimming pool floor openings', () => {
     expect(helper?.holes).toHaveLength(1)
     expect(helper?.metadata).toMatchObject({ poolGroundOpeningFor: pool.id })
   })
+
+  test('ground opening ignores a level pose that its renderer does not apply', () => {
+    const pool = PoolNode.parse({ id: 'pool_level_pose', parentId: 'level_ground',
+      shape: 'custom', polygon: [[-2, -1], [2, -1], [2, 1], [-2, 1]],
+      position: [4, 0, -3] })
+    const level = { id: 'level_ground', type: 'level', parentId: 'building_a',
+      position: [0, 0, 12], rotation: [0, 0, 0], children: [pool.id] }
+    const building = { id: 'building_a', type: 'building', parentId: 'site_a',
+      position: [10, 0, 0], rotation: [0, Math.PI / 2, 0], children: [level.id] }
+    const helper = syncPoolGroundOpenings({ [pool.id]: pool, [level.id]: level,
+      [building.id]: building } as never).create[0]!
+    const xs = helper.polygon.map(([x]) => x)
+    const zs = helper.polygon.map(([, z]) => z)
+    expect((Math.min(...xs) + Math.max(...xs)) / 2).toBeCloseTo(7)
+    expect((Math.min(...zs) + Math.max(...zs)) / 2).toBeCloseTo(-4)
+  })
+
+  test('site cutout helper does not render a second, displaced slab', () => {
+    const pool = PoolNode.parse({ id: 'pool_new_lagoon', parentId: 'level_ground',
+      shape: 'lagoon', polygon: [[-3, -1], [-2, -2], [2, -2], [3, 1], [0, 2], [-2, 1]],
+      position: [8, 0, -4] })
+    const level = { id: 'level_ground', type: 'level', parentId: 'building_a', children: [pool.id] }
+    const building = { id: 'building_a', type: 'building', parentId: 'site_a',
+      position: [12, 0, 5], rotation: [0, 0, 0], children: [level.id] }
+    const helper = syncPoolGroundOpenings({ [pool.id]: pool, [level.id]: level,
+      [building.id]: building } as never).create[0]!
+    const geometry = generateSlabGeometry(helper, { walls: [], siblingSlabs: [] })
+    expect(geometry.getIndex()?.count ?? 0).toBe(0)
+    geometry.dispose()
+  })
+
+  for (const shape of ['circle', 'lagoon', 'custom', 'spline'] as const) {
+    test(`new ${shape} pool water lies inside its ground opening through a building transform`, () => {
+      const points: [number, number][] = shape === 'circle'
+        ? Array.from({ length: 20 }, (_, index) => {
+          const angle = index * Math.PI / 10
+          return [8 + Math.cos(angle) * 2, -4 + Math.sin(angle) * 2]
+        })
+        : [[5, -5], [7, -6], [10, -6], [11, -3], [9, -1], [6, -2]]
+      const localized = localizePoolPolygon(points)
+      const pool = PoolNode.parse({
+        id: `pool_new_${shape}`, shape, parentId: 'level_ground',
+        position: localized.position, polygon: localized.polygon,
+      })
+      const level = { id: 'level_ground', type: 'level', parentId: 'building_a', children: [pool.id] }
+      const building = { id: 'building_a', type: 'building', parentId: 'site_a',
+        position: [12, 0, 5] as [number, number, number],
+        rotation: [0, Math.PI / 5, 0] as [number, number, number], children: [level.id] }
+      const helper = syncPoolGroundOpenings({ [pool.id]: pool, [level.id]: level,
+        [building.id]: building } as never).create[0]!
+      const buildingGroup = new Group()
+      buildingGroup.position.fromArray(building.position)
+      buildingGroup.rotation.fromArray([...building.rotation, 'XYZ'])
+      const poolGroup = new Group()
+      poolGroup.position.fromArray(pool.position)
+      poolGroup.rotation.fromArray([...pool.rotation, 'XYZ'])
+      buildingGroup.add(poolGroup)
+      const assembly = buildPoolGeometry(pool)
+      poolGroup.add(assembly)
+      buildingGroup.updateWorldMatrix(true, true)
+      const water = assembly.getObjectByName('pool-water') as Mesh
+      const vertices = water.geometry.getAttribute('position')
+      for (let index = 0; index < vertices.count; index += Math.max(1, Math.floor(vertices.count / 100))) {
+        const point = new Vector3().fromBufferAttribute(vertices, index).applyMatrix4(water.matrixWorld)
+        expect(pointInPolygon2D([point.x, point.z], helper.polygon, { includeBoundary: true })).toBe(true)
+      }
+    })
+  }
 
   test('adds the pool construction opening to its host slab', () => {
     const slab = SlabNode.parse({
