@@ -1,6 +1,6 @@
 'use client'
 
-import { type AnyNode, useLiveNodeOverrides, useScene } from '@pascal-app/core'
+import { type AnyNode, useLiveNodeOverrides, useLiveTransforms, useScene } from '@pascal-app/core'
 import { NodeRenderer, useSceneAtmosphere, useViewer } from '@pascal-app/viewer'
 import { useFrame } from '@react-three/fiber'
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
@@ -27,6 +27,7 @@ import {
   getPoolResizePreviewTransform,
   getPoolWaterResolution,
   getPoolWaterSettingsSignature,
+  getPoolRenderPose,
   selectPoolConnectedPipes,
   selectPoolRenderNodes,
 } from './pool-render-plan'
@@ -49,6 +50,8 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
     () => (liveOverride ? ({ ...storeNode, ...liveOverride } as PoolNode) : storeNode),
     [storeNode, liveOverride],
   )
+  const liveTransform = useLiveTransforms((state) => state.get(storeNode.id as never))
+  const renderPose = getPoolRenderPose(node, liveTransform)
   nodeRef.current = node
   const inputDragging = useViewer((state) => state.inputDragging)
   const horizontalResizeInProgress = Boolean(
@@ -298,8 +301,8 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
   return (
     <group
       ref={ref}
-      position={node.position}
-      rotation={node.rotation}
+      position={renderPose.position}
+      rotation={renderPose.rotation}
       visible={node.visible !== false}
       {...handlers}
     >
