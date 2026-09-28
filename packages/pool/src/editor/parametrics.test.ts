@@ -3,12 +3,15 @@ import { poolParametrics } from './parametrics'
 
 test('pool inspector starts with pool settings before circulation controls', () => {
   expect(poolParametrics.groups.map(({ label }) => label)).toEqual([
-    'Pool geometry',
-    'Water shader',
+    'Pool shape and depth',
+    'Entry and bench',
+    'Coping and finish',
+    'Water appearance',
+    'Advanced water controls',
     'Automatic fittings',
-    'Inlet pipes',
+    'Return pipes',
     'Drain pipes',
     'Skimmer pipes',
-    'Transform',
+    'Position',
   ])
 })
