@@ -1,12 +1,17 @@
-import { describe, expect, test } from 'bun:test'
-import { DefaultXRController, DefaultXRHand } from '@react-three/xr'
-import {
+import { describe, expect, mock, test } from 'bun:test'
+import * as THREE from 'three'
+
+// Bun cannot load Three's ESM-only build through React Three Fiber's CJS require.
+mock.module('three', () => THREE)
+
+const { DefaultXRController, DefaultXRHand } = await import('@react-three/xr')
+const {
   createWebXRStore,
   requestWebXRSession,
   resolveRuntimeSource,
   VisibleXRController,
   VisibleXRHand,
-} from './runtime'
+} = await import('./runtime')
 
 describe('WebXR runtime selection', () => {
   test('uses a native headset when immersive VR is supported', () => {
