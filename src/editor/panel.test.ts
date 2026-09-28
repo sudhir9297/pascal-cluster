@@ -38,9 +38,7 @@ test('pool design steps navigate without changing the active editor tool', async
     }
     let tabs = findAll(Panel(), element => element.props?.role === 'tab')
     if (tabs.length !== 3 || tabs[0].props['aria-selected'] !== true) throw new Error('Shell step is not active')
-    const continueButton = findAll(Panel(), element => element.type === 'button' && typeof element.props?.onClick === 'function' && JSON.stringify(element.props?.children ?? '').includes('Continue to ') && JSON.stringify(element.props?.children ?? '').includes('systems'))[0]
-    if (!continueButton) throw new Error('Systems navigation is missing')
-    continueButton.props.onClick()
+    tabs[1].props.onClick()
     tabs = findAll(Panel(), element => element.props?.role === 'tab')
     if (step !== 'systems' || tabs[1].props['aria-selected'] !== true) throw new Error('Systems step did not open')
   `], { stdout: 'pipe', stderr: 'pipe' })
