@@ -409,7 +409,14 @@ function poolHandles(node: PoolNode): HandleDescriptor<PoolNode>[] {
 }
 
 export function poolFloorplan(node: PoolNode, ctx?: GeometryContext): FloorplanGeometry {
-  const [first, ...rest] = resolvePoolPolygon(node)
+  // Floorplan geometry is level-local; the host does not apply the node pose.
+  const cos = Math.cos(node.rotation[1])
+  const sin = Math.sin(node.rotation[1])
+  const toPlan = ([x, z]: readonly [number, number]): [number, number] => [
+    node.position[0] + x * cos + z * sin,
+    node.position[2] - x * sin + z * cos,
+  ]
+  const [first, ...rest] = resolvePoolPolygon(node).map(toPlan)
   const selected = ctx?.viewState?.selected ?? false
   const outlineWidth = Math.min(node.copingWidth, 0.25)
   const basin: FloorplanGeometry = {
@@ -418,20 +425,27 @@ export function poolFloorplan(node: PoolNode, ctx?: GeometryContext): FloorplanG
       ? `M ${first[0]} ${first[1]} ${rest.map(([x, y]) => `L ${x} ${y}`).join(' ')} Z`
       : '',
     fill: node.waterColor,
-    fillOpacity: selected ? 0.72 : 0.55,
-    stroke: selected ? (ctx?.viewState?.palette.selectedStroke ?? '#22c55e') : node.copingColor,
-    strokeWidth: selected ? Math.max(0.12, outlineWidth * 1.5) : outlineWidth,
+    fillOpacity: 0.55,
+    stroke: node.copingColor,
+    strokeWidth: outlineWidth,
   }
-  if (!selected || !isDrawnPoolShape(node.shape)) return basin
-  const anchors = poolOutlineAnchors(node)
-  const tangents = node.shape === 'spline' ? poolOutlineTangents(node) : []
-  return { kind: 'group', children: [basin,
+  if (!selected) return basin
+  const selectionOutline: FloorplanGeometry = {
+    kind: 'path', d: basin.d, fill: 'none', stroke: '#475569',
+    strokeWidth: 1.5, vectorEffect: 'non-scaling-stroke', pointerEvents: 'none',
+  }
+  if (!isDrawnPoolShape(node.shape)) return { kind: 'group', children: [basin, selectionOutline] }
+  const anchors = poolOutlineAnchors(node).map(toPlan)
+  const tangents = node.shape === 'spline' ? poolOutlineTangents(node).map((tangent) => ({
+    incoming: toPlan(tangent.incoming), outgoing: toPlan(tangent.outgoing),
+  })) : []
+  return { kind: 'group', children: [basin, selectionOutline,
     ...anchors.map((point, index): FloorplanGeometry => ({
       kind: 'endpoint-handle', point, state: 'idle', variant: 'endpoint',
       affordance: 'pool-outline-move', payload: { index },
     })),
     ...anchors.map((_, index): FloorplanGeometry => ({
-      kind: 'midpoint-handle', point: poolOutlineMidpoint(node, index),
+      kind: 'midpoint-handle', point: toPlan(poolOutlineMidpoint(node, index)),
       affordance: 'pool-outline-insert', payload: { index },
     })),
     ...tangents.flatMap((tangent, index): FloorplanGeometry[] => [
@@ -461,7 +475,7 @@ export const poolDefinition: PoolDefinition = {
     position: [0, 0, 0], rotation: [0, 0, 0], ...DEFAULT_POOL,
   }),
   capabilities: {
-    movable: { axes: ['x', 'z'], gridSnap: true },
+    movable: { axes: ['x', 'z'], gridSnap: true, preserveLevelAndElevation: true },
     rotatable: { axes: ['y'], snapAngles: Array.from({ length: 8 }, (_, i) => (i * Math.PI) / 4) },
     selectable: { hitVolume: 'bbox' },
     duplicable: true,

@@ -13,7 +13,7 @@ import { getSelectedPool } from './pool-selection'
 
 type ReviewCheck = { label: string; detail: string; status: 'ready' | 'attention' | 'info' }
 
-export function PoolReviewPanel({ onOpenSystems }: { onOpenSystems: () => void }) {
+export function PoolReviewPanel({ onOpenShell, onOpenSystems }: { onOpenShell: () => void; onOpenSystems: () => void }) {
   const selectedIds = useViewer((state) => state.selection.selectedIds)
   const review = useScene(useShallow((state) => {
     const pool = getSelectedPool(state.nodes, selectedIds)
@@ -48,11 +48,12 @@ export function PoolReviewPanel({ onOpenSystems }: { onOpenSystems: () => void }
   }
 
   const pool = review.pool
+  const outlineValid = isPoolPolygonPlaceable(resolvePoolPolygon(pool))
   const checks: ReviewCheck[] = [
     {
       label: 'Pool outline',
-      detail: isPoolPolygonPlaceable(resolvePoolPolygon(pool)) ? 'Valid closed outline' : 'Outline needs adjustment',
-      status: isPoolPolygonPlaceable(resolvePoolPolygon(pool)) ? 'ready' : 'attention',
+      detail: outlineValid ? 'Outline is closed' : 'Adjust the pool outline',
+      status: outlineValid ? 'ready' : 'attention',
     },
     {
       label: 'Skimmers',
@@ -93,7 +94,7 @@ export function PoolReviewPanel({ onOpenSystems }: { onOpenSystems: () => void }
         <div className="flex flex-col divide-y divide-sidebar-border/70">
           {checks.map((check) => <ReviewRow check={check} key={check.label} />)}
         </div>
-        {openChecks > 0 && <button className="mt-3 min-h-9 w-full rounded-lg bg-sidebar-accent px-3 text-xs font-medium hover:bg-sidebar-accent/80" onClick={onOpenSystems} type="button">Open systems</button>}
+        {openChecks > 0 && <button className="mt-3 min-h-9 w-full rounded-lg bg-sidebar-accent px-3 text-xs font-medium hover:bg-sidebar-accent/80" onClick={outlineValid ? onOpenSystems : onOpenShell} type="button">{outlineValid ? 'Open systems' : 'Edit pool shape'}</button>}
       </div>
       {filterCatalog && <div className="mt-3 flex items-center justify-between rounded-lg border border-sidebar-border/70 px-3 py-2.5">
         <div className="min-w-0">

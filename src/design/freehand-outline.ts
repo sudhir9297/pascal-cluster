@@ -154,6 +154,65 @@ function simplifyClosed(points: readonly PoolPoint[], tolerance: number): PoolPo
   return [...forward.slice(0, -1), ...backward.slice(0, -1)]
 }
 
+function area(points: readonly PoolPoint[]): number {
+  return Math.abs(points.reduce((sum, point, index) => {
+    const next = points[(index + 1) % points.length]!
+    return sum + point[0] * next[1] - next[0] * point[1]
+  }, 0)) / 2
+}
+
+function distanceToOutline(point: PoolPoint, outline: readonly PoolPoint[]): number {
+  let minimum = Number.POSITIVE_INFINITY
+  for (let index = 0; index < outline.length; index += 1) {
+    minimum = Math.min(minimum, distanceToSegment(point, outline[index]!, outline[(index + 1) % outline.length]!))
+  }
+  return minimum
+}
+
+function outlineFit(
+  raw: readonly PoolPoint[],
+  outline: readonly PoolPoint[],
+  originalArea: number,
+): { typical: number; maximum: number; areaChange: number } {
+  const deviations = raw.map((point) => distanceToOutline(point, outline)).sort((a, b) => a - b)
+  return {
+    typical: deviations[Math.floor((deviations.length - 1) * 0.95)] ?? 0,
+    maximum: deviations.at(-1) ?? 0,
+    areaChange: Math.abs(area(outline) - originalArea) / Math.max(originalArea, EPSILON),
+  }
+}
+
+function reduceEditableAnchors(
+  raw: readonly PoolPoint[],
+  initial: ReshapedFreehandPoolOutline,
+  tolerance: number,
+  segmentsPerSpan: number,
+): ReshapedFreehandPoolOutline {
+  const originalArea = area(raw)
+  let current = initial
+  while (current.anchors.length > 3) {
+    let best: ReshapedFreehandPoolOutline | null = null
+    let bestScore = Number.POSITIVE_INFINITY
+    for (let index = 0; index < current.anchors.length; index += 1) {
+      const candidate = reshapeFreehandPoolOutline(
+        current.anchors.filter((_, anchorIndex) => anchorIndex !== index),
+        segmentsPerSpan,
+      )
+      if (!candidate) continue
+      const fit = outlineFit(raw, candidate.polygon, originalArea)
+      if (fit.typical > tolerance || fit.maximum > tolerance * 2 || fit.areaChange > 0.06) continue
+      const score = fit.typical + fit.maximum * 0.15 + fit.areaChange * tolerance
+      if (score < bestScore) {
+        best = candidate
+        bestScore = score
+      }
+    }
+    if (!best) break
+    current = best
+  }
+  return current
+}
+
 export type FreehandPoolOutline = {
   anchors: PoolPoint[]
   polygon: PoolPoint[]
@@ -193,6 +252,10 @@ export function buildFreehandPoolOutline(
   ))
   const anchors = simplifyClosed(deduplicated, Math.max(0, options.simplifyTolerance))
   if (anchors.length < 3 || !isPoolPolygonPlaceable(anchors)) return null
-
-  return reshapeFreehandPoolOutline(anchors, options.segmentsPerSpan)
+  const segmentsPerSpan = options.segmentsPerSpan ?? 8
+  const initial = reshapeFreehandPoolOutline(anchors, segmentsPerSpan)
+  if (!initial) return null
+  const { length, width } = getPoolPolygonDimensions(initial.polygon)
+  const adaptiveTolerance = Math.max(options.simplifyTolerance, Math.min(0.45, Math.min(length, width) * 0.05))
+  return reduceEditableAnchors(deduplicated, initial, adaptiveTolerance, segmentsPerSpan)
 }

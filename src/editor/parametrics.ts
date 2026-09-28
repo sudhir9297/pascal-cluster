@@ -5,18 +5,20 @@ import { POOL_ENTRY_FEATURES } from '../design/entry-features'
 import { POOL_FLOOR_PROFILES } from '../design/depth-profile'
 import { POOL_SHAPES, createPoolShapePolygon, isDrawnPoolShape } from '../design/shapes'
 import { triggerPoolWaterAction } from '../shader/water-actions'
-import { WATER_PRESETS, getWaterPresetSettings } from '../shader/water-presets'
+import { getWaterPresetSettings } from '../shader/water-presets'
 import type { PoolNode } from '../core/schema'
-import { POOL_FINISHES } from '../design/pool-finishes'
+import { PoolFinishInspectorControl } from './finish-setting'
+import { PoolWaterPresetInspectorControl } from './water-preset-setting'
 import { POOL_VISUAL_PRESETS, getPoolVisualPreset } from '../design/visual-presets'
 
 export const poolParametrics: ParametricDescriptor<PoolNode> = {
+  trailingSection: () => import('./pool-section-bar'),
   invariants: [(node) => node.automaticFittings
     ? planPoolFittings(node).issues.map((msg) => ({ msg, severity: 'warning' as const }))
     : []],
   groups: [
     {
-      label: 'Pool geometry',
+      label: 'Pool shape and depth',
       fields: [
         { key: 'shape', kind: 'enum', options: POOL_SHAPES },
         { key: 'visualPreset', kind: 'enum', options: POOL_VISUAL_PRESETS },
@@ -26,6 +28,12 @@ export const poolParametrics: ParametricDescriptor<PoolNode> = {
         { key: 'depth', kind: 'number', unit: 'm', min: 0.5, max: 4, step: 0.1, visibleIf: (node) => node.floorProfile === 'flat' },
         { key: 'shallowDepth', kind: 'number', unit: 'm', min: 0.5, max: 4, step: 0.1, visibleIf: (node) => node.floorProfile === 'shallow-to-deep' },
         { key: 'deepDepth', kind: 'number', unit: 'm', min: 0.5, max: 4, step: 0.1, visibleIf: (node) => node.floorProfile === 'shallow-to-deep' },
+      ],
+    },
+    {
+      label: 'Entry and bench',
+      defaultExpanded: false,
+      fields: [
         { key: 'entryFeature', kind: 'enum', options: POOL_ENTRY_FEATURES },
         { key: 'entryLength', kind: 'number', unit: 'm', min: 0.5, max: 8, step: 0.1, visibleIf: (node) => node.entryFeature !== 'none' },
         { key: 'entryWaterDepth', kind: 'number', unit: 'm', min: 0.05, max: 1, step: 0.05, visibleIf: (node) => node.entryFeature === 'steps' || node.entryFeature === 'tanning-shelf' },
@@ -36,6 +44,12 @@ export const poolParametrics: ParametricDescriptor<PoolNode> = {
         { key: 'benchLength', kind: 'number', unit: 'm', min: 0.5, max: 20, step: 0.1, visibleIf: (node) => node.benchEnabled && node.benchStyle === 'end' },
         { key: 'benchWidth', kind: 'number', unit: 'm', min: 0.2, max: 1.5, step: 0.05, visibleIf: (node) => node.benchEnabled },
         { key: 'benchWaterDepth', kind: 'number', unit: 'm', min: 0.1, max: 1.2, step: 0.05, visibleIf: (node) => node.benchEnabled },
+      ],
+    },
+    {
+      label: 'Coping and finish',
+      defaultExpanded: false,
+      fields: [
         { key: 'coveRadius', kind: 'number', unit: 'm', min: 0, max: 0.5, step: 0.01 },
         { key: 'copingWidth', kind: 'number', unit: 'm', min: 0.1, max: 1, step: 0.05 },
         { key: 'copingStyle', kind: 'enum', options: ['continuous', 'natural-stone', 'rock'], display: 'segmented' },
@@ -44,17 +58,24 @@ export const poolParametrics: ParametricDescriptor<PoolNode> = {
         { key: 'copingSeed', kind: 'number', min: 0, max: 999999, step: 1, visibleIf: (node) => node.copingStyle === 'rock' || node.copingStyle === 'natural-stone' },
         { key: 'copingColor', kind: 'color' },
         { key: 'shellColor', kind: 'color' },
-        { key: 'interiorFinish', kind: 'enum', options: POOL_FINISHES },
+        { key: 'interiorFinish', kind: 'custom', component: PoolFinishInspectorControl },
         { key: 'openingClearance', kind: 'number', unit: 'm', min: 0, max: 0.2, step: 0.005 },
       ],
     },
     {
-      label: 'Water shader',
+      label: 'Water appearance',
+      defaultExpanded: false,
       fields: [
-        { key: 'waterPreset', kind: 'enum', options: WATER_PRESETS },
-        { key: 'waterQuality', kind: 'enum', options: ['low', 'medium', 'high', 'ultra'], display: 'segmented' },
+        { key: 'waterPreset', kind: 'custom', component: PoolWaterPresetInspectorControl },
         { key: 'shallowWaterColor', kind: 'color' },
         { key: 'deepWaterColor', kind: 'color' },
+      ],
+    },
+    {
+      label: 'Advanced water controls',
+      defaultExpanded: false,
+      fields: [
+        { key: 'waterQuality', kind: 'enum', options: ['low', 'medium', 'high', 'ultra'], display: 'segmented' },
         { key: 'surfaceDetail', kind: 'number', min: 0.4, max: 3, step: 0.05 },
         { key: 'normalScale', kind: 'number', min: 0.25, max: 20, step: 0.25 },
         { key: 'normalStrength', kind: 'number', min: 0, max: 2, step: 0.05 },
@@ -69,6 +90,7 @@ export const poolParametrics: ParametricDescriptor<PoolNode> = {
     },
     {
       label: 'Automatic fittings',
+      defaultExpanded: false,
       fields: [
         { key: 'automaticFittings', kind: 'boolean' },
         { key: 'turnoverHours', kind: 'number', unit: 'h', min: 1, max: 24, step: 1, visibleIf: (node) => node.automaticFittings },
@@ -76,10 +98,10 @@ export const poolParametrics: ParametricDescriptor<PoolNode> = {
         { key: 'drainFlowCapacity', kind: 'number', unit: 'm³/h per outlet', min: 1, max: 1000, step: 1, visibleIf: (node) => node.automaticFittings },
       ],
     },
-    { label: 'Inlet pipes', fields: [{ key: 'inletPipes', kind: 'custom', component: ConnectInlets }] },
-    { label: 'Drain pipes', fields: [{ key: 'drainPipes', kind: 'custom', component: ConnectDrains }] },
-    { label: 'Skimmer pipes', fields: [{ key: 'skimmerPipes', kind: 'custom', component: ConnectSkimmers }] },
-    { label: 'Transform', fields: [{ key: 'position', kind: 'vec3' }] },
+    { label: 'Return pipes', defaultExpanded: false, fields: [{ key: 'inletPipes', kind: 'custom', component: ConnectInlets }] },
+    { label: 'Drain pipes', defaultExpanded: false, fields: [{ key: 'drainPipes', kind: 'custom', component: ConnectDrains }] },
+    { label: 'Skimmer pipes', defaultExpanded: false, fields: [{ key: 'skimmerPipes', kind: 'custom', component: ConnectSkimmers }] },
+    { label: 'Position', defaultExpanded: false, fields: [{ key: 'position', kind: 'vec3' }] },
   ],
   actions: [
     {

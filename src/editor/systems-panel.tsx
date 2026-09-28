@@ -106,9 +106,6 @@ export function PoolSystemsPanel() {
     { type: 'pool:drain', label: 'Main drains', image: THUMBNAILS.drain, recommended: recommendation?.drain ?? 0 },
   ]
   const missingFittingCount = fittings.reduce((sum, fitting) => sum + Math.max(0, fitting.recommended - (counts[fitting.type === 'pool:skimmer' ? 'skimmers' : fitting.type === 'pool:inlet' ? 'inlets' : 'drains'] ?? 0)), 0)
-  const missingFittingKinds = fittings.filter((fitting) =>
-    (counts[fitting.type === 'pool:skimmer' ? 'skimmers' : fitting.type === 'pool:inlet' ? 'inlets' : 'drains'] ?? 0) < fitting.recommended,
-  ).length
 
   const activateTool = (type: string) => {
     useEditor.getState().setTool(type)
@@ -131,12 +128,11 @@ export function PoolSystemsPanel() {
       'pool:skimmer': Math.max(0, target.skimmer - existing.filter((node) => node.poolId === pool.id && node.type === 'pool:skimmer').length),
       'pool:inlet': Math.max(0, target.inlet - existing.filter((node) => node.poolId === pool.id && node.type === 'pool:inlet').length),
       'pool:drain': Math.max(0, target.drain - existing.filter((node) => node.poolId === pool.id && node.type === 'pool:drain').length),
-      'pool:stair': Math.max(0, 1 - existing.filter((node) => node.poolId === pool.id && node.type === 'pool:stair').length),
     }
     const create = attachments
       .filter((node) => {
         const needed = remaining[node.type] ?? 0
-        if (scene.nodes[node.id] || needed <= 0) return false
+        if (Object.hasOwn(scene.nodes, node.id) || needed <= 0) return false
         remaining[node.type] = needed - 1
         return true
       })
@@ -171,12 +167,12 @@ export function PoolSystemsPanel() {
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-      <details className="group border-b border-sidebar-border" open>
+      <details className="group border-b border-sidebar-border">
         <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 px-3 py-3 [&::-webkit-details-marker]:hidden">
           <span className="font-semibold text-sm">Fittings</span>
           <span className="flex items-center gap-2">
             <span className={`text-xs ${missingFittingCount ? 'text-amber-400' : 'text-emerald-400'}`}>
-            {system.pool ? (missingFittingKinds ? `${missingFittingKinds} below rule` : 'Rule met') : 'Pool needed'}
+            {system.pool ? (missingFittingCount ? `${missingFittingCount} needed` : 'Complete') : 'Select a pool'}
             </span>
             <span aria-hidden="true" className="text-sidebar-foreground/45 transition-transform group-open:rotate-180">⌄</span>
           </span>
@@ -188,7 +184,7 @@ export function PoolSystemsPanel() {
             onClick={autoPlaceAll}
             type="button"
           >
-            Auto-place all
+            Add recommended fittings
           </button>
           <div className="flex flex-col divide-y divide-sidebar-border/70">
             {fittings.map((fitting) => {
@@ -197,8 +193,8 @@ export function PoolSystemsPanel() {
               const belowRule = !!system.pool && placed < fitting.recommended
               const description = system.pool
                 ? belowRule
-                  ? `Recommended ${fitting.recommended} · add ${fitting.recommended - placed}`
-                  : `Recommended ${fitting.recommended} · ${placed} placed`
+                  ? `${placed} of ${fitting.recommended} placed`
+                  : `${placed} placed`
                 : ''
               return <SystemRow
                 count={0}
@@ -215,9 +211,9 @@ export function PoolSystemsPanel() {
         </section>
       </details>
 
-      <details className="group border-b border-sidebar-border" open>
+      <details className="group border-b border-sidebar-border">
         <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 px-3 py-3 [&::-webkit-details-marker]:hidden">
-          <span className="font-semibold text-sm">Equipment pad</span>
+          <span className="font-semibold text-sm">Equipment</span>
           <span className="flex items-center gap-2 text-xs text-sidebar-foreground/55">
             {[system.pumps, system.filters, system.heaters].reduce((sum, count) => sum + count, 0)} placed
             <span aria-hidden="true" className="text-sidebar-foreground/45 transition-transform group-open:rotate-180">⌄</span>
@@ -274,12 +270,31 @@ export function PoolSystemsPanel() {
 
       <details className="group border-b border-sidebar-border">
         <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-3 py-3 [&::-webkit-details-marker]:hidden">
-          <span className="font-semibold text-sm">Other pool items</span>
+          <span className="font-semibold text-sm">Plumbing</span>
           <span aria-hidden="true" className="text-sidebar-foreground/45 transition-transform group-open:rotate-180">⌄</span>
         </summary>
         <section className="flex flex-col gap-3 px-3 pb-4">
           <div className="flex flex-col divide-y divide-sidebar-border/70">
-            {[...PLUMBING_ITEMS, ...FEATURE_ITEMS].map((item) => <SystemRow
+            {PLUMBING_ITEMS.map((item) => <SystemRow
+              count={counts[item.type] ?? 0}
+              image={item.image}
+              key={item.type}
+              label={item.label}
+              description=""
+              onClick={() => activateTool(item.type)}
+            />)}
+          </div>
+        </section>
+      </details>
+
+      <details className="group border-b border-sidebar-border">
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-3 py-3 [&::-webkit-details-marker]:hidden">
+          <span className="font-semibold text-sm">Pool features</span>
+          <span aria-hidden="true" className="text-sidebar-foreground/45 transition-transform group-open:rotate-180">⌄</span>
+        </summary>
+        <section className="flex flex-col gap-3 px-3 pb-4">
+          <div className="flex flex-col divide-y divide-sidebar-border/70">
+            {FEATURE_ITEMS.map((item) => <SystemRow
               count={counts[item.type] ?? 0}
               image={item.image}
               key={item.type}

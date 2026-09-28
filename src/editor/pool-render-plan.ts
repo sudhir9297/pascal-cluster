@@ -219,6 +219,45 @@ export function getPoolLevelResizePreviewPath(
   return path.map((point) => getPoolLevelResizePreviewPosition(committed, preview, point))
 }
 
+/** Carries a level-local pipe point with the pool when its pose or outline changes. */
+export function getPoolLevelAttachedPosition(
+  committed: PoolNode,
+  preview: PoolNode,
+  position: readonly [number, number, number],
+) {
+  const oldRotation = new Quaternion().setFromEuler(new Euler(...committed.rotation))
+  const newRotation = new Quaternion().setFromEuler(new Euler(...preview.rotation))
+  const local = new Vector3(...position)
+    .sub(new Vector3(...committed.position))
+    .applyQuaternion(oldRotation.invert())
+  const resized = getPoolChildResizePreviewPosition(committed, preview, local.toArray() as [number, number, number])
+  return new Vector3(...resized)
+    .applyQuaternion(newRotation)
+    .add(new Vector3(...preview.position))
+    .toArray() as [number, number, number]
+}
+
+export function getPoolLevelAttachedPath(
+  committed: PoolNode,
+  preview: PoolNode,
+  path: readonly (readonly [number, number, number])[],
+) {
+  return path.map((point) => getPoolLevelAttachedPosition(committed, preview, point))
+}
+
+export function getPoolLevelAttachedRotation(
+  committed: PoolNode,
+  preview: PoolNode,
+  rotation: readonly [number, number, number],
+) {
+  const oldPoolRotation = new Quaternion().setFromEuler(new Euler(...committed.rotation))
+  const newPoolRotation = new Quaternion().setFromEuler(new Euler(...preview.rotation))
+  const fittingRotation = new Quaternion().setFromEuler(new Euler(...rotation))
+  const result = newPoolRotation.multiply(oldPoolRotation.invert()).multiply(fittingRotation)
+  const euler = new Euler().setFromQuaternion(result)
+  return [euler.x, euler.y, euler.z] as [number, number, number]
+}
+
 /** Reuses the committed basin mesh while the depth handle is moving. */
 export function getPoolDepthResizePreviewTransform(committed: PoolNode, preview: PoolNode) {
   const sourceDepth = getPoolDepthRange(committed).maximum
