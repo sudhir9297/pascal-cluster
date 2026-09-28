@@ -1,4 +1,4 @@
-import { BaseNode, nodeType, objectId } from '@pascal-app/core'
+import { BaseNode, MaterialSchema, nodeType, objectId } from '@pascal-app/core'
 import { z } from 'zod'
 import { dimensions, drawnOutline } from '../../shared/schema'
 
@@ -11,5 +11,9 @@ export const LandingNode = BaseNode.extend({
   width: dimensions.width.default(2),
   depth: dimensions.depth.default(2),
   thickness: dimensions.thickness.default(0.18),
+  paintedMaterials: z.record(z.string(), z.object({
+    material: MaterialSchema.optional(),
+    materialPreset: z.string().optional(),
+  })).default({}),
 })
 export type LandingNode = z.infer<typeof LandingNode>

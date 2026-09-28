@@ -1,4 +1,4 @@
-import { BaseNode, nodeType, objectId } from '@pascal-app/core'
+import { BaseNode, MaterialSchema, nodeType, objectId } from '@pascal-app/core'
 import { z } from 'zod'
 import { dimensions, drawnOutline } from '../../shared/schema'
 
@@ -25,5 +25,9 @@ export const PatioNode = BaseNode.extend({
   borderWidth: z.number().finite().min(0.08).max(0.6).default(0.16),
   fieldColor: z.string().regex(/^#[0-9a-f]{6}$/i).default('#b8aa93'),
   borderColor: z.string().regex(/^#[0-9a-f]{6}$/i).default('#8d806e'),
+  paintedMaterials: z.record(z.string(), z.object({
+    material: MaterialSchema.optional(),
+    materialPreset: z.string().optional(),
+  })).default({}),
 })
 export type PatioNode = z.infer<typeof PatioNode>

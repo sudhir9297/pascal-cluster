@@ -139,8 +139,30 @@ function RetainingWallDefaults() {
     <SliderControl label={title} value={wall[key]} min={min} max={max} step={step}
       precision={Math.max(0, Math.ceil(-Math.log10(step)))} unit="m"
       onChange={(value) => update({ [key]: value })} />
+  const drawConnectedWall = () => {
+    const editor = useEditor.getState()
+    const existing = editor.toolDefaults.wall ?? {}
+    const metadata = existing.metadata as Record<string, unknown> | undefined
+    editor.setToolDefaults('wall', {
+      ...existing,
+      thickness: wall.depth,
+      height: wall.thickness,
+      metadata: {
+        ...metadata,
+        landscapeRetainingWall: true,
+        roomBoundary: false,
+      },
+    })
+    editor.setPhase('structure')
+    editor.setStructureLayer('elements')
+    editor.armToolMode({ mode: 'build', tool: 'wall' })
+  }
   return <div aria-label="Retaining wall settings" className="flex flex-col gap-1.5">
     <h3 className="px-2 text-xs font-medium text-foreground">Placement defaults</h3>
+    {!active && <ActionButton label="Draw connected wall" onClick={drawConnectedWall} />}
+    {active && <p className="px-2 text-xs text-muted-foreground">
+      Click connected points; press Enter to finish. Select a segment to curve it and edit its masonry.
+    </p>}
     {number('depth', 'Wall width', 0.2, 3, 0.05)}
     {number('thickness', 'Wall height', 0.03, 2, 0.01)}
     <div className="space-y-1 py-1">

@@ -5,10 +5,11 @@ import { useViewer } from '@pascal-app/viewer'
 import { useEffect, useRef, useState } from 'react'
 import type { Group } from 'three'
 import { distance, lerp, splineCurves, type Curve } from '../domain/curves'
-import { snapAlongAngle } from '../domain/drafting'
+import { projectToEdgeNormal, snapAlongAngle } from '../domain/drafting'
 import { addCurves, snapToNetwork } from '../domain/network'
 import { planPathwayItems } from '../domain/items'
 import { PATHWAY_KIND, PathwayNode, type Point } from '../domain/schema'
+import { snapToHardscape } from '../../ground-access/shared/hardscape-snap'
 import { drawingWidth } from '../domain/settings'
 import { buildOutline } from '../rendering/outline'
 import PathwayPreview from '../rendering/preview'
@@ -35,6 +36,7 @@ export default function PathwayTool({ render3D = true }: { render3D?: boolean } 
       thickness: defaults?.thickness, elevation: defaults?.elevation, borderStyle: defaults?.borderStyle,
       cornerStyle: defaults?.cornerStyle, parentId: activeLevelId, name: 'Walkways' })
     let start: Point | null = null, alignment: Point[] = [], currentCursor: Point | null = null
+    let startEdgeDirection: Point | null = null
     let activeNetworkId: string | null = null
     let targetKind: 'vertex' | 'edge' | null = null
     let numericField: 'length' | 'bearing' | null = null, typed = ''
@@ -106,13 +108,22 @@ export default function PathwayTool({ render3D = true }: { render3D?: boolean } 
       const from = alignment.at(-1) ?? start
       const gridStep = useEditor.getState().gridSnapStep
       const graph = networks()
-      const pathHit = !noSnap ? graph.flatMap((node) => {
+      const firstLegFromEdge = Boolean(start && !alignment.length && startEdgeDirection)
+      const surfaceHit = !noSnap && !firstLegFromEdge ? snapToHardscape(raw, useScene.getState().nodes,
+        activeLevelId, undefined, Math.max(0.35, width / 2 + 0.1)) : null
+      if (surfaceHit) {
+        useAlignmentGuides.getState().clear()
+        return { point: surfaceHit.point, kind: surfaceHit.kind, nodeId: null,
+          surfaceHeight: surfaceHit.height, edgeDirection: surfaceHit.edgeDirection }
+      }
+      const pathHit = !noSnap && !firstLegFromEdge ? graph.flatMap((node) => {
         const hit = snapToNetwork(node, raw, Math.max(0.5, width / 2 + 0.4))
         return hit ? [{ ...hit, nodeId: node.id }] : []
       }).sort((a, b) => a.distance - b.distance)[0] : null
       if (pathHit) {
         useAlignmentGuides.getState().clear()
-        return { point: pathHit.point, kind: pathHit.vertexId ? 'vertex' as const : 'edge' as const }
+        return { point: pathHit.point, kind: pathHit.vertexId ? 'vertex' as const : 'edge' as const,
+          surfaceHeight: undefined, edgeDirection: undefined }
       }
       let point = raw
       if (!noSnap) {
@@ -134,7 +145,11 @@ export default function PathwayTool({ render3D = true }: { render3D?: boolean } 
           point = [from[0] + Math.sin(angle) * measured, from[1] - Math.cos(angle) * measured]
         }
       } else useAlignmentGuides.getState().clear()
-      return { point, kind: null, nodeId: null }
+      if (firstLegFromEdge && from && startEdgeDirection) {
+        point = projectToEdgeNormal(from, raw, startEdgeDirection)
+        useAlignmentGuides.getState().clear()
+      }
+      return { point, kind: null, nodeId: null, surfaceHeight: undefined, edgeDirection: undefined }
     }
     const onMove = (event: GridEvent) => {
       const { point, kind } = resolve(event)
@@ -142,17 +157,21 @@ export default function PathwayTool({ render3D = true }: { render3D?: boolean } 
     }
     const onClick = (event: GridEvent) => {
       if (event.nativeEvent?.button !== 0 || useViewer.getState().cameraDragging) return
-      const { point, kind, nodeId } = resolve(event)
+      const { point, kind, nodeId, surfaceHeight, edgeDirection } = resolve(event)
       setCursorPoint(point, kind)
       if (!start) {
-        start = point; activeNetworkId = nodeId ?? null
-        width = networks().find((node) => node.id === activeNetworkId)?.defaultWidth ?? configuredWidth
+        start = point; startEdgeDirection = kind === 'edge' ? edgeDirection ?? null : null
+        activeNetworkId = nodeId ?? null
+        const current = networks().find((node) => node.id === activeNetworkId)
+        width = current?.defaultWidth ?? configuredWidth
+        if (!current && surfaceHeight !== undefined)
+          base = PathwayNode.parse({ ...base, elevation: surfaceHeight })
         status(); return
       }
       const previous = alignment.at(-1) ?? start
       if (distance(previous, point) < 0.05) return
       if (mode === 'curve') alignment.push(point)
-      else if (commit([straight(start, point)])) start = point
+      else if (commit([straight(start, point)])) { start = point; startEdgeDirection = null }
       length = null; bearing = null; targetKind = null; setSnapKind(null); renderDraft()
     }
     const finish = () => {

@@ -4,7 +4,6 @@ import { PanelSection, SliderControl, ToggleControl, useEditor } from '@pascal-a
 import { useViewer } from '@pascal-app/viewer'
 import { PergolaNode, PERGOLA_KIND } from '../domain/schema'
 import { PergolaIllustration } from './illustration'
-import { CatalogListRow } from '../../editor/catalog-list-row'
 import { pergolaArchMode, pergolaRoofLayout } from '../domain/layout'
 import { pergolaParametrics } from './parametrics'
 import { POST_DETAIL_OPTIONS, validPostDetailStyle } from '../domain/post-details'
@@ -87,13 +86,20 @@ export function PergolaPanel() {
       </select>
     </label>
   return <section aria-label="Pergola placement settings" className="flex flex-col">
-    <h3 className="px-2 pb-1 text-xs font-medium text-foreground">Roof style</h3>
-    {roofOptions.map(({ label, roofForm }) => <CatalogListRow key={roofForm} label={label}
-      active={active && pergola.roofForm === roofForm} disabled={!placementLevelId}
-      onClick={() => place(roofForm)} thumbnail={<span aria-hidden="true"
-        style={{ width: 36, height: 36, flex: '0 0 36px', overflow: 'hidden', borderRadius: 4 }}>
-        <PergolaIllustration roofForm={roofForm} />
-      </span>} />)}
+    <h3 className="px-2 pb-2 text-xs font-medium text-foreground">Roof style</h3>
+    <div className="grid grid-cols-2 gap-2 px-2">
+      {roofOptions.map(({ label, roofForm }) => {
+        const selected = active && pergola.roofForm === roofForm
+        return <button key={roofForm} type="button" aria-pressed={selected} disabled={!placementLevelId}
+          onClick={() => place(roofForm)}
+          className={`overflow-hidden rounded-md border text-left transition-colors focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 ${selected ? 'border-primary bg-accent/30 ring-1 ring-primary/50' : 'border-border bg-secondary/40 hover:bg-accent/30'}`}>
+          <span aria-hidden="true" className="block aspect-[4/3] overflow-hidden">
+            <PergolaIllustration roofForm={roofForm} />
+          </span>
+          <span className="block min-h-9 px-2 py-1.5 text-[11px] leading-4 text-foreground">{label}</span>
+        </button>
+      })}
+    </div>
     <div className="mt-3 border-t border-border/70 pt-1">
       <PanelSection title="Placement defaults">
         {number('width', 'Width', 1.5, 10, 0.1)}

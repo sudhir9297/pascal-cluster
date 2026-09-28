@@ -19,7 +19,8 @@ export default function GrassFootprintSystem() {
     })
     if (!changed) return
     for (const node of Object.values(current.nodes)) {
-      if ((node.type as string) === GROUND_AREA_KIND && (node as { surface?: string }).surface === 'grass')
+      if ((node.type as string) === GROUND_AREA_KIND &&
+          ['grass', 'grass2'].includes((node as { surface?: string }).surface ?? ''))
         current.markDirty(node.id)
     }
   }), [])

@@ -53,12 +53,60 @@ function extruded(group: Group, polygon: MultiPolygon[number], depth: number, y:
   group.add(mesh)
 }
 
-function shapedAccessGeometry(node: DrawnSurface, kind: AccessKind): Group {
+function shapedAccessGeometry(node: DrawnSurface, kind: AccessKind, sourceRegions?: MultiPolygon): Group {
   const group = new Group()
-  const outline: MultiPolygon = [[surfaceOutline(node)]]
-  const material = new MeshStandardMaterial({ color: kind === 'deck' ? '#825c3d' : colors[kind], roughness: 0.9 })
+  const outline: MultiPolygon = sourceRegions ?? [[surfaceOutline(node)]]
+  const slab = kind === 'concrete-slab' ? node as DrawnSurface & {
+    finish?: 'broom' | 'exposed-aggregate' | 'polished'; edgeProfile?: 'square' | 'chamfered'
+  } : null
+  const material = new MeshStandardMaterial({
+    color: slab?.finish === 'exposed-aggregate' ? '#aaa69c' : slab?.finish === 'polished' ? '#b8b7b1'
+      : kind === 'deck' ? '#825c3d' : colors[kind],
+    roughness: slab?.finish === 'polished' ? 0.38 : slab?.finish === 'exposed-aggregate' ? 0.98 : 0.88,
+  })
   const boardHeight = kind === 'deck' ? Math.min(0.035, node.thickness / 3) : 0
-  for (const polygon of outline) extruded(group, polygon, node.thickness - boardHeight, 0, material, `${kind}-surface`)
+  const slabExtrudeOptions = slab?.edgeProfile === 'chamfered'
+    ? { bevelEnabled: true, bevelSegments: 1, bevelThickness: 0.012, bevelSize: 0.012 }
+    : { bevelEnabled: false }
+  for (const polygon of outline) {
+    if (slab) {
+      const bevel = slab.edgeProfile === 'chamfered' ? 0.012 : 0
+      const bevelRegions = bevel ? pavingPolygons.inset([polygon], bevel) : [polygon]
+      for (const bevelRegion of bevelRegions) {
+        const geometry = extrudePaving(bevelRegion, { depth: Math.max(0.03, node.thickness - bevel * 2),
+          steps: 1, curveSegments: 1, ...slabExtrudeOptions })
+        if (geometry) {
+          geometry.rotateX(-Math.PI / 2)
+          if (bevel) geometry.translate(0, bevel, 0)
+          const mesh = new Mesh(geometry, material)
+          mesh.name = 'concrete-slab-surface'
+          mesh.castShadow = true
+          mesh.receiveShadow = true
+          group.add(mesh)
+        }
+      }
+    } else extruded(group, polygon, node.thickness - boardHeight, 0, material, `${kind}-surface`)
+  }
+  if (slab && (node as DrawnSurface & { jointLayout?: 'none' | 'grid'; jointSpacing?: number; jointWidth?: number }).jointLayout !== 'none') {
+    const settings = node as DrawnSurface & { jointSpacing?: number; jointWidth?: number }
+    const spacing = settings.jointSpacing ?? 3
+    const jointWidth = settings.jointWidth ?? 0.006
+    const joint = new MeshStandardMaterial({ color: '#77756f', roughness: 0.95 })
+    const halfX = node.width / 2, halfZ = node.depth / 2
+    const surfaceHeight = node.thickness
+    const addJoint = (polygon: MultiPolygon[number], name: string) =>
+      extruded(group, polygon, 0.003, surfaceHeight - 0.002, joint, name)
+    for (let x = -halfX + spacing; x < halfX - 0.01; x += spacing) {
+      const stripe: MultiPolygon = [[[[x - jointWidth / 2, -halfZ], [x + jointWidth / 2, -halfZ],
+        [x + jointWidth / 2, halfZ], [x - jointWidth / 2, halfZ]]]]
+      for (const polygon of pavingPolygons.intersection(outline, stripe)) addJoint(polygon, `concrete-joint-x-${x.toFixed(2)}`)
+    }
+    for (let z = -halfZ + spacing; z < halfZ - 0.01; z += spacing) {
+      const stripe: MultiPolygon = [[[[ -halfX, z - jointWidth / 2], [halfX, z - jointWidth / 2],
+        [halfX, z + jointWidth / 2], [-halfX, z + jointWidth / 2]]]]
+      for (const polygon of pavingPolygons.intersection(outline, stripe)) addJoint(polygon, `concrete-joint-z-${z.toFixed(2)}`)
+    }
+  }
   if (kind === 'deck') {
     const boardMaterial = new MeshStandardMaterial({ color: colors.deck, roughness: 0.85 })
     const pitch = 0.16
@@ -78,16 +126,18 @@ function shapedAccessGeometry(node: DrawnSurface, kind: AccessKind): Group {
 export function buildAccessGeometry(node: AccessShape, kind: AccessKind, ctx?: GeometryContext): Group {
   const cutouts = poolCutoutsFor(node as AccessShape & { id: string; type: string; parentId: string | null }, ctx)
   if (cutouts.length) {
-    const group = new Group()
     const outline = isShaped(node) ? surfaceOutline(node) : [
       [-node.width / 2, -node.depth / 2], [node.width / 2, -node.depth / 2],
       [node.width / 2, node.depth / 2], [-node.width / 2, node.depth / 2],
     ]
     const regions = pavingPolygons.difference([[outline as [number, number][]]], ...cutouts)
+    if (kind === 'concrete-slab') return shapedAccessGeometry(node as DrawnSurface, kind, regions)
+    const group = new Group()
     const material = new MeshStandardMaterial({ color: colors[kind], roughness: 0.9 })
     for (const polygon of regions) extruded(group, polygon, node.thickness, 0, material, `${kind}-surface`)
     return group
   }
+  if (kind === 'concrete-slab') return shapedAccessGeometry(node as DrawnSurface, kind)
   if (isShaped(node) && ['deck', 'concrete-slab', 'landing'].includes(kind))
     return shapedAccessGeometry(node, kind)
   const group = new Group()

@@ -18,13 +18,19 @@ import {
   SliderControl,
   ToggleControl,
 } from '@pascal-app/editor'
+import { useViewer } from '@pascal-app/viewer'
 import { RetainingWallNode, RETAININGWALL_KIND, type RetainingWallNode as Finish } from '../domain/schema'
 
 export default function RetainingWallFinishPanel({ node }: { node?: AnyNode }) {
-  const wall = node?.type === 'wall' ? node as WallNode : null
+  const setSelection = useViewer((state) => state.setSelection)
+  const selectedFinishId = (node?.type as string) === RETAININGWALL_KIND ? node?.id as AnyNodeId : null
+  const hostWallId = node?.type === 'wall' ? node.id as AnyNodeId
+    : (node?.type as string) === RETAININGWALL_KIND ? (node as unknown as Finish).hostWallId as AnyNodeId : null
+  const wall = useScene((state) => hostWallId ? state.nodes[hostWallId] as WallNode | undefined : undefined) ?? null
   const finish = useScene((state) => Object.values(state.nodes).find((candidate) =>
-    (candidate.type as string) === RETAININGWALL_KIND &&
-    (candidate as unknown as Finish).hostWallId === wall?.id) as unknown as Finish | undefined)
+    (candidate.type as string) === RETAININGWALL_KIND && (selectedFinishId
+      ? candidate.id === selectedFinishId
+      : (candidate as unknown as Finish).hostWallId === wall?.id)) as unknown as Finish | undefined)
   if (!wall) return null
 
   const isRetaining = wall.metadata?.landscapeRetainingWall === true
@@ -107,6 +113,10 @@ export default function RetainingWallFinishPanel({ node }: { node?: AnyNode }) {
         <ActionButton label="Remove retaining wall finish" onClick={() => updateWall({
           metadata: { ...wall.metadata, landscapeRetainingWall: false, roomBoundary: true },
         })} />
+        <ActionButton label="Delete retaining wall" onClick={() => {
+          useScene.getState().deleteNode(wall.id as AnyNodeId)
+          setSelection({ selectedIds: [] })
+        }} />
       </ActionGroup>
     </PanelSection>
   </>

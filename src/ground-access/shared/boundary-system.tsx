@@ -14,7 +14,11 @@ import { PoolCutoutDirtySystem } from '../../shared/pool-cutout-system'
 type SurfaceNode = DrawnSurface & { id: string; type: string; parentId: string | null }
 
 export default function SurfaceBoundarySystem({ kind }: { kind: DrawnAccessKind }) {
-  return <><PoolCutoutDirtySystem /><StairAttachmentSystem /><BoundaryEditor kind={kind} /></>
+  return <><BoundaryEditor kind={kind} /></>
+}
+
+export function HardscapeConnectionSystem() {
+  return <><PoolCutoutDirtySystem /><StairAttachmentSystem /></>
 }
 
 function BoundaryEditor({ kind }: { kind: DrawnAccessKind }) {

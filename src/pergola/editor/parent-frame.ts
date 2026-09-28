@@ -1,7 +1,7 @@
 import type { AnyNode, MovableParentFrame } from '@pascal-app/core'
 import { pergolaPointFromSupport, pergolaPointOnSupport, pergolaSupportPose } from '../domain/support-surface'
 
-export const pergolaParentFrame: MovableParentFrame = {
+export const pergolaParentFrame: MovableParentFrame & { independent: boolean } = {
   independent: true,
   floorplanLiveTransform: ({ node, live }) => ({
     ...node, position: live.position, rotation: [0, live.rotation, 0],

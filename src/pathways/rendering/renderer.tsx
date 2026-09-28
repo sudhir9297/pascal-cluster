@@ -1,16 +1,20 @@
 'use client'
-import { type AnyNodeId, useLiveNodeOverrides } from '@pascal-app/core'
+import { type AnyNodeId, useLiveNodeOverrides, useRegistry } from '@pascal-app/core'
 import { useNodeEvents, useViewer } from '@pascal-app/viewer'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useEditor } from '@pascal-app/editor'
+import type { Group } from 'three'
 import type { PathwayNode } from '../domain/schema'
 import { PATHWAY_KIND } from '../domain/schema'
 import { PathwayExtensionControls } from '../editor/extension-controls'
 import { PathwayJunctionControls } from '../editor/junction-controls'
 import { PathwayCurveControls } from '../editor/curve-controls'
 import { buildPathwayGeometry, createPathwayMaterial, disposePathwayGeometry } from './geometry'
+import { applyLandscapePaintedMaterials } from '../../ground-access/shared/paint'
 
 export default function PathwayRenderer({ node }: { node: PathwayNode }) {
+  const ref = useRef<Group>(null!)
+  useRegistry(node.id, PATHWAY_KIND, ref)
   const override = useLiveNodeOverrides((state) => state.overrides.get(node.id))
   const renderedNode = useMemo(() => override ? { ...node, ...override } as PathwayNode : node,
     [node, override])
@@ -21,9 +25,13 @@ export default function PathwayRenderer({ node }: { node: PathwayNode }) {
   const material = useMemo(() => createPathwayMaterial(renderedNode),
     [renderedNode.finish, renderedNode.color])
   useEffect(() => () => { material.dispose(); material.map?.dispose() }, [material])
-  const geometry = useMemo(() => buildPathwayGeometry(renderedNode, undefined, material), [renderedNode, material])
+  const geometry = useMemo(() => {
+    const built = buildPathwayGeometry(renderedNode, undefined, material)
+    applyLandscapePaintedMaterials(built, renderedNode.paintedMaterials, (mesh) => mesh.userData.slotId ?? null, false)
+    return built
+  }, [renderedNode, material])
   useEffect(() => () => disposePathwayGeometry(geometry, false), [geometry])
-  return <group visible={renderedNode.visible !== false} {...(drawing ? {} : handlers)}>
+  return <group ref={ref} visible={renderedNode.visible !== false} {...(drawing ? {} : handlers)}>
     <primitive object={geometry} />
     {selected && !drawing && <PathwayExtensionControls node={renderedNode} />}
     {selected && !drawing && <PathwayJunctionControls node={renderedNode} />}

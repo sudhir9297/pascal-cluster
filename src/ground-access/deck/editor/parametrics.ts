@@ -4,6 +4,7 @@ import type { DeckNode } from '../domain/schema'
 import { circleDerivedSize } from '../../shared/outline'
 
 export const deckParametrics: ParametricDescriptor<DeckNode> = {
+  customPanel: () => import('./inspector'),
   derive: (next, patch, previous) => {
     const before = previous ?? next
     const switched = patch.deckType && patch.deckType !== before.deckType

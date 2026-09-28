@@ -27,7 +27,7 @@ function blockerFootprint(node: SurfaceNode, area: GroundAreaNode): MultiPolygon
   let footprint: MultiPolygon = []
   if ((node.type as string) === GROUND_AREA_KIND) {
     const other = node as unknown as GroundAreaNode
-    if (other.id === area.id || other.surface === 'grass' || other.outline.length < 3 ||
+    if (other.id === area.id || other.surface === 'grass' || other.surface === 'grass2' || other.outline.length < 3 ||
         Math.abs(other.elevation + localHeight - area.elevation) > 0.18) return []
     footprint = [[other.outline]]
   } else if (node.type === 'slab') {

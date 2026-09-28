@@ -1,5 +1,5 @@
 import { finishOptions } from '../rendering/finishes'
-import type { PathwayNode } from './schema'
+import type { PathwayNode, PathwayFinish } from './schema'
 import { isNaturalStoneFinish } from './schema'
 import { naturalStoneDefaults } from '../rendering/natural-stones'
 
@@ -12,6 +12,13 @@ export const STONE_WALKWAY_PRESET = {
   cornerStyle: 'square',
 } as const
 
+/** These loose or individually laid stone finishes look best without a path border. */
+export const BORDERLESS_PATHWAY_FINISHES: readonly PathwayFinish[] = [
+  'steppingStones', 'grassFlagstones', 'riverStones', 'laidStone',
+]
+export const hasBorderlessDefault = (finish: PathwayFinish) =>
+  BORDERLESS_PATHWAY_FINISHES.includes(finish)
+
 /** Changing the primary width resizes the selected connected item. */
 export function derivePathwaySettings(next: PathwayNode, patch: Partial<PathwayNode>): Partial<PathwayNode> {
   return {
@@ -20,8 +27,8 @@ export function derivePathwaySettings(next: PathwayNode, patch: Partial<PathwayN
       ...(isNaturalStoneFinish(next.finish) ? {
         naturalStoneSize: naturalStoneDefaults[next.finish].size,
         naturalStoneGap: naturalStoneDefaults[next.finish].gap,
-        borderStyle: 'none' as const,
       } : {}),
+      ...(hasBorderlessDefault(next.finish) ? { borderStyle: 'none' as const } : {}),
     } : {}),
     ...(patch.defaultWidth !== undefined ? {
       edges: next.edges.map((edge) => ({ ...edge, width: next.defaultWidth })),

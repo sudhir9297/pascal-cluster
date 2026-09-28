@@ -3,6 +3,7 @@ import { GROUND_AREA_KIND, GroundAreaNode } from './domain/schema'
 import { buildGroundAreaFloorplan, buildGroundAreaGeometry } from './rendering/geometry'
 import { groundAreaFloorplanAffordances } from './editor/floorplan-affordances'
 import { groundAreaDrawingModeHint } from './editor/drawing-mode'
+import { groundAreaPaint } from './editor/paint'
 
 export const groundAreaDefinition: NodeDefinition<typeof GroundAreaNode> = {
   kind: GROUND_AREA_KIND,
@@ -18,6 +19,7 @@ export const groundAreaDefinition: NodeDefinition<typeof GroundAreaNode> = {
   },
   capabilities: {
     selectable: { hitVolume: 'mesh' },
+    paint: groundAreaPaint,
     deletable: true,
     duplicable: true,
   },

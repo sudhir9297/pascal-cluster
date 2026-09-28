@@ -4,6 +4,7 @@ import { DoubleSide, Group, Mesh, MeshStandardMaterial, Path, Shape, ShapeGeomet
 import type { Texture } from 'three'
 import type { GroundAreaNode, GroundSurface } from '../domain/schema'
 import { grassTexture, makeGrassBlades } from './grass'
+import { makeGrass2 } from './grass2'
 import { grassContainsPoint, visibleGrassFootprint } from './footprint'
 import { gravelTexture } from './gravel'
 import { getMudTexture } from './mud'
@@ -11,9 +12,11 @@ import { makeMulchChips, mulchTexture } from './mulch'
 import { sandTexture } from './sand'
 import { makeSoilClods, soilTexture } from './soil'
 import { subtractPoolCutouts } from '../../shared/pool-cutouts'
+import { applyLandscapePaintedMaterials } from '../../ground-access/shared/paint'
 
 const SURFACE_STYLE: Record<GroundSurface, { color: string; roughness: number }> = {
   grass: { color: '#718451', roughness: 0.98 },
+  grass2: { color: '#718451', roughness: 0.98 },
   soil: { color: '#5b5841', roughness: 1 },
   mulch: { color: '#76523b', roughness: 1 },
   gravel: { color: '#918f83', roughness: 0.96 },
@@ -23,6 +26,7 @@ const SURFACE_STYLE: Record<GroundSurface, { color: string; roughness: number }>
 
 const SURFACE_TEXTURE: Record<Exclude<GroundSurface, 'mud'>, Texture> = {
   grass: grassTexture,
+  grass2: grassTexture,
   soil: soilTexture,
   mulch: mulchTexture,
   gravel: gravelTexture,
@@ -38,7 +42,7 @@ function buildGroundAreaSurface(node: GroundAreaNode, includeDetails: boolean, c
   if (node.outline.length < 3) return group
   const original = [[node.outline]] as import('polygon-clipping').MultiPolygon
   const footprint = subtractPoolCutouts(
-    node.surface === 'grass' && includeDetails ? visibleGrassFootprint(node, ctx) : original,
+    (node.surface === 'grass' || node.surface === 'grass2') && includeDetails ? visibleGrassFootprint(node, ctx) : original,
     node as unknown as import('../../shared/pool-cutouts').PoolCutoutSurface,
     ctx,
   )
@@ -60,6 +64,7 @@ function buildGroundAreaSurface(node: GroundAreaNode, includeDetails: boolean, c
     geometry.computeVertexNormals()
     const mesh = new Mesh(geometry, material)
     mesh.name = `ground-area-${node.surface}`
+    mesh.userData.slotId = 'surface'
     mesh.receiveShadow = true
     mesh.castShadow = false
     group.add(mesh)
@@ -67,6 +72,10 @@ function buildGroundAreaSurface(node: GroundAreaNode, includeDetails: boolean, c
   if (node.surface === 'grass' && includeDetails) {
     const blades = makeGrassBlades(node.outline, node.elevation, (x, z) => grassContainsPoint(footprint, x, z))
     if (blades) group.add(blades)
+  }
+  if (node.surface === 'grass2' && includeDetails) {
+    group.add(makeGrass2(node.outline, node.elevation,
+      (x, z) => grassContainsPoint(footprint, x, z), node.grass2Settings))
   }
   const hasPoolCutout = footprint.length !== 1 || footprint[0]?.length !== 1
   if (node.surface === 'soil' && includeDetails && !hasPoolCutout) {
@@ -77,6 +86,8 @@ function buildGroundAreaSurface(node: GroundAreaNode, includeDetails: boolean, c
     const chips = makeMulchChips(node.outline, node.elevation)
     if (chips) group.add(chips)
   }
+  if (includeDetails) applyLandscapePaintedMaterials(group, node.paintedMaterials, (mesh) =>
+    mesh.userData.slotId === 'surface' ? 'surface' : null)
   return group
 }
 
@@ -95,7 +106,7 @@ export function buildGroundAreaFloorplan(
   if (node.outline.length < 3) return { kind: 'group', children: [] }
   const selected = ctx.viewState?.selected || ctx.viewState?.highlighted
   const footprint = subtractPoolCutouts(
-    node.surface === 'grass' ? visibleGrassFootprint(node, ctx) : [[node.outline]],
+    node.surface === 'grass' || node.surface === 'grass2' ? visibleGrassFootprint(node, ctx) : [[node.outline]],
     node as unknown as import('../../shared/pool-cutouts').PoolCutoutSurface,
     ctx,
   )

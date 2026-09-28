@@ -258,7 +258,10 @@ export function pergolaDimensions(n: PergolaNode): [number, number, number] {
   ]
 }
 
-export function pergolaLayout(n: PergolaNode): Member[] {
+export function pergolaLayout(
+  n: PergolaNode,
+  supportOffsetAt?: (x: number, z: number) => number,
+): Member[] {
   const roofWidth = n.width + (n.sideOverhang ?? n.overhang) * 2
   const roofDepth = n.depth + (n.endOverhang ?? n.overhang) * 2
   const { leftX, rightX, frontZ, backZ } = pergolaPostPositions(n)
@@ -287,7 +290,7 @@ export function pergolaLayout(n: PergolaNode): Member[] {
           style: n.memberEndStyle, depth: n.memberEndCut ?? 0.04 }
       : undefined })
 
-  const addPostBase = (x: number, z: number) => {
+  const addPostBase = (x: number, z: number, groundOffset: number) => {
     const style = n.postBaseStyle ?? 'square-plinth'
     if (style === 'none') return
     const width = Math.max(n.postBaseWidth ?? 0.25, n.postSize * 1.1)
@@ -298,16 +301,16 @@ export function pergolaLayout(n: PergolaNode): Member[] {
     ) * 2
     const neckWidth = shaftDiameter * 1.04
     if (style === 'simple-square') {
-      add('feet', [x, height / 2, z], [width, height, width])
+      add('feet', [x, groundOffset + height / 2, z], [width, height, width])
     } else if (style === 'square-plinth' || style === 'steel-shoe') {
-      add('feet', [x, height * 0.175, z], [width, height * 0.35, width])
+      add('feet', [x, groundOffset + height * 0.175, z], [width, height * 0.35, width])
       const topWidth = Math.max(width * 0.84, neckWidth)
-      add('feet', [x, height * 0.675, z], [topWidth, height * 0.65, topWidth])
+      add('feet', [x, groundOffset + height * 0.675, z], [topWidth, height * 0.65, topWidth])
     } else if (style === 'stepped-square' || style === 'stepped-plinth') {
       for (let tier = 0; tier < 3; tier++) {
         const tierHeight = height / 3
         const tierWidth = Math.max(width * (1 - tier * 0.16), neckWidth)
-        add('feet', [x, (tier + 0.5) * tierHeight, z], [tierWidth, tierHeight, tierWidth])
+        add('feet', [x, groundOffset + (tier + 0.5) * tierHeight, z], [tierWidth, tierHeight, tierWidth])
       }
     } else if (style === 'round-rings' || style === 'round-plinth') {
       const topWidth = Math.max(
@@ -316,34 +319,38 @@ export function pergolaLayout(n: PergolaNode): Member[] {
       )
       const bandWidth = Math.max(width * 0.92, topWidth * 1.05)
       const plinthWidth = Math.max(width, bandWidth * 1.05)
-      add('feet', [x, height * 0.22, z], [plinthWidth, height * 0.44, plinthWidth])
-      add('feet', [x, height * 0.6, z], [bandWidth, height * 0.32, bandWidth], undefined, 'round')
-      add('feet', [x, height * 0.88, z], [topWidth, height * 0.24, topWidth], undefined, 'round')
+      add('feet', [x, groundOffset + height * 0.22, z], [plinthWidth, height * 0.44, plinthWidth])
+      add('feet', [x, groundOffset + height * 0.6, z], [bandWidth, height * 0.32, bandWidth], undefined, 'round')
+      add('feet', [x, groundOffset + height * 0.88, z], [topWidth, height * 0.24, topWidth], undefined, 'round')
     } else {
-      add('feet', [x, height / 2, z], [width, height, width])
+      add('feet', [x, groundOffset + height / 2, z], [width, height, width])
       for (const side of [-1, 1]) {
-        add('feet', [x + side * width * 0.505, height * 0.5, z], [width * 0.025, height * 0.44, width * 0.38])
-        add('feet', [x, height * 0.5, z + side * width * 0.505], [width * 0.38, height * 0.44, width * 0.025])
+        add('feet', [x + side * width * 0.505, groundOffset + height * 0.5, z], [width * 0.025, height * 0.44, width * 0.38])
+        add('feet', [x, groundOffset + height * 0.5, z + side * width * 0.505], [width * 0.38, height * 0.44, width * 0.025])
       }
     }
   }
 
   for (const x of [leftX, rightX]) {
     for (const z of [frontZ, backZ]) {
+      const groundOffset = supportOffsetAt?.(x, z) ?? 0
       const height = heightAt(z)
       const baseTop = pergolaBaseHeight(n)
-      const shaftBottom = baseTop === 0 ? 0 : baseTop - 0.001
+      const shaftBottom = groundOffset + (baseTop === 0 ? 0 : baseTop - 0.001)
+      // Keep the roof-to-post joint fixed as the terrain changes. Extremely
+      // steep ground may shorten the post, but must never push the roof up.
+      const postTop = height
       add(
         'posts',
-        [x, (height + shaftBottom) / 2, z],
-        [n.postSize, height - shaftBottom, n.postSize],
+        [x, (postTop + shaftBottom) / 2, z],
+        [n.postSize, postTop - shaftBottom, n.postSize],
         undefined,
         n.postStyle,
       )
-      addPostBase(x, z)
+      addPostBase(x, z, groundOffset)
       add('trim', [x, height - 0.04, z], [n.postSize, 0.08, n.postSize])
       if (detail === 'twin-bands')
-        for (const y of [baseTop + 0.1, baseTop + 0.19, height - 0.2])
+        for (const y of [groundOffset + baseTop + 0.1, groundOffset + baseTop + 0.19, height - 0.2])
           add('trim', [x, y, z], [n.postSize * 1.25, 0.035, n.postSize * 1.25])
       if (detail === 'crown')
         add(
@@ -354,7 +361,7 @@ export function pergolaLayout(n: PergolaNode): Member[] {
           'chamfered',
         )
       if (detail === 'ringed')
-        for (const y of [baseTop + 0.08, baseTop + 0.18, height - 0.2, height - 0.12])
+        for (const y of [groundOffset + baseTop + 0.08, groundOffset + baseTop + 0.18, height - 0.2, height - 0.12])
           add(
             'trim',
             [x, y, z],

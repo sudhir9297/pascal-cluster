@@ -1,5 +1,5 @@
 'use client'
-import SurfaceBoundarySystem from '../../shared/boundary-system'
+import SurfaceBoundarySystem, { HardscapeConnectionSystem } from '../../shared/boundary-system'
 export default function DeckBoundarySystem() {
-  return <SurfaceBoundarySystem kind="landscape:deck" />
+  return <><HardscapeConnectionSystem /><SurfaceBoundarySystem kind="landscape:deck" /></>
 }

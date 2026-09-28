@@ -29,8 +29,10 @@ function bevel(profile: PathwayEdgeProfile, depth: number) {
 export function buildPathwayGeometry(node: PathwayNode, ctx?: GeometryContext, suppliedMaterial?: MeshStandardMaterial): Group {
   node = currentPathway(node)
   const group = new Group()
-  const material = suppliedMaterial ?? createPathwayMaterial(node)
-  group.userData.sourceMaterial = suppliedMaterial ? undefined : material
+  const canCloneSuppliedMaterial = suppliedMaterial && typeof suppliedMaterial.clone === 'function' &&
+    typeof suppliedMaterial.color?.multiplyScalar === 'function'
+  const material = canCloneSuppliedMaterial ? suppliedMaterial : createPathwayMaterial(node)
+  group.userData.sourceMaterial = canCloneSuppliedMaterial ? undefined : material
   const natural = isNaturalStoneFinish(node.finish)
   const laid = node.finish === 'laidStone' || node.finish === 'concreteSlabs' || natural
   const ownedMaterials: MeshStandardMaterial[] = []
@@ -41,7 +43,7 @@ export function buildPathwayGeometry(node: PathwayNode, ctx?: GeometryContext, s
   const polygons = subtractPoolCutouts(buildOutline(node), node as unknown as PathwayNode & { id: string; type: string; parentId: string | null }, ctx)
   if (!polygons.length) {
     for (const owned of ownedMaterials) owned.dispose()
-    if (!suppliedMaterial) {
+    if (!canCloneSuppliedMaterial) {
       material.dispose()
       material.map?.dispose()
     }
@@ -58,6 +60,7 @@ export function buildPathwayGeometry(node: PathwayNode, ctx?: GeometryContext, s
     geometry.translate(0, node.elevation + 0.005, 0)
     const mesh = new Mesh(geometry, baseMaterial)
     mesh.name = 'pathway-backing'
+    mesh.userData.slotId = 'surface'
     mesh.receiveShadow = true
     mesh.castShadow = true
     group.add(mesh)
@@ -98,6 +101,7 @@ export function buildPathwayGeometry(node: PathwayNode, ctx?: GeometryContext, s
       if (geometry) {
         const mesh = new Mesh(geometry, edgeMaterial)
         mesh.name = 'pathway-border'
+        mesh.userData.slotId = 'border'
         mesh.castShadow = true
         mesh.receiveShadow = true
         group.add(mesh)
@@ -153,6 +157,7 @@ export function buildPathwayGeometry(node: PathwayNode, ctx?: GeometryContext, s
       for (const part of geometries) part.dispose()
       if (!geometry) continue
       const mesh = new Mesh(geometry, tileMaterial)
+      mesh.userData.slotId = 'surface'
       mesh.castShadow = true
       mesh.receiveShadow = true
       group.add(mesh)
@@ -186,7 +191,14 @@ export function disposePathwayGeometry(group: Group, disposeMaterial = true) {
     material.dispose()
     materials.delete(material)
   }
-  if (disposeMaterial && group.userData.sourceMaterial) materials.add(group.userData.sourceMaterial)
+  const sourceMaterial = group.userData.sourceMaterial as MeshStandardMaterial | undefined
+  if (sourceMaterial && !disposeMaterial) {
+    materials.delete(sourceMaterial)
+    sourceMaterial.dispose()
+    sourceMaterial.map?.dispose()
+  } else if (sourceMaterial) {
+    materials.add(sourceMaterial)
+  }
   if (disposeMaterial) for (const material of materials) {
     material.dispose()
     material.map?.dispose()

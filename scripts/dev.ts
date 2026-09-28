@@ -25,6 +25,39 @@ function run(args: string[], cwd: string) {
 }
 
 const packagePath = path.join(editorRoot, 'node_modules/@pascal-app/plugin-landscape')
+const appPackagePath = path.join(editorApp, 'node_modules/@pascal-app/plugin-landscape')
+// Store and renderer singletons must be shared with the host editor. Separate
+// stores swallow tool selections; separate R3F copies lose Canvas context.
+const sharedRuntimePackages = [
+  '@pascal-app/core', '@pascal-app/editor', '@pascal-app/viewer',
+  '@react-three/fiber', '@types/react', 'react', 'three', 'zustand',
+] as const
+
+function linkRuntimePackages() {
+  // Bun's app-local file: installation has its own node_modules, so link both.
+  const locations = [path.join(pluginRoot, 'node_modules')]
+  if (existsSync(path.join(appPackagePath, 'package.json'))) {
+    locations.push(path.join(appPackagePath, 'node_modules'))
+  }
+  for (const nodeModules of locations) {
+    for (const name of sharedRuntimePackages) {
+      const source = path.join(editorRoot, 'node_modules', name)
+      const target = path.join(nodeModules, name)
+      if (!existsSync(source)) throw new Error(`Editor dependency not found: ${source}`)
+      const sourcePath = realpathSync(source)
+      const installed = lstatSync(target, { throwIfNoEntry: false })
+      if (installed && realpathSync(target) === sourcePath) continue
+      if (installed) {
+        const metadata = JSON.parse(readFileSync(path.join(target, 'package.json'), 'utf8'))
+        if (metadata.name !== name) throw new Error(`Refusing to replace an unexpected package at ${target}`)
+        rmSync(target, { recursive: true })
+      }
+      mkdirSync(path.dirname(target), { recursive: true })
+      symlinkSync(sourcePath, target, process.platform === 'win32' ? 'junction' : 'dir')
+    }
+  }
+}
+
 if (unlink) {
   if (lstatSync(packagePath, { throwIfNoEntry: false })?.isSymbolicLink()) {
     if (realpathSync(packagePath) !== realpathSync(pluginRoot)) {
@@ -32,6 +65,15 @@ if (unlink) {
     }
     unlinkSync(packagePath)
   }
+  for (const nodeModules of [path.join(pluginRoot, 'node_modules'), path.join(appPackagePath, 'node_modules')]) {
+    for (const name of sharedRuntimePackages) {
+      const target = path.join(nodeModules, name)
+      const source = path.join(editorRoot, 'node_modules', name)
+      if (lstatSync(target, { throwIfNoEntry: false })?.isSymbolicLink() &&
+        realpathSync(target) === realpathSync(source)) unlinkSync(target)
+    }
+  }
+  run(['install', '--frozen-lockfile'], pluginRoot)
   run(['install', '--frozen-lockfile'], editorRoot)
   console.info('Published Landscape dependency restored. Restart the editor to use it.')
   process.exit(0)
@@ -50,6 +92,7 @@ if (installed?.isSymbolicLink()) {
   rmSync(packagePath, { recursive: true })
 }
 symlinkSync(pluginRoot, packagePath, process.platform === 'win32' ? 'junction' : 'dir')
+linkRuntimePackages()
 console.info(`Landscape linked: ${packagePath} → ${pluginRoot}`)
 
 if (!linkOnly) {
