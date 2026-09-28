@@ -24,21 +24,18 @@ import {
   type WallEvent,
 } from '@pascal-app/core'
 import {
-  canDirectMoveNode,
   preloadRegistryToolModules,
-  getSpatialPointerId,
-  spatialPointerInput,
-  clipTerrainPatchToSite,
-  commitStroke,
   createEditorApi,
-  EDITOR_GRID_INPUT_NAME,
   getPlacementSurface,
   resolveFlattenTarget,
   sculptFieldForSite,
-  terrainPointInsideSite,
   useEditor,
   useInteractionScope,
 } from '@pascal-app/editor'
+import {
+  canDirectMoveNode, clipTerrainPatchToSite, commitStroke, EDITOR_GRID_INPUT_NAME,
+  getSpatialPointerId, spatialPointerInput, terrainPointInsideSite,
+} from './editor-input-support'
 import { useViewer } from '@pascal-app/viewer'
 import { useXRWorkspace } from '../../../xr/wand/workspace-store'
 import { useXRPlayerMode } from '../../../xr/mode-switching/store/player-mode'

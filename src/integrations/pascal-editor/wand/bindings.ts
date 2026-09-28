@@ -1,6 +1,5 @@
 import type { RoofType } from '@pascal-app/core'
 import type { FloorplanMode } from '@pascal-app/editor'
-import type { PanelToolOption } from '@pascal-app/editor'
 import type { XRWandBuildModel } from '../../../xr/wand/adapter'
 
 export type PascalXRBuildType = {
@@ -27,6 +26,14 @@ export type PascalXRRoofFeature = {
 }
 
 export type PascalXRRoofFootprintSource = 'draw' | 'room' | 'walls'
+
+export type PanelToolOption = {
+  id: string
+  label: string
+  value: string
+  choices: readonly { label: string; value: string }[]
+  set: (value: string) => void
+}
 
 export type PascalXRWandBindings = {
   useBuildPalette: () => XRWandBuildModel
