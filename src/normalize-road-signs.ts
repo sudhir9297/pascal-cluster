@@ -1,20 +1,27 @@
 import { type AnyNode, type AnyNodeId, useScene } from '@pascal-app/core'
-import { dedupeRoadSignChildIds } from './road-sign-scene-normalization'
+import {
+  dedupeRoadSignChildIds,
+  getRoadSignIds,
+  planRoadSignNormalization,
+} from './road-sign-scene-normalization'
 
 let normalizing = false
+let roadSignIds = getRoadSignIds(useScene.getState().nodes)
 
-/** Repair duplicate road-sign references already present in a loaded scene. */
-export function normalizeRoadSignScene(): void {
+function normalizeRoadSignScene(nodeIds?: readonly string[]): void {
   if (normalizing) return
 
   const state = useScene.getState()
   const repairs: Array<{ id: AnyNodeId; children: string[] }> = []
+  const candidates = nodeIds
+    ? nodeIds.map((id) => [id, state.nodes[id as AnyNodeId]] as const)
+    : Object.entries(state.nodes)
 
-  for (const node of Object.values(state.nodes)) {
-    if (!('children' in node) || !Array.isArray(node.children)) continue
+  for (const [id, node] of candidates) {
+    if (!node || !('children' in node) || !Array.isArray(node.children)) continue
 
     const children = node.children as readonly string[]
-    const normalized = dedupeRoadSignChildIds(children, state.nodes)
+    const normalized = dedupeRoadSignChildIds(children, roadSignIds)
     if (normalized.length !== children.length) {
       repairs.push({ id: node.id as AnyNodeId, children: normalized })
     }
@@ -34,4 +41,11 @@ export function normalizeRoadSignScene(): void {
 
 // Repair the current scene and any scene restored after this plugin loads.
 normalizeRoadSignScene()
-useScene.subscribe(normalizeRoadSignScene)
+useScene.subscribe((state, previous) => {
+  if (normalizing || state.nodes === previous.nodes) return
+  const plan = planRoadSignNormalization(state.nodes, previous.nodes)
+  if (!plan) return
+
+  if (plan.kind === 'all') roadSignIds = getRoadSignIds(state.nodes)
+  normalizeRoadSignScene(plan.kind === 'all' ? undefined : plan.nodeIds)
+})
