@@ -325,13 +325,13 @@ export class PoolWaterEffect {
     this.updateMaterial.depthWrite = false
 
     this.dropData = Array.from({ length: MAX_QUEUED_DROPS }, () => new Vector4())
-    this.dropCount = uniform(0, 'int')
+    this.dropCount = uniform(0, 'int' as never)
     const drops = uniformArray(this.dropData, 'vec4')
     this.dropMaterial = new NodeMaterial()
     this.dropMaterial.fragmentNode = Fn(() => {
       const total = float(0).toVar()
       Loop({ start: 0, end: this.dropCount }, ({ i }: { i: any }) => {
-        const drop = drops.element(i)
+        const drop: any = drops.element(i)
         const distance = sampleUv.sub(drop.xy).mul(this.poolSize).length().div(this.poolSize.y)
         const influence = smoothstep(drop.z, float(0), distance)
         const shaped = float(0.5).sub(influence.mul(Math.PI).cos().mul(0.5))
