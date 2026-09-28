@@ -1,4 +1,4 @@
-import type { GeometryContext } from '@pascal-app/core'
+import type { AnyNode, GeometryContext } from '@pascal-app/core'
 import { useScene } from '@pascal-app/core'
 import { createMaterial, resolveMaterialRef } from '@pascal-app/viewer'
 import {
@@ -19,6 +19,7 @@ import {
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import { archCrownAt, pergolaLayout, postRadiusAt, roofElevation, type Member, type MemberRole } from '../domain/layout'
 import type { PergolaNode } from '../domain/schema'
+import { pergolaPointFromSupport, pergolaSupportSurfaceTop } from '../domain/support-surface'
 
 function braceGeometry(member: Member): ExtrudeGeometry {
   const brace = member.brace!
@@ -260,12 +261,33 @@ function trussStrutGeometry(member: Member): ExtrudeGeometry {
 
 export function buildPergolaGeometry(
   node: PergolaNode,
-  _ctx?: GeometryContext,
+  ctx?: GeometryContext,
   shading = 'rendered',
 ): Group {
   const group = new Group()
   const buckets = new Map<MemberRole, BufferGeometry[]>()
-  for (const member of pergolaLayout(node)) {
+  const parent = ctx?.parent as (AnyNode & { position?: [number, number, number]; rotation?: unknown }) | null | undefined
+  const hostedSupport = node.supportSurfaceId && parent?.id === node.supportSurfaceId
+    ? parent as Parameters<typeof pergolaSupportSurfaceTop>[0] : null
+  const yaw = node.rotation[1]
+  const cos = Math.cos(yaw), sin = Math.sin(yaw)
+  const localCenter: [number, number] = [node.position[0], node.position[2]]
+  const levelCenter = hostedSupport ? pergolaPointFromSupport(hostedSupport, localCenter) : localCenter
+  const centerSupportHeight = hostedSupport
+    ? pergolaSupportSurfaceTop(hostedSupport, levelCenter)
+    : ctx?.levelBaseAt?.(levelCenter[0], levelCenter[1]) ?? 0
+  const supportOffsetAt = hostedSupport || ctx?.levelBaseAt
+    ? (x: number, z: number) => {
+        const localX = node.position[0] + x * cos + z * sin
+        const localZ = node.position[2] - x * sin + z * cos
+        if (hostedSupport) {
+          const levelPoint = pergolaPointFromSupport(hostedSupport, [localX, localZ])
+          return pergolaSupportSurfaceTop(hostedSupport, levelPoint) - centerSupportHeight
+        }
+        return (ctx!.levelBaseAt?.(localX, localZ) ?? 0) - centerSupportHeight
+      }
+    : undefined
+  for (const member of pergolaLayout(node, supportOffsetAt)) {
     const sourceGeometry = member.brace
       ? braceGeometry(member)
       : member.roofProfile

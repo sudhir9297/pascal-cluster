@@ -9,6 +9,7 @@ import { patioOutline } from '../domain/outline'
 import { isCurvedSurface } from '../../shared/outline'
 import { PatioNode } from '../domain/schema'
 import { poolCutoutsFor } from '../../../shared/pool-cutouts'
+import { applyLandscapePaintedMaterials } from '../../shared/paint'
 
 export const finishColor = { concrete: '#aeaca5', stone: '#b8aa93', brick: '#aa705a' } as const
 export const patioFieldColor = (node: PatioNode) => node.fieldColor
@@ -159,9 +160,13 @@ export function buildPatioGeometry(raw: PatioNode, ctx?: GeometryContext): Group
   // renderer can pass those raw nodes here without reparsing their schema.
   const node = PatioNode.parse(raw)
   const cutouts = poolCutoutsFor(node as unknown as PatioNode & { id: string; type: string; parentId: string | null }, ctx)
-  if (cutouts.length) return buildShapedPatio(node, cutouts)
-  if (isCurvedSurface(node.shape) || (node.shape !== 'rectangle' && node.outline.length >= 3))
-    return buildShapedPatio(node)
+  if (cutouts.length || isCurvedSurface(node.shape) || (node.shape !== 'rectangle' && node.outline.length >= 3)) {
+    const group = buildShapedPatio(node, cutouts)
+    applyLandscapePaintedMaterials(group, node.paintedMaterials, (mesh) =>
+      mesh.name === 'patio-base' ? 'base' : mesh.name === 'patio-border' ? 'border'
+        : mesh.name === 'patio-paver' ? 'surface' : null)
+    return group
+  }
   const group = new Group()
   const { width, depth, thickness, elevation } = node
   const [gradientX, gradientZ] = slopeGradient(node)
@@ -175,6 +180,7 @@ export function buildPatioGeometry(raw: PatioNode, ctx?: GeometryContext): Group
   const base = new Mesh(baseGeometry,
     new MeshStandardMaterial({ color: '#746b60', roughness: 1 }))
   base.name = 'patio-base'
+  base.userData.slotId = 'base'
   base.position.y = elevation + thickness / 2
   base.receiveShadow = true
   group.add(base)
@@ -194,6 +200,7 @@ export function buildPatioGeometry(raw: PatioNode, ctx?: GeometryContext): Group
     })
     pavers.instanceMatrix.needsUpdate = true
     pavers.name = 'patio-pavers'
+    pavers.userData.slotId = 'surface'
     pavers.castShadow = true
     pavers.receiveShadow = true
     group.add(pavers)
@@ -205,6 +212,7 @@ export function buildPatioGeometry(raw: PatioNode, ctx?: GeometryContext): Group
     const addBand = (name: string, w: number, d: number, x: number, z: number) => {
       const mesh = new Mesh(new BoxGeometry(w, paverHeight, d), borderMaterial)
       mesh.name = name
+      mesh.userData.slotId = 'border'
       mesh.position.set(x, topY + heightAt(x, z), z)
       mesh.quaternion.copy(rotation)
       mesh.castShadow = true
@@ -217,6 +225,7 @@ export function buildPatioGeometry(raw: PatioNode, ctx?: GeometryContext): Group
     addBand('patio-border-left', border - gap, depth - 2 * border - gap, -width / 2 + border / 2, 0)
     addBand('patio-border-right', border - gap, depth - 2 * border - gap, width / 2 - border / 2, 0)
   }
+  applyLandscapePaintedMaterials(group, node.paintedMaterials, (mesh) => mesh.userData.slotId ?? null)
   return group
 }
 

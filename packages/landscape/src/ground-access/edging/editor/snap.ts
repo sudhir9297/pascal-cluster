@@ -2,6 +2,7 @@ import { useScene } from '@pascal-app/core'
 import { clearSlabSnapFeedback, resolveSlabPlanPointSnap, useWallSnapIndicator } from '@pascal-app/editor'
 import { EDGING_KIND, EdgingNode } from '../domain/schema'
 import { levelPoints, type Point } from '../domain/route'
+import { snapToHardscape } from '../../shared/hardscape-snap'
 
 export { clearSlabSnapFeedback as clearEdgingSnapFeedback }
 
@@ -24,6 +25,14 @@ export function resolveEdgingSnap(rawPoint: Point, fallbackPoint: Point, levelId
     clearSlabSnapFeedback()
     useWallSnapIndicator.getState().set({ x: nearest[0], z: nearest[1], kind: 'endpoint' })
     return nearest
+  }
+  const hardscape = snapToHardscape(rawPoint, useScene.getState().nodes,
+    levelId ?? '', excludeId, 0.24)
+  if (hardscape) {
+    clearSlabSnapFeedback()
+    useWallSnapIndicator.getState().set({ x: hardscape.point[0], z: hardscape.point[1],
+      kind: hardscape.kind === 'vertex' ? 'endpoint' : 'wall' })
+    return hardscape.point
   }
   const result = resolveSlabPlanPointSnap({ rawPoint, fallbackPoint, levelId,
     excludeId })

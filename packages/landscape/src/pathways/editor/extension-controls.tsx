@@ -1,13 +1,14 @@
 'use client'
 import { acquireSceneHistoryPause, type AnyNode, type AnyNodeId, useLiveNodeOverrides, useScene } from '@pascal-app/core'
-import { EDITOR_LAYER } from '@pascal-app/editor'
+import { clearSlabSnapFeedback, EDITOR_LAYER, useWallSnapIndicator } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { type ThreeEvent, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ExtrudeGeometry, OrthographicCamera, Ray, Shape, Vector2, Vector3 } from 'three'
-import { pathTerminalEnds, movePathTerminal, type PathTerminal } from '../domain/terminals'
+import { alignPathTerminalToEdge, pathTerminalEnds, movePathTerminal, type PathTerminal } from '../domain/terminals'
 import type { PathwayNode, Point } from '../domain/schema'
 import { buildOutline } from '../rendering/outline'
+import { snapToHardscape } from '../../ground-access/shared/hardscape-snap'
 
 function swallowNextClick() {
   const swallow = (event: Event) => {
@@ -87,10 +88,19 @@ function ExtensionArrow({ node, terminal }: { node: PathwayNode; terminal: PathT
       raycaster.setFromCamera(pointer, camera)
       const distance = Math.max(-terminal.maxRetraction,
         axisParameter(origin, direction, raycaster.ray) - initial)
-      const target: Point = [terminal.point[0] + distance * terminal.direction[0],
+      const rawTarget: Point = [terminal.point[0] + distance * terminal.direction[0],
         terminal.point[1] + distance * terminal.direction[1]]
-      const graph = movePathTerminal(node, terminal.vertexId, target)
+      const snap = node.parentId ? snapToHardscape(rawTarget, useScene.getState().nodes,
+        node.parentId, node.id, Math.max(0.35, node.defaultWidth / 2 + 0.1)) : null
+      if (snap) {
+        clearSlabSnapFeedback()
+        useWallSnapIndicator.getState().set({ x: snap.point[0], z: snap.point[1],
+          kind: snap.kind === 'vertex' ? 'endpoint' : 'wall' })
+      } else clearSlabSnapFeedback()
+      const target = snap?.point ?? rawTarget
+      let graph = movePathTerminal(node, terminal.vertexId, target)
       if (!graph) return
+      if (snap?.edgeDirection) graph = alignPathTerminalToEdge(graph, terminal.vertexId, snap.edgeDirection)
       try { buildOutline({ ...node, ...graph }) } catch { return }
       latest = graph
       useLiveNodeOverrides.getState().set(id, graph)
@@ -99,12 +109,14 @@ function ExtensionArrow({ node, terminal }: { node: PathwayNode; terminal: PathT
     const onUp = () => {
       releaseHistory()
       if (latest) useScene.getState().updateNode(id, latest as Partial<AnyNode>)
+      clearSlabSnapFeedback()
       clearPreview()
       swallowNextClick()
       removeListeners()
     }
     const onCancel = () => {
       releaseHistory()
+      clearSlabSnapFeedback()
       clearPreview()
       removeListeners()
     }

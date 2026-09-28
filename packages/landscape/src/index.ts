@@ -1,4 +1,4 @@
-import type { AnyNodeDefinition, Plugin } from '@pascal-app/core'
+import type { AnyNode, AnyNodeDefinition, InspectorExtension, Plugin } from '@pascal-app/core'
 
 import { pergolaDefinition } from './pergola/definition'
 import { pathwayDefinition } from './pathways/definition'
@@ -28,19 +28,32 @@ const LANDSCAPE_ICON =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#78a86b" d="M2 19 8.5 8l3.3 5.1 2.5-3.6L22 19z"/><path fill="#a8c98d" d="m2 19 6.5-7 3.3 3.5 2.5-2.2L22 19z"/></svg>',
   )
 
+const retainingWallInspector: InspectorExtension & { primaryWhen: (node: AnyNode) => boolean } = {
+  id: 'pascal:landscape:retaining-wall-finish',
+  pluginId: 'pascal:landscape',
+  kinds: ['wall', 'landscape:retaining-wall'],
+  icon: { kind: 'iconify', name: 'lucide:brick-wall' },
+  title: 'Retaining wall',
+  component: () => import('./ground-access/retaining-wall/editor/finish-panel'),
+  primaryWhen: (node) => (node.type as string) === 'landscape:retaining-wall' ||
+    node.type === 'wall' && node.metadata?.landscapeRetainingWall === true,
+}
+
+const groundAreaInspector: InspectorExtension & { primaryWhen: (node: AnyNode) => boolean } = {
+  id: 'pascal:landscape:ground-area',
+  pluginId: 'pascal:landscape',
+  kinds: ['landscape:ground-area'],
+  icon: { kind: 'iconify', name: 'lucide:land-plot' },
+  title: 'Ground area',
+  component: () => import('./ground-areas/editor/panel'),
+  primaryWhen: (node) => (node.type as string) === 'landscape:ground-area',
+}
+
 /** Public plugin manifest. Landscape tools and node kinds can be added here. */
 export const landscapePlugin: Plugin = {
   id: 'pascal:landscape',
   apiVersion: 1,
-  inspectorExtensions: [{
-    id: 'pascal:landscape:retaining-wall-finish',
-    pluginId: 'pascal:landscape',
-    kinds: ['wall'],
-    icon: { kind: 'iconify', name: 'lucide:brick-wall' },
-    title: 'Retaining wall',
-    component: () => import('./ground-access/retaining-wall/editor/finish-panel'),
-    primaryWhen: (node) => node.type === 'wall' && node.metadata?.landscapeRetainingWall === true,
-  }],
+  inspectorExtensions: [retainingWallInspector, groundAreaInspector],
   nodes: [
     pergolaDefinition as unknown as AnyNodeDefinition,
     pathwayDefinition as unknown as AnyNodeDefinition,

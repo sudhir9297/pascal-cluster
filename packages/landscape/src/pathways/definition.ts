@@ -13,6 +13,7 @@ import { pathwayExtendEndpointAffordance, pathwayMoveJunctionAffordance,
   pathwayMoveCurveHandleAffordance, pathwayInsertPointAffordance } from './editor/extension-affordance'
 import { pathwayDrawingModeHint } from './editor/drawing-mode'
 import { PathwayJunctionModeControl } from './editor/junction-mode-control'
+import { pathwayPaint } from './editor/paint'
 
 export const pathwayDefinition: NodeDefinition<typeof PathwayNode> = {
   kind: PATHWAY_KIND,
@@ -29,7 +30,7 @@ export const pathwayDefinition: NodeDefinition<typeof PathwayNode> = {
     const { id: _id, type: _type, ...defaults } = PathwayNode.parse({})
     return defaults
   },
-  capabilities: { selectable: { hitVolume: 'mesh' }, deletable: true },
+  capabilities: { selectable: { hitVolume: 'mesh' }, paint: pathwayPaint, deletable: true },
   geometry: buildPathwayGeometry,
   system: { module: () => import('../shared/pool-cutout-system') },
   renderer: { kind: 'parametric', module: () => import('./rendering/renderer') },

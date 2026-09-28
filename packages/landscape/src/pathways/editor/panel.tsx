@@ -6,10 +6,9 @@ import { useEffect, useState } from 'react'
 import { PATHWAY_KIND, PathwayNode, pathwayFinishes } from '../domain/schema'
 import { pathComponents } from '../domain/components'
 import type { AnyNode, AnyNodeId } from '@pascal-app/core'
-import { CatalogListRow } from '../../editor/catalog-list-row'
-import { WALKWAY_THUMBNAILS } from '../../editor/catalog-thumbnails'
+import { PathwayModeThumbnail, PavingFinishThumbnail } from './thumbnails'
 import { sendPathwayCommand, usePathwayStatus } from './session'
-import { drawingWidth, STONE_WALKWAY_PRESET } from '../domain/settings'
+import { drawingWidth, hasBorderlessDefault, STONE_WALKWAY_PRESET } from '../domain/settings'
 import { finishOptions } from '../rendering/finishes'
 
 export function PathwayPanel() {
@@ -70,7 +69,7 @@ export function PathwayPanel() {
         ? { color: finishColor } : {}),
     })
   }
-  const select = <K extends 'finish' | 'borderStyle' | 'cornerStyle'>(key: K, label: string,
+  const select = <K extends 'borderStyle' | 'cornerStyle'>(key: K, label: string,
     options: readonly { value: PathwayNode[K]; label: string }[]) => <label className="flex min-h-9 items-center justify-between gap-3 border-b border-border/50 px-2 text-xs text-foreground/80">
       <span>{label}</span>
       <select className="max-w-[58%] rounded-md border border-border/50 bg-[#2C2C2E] px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/30"
@@ -79,17 +78,36 @@ export function PathwayPanel() {
       </select>
     </label>
   return <section aria-label="Pathways and walkways">
+    <h3 className="px-2 pb-2 text-xs font-medium text-foreground">Paving finish</h3>
+    <div role="group" aria-label="Choose paving finish" className="grid grid-cols-2 gap-2 px-2">
+      {pathwayFinishes.map((finish) => {
+        const option = finishOptions[finish]
+        const selected = pathway.finish === finish
+        return <button key={finish} type="button" aria-pressed={selected} disabled={!levelId}
+          title={option.description}
+          onClick={() => {
+            updateDefaults({ finish, ...(hasBorderlessDefault(finish) ? { borderStyle: 'none' } : {}) })
+            setStonePreset(false)
+            if (!active) choose(mode, false)
+          }}
+          className={`flex min-h-11 items-center gap-2 rounded-md border px-2 py-1.5 text-left text-[11px] leading-4 transition-colors focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 ${selected ? 'border-primary bg-accent/30 ring-1 ring-primary/50' : 'border-border bg-secondary/40 hover:bg-accent/30'}`}>
+          <PavingFinishThumbnail finish={finish} />
+          <span className="min-w-0">{option.label}</span>
+        </button>
+      })}
+    </div>
     <div className="mb-1.5 text-xs font-medium">Drawing mode and preset</div>
-    <div className="flex flex-col">
-      <CatalogListRow label="Straight / polyline" active={active && !stonePreset && status.mode === 'straight'}
-        disabled={!levelId} onClick={() => choose('straight')}
-        thumbnail={<img src={WALKWAY_THUMBNAILS.straight} alt="" width={36} height={36} style={{ width: 36, height: 36, flex: '0 0 36px', objectFit: 'cover', borderRadius: 4 }} />} />
-      <CatalogListRow label="Smooth curve" active={active && !stonePreset && status.mode === 'curve'}
-        disabled={!levelId} onClick={() => choose('curve')}
-        thumbnail={<img src={WALKWAY_THUMBNAILS.curve} alt="" width={36} height={36} style={{ width: 36, height: 36, flex: '0 0 36px', objectFit: 'cover', borderRadius: 4 }} />} />
-      <CatalogListRow label="Stone walkway · 1.8 m" active={active && stonePreset}
-        disabled={!levelId} onClick={() => choose('curve', true)}
-        thumbnail={<img src={WALKWAY_THUMBNAILS.stone} alt="" width={36} height={36} style={{ width: 36, height: 36, flex: '0 0 36px', objectFit: 'cover', borderRadius: 4 }} />} />
+    <div className="grid grid-cols-2 gap-2">
+      {([
+        { label: 'Straight / polyline', kind: 'straight' as const, selected: active && !stonePreset && status.mode === 'straight', onClick: () => choose('straight') },
+        { label: 'Smooth curve', kind: 'curve' as const, selected: active && !stonePreset && status.mode === 'curve', onClick: () => choose('curve') },
+        { label: 'Stone walkway · 1.8 m', kind: 'stones' as const, selected: active && stonePreset, onClick: () => choose('curve', true) },
+      ]).map((item) => <button key={item.label} type="button" aria-pressed={item.selected} disabled={!levelId}
+        onClick={item.onClick}
+        className={`flex min-h-12 items-center gap-2 overflow-hidden rounded-md border px-2 py-1.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 ${item.selected ? 'border-primary bg-accent/30 ring-1 ring-primary/50' : 'border-border bg-secondary/40 hover:bg-accent/30'}`}>
+        <PathwayModeThumbnail kind={item.kind} />
+        <span className="min-w-0 text-[11px] leading-4 text-foreground">{item.label}</span>
+      </button>)}
     </div>
     <p role="status" className="mt-2 text-xs text-muted-foreground">
       {!levelId ? 'Select a level first.' : active ? status.message || 'Click to draw. C switches modes; Enter finishes; Esc stops drawing.' : 'Select a style to start drawing.'}
@@ -102,7 +120,6 @@ export function PathwayPanel() {
         onChange={(thickness) => updateDefaults({ thickness })} />
       <SliderControl label="Elevation" value={pathway.elevation} min={-2} max={2} step={0.01} precision={2} unit="m"
         onChange={(elevation) => updateDefaults({ elevation })} />
-      {select('finish', 'Paving finish', pathwayFinishes.map((finish) => ({ value: finish, label: finishOptions[finish].label })))}
       {select('borderStyle', 'Path border', [
         { value: 'none', label: 'None' }, { value: 'stone', label: 'Stone' }, { value: 'smooth', label: 'Smooth' },
       ])}

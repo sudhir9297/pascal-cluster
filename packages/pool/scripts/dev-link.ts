@@ -22,6 +22,7 @@ const sharedPackages = [
   '@pascal-app/core',
   '@pascal-app/editor',
   '@pascal-app/viewer',
+  '@react-three/drei',
   '@react-three/fiber',
   '@types/react',
   'react',

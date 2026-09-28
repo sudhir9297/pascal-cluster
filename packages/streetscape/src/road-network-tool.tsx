@@ -1150,6 +1150,16 @@ export default function RoadNetworkTool() {
 				consumeNumericKey(event);
 				return;
 			}
+			if (key === "backspace" && (splinePointsRef.current.length > 0 || startRef.current)) {
+				if (splinePointsRef.current.length > 0) {
+					updateSplinePoints(splinePointsRef.current.slice(0, -1));
+				} else if (startRef.current) {
+					updateStart(null);
+				}
+				setAttemptedInvalid(null);
+				event.preventDefault();
+				return;
+			}
 			if (event.key === "Enter") finish();
 			if (key === "c") {
 				const store = useStreetscapeStore.getState();

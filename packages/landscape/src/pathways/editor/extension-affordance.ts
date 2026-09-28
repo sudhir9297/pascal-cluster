@@ -1,8 +1,10 @@
 import { type AnyNode, type AnyNodeId, type FloorplanAffordance, useLiveNodeOverrides, useScene } from '@pascal-app/core'
+import { clearSlabSnapFeedback, useWallSnapIndicator } from '@pascal-app/editor'
 import { buildOutline } from '../rendering/outline'
-import { movePathJunction, movePathTerminal, pathTerminalEnds } from '../domain/terminals'
+import { alignPathTerminalToEdge, movePathJunction, movePathTerminal, pathTerminalEnds } from '../domain/terminals'
 import type { PathwayNode, Point } from '../domain/schema'
 import { insertPathCurvePoint, moveInsertedPathPoint, movePathCurveHandle, type CurveSide } from '../domain/edit-curve'
+import { snapToHardscape } from '../../ground-access/shared/hardscape-snap'
 
 export const pathwayExtendEndpointAffordance: FloorplanAffordance<PathwayNode> = {
   start({ node, payload, initialPlanPoint }) {
@@ -17,10 +19,19 @@ export const pathwayExtendEndpointAffordance: FloorplanAffordance<PathwayNode> =
         const delta: Point = [planPoint[0] - initialPlanPoint[0], planPoint[1] - initialPlanPoint[1]]
         const projected = Math.max(-terminal.maxRetraction,
           delta[0] * terminal.direction[0] + delta[1] * terminal.direction[1])
-        const target: Point = [terminal.point[0] + projected * terminal.direction[0],
+        const rawTarget: Point = [terminal.point[0] + projected * terminal.direction[0],
           terminal.point[1] + projected * terminal.direction[1]]
-        const graph = movePathTerminal(node, terminal.vertexId, target)
+        const snap = node.parentId ? snapToHardscape(rawTarget, useScene.getState().nodes,
+          node.parentId, node.id, Math.max(0.35, node.defaultWidth / 2 + 0.1)) : null
+        if (snap) {
+          clearSlabSnapFeedback()
+          useWallSnapIndicator.getState().set({ x: snap.point[0], z: snap.point[1],
+            kind: snap.kind === 'vertex' ? 'endpoint' : 'wall' })
+        } else clearSlabSnapFeedback()
+        const target = snap?.point ?? rawTarget
+        let graph = movePathTerminal(node, terminal.vertexId, target)
         if (!graph) return
+        if (snap?.edgeDirection) graph = alignPathTerminalToEdge(graph, terminal.vertexId, snap.edgeDirection)
         try { buildOutline({ ...node, ...graph }) } catch { return }
         latest = graph
         useLiveNodeOverrides.getState().set(nodeId, graph)
@@ -29,7 +40,7 @@ export const pathwayExtendEndpointAffordance: FloorplanAffordance<PathwayNode> =
       canCommit: () => latest !== null,
       commit() {
         if (latest) useScene.getState().updateNode(nodeId, latest as Partial<AnyNode>)
-        useLiveNodeOverrides.getState().clear(nodeId)
+        useLiveNodeOverrides.getState().clear(nodeId); clearSlabSnapFeedback()
       },
     }
   },

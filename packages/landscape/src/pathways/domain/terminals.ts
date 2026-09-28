@@ -47,6 +47,26 @@ export function movePathTerminal(graph: PathGraph, vertexId: string, point: Poin
   return moveJunction(graph, vertexId, point)
 }
 
+/** Turn a snapped endpoint so its final approach meets the hardscape edge squarely. */
+export function alignPathTerminalToEdge(graph: PathGraph, vertexId: string,
+  edgeDirection: Point): PathGraph {
+  const vertex = graph.vertices.find((candidate) => candidate.id === vertexId)
+  const edge = graph.edges.find((candidate) => candidate.from === vertexId || candidate.to === vertexId)
+  if (!vertex || !edge) return graph
+  const controls = edgeCurve(graph, edge)
+  const handleIndex = edge.from === vertexId ? 1 : 2
+  const handle = controls[handleIndex]!
+  const normal: Point = [-edgeDirection[1], edgeDirection[0]]
+  const amount = (handle[0] - vertex.point[0]) * normal[0] +
+    (handle[1] - vertex.point[1]) * normal[1]
+  const aligned: Point = [vertex.point[0] + normal[0] * amount,
+    vertex.point[1] + normal[1] * amount]
+  const nextControls: [Point, Point] = [controls[1], controls[2]]
+  nextControls[handleIndex - 1] = aligned
+  return { ...graph, edges: graph.edges.map((candidate) =>
+    candidate.id === edge.id ? { ...candidate, controls: nextControls } : candidate) }
+}
+
 /** Reshape an end, bend, or branch while keeping every incident edge attached. */
 export function movePathJunction(graph: PathGraph, vertexId: string, point: Point): PathGraph | null {
   const vertex = graph.vertices.find((item) => item.id === vertexId)

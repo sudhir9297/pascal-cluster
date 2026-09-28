@@ -1,4 +1,4 @@
-import { BaseNode, nodeType, objectId } from '@pascal-app/core'
+import { BaseNode, MaterialSchema, nodeType, objectId } from '@pascal-app/core'
 import { z } from 'zod'
 import { curvePointsSchema } from './freehand-curve'
 
@@ -9,6 +9,7 @@ export type Point = z.infer<typeof point>
 
 export const GROUND_SURFACES = [
   'grass',
+  'grass2',
   'soil',
   'mulch',
   'gravel',
@@ -16,6 +17,16 @@ export const GROUND_SURFACES = [
   'mud',
 ] as const
 export type GroundSurface = (typeof GROUND_SURFACES)[number]
+
+export const grass2SettingsSchema = z.object({
+  density: z.number().finite().min(0.15).max(2).default(1),
+  height: z.number().finite().min(0.35).max(2).default(1),
+  flowerDensity: z.number().finite().min(0).max(1).default(0.6),
+  flowerMix: z.enum(['mixed', 'clover', 'dandelion', 'wildflowers']).default('mixed'),
+  wind: z.number().finite().min(0).max(1).default(0.55),
+  seed: z.number().int().min(0).max(100000).default(1),
+})
+export type Grass2Settings = z.infer<typeof grass2SettingsSchema>
 
 export const GroundAreaNode = BaseNode.extend({
   children: z.array(z.string()).default([]),
@@ -32,6 +43,11 @@ export const GroundAreaNode = BaseNode.extend({
   shape: z.enum(['rectangle', 'custom', 'freehand', 'circle', 'oval']).default('rectangle'),
   curvePoints: curvePointsSchema,
   surface: z.enum(GROUND_SURFACES).default('grass'),
+  grass2Settings: grass2SettingsSchema.default(() => grass2SettingsSchema.parse({})),
   elevation: z.number().finite().min(-100).max(100).default(0),
+  paintedMaterials: z.record(z.string(), z.object({
+    material: MaterialSchema.optional(),
+    materialPreset: z.string().optional(),
+  })).default({}),
 })
 export type GroundAreaNode = z.infer<typeof GroundAreaNode>

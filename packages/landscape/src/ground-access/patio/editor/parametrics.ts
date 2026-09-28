@@ -4,6 +4,7 @@ import { finishColor } from '../rendering/geometry'
 import { circleDerivedSize } from '../../shared/outline'
 
 export const patioParametrics: ParametricDescriptor<PatioNode> = {
+  customPanel: () => import('./inspector'),
   derive: (next, patch) => ({
     ...circleDerivedSize(next, patch),
     ...(patch.finish && patch.fieldColor === undefined &&

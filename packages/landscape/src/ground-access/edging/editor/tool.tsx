@@ -25,8 +25,8 @@ function openEdging(levelId: AnyNodeId) {
 function Preview({ node }: { node: Edging }) {
   const object = useMemo(() => {
     const group = buildEdgingGeometry(node)
-    const draftMaterial = new MeshStandardMaterial({ color: '#d6a56a', roughness: 0.82,
-      emissive: '#523313', emissiveIntensity: 0.18 })
+    const draftMaterial = new MeshStandardMaterial({ color: '#8381ed', roughness: 0.82,
+      emissive: '#302e63', emissiveIntensity: 0.18 })
     const originals = new Set<Mesh['material']>()
     group.traverse((child) => {
       child.raycast = () => {}
@@ -314,7 +314,7 @@ export default function EdgingTool() {
       <meshBasicMaterial color="#8381ed" depthTest={false} depthWrite={false} />
     </mesh>)}
     <group ref={marker} visible={Boolean(cursor)}>
-      <CursorSphere color="#918575" height={1.8} showTooltip={false} />
+      <CursorSphere color="#8381ed" height={1.8} showTooltip={false} />
     </group>
   </group>
 }

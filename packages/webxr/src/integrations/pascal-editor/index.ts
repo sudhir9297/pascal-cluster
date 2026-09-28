@@ -12,6 +12,7 @@ export {
   type XRReleaseAction,
 } from './input/editor-input'
 export { XREditorInputBridge } from './input/editor-input-bridge'
+export { spatialPointerInput, getSpatialPointerId, EDITOR_GRID_INPUT_NAME } from './input/editor-input-support'
 export {
   applyXRReferenceSpaceRayToWorld,
   setObjectFloorPlane,

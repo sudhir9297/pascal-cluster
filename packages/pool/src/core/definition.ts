@@ -1,4 +1,4 @@
-import type { FloorplanGeometry, GeometryContext, HandleDescriptor, NodeDefinition } from '@pascal-app/core'
+import type { FloorplanGeometry, GeometryContext, HandleDescriptor, MovableConfig, NodeDefinition } from '@pascal-app/core'
 import { Euler, Vector3 } from 'three'
 import { getPoolDepthRange } from '../design/depth-profile'
 import { poolParametrics } from '../editor/parametrics'
@@ -8,6 +8,10 @@ import { poolOutlineAnchors, poolOutlineMidpoint, poolOutlineTangents } from '..
 import { poolOutlineAffordances } from '../editor/outline-affordances'
 
 type PoolDefinition = NodeDefinition<typeof PoolNode> & Record<string, unknown>
+
+const poolMovable: MovableConfig & { preserveLevelAndElevation: boolean } = {
+  axes: ['x', 'z'], gridSnap: true, preserveLevelAndElevation: true,
+}
 
 const SIDE_HANDLE_OFFSET = 0.35
 const HANDLE_HEIGHT_OFFSET = 0.18
@@ -475,7 +479,7 @@ export const poolDefinition: PoolDefinition = {
     position: [0, 0, 0], rotation: [0, 0, 0], ...DEFAULT_POOL,
   }),
   capabilities: {
-    movable: { axes: ['x', 'z'], gridSnap: true, preserveLevelAndElevation: true },
+    movable: poolMovable,
     rotatable: { axes: ['y'], snapAngles: Array.from({ length: 8 }, (_, i) => (i * Math.PI) / 4) },
     selectable: { hitVolume: 'bbox' },
     duplicable: true,

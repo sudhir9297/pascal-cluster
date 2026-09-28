@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { Box3 } from 'three'
-import { pergolaBaseHeight, pergolaDimensions, pergolaLayout, spacedCenters } from './layout'
+import { Box3, Mesh } from 'three'
+import { pergolaBaseHeight, pergolaDimensions, pergolaLayout, pergolaRoofLine, spacedCenters } from './layout'
 import { PergolaNode } from './schema'
 import { POST_DETAIL_OPTIONS, validPostDetailStyle } from './post-details'
 import {
@@ -29,13 +29,95 @@ describe('pergola assembly', () => {
       expect(post.position[1] - post.size[1] / 2).toBeCloseTo(
         pergolaBaseHeight(node) - 0.001,
       )
-      expect(post.position[1] + post.size[1] / 2).toBe(node.height)
+      expect(post.position[1] + post.size[1] / 2).toBeCloseTo(
+        pergolaRoofLine(node).heightAt(post.position[2]),
+      )
       expect(beams.some((b) => b.position[2] === post.position[2])).toBe(true)
     }
     for (const rafter of members.filter((m) => m.role === 'rafters'))
       expect(rafter.position[1] - rafter.size[1] / 2).toBeCloseTo(
-        node.height + node.beamHeight,
+        pergolaRoofLine(node).heightAt(rafter.position[2]) + node.beamHeight,
       )
+  })
+  test('extends each post to its own support height while keeping the roof level', () => {
+    const node = PergolaNode.parse({ roofForm: 'flat', postBaseStyle: 'none' })
+    const members = pergolaLayout(node, (_x, z) => z * 0.08)
+    const posts = members.filter((member) => member.role === 'posts')
+    expect(posts).toHaveLength(4)
+    for (const post of posts) {
+      const ground = post.position[2] * 0.08
+      expect(post.position[1] - post.size[1] / 2).toBeCloseTo(ground)
+      expect(post.position[1] + post.size[1] / 2).toBeCloseTo(node.height)
+    }
+    expect(posts.find((post) => post.position[2] < 0)!.size[1]).toBeGreaterThan(
+      posts.find((post) => post.position[2] > 0)!.size[1],
+    )
+    const plan = buildPergolaFloorplan(node, context)
+    expect(plan.kind).toBe('group')
+    expect(pergolaLayout(node).filter((member) => member.role === 'posts'))
+      .toHaveLength(4)
+
+    const terrainContext: GeometryContext = {
+      ...context,
+      levelBaseAt: (_x, z) => z * 0.08,
+    }
+    const group = buildPergolaGeometry(node, terrainContext)
+    try {
+      const postGeometry = (group.children.find((child) => child.name === 'pergola-posts') as Mesh).geometry
+      const positions = postGeometry.getAttribute('position')
+      for (const post of posts) {
+        const localGround = post.position[2] * 0.08
+        const vertexYs = Array.from({ length: positions.count }, (_, index) => index)
+          .filter((index) =>
+            Math.abs(positions.getX(index) - post.position[0]) <= node.postSize / 2 + 1e-6 &&
+            Math.abs(positions.getZ(index) - post.position[2]) <= node.postSize / 2 + 1e-6,
+          )
+          .map((index) => positions.getY(index))
+        expect(Math.min(...vertexYs)).toBeCloseTo(localGround)
+        expect(Math.max(...vertexYs)).toBeCloseTo(node.height)
+      }
+    } finally {
+      disposePergolaGeometry(group)
+    }
+  })
+  test('fits hosted pergola posts to the slope of their patio support', () => {
+    const node = PergolaNode.parse({
+      roofForm: 'flat',
+      postBaseStyle: 'none',
+      supportSurfaceId: 'patio-slope-test',
+    })
+    const patio = {
+      id: 'patio-slope-test',
+      type: 'landscape:patio',
+      parentId: 'level-test',
+      position: [0, 0, 0],
+      rotation: [0, 0, 0],
+      width: 5,
+      depth: 5,
+      thickness: 0.15,
+      slopePercent: 8,
+      drainDirection: 'back',
+    } as unknown as NonNullable<GeometryContext['parent']>
+    const hostedContext: GeometryContext = { ...context, parent: patio }
+    const group = buildPergolaGeometry(node, hostedContext)
+    try {
+      const postGeometry = (group.children.find((child) => child.name === 'pergola-posts') as Mesh).geometry
+      const positions = postGeometry.getAttribute('position')
+      for (const post of pergolaLayout(node)) {
+        if (post.role !== 'posts') continue
+        const localGround = -post.position[2] * 0.08
+        const vertexYs = Array.from({ length: positions.count }, (_, index) => index)
+          .filter((index) =>
+            Math.abs(positions.getX(index) - post.position[0]) <= node.postSize / 2 + 1e-6 &&
+            Math.abs(positions.getZ(index) - post.position[2]) <= node.postSize / 2 + 1e-6,
+          )
+          .map((index) => positions.getY(index))
+        expect(Math.min(...vertexYs)).toBeCloseTo(localGround)
+        expect(Math.max(...vertexYs)).toBeCloseTo(node.height)
+      }
+    } finally {
+      disposePergolaGeometry(group)
+    }
   })
   test('distributes rafters symmetrically without exceeding target spacing', () => {
     const centers = spacedCenters(4.435, 0.45)
@@ -154,7 +236,9 @@ describe('pergola assembly', () => {
       expect(bounds.min.z).toBeCloseTo(-d / 2, 5)
       expect(bounds.max.z).toBeCloseTo(d / 2, 5)
       expect(bounds.min.y).toBeCloseTo(0, 5)
-      expect(bounds.max.y).toBeCloseTo(h, 5)
+      // Three stores merged member vertices in Float32; curved/angled members
+      // can differ slightly from the analytic bounding box.
+      expect(Math.abs(bounds.max.y - h)).toBeLessThan(0.011)
       expect(group.children.length).toBeLessThanOrEqual(7)
     } finally {
       disposePergolaGeometry(group)

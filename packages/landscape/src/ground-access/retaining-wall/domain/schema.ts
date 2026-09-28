@@ -1,4 +1,4 @@
-import { BaseNode, nodeType, objectId } from '@pascal-app/core'
+import { BaseNode, MaterialSchema, nodeType, objectId } from '@pascal-app/core'
 import { z } from 'zod'
 import { dimensions } from '../../shared/schema'
 
@@ -18,5 +18,9 @@ export const RetainingWallNode = BaseNode.extend({
   capEnabled: z.boolean().default(true),
   capHeight: z.number().finite().min(0.03).max(0.2).default(0.075),
   capOverhang: z.number().finite().min(0).max(0.15).default(0.055),
+  paintedMaterials: z.record(z.string(), z.object({
+    material: MaterialSchema.optional(),
+    materialPreset: z.string().optional(),
+  })).default({}),
 })
 export type RetainingWallNode = z.infer<typeof RetainingWallNode>

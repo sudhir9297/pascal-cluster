@@ -6,6 +6,7 @@ import { isGridSnapActive, useEditor, usePlacementPreview,
 import { createElement, useEffect, useMemo, useRef, useState } from 'react'
 import { type Group, Vector3 } from 'three'
 import { accessItemFor } from './items'
+import { snapToHardscape } from './hardscape-snap'
 import AccessPreview from './preview'
 
 type PlacementEvent = GridEvent | NodeEvent<AnyNode>
@@ -35,9 +36,12 @@ export default function AccessTool() {
         level.updateWorldMatrix(true, false)
         level.worldToLocal(point)
       } else if ('localPosition' in event) point.set(...event.localPosition)
-      const [x, z] = isGridSnapActive()
+      const raw: [number, number] = [point.x, point.z]
+      const hardscape = !('nativeEvent' in event && event.nativeEvent?.altKey)
+        ? snapToHardscape(raw, useScene.getState().nodes, activeLevelId, undefined, 0.24) : null
+      const [x, z] = hardscape?.point ?? (isGridSnapActive()
         ? snapPointToGrid([point.x, point.z], useEditor.getState().gridSnapStep)
-        : [point.x, point.z]
+        : [point.x, point.z])
       return item.schema.parse({ ...preview, parentId: activeLevelId,
         position: [x, 0, z], rotation: [0, yaw, 0] })
     }

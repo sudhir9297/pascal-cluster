@@ -23,6 +23,21 @@ export function createRetainingWallFinishSync() {
         previous.nodes[node.id as AnyNodeId] !== node)
       const finishes = Object.values(current.nodes).filter((node) =>
         (node.type as string) === RETAININGWALL_KIND && Boolean((node as unknown as RetainingWallNode).hostWallId)) as unknown as RetainingWallNode[]
+      // The generated finish and host wall are one user-facing retaining wall.
+      // If the finish is deleted directly, delete the host too so one Delete
+      // removes the complete item instead of exposing the plain host wall.
+      const removedHostIds = new Set<string>()
+      if (previous) {
+        const currentIds = new Set<string>(finishes.map((finish) => finish.id as string))
+        for (const previousNode of Object.values(previous.nodes)) {
+          if ((previousNode.type as string) !== RETAININGWALL_KIND || currentIds.has(previousNode.id)) continue
+          const finish = previousNode as unknown as RetainingWallNode
+          const host = finish.hostWallId ? current.nodes[finish.hostWallId as AnyNodeId] : undefined
+          if (!host || !isRetainingWall(host) || !finish.hostWallId) continue
+          removedHostIds.add(finish.hostWallId as string)
+          useScene.getState().deleteNode(host.id as AnyNodeId)
+        }
+      }
       const changedLevels = new Set<string>()
       if (previous) {
         for (const node of [...Object.values(previous.nodes), ...Object.values(current.nodes)]) {
@@ -33,7 +48,7 @@ export function createRetainingWallFinishSync() {
       }
       const byWall = new Set(finishes.map((finish) => finish.hostWallId))
       for (const node of Object.values(current.nodes)) {
-        if (!isRetainingWall(node) || !node.parentId || byWall.has(node.id)) continue
+        if (!isRetainingWall(node) || !node.parentId || byWall.has(node.id) || removedHostIds.has(node.id)) continue
         const finish = RetainingWallNode.parse({
           ...useEditor.getState().toolDefaults[RETAININGWALL_KIND],
           hostWallId: node.id,

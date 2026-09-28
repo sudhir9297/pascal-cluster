@@ -5,6 +5,7 @@ import { drawingModeHint } from '../shared/drawing-mode'
 import { surfaceFloorplanAffordances } from '../shared/floorplan-affordances'
 import { surfaceHeightHandle } from '../shared/height-handle'
 import { circleDerivedSize } from '../shared/outline'
+import { concreteSlabPaint } from './editor/paint'
 
 export const concreteSlabDefinition: NodeDefinition<typeof ConcreteSlabNode> = {
   kind: CONCRETESLAB_KIND,
@@ -19,6 +20,7 @@ export const concreteSlabDefinition: NodeDefinition<typeof ConcreteSlabNode> = {
   },
   capabilities: {
     selectable: { hitVolume: 'mesh' },
+    paint: concreteSlabPaint,
     surfaces: { top: { height: (raw) => (raw as unknown as ConcreteSlabNode).thickness } },
     movable: { axes: ['x', 'z'], gridSnap: true },
     rotatable: { axes: ['y'] },
@@ -34,7 +36,7 @@ export const concreteSlabDefinition: NodeDefinition<typeof ConcreteSlabNode> = {
   floorplanAffordances: surfaceFloorplanAffordances(CONCRETESLAB_KIND),
   tool: () => import('../shared/drawing-tool'),
   preview: () => import('../shared/preview'),
-  parametrics: { derive: (next, patch) => circleDerivedSize(next, patch), groups: [{ label: 'Concrete slab', fields: [
+  parametrics: { derive: (next, patch) => circleDerivedSize(next, patch), customPanel: () => import('./editor/inspector'), groups: [{ label: 'Concrete slab', fields: [
     { key: 'width', label: 'Width', kind: 'number', unit: 'm', min: 0.2, max: 30, step: 0.1 },
     { key: 'depth', label: 'Depth', kind: 'number', unit: 'm', min: 0.2, max: 30, step: 0.1 },
     { key: 'thickness', label: 'Thickness', kind: 'number', unit: 'm', min: 0.03, max: 2, step: 0.01 },

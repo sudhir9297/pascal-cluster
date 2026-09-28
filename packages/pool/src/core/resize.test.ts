@@ -50,7 +50,7 @@ test('pool exposes rotation and independent shallow/deep depth handles', () => {
   expect(rotate?.kind).toBe('arc-resize')
   expect(depthHandles).toHaveLength(2)
   if (rotate?.kind === 'arc-resize') {
-    expect(rotate.continuous).not.toBe(true)
+    expect('continuous' in rotate && rotate.continuous).not.toBe(true)
     expect('angleStep' in rotate).toBe(false)
     expect(rotate.apply(node, Math.PI / 2, {} as never).rotation?.[1]).toBeCloseTo(-Math.PI / 2)
   }

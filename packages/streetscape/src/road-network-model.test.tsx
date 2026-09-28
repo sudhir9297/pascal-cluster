@@ -441,9 +441,11 @@ describe('road network corner rendering', () => {
     expect(floorplan.kind).toBe('group')
     if (floorplan.kind !== 'group') return
     const handles = floorplan.children.filter((child) => child.kind === 'endpoint-handle')
+    const insertHandles = floorplan.children.filter((child) => child.kind === 'midpoint-handle' && child.affordance === 'road-insert-point')
     const extensionArrows = floorplan.children.filter((child) => child.kind === 'move-arrow')
     expect(handles.filter((handle) => handle.affordance === 'road-node-point')).toHaveLength(2)
     expect(handles.filter((handle) => handle.affordance === 'road-control-point')).toHaveLength(1)
+    expect(insertHandles).toHaveLength(2)
     expect(extensionArrows).toHaveLength(2)
     expect(extensionArrows.every((arrow) => arrow.affordance === 'road-extend-endpoint')).toBe(true)
   })

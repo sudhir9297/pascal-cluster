@@ -20,17 +20,6 @@ import {
   useScene,
 } from '@pascal-app/core'
 import {
-  commitParametricNodeFields,
-  getNodePanelModel,
-  applyMultiHeightMode,
-  commitMultiNodeFields,
-  fieldVisibleForAll,
-  reduceFieldValue,
-  reduceHeightBoundMode,
-  resolveUniqueSelectionIds,
-  resolveHomogeneousSelection,
-  cycleSnappingModeIn,
-  emitDeleteSFX,
   getHistoryCommandState,
   getSnappingModeLabel,
   runRedo,
@@ -38,7 +27,7 @@ import {
   subscribeHistoryCommandState,
   useEditor,
   useInteractionScope,
-  usePanelToolHints,
+  triggerSFX,
   PALETTE_COLORS,
 } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
@@ -70,6 +59,11 @@ import { usePascalXRWandTerrainModel } from './terrain-model'
 import { nestedSettingsRows } from './nested-settings'
 import { linkedSettingsRows } from './linked-settings'
 import { resolveSettingsHierarchy } from './settings-hierarchy'
+import {
+  applyMultiHeightMode, commitMultiNodeFields, commitParametricNodeFields,
+  fieldVisibleForAll, reduceFieldValue, reduceHeightBoundMode,
+  resolveHomogeneousSelection, resolveUniqueSelectionIds,
+} from './selection-fields'
 import type { XRWandSettingsOptions } from '../../../../xr/wand/adapter'
 
 const ROWS_PER_PAGE = 5
@@ -87,6 +81,13 @@ function formatValue(value: unknown) {
   if (typeof value === 'boolean') return value ? 'On' : 'Off'
   if (typeof value === 'number') return String(Number(value.toFixed(3)))
   return value == null ? 'None' : 'Assigned'
+}
+
+function cycleSnappingModeIn(context: 'wall' | 'polygon' | 'item', mode: 'grid' | 'lines' | 'angles' | 'off') {
+  const modes = context === 'wall' ? ['grid', 'lines', 'angles', 'off'] as const :
+    context === 'item' ? ['lines', 'grid', 'off'] as const : ['grid', 'lines', 'off'] as const
+  const index = (modes as readonly string[]).indexOf(mode)
+  return modes[(index + 1) % modes.length] ?? modes[0]
 }
 
 function fieldModel({
@@ -279,7 +280,7 @@ export function usePascalXRWandSettingsModel(
       }),
     [mode, selectedNode, tool, toolDefaults, options?.scope, registryVersion],
   )
-  const visibleToolHints = usePanelToolHints(context?.source === 'tool' ? context.tool : null)
+  const visibleToolHints = context?.source === 'tool' ? context.definition.toolHints : undefined
   const toolOptions = bindings.useToolOptions()
   const toolRows: XRWandSettingRow[] = (context?.source === 'tool' ? toolOptions : []).map((option) => {
     const change = (direction: -1 | 1) => {
@@ -319,7 +320,8 @@ export function usePascalXRWandSettingsModel(
   const deleteSelectedNode = () => {
     if (!(selectedId && selectedNode && context?.source === 'node')) return
     if (context.definition.capabilities.deletable === false) return
-    emitDeleteSFX(selectedNode.type)
+    triggerSFX(selectedNode.type === 'item' || selectedNode.type === 'shelf'
+      ? 'sfx:item-delete' : 'sfx:structure-delete')
     setSelection({ selectedIds: [] })
     if (selectedNode.type === 'downspout') {
       const gutter = useScene.getState().nodes[selectedNode.gutterId as AnyNodeId]
@@ -428,33 +430,6 @@ export function usePascalXRWandSettingsModel(
         ? () => { useScene.getState().deleteNodes(multiIds); setSelection({ selectedIds: [] }) } : undefined,
     }
   }
-
-  if (
-    options?.scope !== 'workspace' &&
-    context?.source === 'node' &&
-    getNodePanelModel(context.definition)
-  ) {
-    const rows = withHierarchy(getNodePanelModel(context.definition)!.rows({
-      node: context.node, nodes,
-      update: (patch) => commitParametricNodeFields(context.node.id, patch),
-    }))
-    const current = options?.unpaged
-      ? { currentPage: 0, pageCount: 1, items: rows }
-      : getPage(rows, paginationKey === context.key ? paginationPage : 0, pageSize)
-    return {
-      contextKey: context.key,
-      contextual: true,
-      title: context.node.name || context.title,
-      mark: `${rows.length} controls`,
-      onClearSelection: () => setSelection({ selectedIds: [] }),
-      onDelete: deleteSelectedNode,
-      rows: current.items,
-      page: current.currentPage,
-      pageCount: current.pageCount,
-      onPageChange: (page) => setSettingsNavigation(context.key, page),
-    }
-  }
-
 
   if (options?.scope !== 'workspace' && context) {
     const sourceRows = [

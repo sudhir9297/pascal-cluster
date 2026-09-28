@@ -30,6 +30,7 @@ import { drawnAccessItemFor, isDrawnAccessKind } from './items'
 import { GroundAreaDraftOverlay } from '../../ground-areas/editor/draft-overlay'
 import { setDrawingStatus } from './drawing-session'
 import { cycleDrawingMode, drawingMode } from './drawing-mode'
+import { snapToHardscape } from './hardscape-snap'
 
 const SURFACE_DRAFT_COLOR = '#d6a56a'
 
@@ -178,6 +179,10 @@ export default function SurfaceDrawingTool() {
     }
     const pointOf = (event: GridEvent): Point => {
       const rawPoint = rawPointOf(event)
+      if (event.nativeEvent?.altKey) return rawPoint
+      const hardscapeHit = snapToHardscape(rawPoint, useScene.getState().nodes,
+        levelId, undefined, 0.24)
+      if (hardscapeHit) return hardscapeHit.point
       if (shape === 'freehand') return rawPoint
       const gridStep = isGridSnapActive() ? useEditor.getState().gridSnapStep : 0
       const gridPoint: Point = [...snapPointToGrid(rawPoint, gridStep)]

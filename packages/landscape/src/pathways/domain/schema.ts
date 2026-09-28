@@ -1,4 +1,4 @@
-import { BaseNode, nodeType, objectId } from '@pascal-app/core'
+import { BaseNode, MaterialSchema, nodeType, objectId } from '@pascal-app/core'
 import { z } from 'zod'
 
 export const PATHWAY_KIND = 'landscape:pathway'
@@ -56,6 +56,10 @@ export const PathwayNode = BaseNode.extend({
   naturalStoneSeed: z.number().int().min(0).max(9999).default(1),
   cornerStyle: z.enum(['round', 'square']).default('square'),
   showAllEditPoints: z.boolean().default(false),
+  paintedMaterials: z.record(z.string(), z.object({
+    material: MaterialSchema.optional(),
+    materialPreset: z.string().optional(),
+  })).default({}),
 }).superRefine((node, ctx) => {
   const ids = new Set(node.vertices.map((v) => v.id))
   if (

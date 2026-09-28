@@ -12,3 +12,11 @@ export function snapAlongAngle(from: Point, point: Point, step: number): Point {
   const length = step > 0 ? Math.round(projected / step) * step : projected
   return [from[0] + x * length, from[1] + z * length]
 }
+
+/** Keep the first leg normal to a hardscape edge when it starts on that edge. */
+export function projectToEdgeNormal(from: Point, point: Point, edgeDirection: Point): Point {
+  const nx = -edgeDirection[1], nz = edgeDirection[0]
+  const dx = point[0] - from[0], dz = point[1] - from[1]
+  const distance = dx * nx + dz * nz
+  return [from[0] + nx * distance, from[1] + nz * distance]
+}

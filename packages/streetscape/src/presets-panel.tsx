@@ -3,7 +3,7 @@
 import { type AnyNode, type AnyNodeId, useScene } from '@pascal-app/core'
 import { SegmentedControl, SliderControl, ToggleControl, useEditor } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
-import { type DragEvent, Fragment, useMemo, useState } from 'react'
+import { type DragEvent, Fragment, useEffect, useMemo, useState } from 'react'
 import {
   CATALOG_LAMP_THUMBNAIL,
   CATALOG_LAMP_THUMBNAILS,
@@ -57,6 +57,7 @@ import { buildRoadDraftStyle } from './road-draft-style'
 import { MapImportSection } from './map-import-panel'
 import { exportRoadNetworkGraph, importRoadNetworkGraph } from './road-network-io'
 import { planRoadGraphCleanup, type RoadCleanupPlan } from './road-network-cleanup'
+import { deleteRoadSplinePoints } from './road-network-spline-handles'
 import {
   DEFAULT_ROAD_STYLE_PRESETS,
   ROAD_STYLE_PRESET_IDS,
@@ -443,6 +444,26 @@ export default function StreetscapePanel() {
       ? (node as unknown as RoadNetworkNode)
       : null
   }, [sceneNodes, selectedIds])
+  const roadElementSelection = useStreetscapeStore((s) => s.roadElementSelection)
+  useEffect(() => {
+    if (!selectedRoadNetwork || roadElementSelection?.networkId !== selectedRoadNetwork.id ||
+      roadElementSelection.kind !== 'control') return
+    const onDelete = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.key !== 'Delete' && event.key !== 'Backspace') return
+      if ((event.target as HTMLElement | null)?.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]')) return
+      const indices = roadElementSelection.indices ??
+        (roadElementSelection.index === undefined ? [] : [roadElementSelection.index])
+      const patch = deleteRoadSplinePoints(selectedRoadNetwork, roadElementSelection.id, indices)
+      if (!patch) return
+      event.preventDefault()
+      useScene.getState().updateNode(selectedRoadNetwork.id as AnyNodeId, patch as Partial<AnyNode>)
+      useStreetscapeStore.getState().setRoadElementSelection({
+        networkId: selectedRoadNetwork.id, kind: 'spline', id: selectedRoadNetwork.id,
+      })
+    }
+    window.addEventListener('keydown', onDelete)
+    return () => window.removeEventListener('keydown', onDelete)
+  }, [selectedRoadNetwork, roadElementSelection])
   const catalogLampCounts = useMemo(() => {
     const counts: Record<string, number> = {}
     for (const node of Object.values(sceneNodes)) {
@@ -884,7 +905,7 @@ export default function StreetscapePanel() {
               onChange={useStreetscapeStore.getState().setRoadAlignmentMode}
               options={[
                 { label: 'Straight', value: 'straight' },
-                { label: 'Spline', value: 'spline' },
+                { label: 'Smooth curve', value: 'spline' },
               ]}
               value={roadAlignmentMode}
             />

@@ -5,6 +5,7 @@ import { patioParametrics } from './editor/parametrics'
 import { drawingModeHint } from '../shared/drawing-mode'
 import { patioFloorplanAffordances } from './editor/floorplan-affordances'
 import { circleSizePatch } from '../shared/outline'
+import { patioPaint } from './editor/paint'
 
 const resize = (axis: 'x' | 'z', key: 'width' | 'depth'): HandleDescriptor<PatioNode> => ({
   kind: 'linear-resize', axis, anchor: 'center', min: 0.2, max: 30, gridSnap: true,
@@ -28,6 +29,7 @@ export const patioDefinition: NodeDefinition<typeof PatioNode> = {
   },
   capabilities: {
     selectable: { hitVolume: 'mesh' },
+    paint: patioPaint,
     surfaces: { top: { height: (raw) => {
       const patio = raw as unknown as PatioNode
       return patio.elevation + patio.thickness + Math.min(0.045, patio.thickness / 3)

@@ -1,6 +1,7 @@
 import type { NodeDefinition } from '@pascal-app/core'
 import { RetainingWallNode, RETAININGWALL_KIND } from './domain/schema'
 import { buildRetainingWallGeometry, buildRetainingWallFloorplan } from './rendering/geometry'
+import { retainingWallPaint } from './editor/paint'
 
 export const retainingWallDefinition: NodeDefinition<typeof RetainingWallNode> = {
   kind: RETAININGWALL_KIND,
@@ -15,6 +16,7 @@ export const retainingWallDefinition: NodeDefinition<typeof RetainingWallNode> =
   },
   capabilities: {
     selectable: { hitVolume: 'mesh' },
+    paint: retainingWallPaint,
     movable: { axes: ['x', 'z'], gridSnap: true },
     rotatable: { axes: ['y'] },
     duplicable: true,

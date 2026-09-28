@@ -12,9 +12,10 @@ import {
   type WallNode,
   useScene,
 } from '@pascal-app/core'
-import { BufferGeometry, ExtrudeGeometry, Float32BufferAttribute, Group, Mesh, MeshStandardMaterial, Shape, Vector2 } from 'three'
+import { BufferGeometry, ExtrudeGeometry, Float32BufferAttribute, Group, Material, Mesh, MeshStandardMaterial, Shape, Vector2 } from 'three'
 import { RETAININGWALL_KIND, type RetainingWallNode } from '../domain/schema'
 import { buildAccessFloorplan, buildAccessGeometry } from '../../shared/geometry'
+import { applyLandscapePaintedMaterials } from '../../shared/paint'
 
 type JoinedEnds = { start: boolean; end: boolean }
 
@@ -87,10 +88,11 @@ function addPiece(group: Group, material: MeshStandardMaterial, name: string,
       { start: from < 1e-6 && joined.start, end: to > 1 - 1e-6 && joined.end })
   const mesh = new Mesh(geometry, material)
   mesh.name = name
+  mesh.userData.slotId = name === 'mortar' ? 'mortar'
+    : name.startsWith('cap') ? 'cap' : 'masonry'
   mesh.castShadow = true
   mesh.receiveShadow = true
-  // The editor wall stays the selectable host. The masonry is its visual finish.
-  mesh.raycast = () => {}
+  // Keep the masonry hit-testable so the retaining-wall finish can receive paint.
   group.add(mesh)
 }
 
@@ -199,7 +201,41 @@ function masonryGeometry(node: RetainingWallNode, ctx: GeometryContext) {
 }
 
 export function buildRetainingWallGeometry(node: RetainingWallNode, ctx: GeometryContext): Group {
-  return node.hostWallId ? masonryGeometry(node, ctx) : buildAccessGeometry(node, 'retaining-wall')
+  const group = node.hostWallId ? masonryGeometry(node, ctx) : buildAccessGeometry(node, 'retaining-wall')
+  applyLandscapePaintedMaterials(group, node.paintedMaterials, (mesh) =>
+    node.hostWallId ? mesh.userData.slotId ?? null : 'surface')
+
+  if (node.hostWallId) {
+    // Painted materials replace the defaults, so preserve the depth bias that
+    // keeps masonry courses and caps clear of the backing. Clone instead of
+    // mutating the shared material cache.
+    const biasByRole: Record<string, number> = { mortar: -1, masonry: -2, cap: -3 }
+    const biasedMaterials = new Map<string, Material>()
+    group.traverse((object) => {
+      if (!(object instanceof Mesh)) return
+      const role = object.userData.slotId
+      const factor = typeof role === 'string' ? biasByRole[role] : undefined
+      if (factor === undefined || !node.paintedMaterials?.[role]) return
+      const applyBias = (material: Material) => {
+        const key = `${role}:${material.uuid}`
+        let biased = biasedMaterials.get(key)
+        if (!biased) {
+          biased = material.clone()
+          biased.polygonOffset = true
+          biased.polygonOffsetFactor = factor
+          biased.polygonOffsetUnits = factor
+          delete biased.userData.__pascalCachedMaterial
+          biasedMaterials.set(key, biased)
+        }
+        return biased
+      }
+      object.material = Array.isArray(object.material)
+        ? object.material.map(applyBias)
+        : applyBias(object.material)
+    })
+  }
+
+  return group
 }
 
 export function buildRetainingWallFloorplan(node: RetainingWallNode, ctx: GeometryContext): FloorplanGeometry {
