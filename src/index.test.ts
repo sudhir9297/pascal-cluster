@@ -366,7 +366,7 @@ describe('Streetscape plugin manifest', () => {
     useStreetscapeStore.getState().setRoadAlignmentMode('straight')
     expect(alignment?.labels[alignment.value()]).toBe('Alignment: Straight')
     alignment?.cycle()
-    expect(alignment?.labels[alignment.value()]).toBe('Alignment: Spline')
+    expect(alignment?.labels[alignment.value()]).toBe('Alignment: Smooth curve')
 
     useStreetscapeStore.getState().setRoadElevationMode('ground')
     expect(elevation?.labels[elevation.value()]).toBe('Elevation: Ground')
@@ -494,6 +494,15 @@ describe('Streetscape plugin manifest', () => {
       networkId: node.id,
       kind: 'spline',
     })
+    const edgeId = Object.keys(node.edges)[0]!
+    useStreetscapeStore.getState().setRoadElementSelection({
+      networkId: node.id, kind: 'control', id: edgeId, index: 0,
+    })
+    const removeAction = quickActions({ node }).find((action) => action.id === 'road:remove-spline-points')
+    expect(removeAction).toBeDefined()
+    let removed: unknown
+    removeAction!.run({ sceneApi: { update: (_id: unknown, patch: unknown) => { removed = patch } } })
+    expect((removed as RoadNetworkNode).edges[edgeId]?.alignment).toHaveLength(0)
     useStreetscapeStore.getState().setRoadElementSelection(null)
   })
 

@@ -282,6 +282,18 @@ export function buildRoadNetworkFloorplan(
       })
     }
     for (const edge of Object.values(node.edges)) {
+      if (edge.alignment.length > 0) {
+        const samples = sampleRoadEdgePoints(node, edge, Math.max(32, (edge.alignment.length + 1) * 16))
+        for (let index = 0; index <= edge.alignment.length; index += 1) {
+          const t = (index + 0.5) / (edge.alignment.length + 1)
+          const point = samples[Math.round(t * (samples.length - 1))]
+          if (!point) continue
+          children.push({
+            kind: 'midpoint-handle', point: [point[0], point[2]],
+            affordance: 'road-insert-point', payload: { edgeId: edge.id, index, elevation: point[1] },
+          })
+        }
+      }
       edge.alignment.forEach((point, index) => {
         children.push({
           kind: 'endpoint-handle',

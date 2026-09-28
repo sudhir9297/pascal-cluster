@@ -14,6 +14,7 @@ import { ExtrudeGeometry, OrthographicCamera, Ray, Shape, Vector2, Vector3 } fro
 import { roadTerminalEnds, sampleRoadEdgePoints, type RoadTerminalEnd } from './road-network-geometry'
 import { moveRoadTerminal } from './road-network-extension-handles'
 import type { RoadNetworkNode } from './schema'
+import { acquireRoadHistoryPause } from './scene-history-pause'
 
 const HANDLE_OFFSET = 0.68
 const HANDLE_SCALE = 0.65
@@ -112,18 +113,13 @@ function RoadExtensionArrow({
     const pointer = new Vector2()
     const moveRay = new Ray()
     let lastPatch: Pick<RoadNetworkNode, 'graphNodes' | 'junctions'> | null = null
-    let historyPaused = true
+    const releaseHistory = useScene.temporal.getState().isTracking
+      ? acquireRoadHistoryPause() : () => {}
 
     useViewer.getState().setInputDragging(true)
-    useScene.temporal.getState().pause()
     document.body.style.cursor = 'ew-resize'
     triggerSFX('sfx:item-pick')
 
-    const resumeHistory = () => {
-      if (!historyPaused) return
-      historyPaused = false
-      useScene.temporal.getState().resume()
-    }
     const clearPreview = () => {
       useLiveNodeOverrides.getState().clear(nodeId)
       useScene.getState().markDirty(nodeId)
@@ -133,6 +129,7 @@ function RoadExtensionArrow({
       window.removeEventListener('pointerup', onUp)
       window.removeEventListener('pointercancel', onCancel)
       window.removeEventListener('blur', onCancel)
+      window.removeEventListener('keydown', onKeyDown, true)
       document.body.style.cursor = ''
       useViewer.getState().setInputDragging(false)
       cleanupRef.current = null
@@ -158,7 +155,7 @@ function RoadExtensionArrow({
       useScene.getState().markDirty(nodeId)
     }
     const onUp = () => {
-      resumeHistory()
+      releaseHistory()
       if (lastPatch) {
         useScene.getState().updateNode(nodeId, lastPatch as Partial<AnyNode>)
         triggerSFX('sfx:item-place')
@@ -168,9 +165,15 @@ function RoadExtensionArrow({
       cleanup()
     }
     const onCancel = () => {
-      resumeHistory()
+      releaseHistory()
       clearPreview()
       cleanup()
+    }
+    const onKeyDown = (keyEvent: KeyboardEvent) => {
+      if (keyEvent.key !== 'Escape' && !((keyEvent.metaKey || keyEvent.ctrlKey) && keyEvent.key.toLowerCase() === 'z')) return
+      keyEvent.preventDefault()
+      keyEvent.stopImmediatePropagation()
+      onCancel()
     }
 
     cleanupRef.current = onCancel
@@ -178,6 +181,7 @@ function RoadExtensionArrow({
     window.addEventListener('pointerup', onUp)
     window.addEventListener('pointercancel', onCancel)
     window.addEventListener('blur', onCancel)
+    window.addEventListener('keydown', onKeyDown, true)
   }
 
   return (

@@ -1,10 +1,12 @@
 import { type AnyNodeId, useLiveNodeOverrides, useScene } from '@pascal-app/core'
 import { roadCurbCornerRadiusAtPlanPoint } from './road-network-corner-editing'
 import { moveRoadGraphNode } from './road-network-graph-editing'
+import { insertRoadSplinePoint } from './road-network-spline-handles'
 import type { RoadNetworkNode } from './schema'
 import { useStreetscapeStore } from './store'
 
 type RoadControlPayload = { edgeId: string; index: number }
+type RoadInsertPayload = RoadControlPayload & { elevation: number }
 type RoadNodePayload = { nodeId: string }
 type RoadCurbCornerPayload = { cornerKey: string; junctionId: string }
 type PlanPoint = readonly [number, number]
@@ -50,6 +52,34 @@ export const roadControlPointAffordance = {
       commit() {
         useScene.getState().updateNode(nodeId, { edges: lastEdges } as never)
         useLiveNodeOverrides.getState().clear(nodeId)
+      },
+    }
+  },
+}
+
+/** Insert a centerline control in plan without changing its road elevation. */
+export const roadInsertPointAffordance = {
+  start({ node, payload }: { node: RoadNetworkNode; payload: unknown }) {
+    const { edgeId, index, elevation } = payload as RoadInsertPayload
+    const nodeId = node.id as AnyNodeId
+    let patch: Pick<RoadNetworkNode, 'edges'> | null = null
+    return {
+      affectedIds: [nodeId],
+      apply({ planPoint }: { planPoint: PlanPoint }) {
+        const next = insertRoadSplinePoint(node, edgeId, index,
+          [planPoint[0], elevation, planPoint[1]])
+        if (!next) return
+        patch = next
+        useLiveNodeOverrides.getState().set(nodeId, patch)
+        useScene.getState().markDirty(nodeId)
+      },
+      canCommit() { return patch !== null },
+      commit() {
+        if (patch) useScene.getState().updateNode(nodeId, patch as never)
+        useLiveNodeOverrides.getState().clear(nodeId)
+        useStreetscapeStore.getState().setRoadElementSelection({
+          networkId: node.id, kind: 'control', id: edgeId, index,
+        })
       },
     }
   },

@@ -23,15 +23,15 @@ describe('road editing control visibility', () => {
     })).toEqual({ lengthArrows: true, splineHandles: true })
   })
 
-  test('uses a high-contrast green circular reshape handle', () => {
+  test('uses the shared amber anchor and violet hover colors', () => {
     const source = readFileSync(
       new URL('./road-network-spline-controls.tsx', import.meta.url),
       'utf8',
     )
     expect(source).toContain('<sphereGeometry')
     expect(source).not.toContain('<coneGeometry')
-    expect(source).toContain('const HANDLE_COLOR = "#22c55e"')
-    expect(source).toContain('const HANDLE_HOVER_COLOR = "#4ade80"')
+    expect(source).toContain('const HANDLE_COLOR = "#d6a56a"')
+    expect(source).toContain('const HANDLE_HOVER_COLOR = "#a5b4fc"')
   })
 
   test('reveals a blue vertical elevation grip for the selected spline point', () => {

@@ -12,6 +12,7 @@ import { type ThreeEvent, useThree } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 import { OrthographicCamera, Plane, Ray, Vector2, Vector3 } from "three";
 import { sampleRoadEdgePoints } from "./road-network-geometry";
+import { acquireRoadHistoryPause } from "./scene-history-pause";
 import {
 	deleteRoadSplinePoints,
 	insertRoadSplinePoint,
@@ -23,14 +24,14 @@ import type { RoadNetworkNode } from "./schema";
 import { type RoadElementSelection, useStreetscapeStore } from "./store";
 
 const HANDLE_SCALE = 0.82;
-const HANDLE_COLOR = "#22c55e";
-const HANDLE_HOVER_COLOR = "#4ade80";
-const HANDLE_SELECTED_COLOR = "#86efac";
-const HANDLE_OUTLINE_COLOR = "#14532d";
+const HANDLE_COLOR = "#d6a56a";
+const HANDLE_HOVER_COLOR = "#a5b4fc";
+const HANDLE_SELECTED_COLOR = "#f3c58c";
+const HANDLE_OUTLINE_COLOR = "#75552f";
 const ELEVATION_HANDLE_COLOR = "#38bdf8";
 const ELEVATION_HANDLE_HOVER_COLOR = "#7dd3fc";
 const ELEVATION_HANDLE_OUTLINE_COLOR = "#0c4a6e";
-const INSERT_HANDLE_COLOR = "#d1fae5";
+const INSERT_HANDLE_COLOR = "#68c99b";
 const INSERT_HANDLE_HOVER_COLOR = "#ffffff";
 
 type SplineDragMode = "plan" | "elevation";
@@ -135,19 +136,14 @@ function RoadSplinePointControl({
 		let lastPatch: Partial<
 			Pick<RoadNetworkNode, "edges" | "graphNodes" | "junctions">
 		> | null = null;
-		let historyPaused = true;
+		const releaseHistory = useScene.temporal.getState().isTracking
+			? acquireRoadHistoryPause() : () => {};
 
 		useViewer.getState().setInputDragging(true);
-		useScene.temporal.getState().pause();
 		document.body.style.cursor =
 			mode === "elevation" ? "ns-resize" : "grabbing";
 		triggerSFX("sfx:item-pick");
 
-		const resumeHistory = () => {
-			if (!historyPaused) return;
-			historyPaused = false;
-			useScene.temporal.getState().resume();
-		};
 		const clearPreview = () => {
 			useLiveNodeOverrides.getState().clear(nodeId);
 			useScene.getState().markDirty(nodeId);
@@ -157,6 +153,7 @@ function RoadSplinePointControl({
 			window.removeEventListener("pointerup", onUp);
 			window.removeEventListener("pointercancel", onCancel);
 			window.removeEventListener("blur", onCancel);
+			window.removeEventListener("keydown", onKeyDown, true);
 			document.body.style.cursor = "";
 			useViewer.getState().setInputDragging(false);
 			cleanupRef.current = null;
@@ -189,7 +186,7 @@ function RoadSplinePointControl({
 			useScene.getState().markDirty(nodeId);
 		};
 		const onUp = () => {
-			resumeHistory();
+			releaseHistory();
 			if (lastPatch) {
 				useScene.getState().updateNode(nodeId, lastPatch as Partial<AnyNode>);
 				triggerSFX("sfx:item-place");
@@ -199,9 +196,15 @@ function RoadSplinePointControl({
 			cleanup();
 		};
 		const onCancel = () => {
-			resumeHistory();
+			releaseHistory();
 			clearPreview();
 			cleanup();
+		};
+		const onKeyDown = (keyEvent: KeyboardEvent) => {
+			if (keyEvent.key !== "Escape" && !((keyEvent.metaKey || keyEvent.ctrlKey) && keyEvent.key.toLowerCase() === "z")) return;
+			keyEvent.preventDefault();
+			keyEvent.stopImmediatePropagation();
+			onCancel();
 		};
 
 		cleanupRef.current = onCancel;
@@ -209,6 +212,7 @@ function RoadSplinePointControl({
 		window.addEventListener("pointerup", onUp);
 		window.addEventListener("pointercancel", onCancel);
 		window.addEventListener("blur", onCancel);
+		window.addEventListener("keydown", onKeyDown, true);
 	};
 
 	return (
@@ -393,6 +397,7 @@ export function RoadNetworkSplineControls({
 }) {
 	useEffect(() => {
 		const onDeleteKey = (event: KeyboardEvent) => {
+			if (event.defaultPrevented) return;
 			if (
 				event.target instanceof HTMLInputElement ||
 				event.target instanceof HTMLTextAreaElement
