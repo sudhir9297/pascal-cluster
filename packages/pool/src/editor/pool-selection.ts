@@ -10,6 +10,11 @@ type PoolCandidate = {
 export function getSelectedPool(nodes: Record<string, unknown>, selectedIds: readonly string[]): PoolNode | null {
   const typedNodes = nodes as Record<string, PoolCandidate>
   const pools = Object.values(typedNodes).filter((node) => node.type === 'pool:pool')
+  return getExplicitlySelectedPool(nodes, selectedIds) ?? (pools.length === 1 ? pools[0] as PoolNode : null)
+}
+
+export function getExplicitlySelectedPool(nodes: Record<string, unknown>, selectedIds: readonly string[]): PoolNode | null {
+  const typedNodes = nodes as Record<string, PoolCandidate>
   for (const id of selectedIds) {
     const node = typedNodes[id]
     if (!node) continue
@@ -18,5 +23,5 @@ export function getSelectedPool(nodes: Record<string, unknown>, selectedIds: rea
     const owner = ownerId ? typedNodes[ownerId] : undefined
     if (owner?.type === 'pool:pool') return owner as PoolNode
   }
-  return pools.length === 1 ? pools[0] as PoolNode : null
+  return null
 }

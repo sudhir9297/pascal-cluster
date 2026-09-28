@@ -8,6 +8,7 @@ test('pool design steps navigate without changing the active editor tool', async
   const reviewPath = import.meta.resolve('./review-panel')
   const selectionPath = import.meta.resolve('./pool-selection')
   const fittingPath = import.meta.resolve('../design/pool-fitting-layout')
+  const sectionPath = import.meta.resolve('./pool-section-bar')
   const process = Bun.spawn([Bun.which('bun')!, '-e', `
     import { mock } from 'bun:test'
     import * as React from 'react'
@@ -28,6 +29,7 @@ test('pool design steps navigate without changing the active editor tool', async
     mock.module(${JSON.stringify(reviewPath)}, () => ({ PoolReviewPanel() {} }))
     mock.module(${JSON.stringify(selectionPath)}, () => ({ getSelectedPool: () => null }))
     mock.module(${JSON.stringify(fittingPath)}, () => ({ planPoolFittings: () => null }))
+    mock.module(${JSON.stringify(sectionPath)}, () => ({ PoolSectionBarPortal() {} }))
     const { default: Panel } = await import(${JSON.stringify(panelPath)})
     function findAll(element, predicate) {
       if (!element || typeof element !== 'object') return []

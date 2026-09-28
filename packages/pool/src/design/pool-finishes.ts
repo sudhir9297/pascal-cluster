@@ -38,6 +38,19 @@ export const POOL_FINISH_SETTINGS: Record<PoolFinish, PoolFinishSettings> = {
     kind: 'pebble', base: '#8b9995', accent: '#4f625f', highlight: '#b7bfaf', grout: '#74827f',
     scale: 12, contrast: 0.58, sparkle: 0,
   },
+  'sand-plaster': solid('#d7c7a3'),
+  'sand-quartz': {
+    kind: 'speckle', base: '#d9cba9', accent: '#a99770', highlight: '#f1e5c8', grout: '#c7b68f',
+    scale: 9, contrast: 0.24, sparkle: 0,
+  },
+  'sandy-pebble': {
+    kind: 'pebble', base: '#b6a986', accent: '#857652', highlight: '#dcd0a9', grout: '#a49675',
+    scale: 12, contrast: 0.54, sparkle: 0,
+  },
+  'golden-pebble': {
+    kind: 'pebble', base: '#b89a62', accent: '#81683e', highlight: '#e2c993', grout: '#a58754',
+    scale: 12, contrast: 0.58, sparkle: 0,
+  },
   'polished-aggregate-blue': {
     kind: 'polished', base: '#5f9fa8', accent: '#2e6879', highlight: '#b6e2dc', grout: '#4e8790',
     scale: 10, contrast: 0.35, sparkle: 0.18,

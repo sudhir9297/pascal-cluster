@@ -74,6 +74,13 @@ entry points.
 
 ## Development
 
+When developing against the adjacent Pascal editor checkout, install both
+repositories, then run `bun run dev:link` from this package. This makes the
+plugin and the editor app's `file:` installation use the editor's React,
+React Three Fiber, Three.js, and Pascal runtime packages. Run it again after
+either checkout's `bun install`, then restart the editor dev server. Set
+`PASCAL_EDITOR_PATH` if the editor checkout is elsewhere.
+
 ```bash
 bun install --frozen-lockfile
 bun run verify

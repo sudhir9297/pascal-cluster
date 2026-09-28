@@ -16,13 +16,14 @@ import {
 } from 'three'
 import { MeshStandardNodeMaterial } from 'three/webgpu'
 import { TessellateModifier } from 'three/examples/jsm/modifiers/TessellateModifier.js'
-import { color, float, mix, normalLocal, positionLocal, sin, smoothstep, vec2 } from 'three/tsl'
+import { normalLocal, positionLocal, smoothstep, vec2 } from 'three/tsl'
 import { outsetPoolPolygon } from '../design/outlines'
 import { PoolNode, type PoolPoint } from './schema'
 import { PoolWaterEffect } from '../shader/water-effect'
 import { buildNaturalCopingGeometry } from '../design/coping'
 import { buildSubmergedFeatureCopingGeometry } from '../design/feature-coping'
 import { getPoolFinishSettings } from '../design/pool-finishes'
+import { createPoolFinishSurface } from '../design/pool-finish-surface'
 
 function addPlanarUvAttribute(geometry: BufferGeometry) {
   const position = geometry.getAttribute('position')
@@ -1074,48 +1075,7 @@ function createTileMaterial(node: PoolNode, effect: PoolWaterEffect, points: Poo
   const sourceU = isFloor.select(positionLocal.x, wallU)
   const sourceV = isFloor.select(positionLocal.z, positionLocal.y)
 
-  const base = color(finish.base)
-  const accent = color(finish.accent)
-  const highlight = color(finish.highlight)
-  // TSL's `mix` returns a vec3 for color nodes, while the generic helper
-  // signature is inferred as vec4 in this version of Three.js. Keep the
-  // intermediate shader node un-narrowed so each finish branch can compose
-  // its color naturally.
-  let surface: any = base
-
-  if (finish.kind === 'mosaic') {
-    // 25 cm square ceramic tiles. The small fixed warp keeps the grid from
-    // reading like graph paper while preserving clean grout through corners.
-    const tileU = sourceU.mul(finish.scale).add(sin(sourceV.mul(2.8)).mul(0.035))
-    const tileV = sourceV.mul(finish.scale).add(sin(sourceU.mul(2.4)).mul(0.035))
-    const cellU = tileU.floor()
-    const cellV = tileV.floor()
-    const withinU = tileU.fract()
-    const withinV = tileV.fract()
-    const edgeU = withinU.min(float(1).sub(withinU))
-    const edgeV = withinV.min(float(1).sub(withinV))
-    const tileMask = smoothstep(0.035, 0.07, edgeU.min(edgeV))
-    const variation = sin(cellU.mul(12.9898).add(cellV.mul(78.233))).mul(43758.5453).fract()
-    const tiles = mix(accent, highlight, variation)
-    surface = mix(color(finish.grout), tiles, tileMask) as unknown as typeof surface
-  } else if (finish.kind !== 'solid') {
-    const grain = sin(sourceU.mul(finish.scale * 1.7))
-      .add(sin(sourceV.mul(finish.scale * 2.1)))
-      .mul(0.25)
-      .add(0.5)
-    const speckle = sin(
-      sourceU.mul(finish.scale * 17.13).add(sourceV.mul(finish.scale * 23.71)),
-    ).mul(43758.5453).fract()
-    const threshold = finish.kind === 'pebble' ? 0.68 : 0.78
-    const size = finish.kind === 'pebble' ? 0.14 : 0.07
-    const aggregate = smoothstep(threshold, threshold + size, speckle)
-    const blended = mix(base, accent, aggregate.mul(finish.contrast))
-    surface = mix(blended, highlight, grain.mul(0.08)) as unknown as typeof surface
-    if (finish.sparkle > 0) {
-      const sparkle = smoothstep(0.93, 0.985, speckle).mul(finish.sparkle)
-      surface = surface.add(highlight.mul(sparkle))
-    }
-  }
+  const surface = createPoolFinishSurface(finish, sourceU, sourceV)
   const xs = points.map(([x]) => x)
   const zs = points.map(([, z]) => z)
   const poolUv = positionLocal.xz.sub(vec2(Math.min(...xs), Math.min(...zs)))

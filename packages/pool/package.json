@@ -35,6 +35,7 @@
     "provenance": true
   },
   "scripts": {
+    "dev:link": "bun scripts/dev-link.ts",
     "check-docs": "bun run scripts/check-docs.ts",
     "check-architecture": "bun run scripts/check-architecture.ts",
     "check-package": "bun run scripts/check-package.ts",
@@ -54,6 +55,7 @@
     "@pascal-app/viewer": ">=0.9.1 <1 || >=1.0.0-beta.0 <2",
     "@react-three/fiber": "^9",
     "react": "^18 || ^19",
+    "react-dom": "^18 || ^19",
     "three": "^0.186.0",
     "zod": "^4",
     "zustand": "^5"

@@ -23,8 +23,9 @@ import {
   countPools,
   getPoolGeometrySignature,
   getPoolChildResizePreviewPosition,
-  getPoolLevelResizePreviewPosition,
-  getPoolLevelResizePreviewPath,
+  getPoolLevelAttachedPath,
+  getPoolLevelAttachedPosition,
+  getPoolLevelAttachedRotation,
   getPoolDepthResizePreviewTransform,
   getPoolResizePreviewTransform,
   getPoolWaterResolution,
@@ -54,7 +55,11 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
     [storeNode, liveOverride],
   )
   const liveTransform = useLiveTransforms((state) => state.get(storeNode.id as never))
-  const renderPose = getPoolRenderPose(node, liveTransform)
+  const renderPose = useMemo(() => getPoolRenderPose(node, liveTransform), [node, liveTransform])
+  const movingPool = Boolean(liveTransform && (
+    renderPose.position.some((value, index) => value !== storeNode.position[index]) ||
+    renderPose.rotation.some((value, index) => value !== storeNode.rotation[index])
+  ))
   nodeRef.current = node
   const inputDragging = useViewer((state) => state.inputDragging)
   const outlineSelected = useViewer((state) => state.selection.selectedIds.includes(storeNode.id as never))
@@ -95,35 +100,39 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
     return [child]
   })))
   const connectedPipes = useScene(useShallow(
-    (state) => horizontalResizeInProgress
+    (state) => horizontalResizeInProgress || movingPool
       ? selectPoolConnectedPipes(state.nodes, storeNode.id)
       : NO_CONNECTED_PIPES,
   ))
   useEffect(() => {
-    if (!horizontalResizeInProgress || (genericChildren.length === 0 && connectedPipes.length === 0)) return
+    if ((!horizontalResizeInProgress && !movingPool) || (genericChildren.length === 0 && connectedPipes.length === 0)) return
     const session = resizeSessionRef.current
+    const sourcePool = session?.pool ?? storeNode
+    const previewPool = { ...node, position: renderPose.position, rotation: renderPose.rotation }
     const entries: (readonly [string, Record<string, unknown>])[] = []
-    genericChildren.forEach((child) => {
+    if (horizontalResizeInProgress) genericChildren.forEach((child) => {
       const position = (child as unknown as { position: [number, number, number] }).position
       const initial = session?.positions.get(child.id) ?? position
       session?.positions.set(child.id, initial)
-      entries.push([child.id, { position: getPoolChildResizePreviewPosition(session?.pool ?? storeNode, node, initial) }])
+      entries.push([child.id, { position: getPoolChildResizePreviewPosition(sourcePool, node, initial) }])
     })
     connectedPipes.forEach((child) => {
-      const candidate = child as unknown as { id: string; type: string; path?: [number, number, number][]; position?: [number, number, number] }
+      const candidate = child as unknown as { id: string; type: string; path?: [number, number, number][]; position?: [number, number, number]; rotation?: [number, number, number] }
       if (candidate.type === 'pipe-segment' && candidate.path) {
-        entries.push([candidate.id, { path: getPoolLevelResizePreviewPath(session?.pool ?? storeNode, node, candidate.path) }])
-      }
-      if (candidate.position) {
-        entries.push([candidate.id, { position: getPoolLevelResizePreviewPosition(session?.pool ?? storeNode, node, candidate.position) }])
+        entries.push([candidate.id, { path: getPoolLevelAttachedPath(sourcePool, previewPool, candidate.path) }])
+      } else if (candidate.position) {
+        entries.push([candidate.id, {
+          position: getPoolLevelAttachedPosition(sourcePool, previewPool, candidate.position),
+          ...(candidate.rotation ? { rotation: getPoolLevelAttachedRotation(sourcePool, previewPool, candidate.rotation) } : {}),
+        }])
       }
     })
     useLiveNodeOverrides.getState().setMany(entries)
     return () => {
       for (const child of genericChildren) useLiveNodeOverrides.getState().clearFields(child.id, ['position'])
-      for (const child of connectedPipes) useLiveNodeOverrides.getState().clearFields(child.id, ['path', 'position'])
+      for (const child of connectedPipes) useLiveNodeOverrides.getState().clearFields(child.id, ['path', 'position', 'rotation'])
     }
-  }, [connectedPipes, genericChildren, horizontalResizeInProgress, node, storeNode])
+  }, [connectedPipes, genericChildren, horizontalResizeInProgress, movingPool, node, storeNode, renderPose.position, renderPose.rotation])
   const visiblePoolCount = useScene((state) => countPools(state.nodes))
   const waterResolution = getPoolWaterResolution(visiblePoolCount, node.waterQuality)
   const waterSettingsSignature = getPoolWaterSettingsSignature(node)

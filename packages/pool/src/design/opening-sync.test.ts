@@ -1,15 +1,88 @@
 import { describe, expect, test } from 'bun:test'
 import { pointInPolygon2D, SlabNode } from '@pascal-app/core'
 import { generateSlabGeometry } from '@pascal-app/viewer'
-import { Group, Mesh, Vector3 } from 'three'
+import { Euler, Group, Mesh, Vector3 } from 'three'
 import { buildPoolGeometry } from '../core/geometry'
-import { poolDefinition } from '../core/definition'
+import { poolDefinition, poolFloorplan } from '../core/definition'
 import { PoolNode } from '../core/schema'
 import { PoolSharedJointNode } from '../shared-joint/core/schema'
 import { PoolSpilloverNode } from '../spillover/core/schema'
 import { localizePoolPolygon, syncPoolGroundOpenings, syncPoolSlabOpenings } from './opening-sync'
+import { createPoolShapePolygon, POOL_SHAPES } from './shapes'
 
 describe('swimming pool floor openings', () => {
+  test.each([...POOL_SHAPES])('%s pool plan, water, and ground opening share an offset rotated frame', (shape) => {
+    const polygon: [number, number][] = shape === 'custom' || shape === 'spline'
+      ? [[-4, -2], [3, -2.5], [4, 1], [0.5, 3], [-3, 1.5]]
+      : createPoolShapePolygon(shape, 8, shape === 'circle' ? 8 : 5)
+    const pool = PoolNode.parse({
+      id: `pool_alignment_${shape}`, parentId: 'level_alignment', shape,
+      polygon, position: [11, 0.4, -7], rotation: [0, Math.PI / 5, 0],
+    })
+    const plan = poolFloorplan(pool)
+    expect(plan.kind).toBe('path')
+    if (plan.kind !== 'path') return
+    const planCoordinates = plan.d.match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi)!.map(Number)
+    polygon.forEach(([x, z], index) => {
+      const point = new Vector3(x, 0, z).applyEuler(new Euler(...pool.rotation)).add(new Vector3(...pool.position))
+      expect(planCoordinates[index * 2]).toBeCloseTo(point.x, 7)
+      expect(planCoordinates[index * 2 + 1]).toBeCloseTo(point.z, 7)
+    })
+
+    const level = { id: 'level_alignment', type: 'level', children: [pool.id] }
+    // Match preset placement: draw around an off-origin click, localize the
+    // polygon, then rotate its local points back against the stored yaw.
+    const yaw = Math.PI / 5
+    const clicked = [13, -9] as const
+    const worldOutline = polygon.map(([x, z]) => [
+      clicked[0] + x * Math.cos(yaw) + z * Math.sin(yaw),
+      clicked[1] - x * Math.sin(yaw) + z * Math.cos(yaw),
+    ] as [number, number])
+    const localized = localizePoolPolygon(worldOutline)
+    const placedPool = PoolNode.parse({
+      ...pool,
+      position: [localized.position[0], pool.position[1], localized.position[2]],
+      rotation: [0, yaw, 0],
+      polygon: localized.polygon.map(([x, z]): [number, number] => [
+        x * Math.cos(yaw) - z * Math.sin(yaw),
+        x * Math.sin(yaw) + z * Math.cos(yaw),
+      ]),
+    })
+    const placedHelper = syncPoolGroundOpenings({ [placedPool.id]: placedPool, [level.id]: level } as never).create[0]!
+    const placedPlan = poolFloorplan(placedPool)
+    expect(placedPlan.kind).toBe('path')
+    if (placedPlan.kind !== 'path') return
+    const placedCoordinates = placedPlan.d.match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi)!.map(Number)
+    worldOutline.forEach(([x, z], index) => {
+      expect(placedCoordinates[index * 2]).toBeCloseTo(x, 7)
+      expect(placedCoordinates[index * 2 + 1]).toBeCloseTo(z, 7)
+      expect(pointInPolygon2D([x, z], placedHelper.polygon, { includeBoundary: true })).toBe(true)
+    })
+
+    const building = new Group()
+    const poolFrame = new Group()
+    poolFrame.position.fromArray(placedPool.position)
+    poolFrame.rotation.fromArray([...placedPool.rotation, 'XYZ'])
+    building.add(poolFrame)
+    const assembly = buildPoolGeometry(placedPool)
+    poolFrame.add(assembly)
+    building.updateWorldMatrix(true, true)
+    const water = assembly.getObjectByName('pool-water') as Mesh
+    const positions = water.geometry.getAttribute('position')
+    for (let i = 0; i < positions.count; i += Math.max(1, Math.floor(positions.count / 100))) {
+      const world = new Vector3().fromBufferAttribute(positions, i).applyMatrix4(water.matrixWorld)
+      expect(pointInPolygon2D([world.x, world.z], placedHelper.polygon, { includeBoundary: true })).toBe(true)
+    }
+    assembly.userData.waterEffect.dispose()
+    assembly.traverse((child) => {
+      const mesh = child as Mesh
+      if (!mesh.isMesh) return
+      mesh.geometry.dispose()
+      const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+      for (const material of materials) material.dispose()
+    })
+  })
+
   test('creates a recessed helper for the site and shadow receiver', () => {
     const pool = PoolNode.parse({
       ...poolDefinition.defaults(),

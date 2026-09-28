@@ -8,6 +8,21 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- New freehand pools keep fewer editable outline points by removing anchors
+  that do not materially change the drawn curve or pool area.
+- Selecting a pool in the pool editor now shows a collapsible longitudinal
+  section above the existing bottom toolbar, reflecting its floor profile. The
+  section fits beside the open inspector instead of extending underneath it.
+  Its plan outline, floor slope, entry, bench, waterline, and finishes follow
+  the selected pool's design settings.
+- Condensed the pool Shell sidebar with a selected-shape card, an on-demand
+  shape picker, direct depth-profile choices, and combined entry and bench
+  controls.
+- Choosing a pool shape now prepares the next pool drawing instead of changing
+  the selected pool. Shell and Systems sections start collapsed.
+- Align the 2D pool outline and editing handles with the pool's 3D position and
+  rotation. Use a thin, constant-width selection outline that preserves the
+  water and coping appearance.
 - Placing a pool pump, heater, or filter over a DWV waste pipe now splits the
   run and connects its inlet and outlet with routed pipes and elbows in one
   undoable edit. The filter backwash port remains separate. Short, blocked,

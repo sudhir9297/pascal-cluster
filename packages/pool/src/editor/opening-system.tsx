@@ -18,8 +18,9 @@ import { poolAttachmentUpdates } from '../design/pool-attachments'
 import { poolParentLinkUpdates } from '../design/pool-parent-links'
 import {
   getPoolChildResizePreviewPosition,
-  getPoolLevelResizePreviewPath,
-  getPoolLevelResizePreviewPosition,
+  getPoolLevelAttachedPath,
+  getPoolLevelAttachedPosition,
+  getPoolLevelAttachedRotation,
   selectPoolConnectedPipes,
 } from './pool-render-plan'
 import { PoolNode } from '../core/schema'
@@ -76,9 +77,12 @@ export function initializePoolOpeningSync() {
       if (!previousPool.success) continue
       const pool = PoolNode.safeParse(nodes[previousPool.data.id])
       if (!pool.success) continue
-      if (previousPool.data.length === pool.data.length && previousPool.data.width === pool.data.width &&
-        JSON.stringify(previousPool.data.polygon) === JSON.stringify(pool.data.polygon)) continue
-      for (const childId of previousPool.data.children ?? []) {
+      const resized = previousPool.data.length !== pool.data.length || previousPool.data.width !== pool.data.width ||
+        JSON.stringify(previousPool.data.polygon) !== JSON.stringify(pool.data.polygon)
+      const moved = previousPool.data.position.some((value, index) => value !== pool.data.position[index]) ||
+        previousPool.data.rotation.some((value, index) => value !== pool.data.rotation[index])
+      if (!resized && !moved) continue
+      if (resized) for (const childId of previousPool.data.children ?? []) {
         const child = nodes[childId as never]
         if (!child || child.parentId !== pool.data.id || 'poolId' in child) continue
         genericChildUpdates.push({
@@ -87,11 +91,14 @@ export function initializePoolOpeningSync() {
         })
       }
       for (const value of selectPoolConnectedPipes(nodes, pool.data.id)) {
-        const child = value as unknown as { id: string; type: string; path?: [number, number, number][]; position?: [number, number, number] }
+        const child = value as unknown as { id: string; type: string; path?: [number, number, number][]; position?: [number, number, number]; rotation?: [number, number, number] }
         if (child.type === 'pipe-segment' && child.path) {
-          genericChildUpdates.push({ id: child.id, data: { path: getPoolLevelResizePreviewPath(previousPool.data, pool.data, child.path) } })
+          genericChildUpdates.push({ id: child.id, data: { path: getPoolLevelAttachedPath(previousPool.data, pool.data, child.path) } })
         } else if (child.position) {
-          genericChildUpdates.push({ id: child.id, data: { position: getPoolLevelResizePreviewPosition(previousPool.data, pool.data, child.position) } })
+          genericChildUpdates.push({ id: child.id, data: {
+            position: getPoolLevelAttachedPosition(previousPool.data, pool.data, child.position),
+            ...(child.rotation ? { rotation: getPoolLevelAttachedRotation(previousPool.data, pool.data, child.rotation) } : {}),
+          } })
         }
       }
     }
@@ -133,6 +140,7 @@ export function initializePoolOpeningSync() {
       && fittingChanges.update.length === 0
       && fittingChanges.delete.length === 0
       && parentLinkUpdates.length === 0
+      && genericChildUpdates.length === 0
     ) return
 
     syncing = true
