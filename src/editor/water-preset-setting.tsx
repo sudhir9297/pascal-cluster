@@ -40,7 +40,7 @@ export function WaterPresetSetting({
           title={label}
           type="button"
         >
-          <img alt="" className="aspect-[3/2] w-full object-cover" height="64" src={WATER_PRESET_THUMBNAILS[preset]} width="96" />
+          <img alt="" className="block aspect-[3/2] w-full object-contain" height="64" src={WATER_PRESET_THUMBNAILS[preset]} width="96" />
           <span className={`block px-1.5 py-1.5 ${palette.text}`}>{label}</span>
         </button>
       })}

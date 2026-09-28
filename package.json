@@ -19,10 +19,6 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
-    },
-    "./water-effect": {
-      "types": "./src/shader/water-effect.ts",
-      "default": "./src/shader/water-effect.ts"
     }
   },
   "files": [

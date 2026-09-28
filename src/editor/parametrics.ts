@@ -1,6 +1,6 @@
 import { ConnectInlets, ConnectSkimmers, ConnectDrains } from './connect-pool-pipes'
 import { planPoolFittings } from '../design/pool-fitting-layout'
-import { useScene, type ParametricDescriptor } from '@pascal-app/core'
+import { useScene, type ParamGroup, type ParametricDescriptor } from '@pascal-app/core'
 import { POOL_ENTRY_FEATURES } from '../design/entry-features'
 import { POOL_FLOOR_PROFILES } from '../design/depth-profile'
 import { POOL_SHAPES, createPoolShapePolygon, isDrawnPoolShape } from '../design/shapes'
@@ -11,7 +11,9 @@ import { PoolFinishInspectorControl } from './finish-setting'
 import { PoolWaterPresetInspectorControl } from './water-preset-setting'
 import { POOL_VISUAL_PRESETS, getPoolVisualPreset } from '../design/visual-presets'
 
-export const poolParametrics: ParametricDescriptor<PoolNode> = {
+type PoolParametricGroup = ParamGroup<PoolNode> & { defaultExpanded?: boolean }
+
+export const poolParametrics: ParametricDescriptor<PoolNode> & { groups: PoolParametricGroup[] } = {
   trailingSection: () => import('./pool-section-bar'),
   invariants: [(node) => node.automaticFittings
     ? planPoolFittings(node).issues.map((msg) => ({ msg, severity: 'warning' as const }))
