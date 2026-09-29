@@ -263,7 +263,7 @@ function makeCardMaterial(t, cardH) {
  * Caller must pause its animation loop — this re-targets the renderer.
  */
 export async function bakeGroupToTextures(renderer, sourceRoot, views, opts = {}) {
-  const size = opts.size ?? 1024;
+  const size = opts.size ?? 256;
   const flip = await probeReadbackRowOrder(renderer);
 
   const scene = new Scene();
@@ -342,7 +342,7 @@ export async function bakeGroupToTextures(renderer, sourceRoot, views, opts = {}
  * @returns {Promise<Group>} 2 crossed cards, named for export as `<Species>_LOD3`.
  */
 export async function bakeImpostor(renderer, sourceGroup, opts = {}) {
-  const size = opts.size ?? 1024;
+  const size = opts.size ?? 256;
 
   const clone = sourceGroup.clone(true);
   clone.visible = true; // the source level may be LOD-hidden right now

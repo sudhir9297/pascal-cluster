@@ -30,6 +30,7 @@ export const LANDSCAPE_CATALOG_THUMBNAILS = {
   'retaining-wall': src(retainingWall),
   pergola: src(pergolaFlat),
   tree: treeThumbnail,
+  plant: treeThumbnail,
 } as const
 
 export const WALKWAY_THUMBNAILS = {

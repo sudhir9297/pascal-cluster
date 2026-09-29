@@ -268,7 +268,7 @@ function makeCardMaterial(t, centerUniform, opts = {}) {
 export async function bakeBranchCards(renderer, species, assets, opts = {}) {
   if (!assets.leafMat || !assets.barkMat) return null;
   const variantCount = opts.variants ?? 3;
-  const size = opts.size ?? 512;
+  const size = opts.size ?? 256;
   const willowCurtains = species.foliage?.mode === 'willowCurtains';
   const gravityAligned = willowCurtains && !!opts.gravityAligned;
   const crossViews = gravityAligned || !!opts.crossViews;
@@ -476,7 +476,7 @@ export async function bakeBranchCards(renderer, species, assets, opts = {}) {
 export async function bakeRosetteCards(renderer, species, assets, opts = {}) {
   if (!assets.rosetteMat || !assets.barkMat) return null;
   const variantCount = Math.min(opts.variants ?? 3, 3);
-  const size = opts.size ?? 512;
+  const size = opts.size ?? 256;
 
   // Fixed exemplar seed → deterministic cards independent of the live tree seed.
   const rng = new Rng(`${species.name}:rcards`);

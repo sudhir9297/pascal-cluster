@@ -1,5 +1,5 @@
-import { expect, test } from 'bun:test'
-import { Box3, InstancedMesh, Matrix4, OrthographicCamera, Vector3, type Object3D } from 'three'
+import { expect, spyOn, test } from 'bun:test'
+import { Box3, Frustum, InstancedMesh, Matrix4, OrthographicCamera, PerspectiveCamera, Vector3, WebGPUCoordinateSystem, type Camera, type Object3D } from 'three'
 import type { Point } from '../domain/schema'
 import { GroundAreaNode } from '../domain/schema'
 import { buildGroundAreaLiveGeometry } from './geometry'
@@ -15,13 +15,88 @@ function cameraAt(x: number, z: number, halfSpan = 5) {
   return camera
 }
 
-function drain(stream: Grass2Stream, camera: OrthographicCamera) {
+function drain(stream: Grass2Stream, camera: Camera) {
   stream.updateMatrixWorld(true)
   stream.update(camera)
   let steps = 0
   while (stream.pendingPatchCount && steps++ < 1000) stream.update(camera)
   expect(stream.pendingPatchCount).toBe(0)
 }
+
+test('small views examine only nearby grass tiles in large areas', () => {
+  const stream = new Grass2Stream(new Box3(new Vector3(), new Vector3(1000, 0, 1000)), 8,
+    function* () { return null })
+  const intersects = spyOn(Frustum.prototype, 'intersectsBox')
+  try {
+    drain(stream, cameraAt(500, 500, 2))
+    expect(intersects).toHaveBeenCalled()
+    expect(intersects.mock.calls.length).toBeLessThan(100)
+  } finally {
+    intersects.mockRestore()
+  }
+})
+
+test('angled views over rotated areas retain every tile in the frustum', () => {
+  const bounds = new Box3(new Vector3(0, 0, 0), new Vector3(80, 3, 80))
+  const built = new Set<string>()
+  const stream = new Grass2Stream(bounds, 8, function* (x, z) {
+    built.add(`${x},${z}`)
+    return null
+  })
+  stream.maxBladeHeight = 1000
+  stream.position.set(200, 0, 150)
+  stream.rotation.y = Math.PI / 5
+  stream.updateMatrixWorld(true)
+  const target = new Vector3(40, 0, 40).applyMatrix4(stream.matrixWorld)
+  const camera = new PerspectiveCamera(60, 1.4, 0.1, 100)
+  camera.position.copy(target).add(new Vector3(0, 30, 25))
+  camera.lookAt(target)
+  camera.updateMatrixWorld(true)
+  drain(stream, camera)
+
+  const projection = new Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
+    .multiply(stream.matrixWorld)
+  const frustum = new Frustum().setFromProjectionMatrix(projection, camera.coordinateSystem, camera.reversedDepth)
+  const expected = new Set<string>()
+  for (let z = 0; z < 10; z++) for (let x = 0; x < 10; x++) {
+    const box = new Box3(new Vector3(x * 8, 0, z * 8), new Vector3((x + 1) * 8, 3, (z + 1) * 8))
+      .expandByScalar(1.5)
+    if (frustum.intersectsBox(box)) expected.add(`${x},${z}`)
+  }
+  expect(expected.size).toBeGreaterThan(0)
+  expect([...expected].filter((key) => !built.has(key))).toEqual([])
+  expect([...built].filter((key) => !expected.has(key))).toEqual([])
+})
+
+test('close perspective views keep all grass tiles accepted by the frustum', () => {
+  const bounds = new Box3(new Vector3(0, 0, 0), new Vector3(80, 0, 80))
+  for (const height of [0.5, 1, 2, 4, 8, 16]) for (const offset of [0, 2, 8, 20])
+    for (const coordinateSystem of [undefined, WebGPUCoordinateSystem]) {
+    const built = new Set<string>()
+    const stream = new Grass2Stream(bounds, 8, function* (x, z) {
+      built.add(`${x},${z}`)
+      return null
+    })
+    stream.maxBladeHeight = 1000
+    const camera = new PerspectiveCamera(50, 1.4, 0.1, 100)
+    if (coordinateSystem) {
+      camera.coordinateSystem = coordinateSystem
+      camera.updateProjectionMatrix()
+    }
+    camera.position.set(40, height, 40 + offset)
+    camera.lookAt(40, 0, 40)
+    camera.updateMatrixWorld(true)
+    drain(stream, camera)
+    const frustum = new Frustum().setFromProjectionMatrix(
+      new Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse),
+      camera.coordinateSystem, camera.reversedDepth)
+    for (let z = 0; z < 10; z++) for (let x = 0; x < 10; x++) {
+      const box = new Box3(new Vector3(x * 8, 0, z * 8), new Vector3((x + 1) * 8, 0, (z + 1) * 8))
+        .expandByScalar(1.5)
+      if (frustum.intersectsBox(box)) expect(built.has(`${x},${z}`)).toBe(true)
+    }
+  }
+})
 
 function placements(group: Object3D, name: string) {
   const matrix = new Matrix4()

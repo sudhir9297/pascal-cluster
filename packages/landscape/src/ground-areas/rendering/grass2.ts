@@ -86,6 +86,8 @@ const FLOWER_COLORS = {
   blue: '#8ca8dc',
 } as const
 type Flower = keyof typeof FLOWER_COLORS
+const FLOWERS = Object.keys(FLOWER_COLORS) as Flower[]
+
 type Plant = {
   edgeX: number
   edgeZ: number
@@ -268,8 +270,8 @@ function stemGeometry() {
     'position',
     new Float32BufferAttribute(
       [
-        -0.0025, 0, 0, 0.0025, 0, 0, -0.0018, 1, 0, 0.0018, 1, 0, 0, 0, -0.0025,
-        0, 0, 0.0025, 0, 1, -0.0018, 0, 1, 0.0018,
+        -0.008, 0, 0, 0.008, 0, 0, -0.005, 1, 0, 0.005, 1, 0, 0, 0, -0.008,
+        0, 0, 0.008, 0, 1, -0.005, 0, 1, 0.005,
       ],
       3,
     ),
@@ -291,14 +293,38 @@ function completeFlowerGeometry(kind: Flower) {
   head.translate(0, 1, 0)
   head.setAttribute('windWeight', new Float32BufferAttribute(new Float32Array(head.getAttribute('position').count).fill(1), 1))
   const complete = mergeGeometries([stem, head])!
+  const index = complete.getIndex()!
+  const near = Array.from({ length: index.count }, (_, i) => index.getX(i))
+  const petalCount = (head.getAttribute('position').count - 14) / 6
+  const center = stem.getAttribute('position').count + petalCount * 6
+  const reduced = (far: boolean) => {
+    const result = near.slice(0, 12) // Both crossed stem faces stay in every LOD.
+    for (let petal = 0; petal < petalCount; petal++) {
+      const start = 8 + petal * 6
+      if (far) result.push(start + 1, start + 3, start + 5)
+      else result.push(start, start + 1, start + 3, start, start + 3, start + 5)
+    }
+    const step = far ? 3 : 2
+    for (let rim = 1; rim <= 12; rim += step)
+      result.push(center, center + rim, center + rim + step)
+    return result
+  }
+  const middle = reduced(false), far = reduced(true)
+  complete.setIndex([...near, ...middle, ...far])
+  complete.userData.grass2Ranges = [
+    { start: 0, count: near.length },
+    { start: near.length, count: middle.length },
+    { start: near.length + middle.length, count: far.length },
+  ]
+  complete.setDrawRange(0, near.length)
   stem.dispose()
   head.dispose()
   return complete
 }
 
 /** One instance buffer keeps every render pass below WebGPU's eight-buffer limit. */
-function setPlantAttributes(geometry: BufferGeometry, plants: readonly Plant[], billboard = false) {
-  const stride = billboard ? 8 : 6
+function setPlantAttributes(geometry: BufferGeometry, plants: readonly Plant[], atlas?: 'grass' | 'flower') {
+  const stride = atlas ? 8 : 6
   const data = new Float32Array(plants.length * stride)
   const grassCells = [0, 1, 2, 3, 5, 6, 7, 8]
   plants.forEach((plant, index) => {
@@ -309,16 +335,19 @@ function setPlantAttributes(geometry: BufferGeometry, plants: readonly Plant[], 
     data[offset + 3] = plant.height
     data[offset + 4] = plant.edgeX
     data[offset + 5] = plant.edgeZ
-    if (billboard) {
-      const cell = grassCells[Math.floor(plant.lod * grassCells.length)]!
-      data[offset + 6] = (cell % 3) / 3
-      data[offset + 7] = Math.floor(cell / 3) / 3
+    if (atlas) {
+      const cell = atlas === 'grass'
+        ? grassCells[Math.floor(plant.lod * grassCells.length)]!
+        : FLOWERS.indexOf((plant as Bloom).kind)
+      const columns = atlas === 'grass' ? 3 : 2
+      data[offset + 6] = (cell % columns) / columns
+      data[offset + 7] = Math.floor(cell / columns) / columns
     }
   })
   const buffer = new InstancedInterleavedBuffer(data, stride)
   geometry.setAttribute('windData', new InterleavedBufferAttribute(buffer, 4, 0))
   geometry.setAttribute('edgeBend', new InterleavedBufferAttribute(buffer, 2, 4))
-  if (billboard) geometry.setAttribute('atlasCell', new InterleavedBufferAttribute(buffer, 2, 6))
+  if (atlas) geometry.setAttribute('atlasCell', new InterleavedBufferAttribute(buffer, 2, 6))
 }
 
 function addWind(
@@ -326,8 +355,9 @@ function addWind(
   material: MeshBasicNodeMaterial | MeshStandardNodeMaterial,
   plants: readonly Plant[],
   strength: WindUniform,
+  atlas?: 'grass' | 'flower',
 ) {
-  setPlantAttributes(geometry, plants)
+  setPlantAttributes(geometry, plants, atlas)
 
   const instance = attribute<'vec4'>('windData', 'vec4')
   const bend = attribute<'float'>('windWeight', 'float')
@@ -354,7 +384,7 @@ function addBillboardMotion(
   plants: readonly Plant[],
   strength: WindUniform,
 ) {
-  setPlantAttributes(geometry, plants, true)
+  setPlantAttributes(geometry, plants, 'grass')
 
   const instance = attribute<'vec4'>('windData', 'vec4')
   // Use the camera basis for every card. Per-plant look-at vectors form a
@@ -499,7 +529,7 @@ function makePatchLevel(
       grassMaterial.normalNode = transformDirection(softNormal, cameraViewMatrix)
       grassMaterial.emissiveNode = grassTipTransmission(progress)
     }
-    addWind(grassGeometry, grassMaterial, plants, wind)
+    addWind(grassGeometry, grassMaterial, plants, wind, 'grass')
   } else {
     const atlasUv = uv().mul(0.32).add(0.0067).add(attribute<'vec2'>('atlasCell', 'vec2'))
     const atlasSample = texture(getGrassAtlas(), atlasUv)
@@ -538,7 +568,7 @@ function makePatchLevel(
     grass.boundingSphere.radius += cameraFacingMargin + 0.35
   }
   group.add(grass)
-  for (const kind of Object.keys(FLOWER_COLORS) as Flower[]) {
+  for (const kind of FLOWERS) {
     const flowers = blooms.filter((b) => b.kind === kind)
     if (!flowers.length) continue
     const flowerShape = completeFlowerGeometry(kind)
@@ -550,13 +580,9 @@ function makePatchLevel(
     })
     addWind(flowerShape, flowerMaterial, flowers, wind)
     flowerMaterial.userData.grass2Wind = wind
-    const mesh = new InstancedMesh(
-      flowerShape,
-      flowerMaterial,
-      flowers.length,
-    )
+    const mesh = new InstancedMesh(flowerShape, flowerMaterial, flowers.length)
     mesh.name = `grass2-${kind}`
-    mesh.userData.grass2Counts = [flowers.length, flowers.length, flowers.length, 0]
+    mesh.userData.grass2Counts = densityCounts(flowers.map((flower) => flower.lod))
     mesh.castShadow = false
     mesh.raycast = () => {}
     flowers.forEach((b, i) => {

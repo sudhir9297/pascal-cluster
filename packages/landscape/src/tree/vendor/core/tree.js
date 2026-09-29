@@ -564,23 +564,19 @@ function lodLevels(species, opts = {}) {
   // MOBILE PERFORMANCE TARGET: keep the FULL desktop ladder intact — LOD0 (mesh)
   // and LOD1 (mesh) are still built exactly the same (they're the bake source and
   // what Shape/Foliage/Advanced edit), but flagged hiddenInApp so the app never
-  // renders them. LOD2's baked cards become the visible near LOD (distance 0).
-  // Then two cheaper card levels (appOnly — not exported) are appended. The whole
-  // point of the LOD1/LOD2 sliders in mobile mode is to tune THESE two extras, so
-  // they retarget cleanly across ALL four attributes (distance/budget/density/
-  // prune) and the visible near LOD is DECOUPLED from them:
+  // renders them. LOD2 becomes the visible near LOD (distance 0).
+  // Then two app-only levels are appended. The first retains the same cluster
+  // canopy; the second uses baked cards. The visible near LOD is fixed:
   //   near LOD (app-labelled LOD0) = fixed reference model (not slider-driven)
-  //   'LOD1 …' sliders → extra card LOD #1 (internal LOD3, app-labelled LOD1)
-  //   'LOD2 …' sliders → extra card LOD #2 (internal LOD4, app-labelled LOD2)
+  //   'LOD1 …' sliders → cluster LOD (internal LOD3, app-labelled LOD1)
+  //   'LOD2 …' sliders → card LOD (internal LOD4, app-labelled LOD2)
   //   'Billboard at (m)' → the billboard (unchanged)
   // (Rosette species build their own mobile ladder in buildDichotomousTree.)
   base[0].hiddenInApp = true;
   base[1].hiddenInApp = true;
-  // MOBILE LADDER = a nested representation curve. The promoted near rung keeps
-  // every terminal card and a cheap terminal skeleton. Mid/far retain the same
-  // card grammar while taking stable card/tube subsets, so nothing reappears or
-  // jumps to a different attachment as distance increases. The calibrated target
-  // is ~100→55→30%, matching Willow's separately authored bowed-sheet ladder.
+  // MOBILE LADDER = a nested representation curve. Near and mid broadleaves
+  // keep the same leaf clusters so the canopy does not thin at the first switch.
+  // Far uses baked cards and a stable card/tube subset.
   const guideLevel = species.guideLevel ?? (species.terminalStemsAreGuides ? maxL : null);
   // cardLevel roots a card; keepTwigs selects the foliage-only bake so retained
   // tubes never get doubled by a photographed tube on the same card.
@@ -655,9 +651,9 @@ function lodLevels(species, opts = {}) {
   const guideCards = guideLevel === maxL;
   const density1 = Math.max(0, Math.min(1, opts.lod1Density ?? 1));
   const density2 = Math.max(0, Math.min(1, opts.lod2Density ?? 1));
-  // Near (effective LOD0, dist 0) is the full mobile reference. Pruning here and
-  // restoring roots at LOD3 made foliage appear as distance increased, so every
-  // terminal card and tube survives this rung.
+  // Near (effective LOD0, dist 0) keeps the fuller cluster foliage that was
+  // previously visible only while the async card bake was pending. It is still
+  // much cheaper than the hidden desktop LOD0; baked cards begin at LOD4.
   Object.assign(
     base[2],
     rung('LOD2', 0, maxL, true, 0.6, 2, 1, 0),
@@ -665,28 +661,27 @@ function lodLevels(species, opts = {}) {
       appOnly: false, hiddenInApp: false,
       terminalSides: 3, terminalRingStride: 4,
       meshTerminalKeepFraction: 1,
+      cards: null,
     },
   );
-  // Ordinary broadleaves spend the mid reduction on terminal tube count while
-  // retaining every foliage card. Guide-only Sycamore has no terminal tubes, so
-  // its equivalent saving is a stable half-card subset.
-  const midCardKeep = (guideCards ? 0.5 : 1) * density1;
-  const midTubeKeep = guideCards ? 1 : Math.min(midCardKeep, 0.4 * density1);
+  // The mid rung keeps the near rung's clusters and their placement. Only wood
+  // tessellation changes at 35 m; the card conversion waits until 70 m.
   base.push(Object.assign(
-    rung('LOD3', opts.lod1Dist ?? 35, maxL, true, 0.5, 3, midCardKeep, 0),
+    rung('LOD3', opts.lod1Dist ?? 35, maxL, true, 0.5, 3, 1, 0),
     {
       terminalSides: 3, terminalRingStride: 4,
-      meshTerminalKeepFraction: midTubeKeep,
+      meshTerminalKeepFraction: 1,
+      foliage: { ...clusters, clustersPerBranch: leavesOn
+        ? Math.max(1, Math.round((clusters.clustersPerBranch ?? 3) * density1)) : 0 },
+      cards: null,
     },
   ));
-  // Far keeps nested card/tube subsets. Sycamore reduces its guide cards to 18%
-  // and coarsens the real scaffold; ordinary species keep 40% cards / 20% tubes.
-  const farCardKeep = Math.min(
-    midCardKeep,
-    (guideCards ? 0.18 : 0.4) * density2,
-  );
+  // Far keeps roughly 65% of ordinary broadleaf cards: White Oak seed 1 has
+  // 270 card planes, approximately the desktop far count. Guide-only Sycamore
+  // retains its separately tuned subset.
+  const farCardKeep = (guideCards ? 0.18 : 0.65) * density2;
   const farTubeKeep = guideCards
-    ? 1 : Math.min(midTubeKeep, farCardKeep, 0.2 * density2);
+    ? 1 : Math.min(farCardKeep, 0.2 * density2);
   base.push(Object.assign(
     rung(
       'LOD4', opts.lod2Dist ?? 70, maxL, true,
@@ -709,6 +704,7 @@ function lodLevels(species, opts = {}) {
  * @returns {{ group: LOD, stems: Array, tips: Array }}
  */
 export function buildTree(species, seed, assets = {}, lodOpts = {}, reuse = null) {
+  lodOpts = { ...lodOpts, mobileTarget: true };
   // Dichotomous/rosette plants (Joshua tree, yuccas, saguaro) use their own
   // from-scratch generator — see docs/dichotomous-generator.md. `reuse` (an
   // existing same-species LOD) rewrites its meshes in place to dodge the WebGPU
@@ -878,8 +874,11 @@ export function buildTree(species, seed, assets = {}, lodOpts = {}, reuse = null
         // Direct willow LOD0/1 differ only in curve tessellation. Reuse their
         // random stream so every root, length, roll, and arc stays in place at
         // the switch instead of all ~1,000 vines visibly reshuffling.
-        const rngTag = cfg.mode === 'willowCurtains' && i < 2
-          ? 'willow-direct' : `foliage${i}`;
+        const rngTag = lodOpts.mobileTarget && !lv.cards &&
+          (lv.name === 'LOD2' || lv.name === 'LOD3')
+          ? 'foliage-mobile-clusters'
+          : cfg.mode === 'willowCurtains' && i < 2
+            ? 'willow-direct' : `foliage${i}`;
         const frng = new Rng(`${species.name}:${seed}:${rngTag}`);
         foliage = buildFoliage(levelTerminals, cfg, frng, fMat, fCenter);
         if (foliage) leafInstances = foliage.userData.vineCount ?? foliage.count ?? 0;

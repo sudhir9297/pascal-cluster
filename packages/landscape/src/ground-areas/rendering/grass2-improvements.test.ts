@@ -26,20 +26,36 @@ test('both grass styles sample the actual ground texture at their roots', () => 
   }
 })
 
-test('complete flower batches contain rooted stems and elevated heads in one draw', () => {
+test('flower species have detailed petals and visible rooted stems at every distance', () => {
   const group = makeGrass2(square, 0, () => true, { flowerDensity: 1 })
   const patch = group.children[0] as Grass2Patch
-  const flowers = patch.content.children.filter((object) => object.name !== 'grass2-blades') as InstancedMesh[]
+  const flowers = patch.content.children.filter((object) =>
+    ['grass2-dandelion', 'grass2-clover', 'grass2-violet', 'grass2-blue'].includes(object.name)) as InstancedMesh[]
   expect(group.getObjectByName('grass2-flower-stems')).toBeUndefined()
-  expect(flowers.length).toBeGreaterThan(0)
-  expect(flowers.length).toBeLessThanOrEqual(4)
+  expect(new Set(flowers.map((flower) => flower.name)).size).toBe(4)
   for (const flower of flowers) {
+    expect(flower.geometry.getAttribute('color')).toBeDefined()
     flower.geometry.computeBoundingBox()
     expect(flower.geometry.boundingBox!.min.y).toBe(0)
     expect(flower.geometry.boundingBox!.max.y).toBeGreaterThan(1)
+    const positions = flower.geometry.getAttribute('position')
+    expect(positions.getX(0)).toBeCloseTo(-0.008)
+    expect(positions.getY(2)).toBe(1)
+    expect(flower.geometry.getIndex()!.count / 3).toBeGreaterThan(20)
+    expect((flower.userData.grass2Counts as number[])[2]).toBeGreaterThan(0)
+    const ranges = flower.geometry.userData.grass2Ranges as { start: number; count: number }[]
+    expect(ranges).toHaveLength(3)
+    expect(ranges[0]!.count).toBeGreaterThan(ranges[1]!.count)
+    expect(ranges[1]!.count).toBeGreaterThan(ranges[2]!.count)
+    const index = flower.geometry.getIndex()!
+    for (const range of ranges) {
+      const vertices = Array.from({ length: range.count }, (_, i) => index.getX(range.start + i))
+      expect(vertices.includes(0)).toBe(true)
+      expect(vertices.includes(2)).toBe(true)
+    }
     const weights = flower.geometry.getAttribute('windWeight')
     expect(weights.getX(0)).toBe(0)
-    expect(weights.getX(weights.count - 1)).toBe(1)
+    expect(weights.getX(2)).toBe(1)
     expect(flower.instanceMatrix.array[13]).toBeCloseTo(0.025, 5)
   }
 })
@@ -49,15 +65,18 @@ test('screen size controls geometry detail without reallocating instance buffers
   const patch = group.children[0] as Grass2Patch
   const mesh = patch.getObjectByName('grass2-blades') as InstancedMesh
   const buffer = mesh.instanceMatrix
+  expect(patch.getObjectByName('grass2-distant-cards')).toBeUndefined()
   const camera = new OrthographicCamera(-10, 10, 10, -10, 0.1, 1000)
   camera.position.set(4, 20, 4)
   camera.lookAt(4, 0, 4)
   camera.updateMatrixWorld()
   group.updateMatrixWorld(true)
-  for (const [zoom, triangles] of [[4,21], [1,4], [0.2,2]]) {
+  for (const [zoom, level, triangles] of [[4,0,21], [1,1,4], [0.2,2,2]]) {
     camera.zoom = zoom!
     camera.updateProjectionMatrix()
     patch.update(camera)
+    expect(patch.getCurrentLevel()).toBe(level!)
+    expect(mesh.visible).toBe(true)
     expect(mesh.geometry.drawRange.count / 3).toBe(triangles!)
     expect(mesh.instanceMatrix).toBe(buffer)
   }

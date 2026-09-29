@@ -1,5 +1,5 @@
 import { Color, InstancedMesh, LOD, Mesh, SRGBColorSpace, TextureLoader, type Object3D, type Texture } from 'three'
-import type { TreeNode } from '../domain/schema'
+import { DEFAULT_TREE_LOD, resolveTreeLod, type TreeNode } from '../domain/schema'
 import { treeControls } from '../domain/species'
 import { TREE_TEXTURES } from './asset-manifest'
 // @ts-expect-error Vendored JavaScript has no TypeScript declarations.
@@ -129,7 +129,7 @@ function addFruitWhenReady(node: TreeNode, group: import('three').LOD, stems: an
 }
 
 function applyMobileLod(group: LOD, lod: TreeNode['lod']) {
-  if (!lod.mobileTarget || !group.levels.some((level) => level.object.userData.hiddenInApp)) return
+  if (!group.levels.some((level) => level.object.userData.hiddenInApp)) return
   for (const level of group.levels) {
     const name = level.object.userData.lodName
     if (level.object.userData.hiddenInApp) level.distance = 1e7
@@ -177,8 +177,8 @@ async function getCards(node: TreeNode, shaped: any, assets: any, renderer: impo
   const rosette = species.foliageType === 'rosette'
   if (rosette && !node.lod.mobileTarget) return null
   if (!rosette && (!shaped.foliage || (shaped.foliage.leavesPerBranch ?? 1) <= 0)) return null
-  const size = Number(node.lod.cardRes ?? 512)
-  const variants = Number(node.lod.cardVariants ?? 3)
+  const size = DEFAULT_TREE_LOD.cardRes
+  const variants = DEFAULT_TREE_LOD.cardVariants
   const { seed: _seed, ...bakeControls } = node.controls
   const key = JSON.stringify([node.species, shaped.params, shaped.foliage, shaped.guideLevel,
     shaped.terminalStemsAreGuides, bakeControls, size, variants, Boolean(node.lod.mobileTarget)])
@@ -254,7 +254,7 @@ async function bakeLods(node: TreeNode, group: LOD, controls: Record<string, unk
   const source = group.levels.find((level) => level.object.userData.lodName === 'LOD0')?.object
   if (!source || group.userData.seedThreeDisposed) return
   const billboard = await bakeImpostor(renderer, source, { name: SPECIES[node.species].name,
-    lodName: `LOD${group.levels.length}`, size: Number(node.lod.billboardRes ?? 1024) })
+    lodName: `LOD${group.levels.length}`, size: DEFAULT_TREE_LOD.billboardRes })
   if (group.userData.seedThreeDisposed) { disposeBillboard(billboard); return }
   group.addLevel(billboard, Number(node.lod.billboardDist ?? 120), 0.05)
   applyMobileLod(group, node.lod)
@@ -262,6 +262,7 @@ async function bakeLods(node: TreeNode, group: LOD, controls: Record<string, unk
 }
 
 export function buildTreeGeometry(node: TreeNode, onUpdate?: (kind: TreeGeometryUpdate) => void) {
+  node = { ...node, lod: resolveTreeLod(node.lod) }
   const controls = { ...treeControls(node.species), ...node.controls }
   if (typeof document === 'undefined') {
     return generate({ species: node.species, seed: Number(controls.seed ?? 1),

@@ -84,14 +84,10 @@ test('Grass 2 billboards face the camera and bend tips without changing instance
   const billboardGroup = makeGrass2(square, 0, () => true, { mode: 'billboards', wind: 1 })
   const billboards = billboardGroup.getObjectByName('grass2-billboards') as InstancedMesh
   const stems = group.getObjectByName('grass2-clover') as InstancedMesh
-  const flower = ['dandelion', 'clover', 'violet', 'blue']
-    .map((kind) => group.getObjectByName(`grass2-${kind}`))
-    .find(Boolean) as InstancedMesh | undefined
-  if (!flower) throw new Error('Expected a flower mesh')
 
   expect(blades.material).toBeInstanceOf(MeshStandardNodeMaterial)
   expect(billboards.material).toBeInstanceOf(MeshBasicNodeMaterial)
-  for (const mesh of [blades, billboards, stems, flower]) {
+  for (const mesh of [blades, billboards, stems]) {
     expect((mesh.material as MeshStandardNodeMaterial).positionNode).not.toBeNull()
     expect(mesh.geometry.getAttribute('windData').count).toBe(mesh.count)
     expect(Object.hasOwn(mesh, 'onBeforeRender')).toBe(false)
@@ -103,7 +99,7 @@ test('Grass 2 billboards face the camera and bend tips without changing instance
   expect(billboards.geometry.getAttribute('atlasCell').count).toBe(billboards.count)
   expect(blades.geometry.getAttribute('windWeight').getX(4)).toBe(1)
   expect(blades.geometry.getAttribute('color').count).toBe(53)
-  for (const mesh of [stems, flower]) expect(mesh.material).toBeInstanceOf(MeshStandardNodeMaterial)
+  expect(stems.material).toBeInstanceOf(MeshStandardNodeMaterial)
   const stemWeights = stems.geometry.getAttribute('windWeight')
   expect(stemWeights.getX(0)).toBe(0)
   expect(stemWeights.getX(2)).toBe(1)
@@ -227,6 +223,7 @@ test('Grass 2 preserves the selected style across every distance level and saves
       for (const { object } of patch.levels.slice(0, 1)) {
         expect(object.getObjectByName(`grass2-${mode}`)).toBeDefined()
         expect(object.getObjectByName(mode === 'blades' ? 'grass2-billboards' : 'grass2-blades')).toBeUndefined()
+        if (mode === 'blades') expect(object.getObjectByName('grass2-distant-cards')).toBeUndefined()
       }
     }
   }
@@ -234,17 +231,20 @@ test('Grass 2 preserves the selected style across every distance level and saves
 })
 
 
-test('Grass 2 reuses instance buffers while retaining flowers at every visible grass level', () => {
+test('Grass 2 keeps stable flower placements while reducing their distant cost', () => {
   const group = makeGrass2(square, 0, () => true, { flowerDensity: 1, flowerMix: 'clover' })
   group.updateMatrixWorld(true)
   const patch = group.children[0] as LOD
   const blades = patch.getObjectByName('grass2-blades') as InstancedMesh
   const stems = patch.getObjectByName('grass2-clover') as InstancedMesh
   const heads = patch.levels[0]!.object.children.filter((object) =>
-    object.name !== blades.name) as InstancedMesh[]
+    object.name === 'grass2-clover') as InstancedMesh[]
   const matrixBuffer = blades.instanceMatrix
   const windBuffer = blades.geometry.getAttribute('windData')
   const original = positions(blades)
+  const originalFlowers = positions(stems)
+  const flowerMatrixBuffer = stems.instanceMatrix
+  const nearFlowerTriangles = stems.geometry.drawRange.count / 3
   const camera = new PerspectiveCamera(50)
   const move = (distance: number) => {
     camera.position.copy(patch.position).add(new Vector3(0, distance, 0))
@@ -256,19 +256,34 @@ test('Grass 2 reuses instance buffers while retaining flowers at every visible g
   expect(patch.getCurrentLevel()).toBe(1)
   expect(positions(blades)).toEqual(original.slice(0, blades.count))
   expect(blades.count).toBeLessThan(original.length)
+  expect(blades.visible).toBe(true)
+  expect(blades.geometry.drawRange.count / 3).toBe(4)
   expect(stems.visible).toBe(true)
   expect(heads.some((mesh) => mesh.visible)).toBe(true)
+  expect(stems.count).toBeLessThan(originalFlowers.length)
+  expect(positions(stems)).toEqual(originalFlowers.slice(0, stems.count))
+  expect(stems.geometry.drawRange.count / 3).toBeLessThan(nearFlowerTriangles)
   move(65)
   expect(patch.getCurrentLevel()).toBe(2)
+  expect(blades.visible).toBe(true)
+  expect(blades.geometry.drawRange.count / 3).toBe(2)
+  expect(positions(blades)).toEqual(original.slice(0, blades.count))
   expect(heads.every((mesh) => mesh.visible)).toBe(true)
+  expect(stems.count).toBeLessThan(originalFlowers.length * 0.5)
+  expect(positions(stems)).toEqual(originalFlowers.slice(0, stems.count))
+  expect(stems.geometry.drawRange.count / 3).toBeLessThan(nearFlowerTriangles / 2)
   expect(blades.instanceMatrix).toBe(matrixBuffer)
   expect(blades.geometry.getAttribute('windData')).toBe(windBuffer)
+  expect(stems.instanceMatrix).toBe(flowerMatrixBuffer)
   move(55)
   expect(patch.getCurrentLevel()).toBe(2)
   move(30)
   expect(patch.getCurrentLevel()).toBe(1)
   move(5)
   expect(positions(blades)).toEqual(original)
+  expect(blades.visible).toBe(true)
+  expect(blades.geometry.drawRange.count / 3).toBe(21)
+  expect(positions(stems)).toEqual(originalFlowers)
   expect(stems.visible).toBe(true)
   expect(heads.every((mesh) => mesh.visible)).toBe(true)
   let meshCount = 0
@@ -294,7 +309,8 @@ test('orbiting an area keeps the same flowers visible from every side', () => {
           const mesh = object as InstancedMesh
           if (!mesh.isInstancedMesh || mesh.name === `grass2-${mode}`) return
           expect(mesh.visible).toBe(true)
-          expect(mesh.count).toBe(mesh.instanceMatrix.count)
+          expect(mesh.count).toBeGreaterThan(0)
+          expect(mesh.count).toBeLessThanOrEqual(mesh.instanceMatrix.count)
         })
       }
     }

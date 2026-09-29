@@ -6,6 +6,7 @@ import { DEFAULT_POOL, PoolNode, resolvePoolPolygon } from './schema'
 import { createPoolShapePolygon, getPoolPolygonDimensions, isDrawnPoolShape } from '../design/shapes'
 import { poolOutlineAnchors, poolOutlineMidpoint, poolOutlineTangents } from '../design/outline-edit'
 import { poolOutlineAffordances } from '../editor/outline-affordances'
+import { bakePoolWaterAnimation } from './export-animation'
 
 type PoolDefinition = NodeDefinition<typeof PoolNode> & Record<string, unknown>
 
@@ -508,6 +509,7 @@ export const poolDefinition: PoolDefinition = {
   floorplan: poolFloorplan,
   floorplanAffordances: poolOutlineAffordances,
   renderer: { kind: 'parametric', module: () => import('../editor/renderer') },
+  exportAnimation: ({ node, object }) => bakePoolWaterAnimation(node, object),
   system: { module: () => import('../editor/opening-system'), priority: 3 },
   preview: () => import('../editor/preview'),
   tool: () => import('../editor/tool'),

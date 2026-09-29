@@ -1,6 +1,7 @@
 import type { NodeDefinition } from '@pascal-app/core'
 import { poolWaterfallParametrics } from '../editor/parametrics'
 import { DEFAULT_POOL_WATERFALL, PoolWaterfallNode } from './schema'
+import { bakePoolWaterfallAnimations } from '../../../core/export-animation'
 
 export const poolWaterfallDefinition: NodeDefinition<typeof PoolWaterfallNode> = {
   kind: 'pool:waterfall',
@@ -18,6 +19,7 @@ export const poolWaterfallDefinition: NodeDefinition<typeof PoolWaterfallNode> =
     snappable: {},
   },
   renderer: { kind: 'parametric', module: () => import('../editor/preview') },
+  exportAnimation: ({ node, object }) => bakePoolWaterfallAnimations(node, object),
   tool: () => import('../editor/tool'),
   toolHints: [{ key: 'Move', label: 'Aim at a pool edge or open ground' }, { key: 'Click', label: 'Place waterfall' }, { key: 'Esc', label: 'Cancel placement' }],
   parametrics: poolWaterfallParametrics,

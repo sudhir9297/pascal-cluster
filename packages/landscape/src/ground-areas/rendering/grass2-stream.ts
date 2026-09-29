@@ -1,9 +1,14 @@
-import { Box3, Camera, Frustum, InstancedMesh, LOD, Matrix4, Mesh, Vector3 } from 'three'
+import { Box3, Camera, Frustum, InstancedMesh, LOD, Matrix4, Mesh, Vector3, WebGPUCoordinateSystem } from 'three'
 import { Grass2Patch, grassDetailDistance, projectedGrassPixels } from './grass2-lod'
 
 type Tile = { key: string; x: number; z: number; distance: number }
 type Entry = { patch: Grass2Patch | null; lastUsed: number; signature?: string }
 export type PatchBuilder = (x: number, z: number) => Generator<void, Grass2Patch | null>
+const FRUSTUM_EDGES = [
+  [0, 1], [1, 3], [3, 2], [2, 0],
+  [4, 5], [5, 7], [7, 6], [6, 4],
+  [0, 4], [1, 5], [2, 6], [3, 7],
+] as const
 
 export function disposeGrassPatch(patch: Grass2Patch) {
   patch.traverse((object) => {
@@ -23,6 +28,8 @@ export class Grass2Stream extends LOD {
   private readonly lastWorld = new Matrix4().makeScale(0, 0, 0)
   private readonly view = new Matrix4()
   private readonly localView = new Matrix4()
+  private readonly clipToLocal = new Matrix4()
+  private readonly frustumCorners = Array.from({ length: 8 }, () => new Vector3())
   private readonly frustum = new Frustum()
   private readonly box = new Box3()
   private readonly center = new Vector3()
@@ -71,6 +78,52 @@ export class Grass2Stream extends LOD {
     this.lastView.makeScale(0, 0, 0)
   }
 
+  private visibleTileRange(camera: Camera) {
+    const size = this.patchSize
+    // Clip the camera frustum against the grass height slab. Its X/Z bounds
+    // conservatively enclose every tile that can pass the frustum test below.
+    const minimumDepth = camera.coordinateSystem === WebGPUCoordinateSystem || camera.reversedDepth ? 0 : -1
+    const near = camera.reversedDepth ? 1 : minimumDepth
+    const far = camera.reversedDepth ? minimumDepth : 1
+    this.clipToLocal.copy(this.localView).invert()
+    for (let i = 0; i < 8; i++) {
+      const corner = this.frustumCorners[i]!
+      corner.set(i & 1 ? 1 : -1, i & 2 ? 1 : -1, i & 4 ? far : near)
+        .applyMatrix4(this.clipToLocal)
+      // Infinite camera far planes cannot be bounded by finite clip corners.
+      if (!Number.isFinite(corner.x + corner.y + corner.z))
+        return { minX: Math.floor(this.bounds.min.x / size), maxX: Math.ceil(this.bounds.max.x / size),
+          minZ: Math.floor(this.bounds.min.z / size), maxZ: Math.ceil(this.bounds.max.z / size) }
+    }
+    const low = this.bounds.min.y - 1.5, high = this.bounds.max.y + 1.5
+    let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity
+    const include = (x: number, z: number) => {
+      minX = Math.min(minX, x); maxX = Math.max(maxX, x)
+      minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z)
+    }
+    for (const corner of this.frustumCorners)
+      if (corner.y >= low && corner.y <= high) include(corner.x, corner.z)
+    for (const [aIndex, bIndex] of FRUSTUM_EDGES) {
+      const a = this.frustumCorners[aIndex]!, b = this.frustumCorners[bIndex]!
+      if (a.y === b.y) continue
+      for (const y of [low, high]) {
+        const t = (y - a.y) / (b.y - a.y)
+        if (t >= 0 && t <= 1) include(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t)
+      }
+    }
+    if (minX === Infinity) return { minX: 0, maxX: 0, minZ: 0, maxZ: 0 }
+    // Include one tile around the footprint: Frustum.intersectsBox uses plane
+    // tests, so it can accept edge tiles whose box does not actually overlap
+    // the clipped frustum footprint.
+    const margin = size + 1.5
+    return {
+      minX: Math.max(Math.floor(this.bounds.min.x / size), Math.floor((minX - margin) / size)),
+      maxX: Math.min(Math.ceil(this.bounds.max.x / size), Math.ceil((maxX + margin) / size)),
+      minZ: Math.max(Math.floor(this.bounds.min.z / size), Math.floor((minZ - margin) / size)),
+      maxZ: Math.min(Math.ceil(this.bounds.max.z / size), Math.ceil((maxZ + margin) / size)),
+    }
+  }
+
   private select(camera: Camera) {
     this.view.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
     if (this.view.equals(this.lastView) && this.matrixWorld.equals(this.lastWorld)) return
@@ -81,8 +134,9 @@ export class Grass2Stream extends LOD {
     const candidates: Tile[] = []
     const wanted = new Set<string>()
     const size = this.patchSize
-    for (let z = Math.floor(this.bounds.min.z / size); z < Math.ceil(this.bounds.max.z / size); z++) {
-      for (let x = Math.floor(this.bounds.min.x / size); x < Math.ceil(this.bounds.max.x / size); x++) {
+    const range = this.visibleTileRange(camera)
+    for (let z = range.minZ; z < range.maxZ; z++) {
+      for (let x = range.minX; x < range.maxX; x++) {
         this.box.min.set(x * size, this.bounds.min.y, z * size)
         this.box.max.set((x + 1) * size, this.bounds.max.y, (z + 1) * size)
         // Include leaning blades and camera-facing cards at the edge of the view.

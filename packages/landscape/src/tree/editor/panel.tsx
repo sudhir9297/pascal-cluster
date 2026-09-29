@@ -124,14 +124,6 @@ export default function TreePanel() {
         ? <div key={knob.key} className="pointer-events-none opacity-50" title="Applies only to rosette species">
           {control('lod', knob)}
         </div> : control('lod', knob))}
-      {SPECIES[node.species].cactus ? null : <>
-        {control('lod', { key: 'cardRes', name: 'Branch card resolution', default: 512,
-          options: { '256 px': 256, '512 px': 512, '1024 px': 1024 } })}
-        {control('lod', { key: 'cardVariants', name: 'Branch card variants', default: 3,
-          options: { '2': 2, '3': 3, '4': 4 } })}
-      </>}
-      {control('lod', { key: 'billboardRes', name: 'Billboard resolution', default: 1024,
-        options: { '512 px': 512, '1024 px': 1024, '2048 px': 2048 } })}
     </PanelSection>
   </section>
 }
