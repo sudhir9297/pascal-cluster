@@ -40,7 +40,7 @@ export function GroundAreaPanel({ surfaceChoice = null, inSidebar = false }: {
   const selectedId = useViewer((state) => state.selection.selectedIds.length === 1
     ? state.selection.selectedIds[0] : undefined)
   const selectedRaw = useScene((state) => selectedId ? state.nodes[selectedId as AnyNodeId] : undefined)
-  const selected = !active && (selectedRaw?.type as string | undefined) === GROUND_AREA_KIND
+  const selected = (selectedRaw?.type as string | undefined) === GROUND_AREA_KIND
     ? GroundAreaNode.parse(selectedRaw) : null
   const detailSurface = selected?.surface ?? surfaceChoice
   const detailLabel = detailSurface === 'grass2' ? 'Grass' : detailSurface
@@ -100,7 +100,7 @@ export function GroundAreaPanel({ surfaceChoice = null, inSidebar = false }: {
   const updateGrassVariant = (experimental: boolean) => {
     const nextSurface: GroundSurface = experimental ? 'grass2' : 'grass'
     setSurface(nextSurface)
-    if (active) {
+    if (active && !selected) {
       const editor = useEditor.getState()
       editor.setToolDefaults(GROUND_AREA_KIND, { ...editor.toolDefaults[GROUND_AREA_KIND], surface: nextSurface })
     }
@@ -153,10 +153,24 @@ export function GroundAreaPanel({ surfaceChoice = null, inSidebar = false }: {
       </p>}
       {selected?.surface === 'grass2' && <div className="flex flex-col gap-1.5 border-t border-border/50 pt-3">
         <div className="px-1 text-xs font-medium">Flowering grass</div>
+        <label className="flex min-h-10 min-w-0 items-center gap-3 rounded-lg border border-border/50 bg-secondary/40 px-3 text-sm">
+          <span className="min-w-0 flex-1">Grass style</span>
+          <select aria-label="Grass style" value={selected.grass2Settings.mode ?? 'blades'}
+            onChange={(event) => updateGrass2({ mode: event.currentTarget.value as Grass2Settings['mode'] })}
+            className="max-w-[55%] min-w-0 rounded-md border border-border/50 bg-background px-2 py-1 text-xs text-foreground">
+            <option value="blades">Blades</option>
+            <option value="billboards">Billboards</option>
+          </select>
+        </label>
         <SliderControl label="Grass density" min={0.15} max={2} step={0.05} precision={2}
           value={selected.grass2Settings.density} onChange={(density) => updateGrass2({ density })} />
+        {selected.grass2Settings.mode !== 'billboards' && <ToggleControl label="Scene lighting"
+          checked={selected.grass2Settings.lighting ?? true} onChange={(lighting) => updateGrass2({ lighting })} />}
         <SliderControl label="Grass height" min={0.35} max={2} step={0.05} precision={2}
           value={selected.grass2Settings.height} onChange={(height) => updateGrass2({ height })} />
+        <ToggleControl label="Flowers" checked={selected.grass2Settings.flowers ?? true}
+          onChange={(flowers) => updateGrass2({ flowers })} />
+        {(selected.grass2Settings.flowers ?? true) && <>
         <SliderControl label="Flower amount" min={0} max={1} step={0.05} precision={2}
           value={selected.grass2Settings.flowerDensity} onChange={(flowerDensity) => updateGrass2({ flowerDensity })} />
         <label className="flex min-h-10 min-w-0 items-center gap-3 rounded-lg border border-border/50 bg-secondary/40 px-3 text-sm">
@@ -168,6 +182,7 @@ export function GroundAreaPanel({ surfaceChoice = null, inSidebar = false }: {
             <option value="dandelion">Dandelions</option><option value="wildflowers">Wildflowers</option>
           </select>
         </label>
+        </>}
         <SliderControl label="Wind" min={0} max={1} step={0.05} precision={2}
           value={selected.grass2Settings.wind} onChange={(wind) => updateGrass2({ wind })} />
         <label className="flex min-h-10 min-w-0 items-center gap-3 rounded-lg border border-border/50 bg-secondary/40 px-3 text-sm">

@@ -1,10 +1,16 @@
 import { freehandFloorplanHandles } from '../domain/curve-edit'
 import type { FloorplanGeometry, GeometryContext } from '@pascal-app/core'
-import { DoubleSide, Group, Mesh, MeshStandardMaterial, Path, Shape, ShapeGeometry, Vector2 } from 'three'
+import { sceneRegistry } from '@pascal-app/core'
+import polygonClipping from 'polygon-clipping'
+import { Box3, DoubleSide, Group, Mesh, MeshStandardMaterial, Path, Shape, ShapeGeometry, Vector2 } from 'three'
+import { TessellateModifier } from 'three/addons/modifiers/TessellateModifier.js'
 import type { Texture } from 'three'
 import type { GroundAreaNode, GroundSurface } from '../domain/schema'
 import { grassTexture, makeGrassBlades } from './grass'
-import { makeGrass2 } from './grass2'
+import { grass2GroundTexture } from './grass2-ground'
+import { makeGrass2, makeStreamedGrass2 } from './grass2'
+import { Grass2Stream } from './grass2-stream'
+import { grassEdgeSampler } from './grass2-edge'
 import { grassContainsPoint, visibleGrassFootprint } from './footprint'
 import { gravelTexture } from './gravel'
 import { getMudTexture } from './mud'
@@ -16,7 +22,7 @@ import { applyLandscapePaintedMaterials } from '../../ground-access/shared/paint
 
 const SURFACE_STYLE: Record<GroundSurface, { color: string; roughness: number }> = {
   grass: { color: '#718451', roughness: 0.98 },
-  grass2: { color: '#718451', roughness: 0.98 },
+  grass2: { color: '#47652d', roughness: 0.98 },
   soil: { color: '#5b5841', roughness: 1 },
   mulch: { color: '#76523b', roughness: 1 },
   gravel: { color: '#918f83', roughness: 0.96 },
@@ -26,18 +32,22 @@ const SURFACE_STYLE: Record<GroundSurface, { color: string; roughness: number }>
 
 const SURFACE_TEXTURE: Record<Exclude<GroundSurface, 'mud'>, Texture> = {
   grass: grassTexture,
-  grass2: grassTexture,
+  grass2: grass2GroundTexture(),
   soil: soilTexture,
   mulch: mulchTexture,
   gravel: gravelTexture,
   sand: sandTexture,
 }
 
+// The atlas has yellow-green roots; the geometric blades have cooler green roots.
+// Share these textures across areas and keep their detail at a fixed world scale.
+const grass2BillboardGround = grass2GroundTexture('billboards')
+
 export function groundSurfaceColor(surface: GroundSurface) {
   return SURFACE_STYLE[surface].color
 }
 
-function buildGroundAreaSurface(node: GroundAreaNode, includeDetails: boolean, ctx?: GeometryContext): Group {
+function buildGroundAreaSurface(node: GroundAreaNode, includeDetails: boolean, ctx?: GeometryContext, streamGrass = false): Group {
   const group = new Group()
   if (node.outline.length < 3) return group
   const original = [[node.outline]] as import('polygon-clipping').MultiPolygon
@@ -49,19 +59,54 @@ function buildGroundAreaSurface(node: GroundAreaNode, includeDetails: boolean, c
   if (!footprint.length) return group
   const material = new MeshStandardMaterial({
     color: '#ffffff',
-    map: node.surface === 'mud' ? getMudTexture() : SURFACE_TEXTURE[node.surface],
+    map: node.surface === 'mud' ? getMudTexture()
+      : node.surface === 'grass2' && node.grass2Settings?.mode === 'billboards'
+        ? grass2BillboardGround : SURFACE_TEXTURE[node.surface],
     roughness: SURFACE_STYLE[node.surface].roughness,
     side: DoubleSide,
   })
+  const groundHeightAt = (x: number, z: number) =>
+    node.elevation + (ctx?.levelBaseAt?.(x, z) ?? 0)
+  const groundBounds = new Box3()
   for (const polygon of footprint) {
     const outer = polygon[0]
     if (!outer || outer.length < 3) continue
     const shape = new Shape(outer.map(([x, z]) => new Vector2(x, -z)))
     shape.holes = polygon.slice(1).map((ring) => new Path(ring.map(([x, z]) => new Vector2(x, -z))))
-    const geometry = new ShapeGeometry(shape)
+    let geometry = new ShapeGeometry(shape)
     geometry.rotateX(-Math.PI / 2)
-    geometry.translate(0, node.elevation + 0.018, 0)
+    if (node.surface === 'grass2' && ctx?.levelBaseAt) {
+      geometry.computeBoundingBox()
+      const bounds = geometry.boundingBox!
+      let low = Infinity, high = -Infinity
+      for (let row = 0; row <= 6; row++) for (let col = 0; col <= 6; col++) {
+        const x = bounds.min.x + (bounds.max.x - bounds.min.x) * col / 6
+        const z = bounds.min.z + (bounds.max.z - bounds.min.z) * row / 6
+        const y = groundHeightAt(x, z)
+        low = Math.min(low, y)
+        high = Math.max(high, y)
+      }
+      if (high - low > 0.005) {
+        const area = (bounds.max.x - bounds.min.x) * (bounds.max.z - bounds.min.z)
+        const edgeLength = Math.max(0.5, Math.sqrt(area / 4000))
+        const refined = new TessellateModifier(edgeLength, 10).modify(geometry)
+        geometry.dispose()
+        geometry = refined
+      }
+      const positions = geometry.getAttribute('position')
+      for (let index = 0; index < positions.count; index++)
+        positions.setY(index, groundHeightAt(positions.getX(index), positions.getZ(index)) + 0.018)
+      positions.needsUpdate = true
+      geometry.computeBoundingBox()
+      geometry.computeBoundingSphere()
+    } else {
+      geometry.translate(0, node.elevation + 0.018, 0)
+    }
     geometry.computeVertexNormals()
+    if (node.surface === 'grass2') {
+      geometry.computeBoundingBox()
+      groundBounds.union(geometry.boundingBox!)
+    }
     const mesh = new Mesh(geometry, material)
     mesh.name = `ground-area-${node.surface}`
     mesh.userData.slotId = 'surface'
@@ -74,8 +119,20 @@ function buildGroundAreaSurface(node: GroundAreaNode, includeDetails: boolean, c
     if (blades) group.add(blades)
   }
   if (node.surface === 'grass2' && includeDetails) {
-    group.add(makeGrass2(node.outline, node.elevation,
-      (x, z) => grassContainsPoint(footprint, x, z), node.grass2Settings))
+    const contains = (x: number, z: number) => grassContainsPoint(footprint, x, z)
+    const edgeAt = grassEdgeSampler(footprint)
+    const previous = streamGrass && ctx
+      ? sceneRegistry.nodes.get(node.id)?.getObjectByName('ground-area-grass2-stream') : undefined
+    // Include the edge blend's neighbourhood when deciding if a tile is reusable.
+    const tileSignature = (x: number, z: number) => {
+      const minX = x * 8 - 0.5, minZ = z * 8 - 0.5, maxX = (x + 1) * 8 + 0.5, maxZ = (z + 1) * 8 + 0.5
+      return JSON.stringify(polygonClipping.intersection(footprint,
+        [[[minX,minZ],[maxX,minZ],[maxX,maxZ],[minX,maxZ]]]))
+    }
+    group.add(streamGrass
+      ? makeStreamedGrass2(node.outline, contains, node.grass2Settings, groundHeightAt, groundBounds,
+        { previous: previous instanceof Grass2Stream ? previous : undefined, tileSignature, edgeAt })
+      : makeGrass2(node.outline, node.elevation, contains, node.grass2Settings, groundHeightAt, edgeAt))
   }
   const hasPoolCutout = footprint.length !== 1 || footprint[0]?.length !== 1
   if (node.surface === 'soil' && includeDetails && !hasPoolCutout) {
@@ -93,6 +150,10 @@ function buildGroundAreaSurface(node: GroundAreaNode, includeDetails: boolean, c
 
 export function buildGroundAreaGeometry(node: GroundAreaNode, ctx?: GeometryContext): Group {
   return buildGroundAreaSurface(node, true, ctx)
+}
+
+export function buildGroundAreaLiveGeometry(node: GroundAreaNode, ctx?: GeometryContext): Group {
+  return buildGroundAreaSurface(node, true, ctx, true)
 }
 
 export function buildGroundAreaPreviewGeometry(node: GroundAreaNode): Group {

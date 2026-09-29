@@ -9,6 +9,7 @@ import { concreteSlabDefinition } from './ground-access/concrete-slab/definition
 import { landingDefinition } from './ground-access/landing/definition'
 import { edgingDefinition } from './ground-access/edging/definition'
 import { retainingWallDefinition } from './ground-access/retaining-wall/definition'
+import { treeDefinition } from './tree/definition'
 
 type PluginHostPanel = {
   id: string
@@ -49,11 +50,21 @@ const groundAreaInspector: InspectorExtension & { primaryWhen: (node: AnyNode) =
   primaryWhen: (node) => (node.type as string) === 'landscape:ground-area',
 }
 
+const treeInspector: InspectorExtension & { primaryWhen: (node: AnyNode) => boolean } = {
+  id: 'pascal:landscape:tree',
+  pluginId: 'pascal:landscape',
+  kinds: ['landscape:tree'],
+  icon: { kind: 'iconify', name: 'lucide:tree-deciduous' },
+  title: 'SeedThree tree',
+  component: () => import('./tree/editor/panel'),
+  primaryWhen: (node) => (node.type as string) === 'landscape:tree',
+}
+
 /** Public plugin manifest. Landscape tools and node kinds can be added here. */
 export const landscapePlugin: Plugin = {
   id: 'pascal:landscape',
   apiVersion: 1,
-  inspectorExtensions: [retainingWallInspector, groundAreaInspector],
+  inspectorExtensions: [retainingWallInspector, groundAreaInspector, treeInspector],
   nodes: [
     pergolaDefinition as unknown as AnyNodeDefinition,
     pathwayDefinition as unknown as AnyNodeDefinition,
@@ -64,6 +75,7 @@ export const landscapePlugin: Plugin = {
     landingDefinition as unknown as AnyNodeDefinition,
     edgingDefinition as unknown as AnyNodeDefinition,
     retainingWallDefinition as unknown as AnyNodeDefinition,
+    treeDefinition as unknown as AnyNodeDefinition,
   ],
 }
 
@@ -92,3 +104,5 @@ export { ConcreteSlabNode } from './ground-access/concrete-slab/domain/schema'
 export { LandingNode } from './ground-access/landing/domain/schema'
 export { EdgingNode } from './ground-access/edging/domain/schema'
 export { RetainingWallNode } from './ground-access/retaining-wall/domain/schema'
+export { TreeNode, TREE_KIND } from './tree/domain/schema'
+export { treeDefinition } from './tree/definition'
