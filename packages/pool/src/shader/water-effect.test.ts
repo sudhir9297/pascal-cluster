@@ -62,6 +62,13 @@ test('pool water builds its reflection from the active scene atmosphere', () => 
   effect.dispose()
 })
 
+test('storm water keeps a planar surface while shading its motion per pixel', () => {
+  const effect = new PoolWaterEffect({ waterMode: 'storm' }, 16)
+  expect(effect.material.positionNode).toBeNull()
+  expect(effect.material.colorNode).not.toBeNull()
+  effect.dispose()
+})
+
 test('low quality omits environment and local scene reflection nodes', () => {
   let reflectionSamples = 0
   const effect = new PoolWaterEffect({ waterQuality: 'low' }, 16, atmosphere(() => {

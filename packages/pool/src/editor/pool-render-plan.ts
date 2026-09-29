@@ -11,6 +11,8 @@ type ConnectionNode = AnyNode & {
 
 type PoolConnectionIndex = {
   pipesByPool: Map<string, AnyNode[]>
+  renderNodesByPool: Map<string, AnyNode[]>
+  visiblePoolCount: number
 }
 
 const poolConnectionIndices = new WeakMap<object, PoolConnectionIndex>()
@@ -20,7 +22,32 @@ function poolConnectionIndex(nodes: Record<string, AnyNode>) {
   if (cached) return cached
 
   const pipesByPool = new Map<string, AnyNode[]>()
-  for (const node of Object.values(nodes)) {
+  const renderNodesByPool = new Map<string, AnyNode[]>()
+  const sceneOrder = new Map<string, number>()
+  let visiblePoolCount = 0
+  const addRenderNode = (poolId: string, node: AnyNode) => {
+    const related = renderNodesByPool.get(poolId) ?? []
+    related.push(node)
+    renderNodesByPool.set(poolId, related)
+  }
+  for (const [order, node] of Object.values(nodes).entries()) {
+    sceneOrder.set(node.id, order)
+    const candidate = node as ConnectionNode
+    if (String(node.type) === 'pool:pool' && node.visible !== false) visiblePoolCount++
+    if (String(node.type) === 'pool:spillover') {
+      const source = candidate.sourcePoolId
+      const target = candidate.targetPoolId
+      if (typeof source === 'string') {
+        addRenderNode(source, node)
+        if (typeof target === 'string' && target !== source && nodes[target]) addRenderNode(source, nodes[target]!)
+      }
+      if (typeof target === 'string' && target !== source) {
+        addRenderNode(target, node)
+        if (typeof source === 'string' && nodes[source]) addRenderNode(target, nodes[source]!)
+      }
+    } else if (String(node.type) === 'pool:shared-joint' && Array.isArray(candidate.poolIds)) {
+      for (const poolId of candidate.poolIds) if (typeof poolId === 'string') addRenderNode(poolId, node)
+    }
     if (node.type !== 'pipe-segment' && node.type !== 'pipe-fitting') continue
     const connection = (node as AnyNode & {
       metadata?: { poolConnection?: { poolId?: string } }
@@ -30,20 +57,13 @@ function poolConnectionIndex(nodes: Record<string, AnyNode>) {
     pipes.push(node)
     pipesByPool.set(connection.poolId, pipes)
   }
+  for (const related of renderNodesByPool.values()) {
+    related.sort((left, right) => (sceneOrder.get(left.id) ?? 0) - (sceneOrder.get(right.id) ?? 0))
+  }
 
-  const index = { pipesByPool }
+  const index = { pipesByPool, renderNodesByPool, visiblePoolCount }
   poolConnectionIndices.set(nodes, index)
   return index
-}
-
-function connectionTouchesPool(node: AnyNode, poolId: string) {
-  const candidate = node as ConnectionNode
-  if (String(candidate.type) === 'pool:spillover') {
-    return candidate.sourcePoolId === poolId || candidate.targetPoolId === poolId
-  }
-  return String(candidate.type) === 'pool:shared-joint'
-    && Array.isArray(candidate.poolIds)
-    && candidate.poolIds.includes(poolId)
 }
 
 /**
@@ -55,22 +75,7 @@ export function selectPoolRenderNodes(
   nodes: Record<string, AnyNode>,
   poolId: string,
 ): AnyNode[] {
-  const connections = Object.values(nodes).filter((node) => connectionTouchesPool(node, poolId))
-  const relatedPoolIds = new Set<string>()
-  for (const node of connections) {
-    const candidate = node as ConnectionNode
-    if (String(candidate.type) === 'pool:spillover') {
-      if (typeof candidate.sourcePoolId === 'string') relatedPoolIds.add(candidate.sourcePoolId)
-      if (typeof candidate.targetPoolId === 'string') relatedPoolIds.add(candidate.targetPoolId)
-    }
-  }
-  relatedPoolIds.delete(poolId)
-
-  const connectionIds = new Set(connections.map((node) => node.id))
-  return Object.values(nodes).filter((node) =>
-    connectionIds.has(node.id)
-    || (String(node.type) === 'pool:pool' && relatedPoolIds.has(node.id)),
-  )
+  return poolConnectionIndex(nodes).renderNodesByPool.get(poolId) ?? []
 }
 
 /** Returns pipe members explicitly owned by this pool's generated connection. */
@@ -82,11 +87,7 @@ export function selectPoolConnectedPipes(
 }
 
 export function countPools(nodes: Record<string, AnyNode>) {
-  let count = 0
-  for (const node of Object.values(nodes)) {
-    if (String(node.type) === 'pool:pool' && node.visible !== false) count += 1
-  }
-  return count
+  return poolConnectionIndex(nodes).visiblePoolCount
 }
 
 /** Match the host renderer's live move pose for pool-owned shell and water. */
@@ -273,7 +274,7 @@ export function getPoolDepthResizePreviewTransform(committed: PoolNode, preview:
  * Water uniforms update in place. This signature contains only properties
  * that require a new Three.js mesh or a different water elevation.
  */
-export function getPoolGeometrySignature(node: PoolNode) {
+export function getPoolGeometrySignature(node: PoolNode, includeCoping = true) {
   return JSON.stringify({
     shape: node.shape,
     length: node.length,
@@ -299,21 +300,23 @@ export function getPoolGeometrySignature(node: PoolNode) {
     benchWidth: node.benchWidth,
     benchWaterDepth: node.benchWaterDepth,
     copingWidth: node.copingWidth,
-    copingThickness: node.copingThickness,
-    copingStyle: node.copingStyle,
-    copingStoneLength: node.copingStoneLength,
-    copingJointWidth: node.copingJointWidth,
-    copingIrregularity: node.copingIrregularity,
-    copingSeed: node.copingSeed,
-    copingColor: node.copingColor,
-    copingProfile: node.copingProfile,
-    copingCorner: node.copingCorner,
+    ...(includeCoping ? {
+      copingThickness: node.copingThickness,
+      copingStyle: node.copingStyle,
+      copingStoneLength: node.copingStoneLength,
+      copingJointWidth: node.copingJointWidth,
+      copingIrregularity: node.copingIrregularity,
+      copingSeed: node.copingSeed,
+      copingColor: node.copingColor,
+      copingProfile: node.copingProfile,
+      copingCorner: node.copingCorner,
+    } : {}),
     shellThickness: node.shellThickness,
+    shellColor: node.shellColor,
     floorThickness: node.floorThickness,
     openingClearance: node.openingClearance,
     finishedDeckElevation: node.finishedDeckElevation,
     designWaterElevation: node.designWaterElevation,
-    interiorFinish: node.interiorFinish,
     // Quality changes both simulation resolution and the compiled screen-space
     // reflection/refraction graph, so it intentionally rebuilds the material.
     waterQuality: node.waterQuality,

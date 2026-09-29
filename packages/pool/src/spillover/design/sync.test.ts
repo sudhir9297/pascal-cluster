@@ -21,6 +21,15 @@ function spillover(sourcePoolId: string, targetPoolId: string, overrides: Record
 }
 
 describe('pool spillover synchronization', () => {
+  test('emits no update after the derived placement has been saved', () => {
+    const upper = pool('pool_stable_upper', [0, 1, 0])
+    const lower = pool('pool_stable_lower', [3.5, 0, 0])
+    const initial = spillover(upper.id, lower.id)
+    const first = syncPoolSpillovers({ [upper.id]: upper, [lower.id]: lower, [initial.id]: initial } as never)
+    const saved = PoolSpilloverNode.parse({ ...initial, ...first.update[0]?.data })
+    const second = syncPoolSpillovers({ [upper.id]: upper, [lower.id]: lower, [saved.id]: saved } as never)
+    expect(second).toEqual({ update: [], delete: [] })
+  })
   test('keeps a manually selected watercourse while recomputing its placement', () => {
     const upper = PoolNode.parse({ id: 'pool_sync_upper', parentId: 'level_a', position: [0, 1, 0], polygon: rectangle })
     const lower = PoolNode.parse({ id: 'pool_sync_lower', parentId: 'level_a', position: [3.5, 0, 0], polygon: rectangle })

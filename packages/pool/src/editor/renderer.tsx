@@ -3,12 +3,12 @@
 import { type AnyNode, useLiveNodeOverrides, useLiveTransforms, useScene } from '@pascal-app/core'
 import { NodeRenderer, useSceneAtmosphere, useViewer } from '@pascal-app/viewer'
 import { useEditor } from '@pascal-app/editor'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
-import { Box3, Frustum, Matrix4, Mesh, Sphere, type Group, type Material } from 'three'
+import { Box3, Frustum, Matrix4, Mesh, Sphere, Vector3, type Group, type Material } from 'three'
 import { MeshBasicNodeMaterial, type WebGPURenderer } from 'three/webgpu'
 import { useShallow } from 'zustand/react/shallow'
-import { buildPoolGeometry } from '../core/geometry'
+import { buildPoolCopingGeometry, buildPoolGeometry, updatePoolInteriorFinish } from '../core/geometry'
 import { resolvePoolPolygon, type PoolNode } from '../core/schema'
 import { getPoolOverlaps } from '../design/pool-overlap'
 import { getPoolSpilloverNotches } from '../design/spillover-notch'
@@ -17,7 +17,7 @@ import { subscribePoolWaterActions } from '../shader/water-actions'
 import { registerPoolWaterEffect } from '../shader/water-effect-registry'
 import {
   createImmersiveXRPoolWaterMaterial,
-  type PoolWaterEffect,
+  PoolWaterEffect,
 } from '../shader/water-effect'
 import {
   countPools,
@@ -34,7 +34,7 @@ import {
   selectPoolConnectedPipes,
   selectPoolRenderNodes,
 } from './pool-render-plan'
-import { shouldAdvancePoolWater } from './pool-render-state'
+import { poolWaterSimulationHz, shouldAdvancePoolWater } from './pool-render-state'
 import { usePoolNodeHost } from './node-host'
 import { AttachmentPoolContext } from './attachment-pool'
 import { PoolOutlineControls } from './outline-controls'
@@ -46,10 +46,12 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
   const nodeRef = useRef<PoolNode>(storeNode)
   const resizeSessionRef = useRef<{ pool: PoolNode; positions: Map<string, [number, number, number]> } | null>(null)
   const atmosphere = useSceneAtmosphere()
+  const invalidate = useThree((state) => state.invalidate)
   // Native resize handles publish their in-flight patch here and commit it to
   // the scene only on pointer-up. Merge that patch into the render node so the
   // basin outline and floor depth follow the pointer throughout the drag.
   const liveOverride = useLiveNodeOverrides((state) => state.get(storeNode.id))
+  const sectionPreviewInProgress = Boolean(liveOverride?.__poolSectionPreview)
   const node = useMemo<PoolNode>(
     () => (liveOverride ? ({ ...storeNode, ...liveOverride } as PoolNode) : storeNode),
     [storeNode, liveOverride],
@@ -71,7 +73,7 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
     && ('polygon' in liveOverride || 'outlineControlPoints' in liveOverride),
   )
   const depthResizeInProgress = Boolean(
-    liveOverride && ('depth' in liveOverride || 'shallowDepth' in liveOverride || 'deepDepth' in liveOverride),
+    liveOverride && !sectionPreviewInProgress && ('depth' in liveOverride || 'shallowDepth' in liveOverride || 'deepDepth' in liveOverride),
   )
   const resizeInProgress = horizontalResizeInProgress || depthResizeInProgress
   if (resizeInProgress && !resizeSessionRef.current) {
@@ -143,12 +145,16 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
   // Width/depth handles already provide a cheap scale/position preview below;
   // rebuilding the pool geometry from the live node on every pointer event
   // makes side-arrow dragging miss frames.
-  const geometrySourceNode = storeNode
+  // Section A-A publishes a slower preview than its local SVG updates. Native
+  // resize handles still use the committed mesh and their cheap transforms.
+  const geometrySourceNode = sectionPreviewInProgress ? node : storeNode
   const geometrySignature = useMemo(
     () => getPoolGeometrySignature(geometrySourceNode),
     [geometrySourceNode],
   )
-  const geometryNode = useMemo(() => geometrySourceNode, [geometrySignature])
+  const basinSignature = useMemo(() => getPoolGeometrySignature(geometrySourceNode, false), [geometrySourceNode])
+  const geometryNode = useMemo(() => geometrySourceNode, [basinSignature])
+  const copingNode = useMemo(() => geometrySourceNode, [geometrySignature])
   const sceneNodes = useMemo(() => Object.fromEntries([
     [geometryNode.id, geometryNode],
     ...relatedNodes.map((candidate) => [candidate.id, candidate] as const),
@@ -159,7 +165,14 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
     return (connection.sourcePoolId === node.id || connection.targetPoolId === node.id) && Boolean(state.get(connection.id))
   }))
   const suppressSpilloverGeometry = Boolean(liveOverride) || spilloverEditInProgress
-  const pool = useMemo(() => buildPoolGeometry(geometryNode, {
+  const waterEffect = useMemo(
+    () => new PoolWaterEffect(node, waterResolution, atmosphere),
+    [node.id, node.waterQuality, waterResolution, atmosphere],
+  )
+  const pool = useMemo(() => {
+    const connectionRegions = getPoolConnectionRegions(geometryNode, sceneNodes)
+    return buildPoolGeometry(geometryNode, {
+    skipCoping: true,
     overlaps: getPoolOverlaps(geometryNode, sceneNodes),
     // Live transforms can leave the committed connection endpoint briefly
     // stale. Hide its cuts during that frame; the committed sync rebuilds
@@ -167,12 +180,18 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
     spilloverNotches: suppressSpilloverGeometry
       ? []
       : getPoolSpilloverNotches(geometryNode, sceneNodes),
-    removeWallRegions: getPoolConnectionRegions(geometryNode, sceneNodes),
-    removeFloorRegions: getPoolConnectionRegions(geometryNode, sceneNodes),
-    removeWaterRegions: getPoolConnectionRegions(geometryNode, sceneNodes),
+    removeWallRegions: connectionRegions,
+    removeFloorRegions: connectionRegions,
+    removeWaterRegions: connectionRegions,
     waterResolution,
     atmosphere,
-  }), [geometryNode, sceneNodes, suppressSpilloverGeometry, waterResolution, atmosphere])
+    waterEffect,
+  })
+  }, [geometryNode, sceneNodes, suppressSpilloverGeometry, waterResolution, atmosphere, waterEffect])
+  const coping = useMemo(() => buildPoolCopingGeometry(copingNode, {
+    overlaps: getPoolOverlaps(copingNode, sceneNodes),
+    spilloverNotches: suppressSpilloverGeometry ? [] : getPoolSpilloverNotches(copingNode, sceneNodes),
+  }), [copingNode, sceneNodes, suppressSpilloverGeometry])
   const resizePreviewScaleY = resizePreviewTransform.scale[1]
   useLayoutEffect(() => {
     if (!depthResizeInProgress || resizePreviewScaleY === 1) return
@@ -190,8 +209,10 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
   }, [depthResizeInProgress, pool, resizePreviewScaleY])
   // The host's published viewer types predate third-party node augmentation;
   // the runtime event key is still the namespaced pool kind.
-  const handlers = usePoolNodeHost(node, ref, geometrySignature)
-  const waterEffect = pool.userData.waterEffect as PoolWaterEffect
+  const handlers = usePoolNodeHost(node, ref, `${geometrySignature}:${node.interiorFinish}`)
+  useLayoutEffect(() => {
+    if (updatePoolInteriorFinish(pool, node)) invalidate()
+  }, [pool, node.interiorFinish, node.metadata, invalidate])
   useEffect(() => registerPoolWaterEffect(node.id, waterEffect), [node.id, waterEffect])
   const immersiveWaterMaterial = useMemo(
     () => createImmersiveXRPoolWaterMaterial({ waterColor: node.waterColor }, atmosphere),
@@ -213,6 +234,8 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
   const viewFrustum = useRef(new Frustum())
   const viewProjection = useRef(new Matrix4())
   const worldWaterBounds = useRef(new Sphere())
+  const cameraSpaceWaterCenter = useRef(new Vector3())
+  const distantWater = useRef(false)
   useEffect(() => {
     waterEffect.setSettings(nodeRef.current)
   }, [waterEffect, waterSettingsSignature])
@@ -236,7 +259,7 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
   useEffect(() => {
     if (!inputDragging) return
     const shadowed: Array<[Mesh, boolean, boolean]> = []
-    pool.traverse((child) => {
+    for (const layer of [pool, coping]) layer.traverse((child) => {
       const mesh = child as Mesh
       if (!mesh.isMesh || (!mesh.castShadow && !mesh.receiveShadow)) return
       shadowed.push([mesh, mesh.castShadow, mesh.receiveShadow])
@@ -249,7 +272,7 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
         mesh.receiveShadow = receiveShadow
       }
     }
-  }, [inputDragging, pool])
+  }, [inputDragging, pool, coping])
 
   useFrame(({ camera, gl, invalidate }, delta) => {
     const root = ref.current
@@ -257,27 +280,29 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
     const immersiveXR = Boolean(
       (gl as unknown as { xr?: { isPresenting?: boolean } }).xr?.isPresenting,
     )
-    const water = pool.getObjectByName('pool-water') as Mesh | undefined
-    if (water) {
-      const nextMaterial = inputDragging
-        ? dragWaterMaterial
-        : immersiveXR ? immersiveWaterMaterial : waterEffect.material
-      if (water.material !== nextMaterial) water.material = nextMaterial
-    }
     root.updateWorldMatrix(true, false)
     viewProjection.current.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
     viewFrustum.current.setFromProjectionMatrix(viewProjection.current)
     worldWaterBounds.current.copy(localWaterBounds).applyMatrix4(root.matrixWorld)
     if (!viewFrustum.current.intersectsSphere(worldWaterBounds.current)) return
-    if (
-      shouldAdvancePoolWater(
-        immersiveXR,
-        Boolean((gl as unknown as { isWebGPURenderer?: boolean }).isWebGPURenderer),
-        inputDragging,
-      )
-    ) {
-      waterEffect.update(gl as unknown as WebGPURenderer, delta)
+    cameraSpaceWaterCenter.current.copy(worldWaterBounds.current.center).applyMatrix4(camera.matrixWorldInverse)
+    const projectedRadius = worldWaterBounds.current.radius * Math.abs(camera.projectionMatrix.elements[5] ?? 1)
+      / ('isOrthographicCamera' in camera ? 1 : Math.max(0.01, -cameraSpaceWaterCenter.current.z))
+    const diameterPixels = projectedRadius * (gl.domElement.clientHeight || gl.domElement.height)
+    distantWater.current = diameterPixels < (distantWater.current ? 190 : 130)
+    const water = pool.getObjectByName('pool-water') as Mesh | undefined
+    if (water) {
+      const nextMaterial = immersiveXR ? immersiveWaterMaterial
+        : inputDragging || distantWater.current ? dragWaterMaterial : waterEffect.material
+      if (water.material !== nextMaterial) water.material = nextMaterial
     }
+    const animateWater = shouldAdvancePoolWater(
+      immersiveXR,
+      Boolean((gl as unknown as { isWebGPURenderer?: boolean }).isWebGPURenderer),
+      inputDragging,
+    )
+    if (!animateWater) return
+    waterEffect.update(gl as unknown as WebGPURenderer, delta, poolWaterSimulationHz(diameterPixels))
     // Keep demand-driven hosts rendering while animated uniforms and the
     // height-field simulation advance.
     invalidate()
@@ -300,19 +325,43 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
     [dragWaterMaterial],
   )
 
+  useEffect(() => () => waterEffect.dispose(), [waterEffect])
   useEffect(
     () => () => {
-      waterEffect.dispose()
+      const disposedMaterials = new Set<Material>()
       pool.traverse((child) => {
         const mesh = child as Mesh
         if (!mesh.isMesh) return
         mesh.geometry.dispose()
+        // Water materials are owned by their long-lived effects below.
+        if (mesh.name === 'pool-water') return
         const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
-        for (const material of materials as Material[]) material.dispose()
+        for (const material of materials as Material[]) {
+          if (disposedMaterials.has(material)) continue
+          material.dispose()
+          disposedMaterials.add(material)
+        }
       })
+      const finishMaterials = pool.userData.finishMaterials as Map<string, Material> | undefined
+      for (const material of finishMaterials?.values() ?? []) {
+        if (!disposedMaterials.has(material)) material.dispose()
+      }
     },
-    [pool, waterEffect],
+    [pool],
   )
+  useEffect(() => () => {
+    const materials = new Set<Material>()
+    coping.traverse((child) => {
+      const mesh = child as Mesh
+      if (!mesh.isMesh) return
+      mesh.geometry.dispose()
+      for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+        if (materials.has(material)) continue
+        material.dispose()
+        materials.add(material)
+      }
+    })
+  }, [coping])
 
   return (
     <group
@@ -327,6 +376,7 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
         scale={resizePreviewTransform.scale}
       >
         <primitive object={pool} />
+        <primitive object={coping} />
       </group>
       <AttachmentPoolContext.Provider value={storeNode}>{node.children?.map((childId) => (
         <NodeRenderer key={`${node.id}:${childId}`} nodeId={childId as never} />

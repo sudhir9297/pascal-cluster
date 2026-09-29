@@ -1,6 +1,6 @@
 'use client'
 
-import { useScene } from '@pascal-app/core'
+import { useLiveNodeOverrides, useScene } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import type { PoolNode } from '../core/schema'
 import { planPoolFittings } from '../design/pool-fitting-layout'
@@ -8,10 +8,10 @@ import { POOL_SHAPE_OPTIONS } from '../design/shapes'
 import { getPoolFinishSettings } from '../design/pool-finishes'
 import { getExplicitlySelectedPool } from './pool-selection'
 import { buildPoolSectionModel } from './pool-section-model'
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 
-export function PoolSectionBarPortal({ poolId }: { poolId?: string } = {}) {
+export function PoolSectionBarPortal({ poolId }: { poolId?: string } = {}): ReactNode {
   const [target, setTarget] = useState<Element | null>(null)
   const selectedIds = useViewer((state) => state.selection.selectedIds)
   const selectedPool = useScene((state) => getExplicitlySelectedPool(state.nodes, selectedIds))
@@ -102,7 +102,7 @@ export function PoolSectionBar() {
       children.disconnect()
       window.removeEventListener('resize', schedule)
     }
-  }, [pool, expanded])
+  }, [pool?.id, expanded])
 
   if (!pool) return null
 
@@ -125,21 +125,40 @@ export function PoolSectionBar() {
   )
 }
 
-function PoolSectionDiagram({ pool }: { pool: PoolNode }) {
+function PoolSectionDiagram({ pool: storedPool }: { pool: PoolNode }) {
+  const [draft, setDraft] = useState<PoolNode | null>(null)
+  const draftRef = useRef<PoolNode | null>(null)
+  const pool = draft ?? storedPool
   const section = useMemo(() => buildPoolSectionModel(pool), [pool])
   const sectionRef = useRef<SVGSVGElement>(null)
-  const dragging = useRef<{ pointerId: number; handle: SectionHandle } | null>(null)
+  const dragging = useRef<{ pointerId: number; handle: SectionHandle; rect: DOMRect; lastPreview: number } | null>(null)
+  const pendingMove = useRef<{ x: number; y: number } | null>(null)
+  const moveFrame = useRef(0)
   const [activeHandle, setActiveHandle] = useState<SectionHandle | null>(null)
   const id = useId().replaceAll(':', '')
+
+  useEffect(() => {
+    setDraft(null)
+    draftRef.current = null
+    return () => {
+      cancelAnimationFrame(moveFrame.current)
+      const session = dragging.current
+      if (session) {
+        useLiveNodeOverrides.getState().clearFields(storedPool.id, [session.handle, '__poolSectionPreview'])
+        useViewer.getState().setInputDragging(false)
+      }
+      dragging.current = null
+    }
+  }, [storedPool.id])
+
   const shape = POOL_SHAPE_OPTIONS.find((option) => option.value === pool.shape)?.label ?? pool.shape
   const finish = getPoolFinishSettings(pool.interiorFinish)
   const entry = pool.entryFeature === 'none' ? 'No entry' : pool.entryFeature.replaceAll('-', ' ').replace(/^./, (letter) => letter.toUpperCase())
   const bench = pool.benchEnabled ? `${pool.benchStyle === 'perimeter' ? 'Perimeter' : 'End'} bench · ${pool.benchWidth.toFixed(2)} m wide` : null
   const dimensions = pool.shape === 'circle' ? `Ø ${section.length.toFixed(2)} m` : `${section.length.toFixed(2)} × ${section.width.toFixed(2)} m`
 
-  function changeHandle(handle: SectionHandle, value: number) {
-    const current = (useScene.getState().nodes as Record<string, unknown>)[pool.id] as PoolNode | undefined
-    if (!current || !Number.isFinite(value)) return
+  function nextHandleValue(current: PoolNode, handle: SectionHandle, value: number) {
+    if (!Number.isFinite(value)) return null
     const rounded = handle === 'slopeStart' || handle === 'slopeEnd' ? Math.round(value) : Math.round(value * 100) / 100
     const next = handle === 'slopeStart'
       ? Math.max(0, Math.min(current.slopeEnd - 5, rounded))
@@ -156,35 +175,78 @@ function PoolSectionDiagram({ pool }: { pool: PoolNode }) {
                 : handle === 'benchWidth'
                   ? Math.min(1.5, Math.max(0.2, rounded))
                   : Math.min(1.2, Math.max(0.1, rounded))
-    if (next !== current[handle]) useScene.getState().updateNode(pool.id as never, { [handle]: next } as never)
+    return next
+  }
+
+  function valueAtPointer(handle: SectionHandle, rect: DOMRect, clientX: number, clientY: number) {
+    const x = (clientX - rect.left) / rect.width * 600
+    const y = (clientY - rect.top) / rect.height * 130
+    return handle === 'slopeStart' || handle === 'slopeEnd'
+      ? (x - 12) / 576 * 100
+      : handle === 'entryLength' ? (x - 12) / 576 * section.length
+      : handle === 'benchWidth' ? (section.benchAtLeft && !section.benchAtRight ? x - 12 : 588 - x) / 576 * section.length
+      : (y - section.deckY) / section.depthScale
+  }
+
+  function applyPointer(clientX: number, clientY: number) {
+    const session = dragging.current
+    if (!session) return
+    const current = draftRef.current ?? storedPool
+    const next = nextHandleValue(current, session.handle, valueAtPointer(session.handle, session.rect, clientX, clientY))
+    if (next === null || next === current[session.handle]) return
+    const updated = { ...current, [session.handle]: next }
+    draftRef.current = updated
+    setDraft(updated)
+    // A full 3D mesh rebuild is much dearer than the SVG update. Publish a
+    // preview at roughly 12 fps while the local section follows every frame.
+    const now = performance.now()
+    if (now - session.lastPreview >= 80) {
+      session.lastPreview = now
+      useLiveNodeOverrides.getState().set(storedPool.id, { [session.handle]: next, __poolSectionPreview: true })
+    }
   }
 
   function handlePointerMove(event: PointerEvent<SVGSVGElement>) {
     if (dragging.current?.pointerId !== event.pointerId) return
-    const rect = sectionRef.current?.getBoundingClientRect()
-    if (!rect) return
-    const { handle } = dragging.current
-    const x = (event.clientX - rect.left) / rect.width * 600
-    const y = (event.clientY - rect.top) / rect.height * 130
-    changeHandle(handle, handle === 'slopeStart' || handle === 'slopeEnd'
-      ? (x - 12) / 576 * 100
-      : handle === 'entryLength' ? (x - 12) / 576 * section.length
-      : handle === 'benchWidth' ? (section.benchAtLeft && !section.benchAtRight ? x - 12 : 588 - x) / 576 * section.length
-      : (y - section.deckY) / section.depthScale)
+    pendingMove.current = { x: event.clientX, y: event.clientY }
+    if (moveFrame.current) return
+    moveFrame.current = requestAnimationFrame(() => {
+      moveFrame.current = 0
+      const point = pendingMove.current
+      pendingMove.current = null
+      if (point) applyPointer(point.x, point.y)
+    })
   }
 
-  function stopDragging(event: PointerEvent<SVGSVGElement>) {
-    if (dragging.current?.pointerId !== event.pointerId) return
+  function stopDragging(event: PointerEvent<SVGSVGElement>, commit: boolean) {
+    const session = dragging.current
+    if (session?.pointerId !== event.pointerId) return
+    cancelAnimationFrame(moveFrame.current)
+    moveFrame.current = 0
+    pendingMove.current = null
+    if (commit) applyPointer(event.clientX, event.clientY)
     dragging.current = null
     setActiveHandle(null)
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+    const finalValue = draftRef.current?.[session.handle]
+    draftRef.current = null
+    if (commit && finalValue !== undefined && finalValue !== storedPool[session.handle]) {
+      useScene.getState().updateNode(storedPool.id as never, { [session.handle]: finalValue } as never)
+    }
+    useLiveNodeOverrides.getState().clearFields(storedPool.id, [session.handle, '__poolSectionPreview'])
+    useViewer.getState().setInputDragging(false)
+    setDraft(null)
   }
 
   function startDragging(event: PointerEvent<SVGGElement>, handle: SectionHandle) {
+    if (dragging.current) return
     event.preventDefault()
     event.stopPropagation()
-    dragging.current = { pointerId: event.pointerId, handle }
+    const rect = sectionRef.current?.getBoundingClientRect()
+    if (!rect) return
+    dragging.current = { pointerId: event.pointerId, handle, rect, lastPreview: 0 }
     setActiveHandle(handle)
+    useViewer.getState().setInputDragging(true)
     sectionRef.current?.setPointerCapture(event.pointerId)
   }
 
@@ -194,7 +256,8 @@ function PoolSectionDiagram({ pool }: { pool: PoolNode }) {
       : event.key === 'ArrowLeft' && horizontal || event.key === 'ArrowUp' && !horizontal ? -1 : 0
     if (!direction) return
     event.preventDefault()
-    changeHandle(handle, pool[handle] + direction * (handle === 'slopeStart' || handle === 'slopeEnd' ? 1 : 0.05))
+    const next = nextHandleValue(storedPool, handle, storedPool[handle] + direction * (handle === 'slopeStart' || handle === 'slopeEnd' ? 1 : 0.05))
+    if (next !== null && next !== storedPool[handle]) useScene.getState().updateNode(storedPool.id as never, { [handle]: next } as never)
   }
 
   const slopeStartX = 12 + 576 * pool.slopeStart / 100
@@ -257,7 +320,7 @@ function PoolSectionDiagram({ pool }: { pool: PoolNode }) {
       </div>
       <div style={{ flex: '1 1 0', minWidth: 0 }}>
         <div className="mb-1 flex justify-between font-mono text-[10px] text-white/45"><span>A · {pool.floorProfile === 'flat' ? 'start' : 'shallow'}</span><span>{section.length.toFixed(2)} m</span><span>{pool.floorProfile === 'flat' ? 'end' : 'deep'} · A</span></div>
-        <svg aria-label={`Pool longitudinal section, ${section.firstDepth.toFixed(2)} metres at the left and ${section.lastDepth.toFixed(2)} metres at the right, ${entry}${pool.benchEnabled ? ', with bench' : ''}`} onLostPointerCapture={stopDragging} onPointerCancel={stopDragging} onPointerMove={handlePointerMove} onPointerUp={stopDragging} ref={sectionRef} style={{ display: 'block', width: '100%', height: 119 }} preserveAspectRatio="none" viewBox="0 0 600 130">
+        <svg aria-label={`Pool longitudinal section, ${section.firstDepth.toFixed(2)} metres at the left and ${section.lastDepth.toFixed(2)} metres at the right, ${entry}${pool.benchEnabled ? ', with bench' : ''}`} onLostPointerCapture={(event) => stopDragging(event, false)} onPointerCancel={(event) => stopDragging(event, false)} onPointerMove={handlePointerMove} onPointerUp={(event) => stopDragging(event, true)} ref={sectionRef} style={{ display: 'block', width: '100%', height: 119 }} preserveAspectRatio="none" viewBox="0 0 600 130">
           <defs>
             <linearGradient id={`pool-water-${id}`} x1="0.5" x2="0.5" y1="0" y2="1"><stop offset="0" stopColor={pool.shallowWaterColor} /><stop offset="1" stopColor={pool.deepWaterColor} /></linearGradient>
             <pattern height="7" id={`pool-hatch-${id}`} patternTransform="rotate(45)" patternUnits="userSpaceOnUse" width="7"><line stroke="#fff" strokeOpacity="0.18" x1="0" x2="0" y1="0" y2="7" /></pattern>
