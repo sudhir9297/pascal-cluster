@@ -4,7 +4,7 @@ import { useFrame } from '@react-three/fiber'
 import { useLiveNodeOverrides } from '@pascal-app/core'
 import { useSceneAtmosphere } from '@pascal-app/viewer'
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
-import { Vector3, type Group, type Mesh } from 'three'
+import { Box3, Frustum, Matrix4, Sphere, Vector3, type Group, type Mesh } from 'three'
 import { useAttachmentPool } from '../../../editor/attachment-pool'
 import { usePoolNodeHost } from '../../../editor/node-host'
 import type {
@@ -61,6 +61,12 @@ export default function PoolWaterfallPreview({ node }: { node: PoolWaterfallNode
   const simulationAccumulator = useRef(0)
   const impactAccumulator = useRef(0)
   const impactWorld = useRef(new Vector3())
+  const poolPosition = useRef(new Vector3())
+  const verticalAxis = useRef(new Vector3(0, 1, 0))
+  const viewProjection = useRef(new Matrix4())
+  const viewFrustum = useRef(new Frustum())
+  const worldBounds = useRef(new Sphere())
+  const localBounds = useMemo(() => new Box3().setFromObject(geometry).getBoundingSphere(new Sphere()), [geometry])
   const effects = useMemo(() => {
     const result = [] as WaterfallEffect[]
     geometry.traverse((child) => {
@@ -69,10 +75,27 @@ export default function PoolWaterfallPreview({ node }: { node: PoolWaterfallNode
     })
     return result
   }, [geometry])
-  useFrame(({ invalidate }, delta) => {
-    if (node.visible === false) return
+  const bubbleEffects = useMemo(() => effects.filter((effect): effect is WaterfallBubbleCloudEffect =>
+    'mesh' in effect && effect.mesh.name.startsWith('waterfall-bubble-cloud-'),
+  ), [effects])
+  useFrame(({ camera, gl, invalidate }, delta) => {
+    if (node.visible === false || !mounted.showFlow || !rootRef.current) {
+      for (const effect of bubbleEffects) effect.mesh.visible = false
+      return
+    }
+    rootRef.current.updateWorldMatrix(true, false)
+    worldBounds.current.copy(localBounds).applyMatrix4(rootRef.current.matrixWorld)
+    worldBounds.current.radius *= Math.max(1, widthScale)
+    viewProjection.current.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
+    viewFrustum.current.setFromProjectionMatrix(viewProjection.current)
+    const inView = viewFrustum.current.intersectsSphere(worldBounds.current)
+    for (const effect of bubbleEffects) effect.mesh.visible = inView
+    if (!inView) return
+    const distance = Math.max(0.01, camera.position.distanceTo(worldBounds.current.center))
+    const diameterPixels = worldBounds.current.radius * 2 * Math.abs(camera.projectionMatrix.elements[5] ?? 1)
+      * (gl.domElement.clientHeight || gl.domElement.height) / distance
     simulationAccumulator.current += Math.min(0.05, Math.max(0, delta))
-    if (simulationAccumulator.current >= 1 / 30) {
+    if (simulationAccumulator.current >= 1 / (diameterPixels < 180 ? 15 : 30)) {
       const simulationDelta = simulationAccumulator.current
       simulationAccumulator.current = 0
       for (const effect of effects) effect.update(simulationDelta)
@@ -85,13 +108,13 @@ export default function PoolWaterfallPreview({ node }: { node: PoolWaterfallNode
         if (water && rootRef.current) {
           const width = mounted.waterfallType === 'modern' ? mounted.width - 0.08
             : mounted.width * (mounted.waterfallType === 'spillover' ? 0.72 : 0.3)
+          poolPosition.current.fromArray(pool.position)
           for (const across of [-0.55, 0, 0.55]) {
             const [x, z] = getWaterfallImpactLocalPoint(mounted, across)
-            rootRef.current.updateWorldMatrix(true, false)
             impactWorld.current.set(x, mounted.targetWaterOffset, z)
             rootRef.current.localToWorld(impactWorld.current)
-            impactWorld.current.sub(new Vector3(...pool.position))
-              .applyAxisAngle(new Vector3(0, 1, 0), -(pool.rotation[1] ?? 0))
+            impactWorld.current.sub(poolPosition.current)
+              .applyAxisAngle(verticalAxis.current, -(pool.rotation[1] ?? 0))
             water.addDropAt(impactWorld.current.x, impactWorld.current.z,
               Math.max(0.008, width * 0.012), 0.015 * mounted.flowStrength)
           }

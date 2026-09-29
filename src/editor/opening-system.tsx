@@ -35,6 +35,35 @@ function isConnectionRelevantNode(node: AnyNode | undefined) {
   return type?.startsWith('pool:') === true
 }
 
+const APPEARANCE_FIELDS = new Set([
+  'copingStyle', 'copingProfile', 'copingCorner', 'copingStoneLength',
+  'copingJointWidth', 'copingIrregularity', 'copingSeed', 'copingColor',
+  'interiorFinish',
+  'shellColor', 'visualPreset',
+  'waterPreset', 'waterQuality', 'shallowWaterColor', 'deepWaterColor', 'waterColor',
+  'waterMode', 'surfaceDetail', 'viscosity', 'rippleSize', 'clarity', 'rain', 'breeze',
+  'sunElevation', 'sunAzimuth',
+  'normalScale', 'normalStrength', 'normalSpeed', 'reflectionStrength',
+  'reflectionFresnel', 'reflectionDistortion', 'refractionStrength',
+  'causticsStrength', 'causticsScale', 'causticsSpeed',
+  'intersectionStrength', 'intersectionColor', 'intersectionWidth',
+  'shorelineStrength', 'shorelineWidth', 'shorelineSpeed',
+  'specularStrength', 'specularSize', 'specularHardness',
+])
+
+/** Appearance edits cannot move openings, fittings, or pool connections. */
+export function isAppearanceOnlyPoolChange(next: AnyNode | undefined, previous: AnyNode | undefined) {
+  if (!next || !previous || String(next.type) !== 'pool:pool' || String(previous.type) !== 'pool:pool') return false
+  const fields = new Set([...Object.keys(next), ...Object.keys(previous)])
+  for (const field of fields) {
+    if (APPEARANCE_FIELDS.has(field)) continue
+    const nextValue = (next as Record<string, unknown>)[field]
+    const previousValue = (previous as Record<string, unknown>)[field]
+    if (nextValue !== previousValue && JSON.stringify(nextValue) !== JSON.stringify(previousValue)) return false
+  }
+  return true
+}
+
 function hasOpeningRelevantChange(
   nextNodes: Record<string, AnyNode>,
   previousNodes: Record<string, AnyNode>,
@@ -45,6 +74,7 @@ function hasOpeningRelevantChange(
     const nextNode = nextNodes[id]
     const previousNode = previousNodes[id]
     if (nextNode === previousNode) continue
+    if (isAppearanceOnlyPoolChange(nextNode, previousNode)) continue
     if (isOpeningRelevantNode(nextNode) || isOpeningRelevantNode(previousNode)) return true
   }
   return false
@@ -60,6 +90,7 @@ function hasConnectionRelevantChange(
     const nextNode = nextNodes[id]
     const previousNode = previousNodes[id]
     if (nextNode === previousNode) continue
+    if (isAppearanceOnlyPoolChange(nextNode, previousNode)) continue
     if (isConnectionRelevantNode(nextNode) || isConnectionRelevantNode(previousNode)) return true
   }
   return false
@@ -70,6 +101,26 @@ export function initializePoolOpeningSync() {
   let syncing = false
 
   const applyUpdates = (nodes: Record<string, AnyNode>, previousNodes: Record<string, AnyNode> = {}) => {
+    const affectedPoolIds = new Set<string>()
+    if (Object.keys(previousNodes).length > 0) {
+      for (const id of new Set([...Object.keys(nodes), ...Object.keys(previousNodes)])) {
+        const next = nodes[id]
+        const previous = previousNodes[id]
+        if (next === previous) continue
+        for (const value of [next, previous]) {
+          if (!value) continue
+          if (String(value.type) === 'pool:pool') affectedPoolIds.add(id)
+          if (String(value.type) === 'pool:spillover') {
+            const spillover = value as { sourcePoolId?: string; targetPoolId?: string }
+            if (spillover.sourcePoolId) affectedPoolIds.add(spillover.sourcePoolId)
+            if (spillover.targetPoolId) affectedPoolIds.add(spillover.targetPoolId)
+          }
+          if (String(value.type) === 'pool:shared-joint') {
+            for (const poolId of (value as { poolIds?: string[] }).poolIds ?? []) affectedPoolIds.add(poolId)
+          }
+        }
+      }
+    }
     const parentLinkUpdates = poolParentLinkUpdates(nodes)
     const genericChildUpdates: { id: string; data: Record<string, unknown> }[] = []
     for (const previousValue of Object.values(previousNodes)) {
@@ -124,7 +175,9 @@ export function initializePoolOpeningSync() {
 
     const slabUpdates = syncPoolSlabOpenings(resolvedNodes)
     const groundChanges = syncPoolGroundOpenings(resolvedNodes)
-    const connectionChanges = syncSharedPoolJoints(resolvedNodes)
+    const connectionChanges = syncSharedPoolJoints(
+      resolvedNodes, Object.keys(previousNodes).length > 0 ? affectedPoolIds : undefined,
+    )
     if (
       slabUpdates.length === 0 &&
       groundChanges.create.length === 0 &&

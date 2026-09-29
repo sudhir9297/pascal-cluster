@@ -1,6 +1,6 @@
 import { Color } from 'three'
 import { MeshStandardNodeMaterial } from 'three/webgpu'
-import { abs, color, float, mix, normalWorld, positionLocal, positionWorld, sin, smoothstep } from 'three/tsl'
+import { abs, color, float, mix, normalWorld, positionLocal, positionWorld, sin, smoothstep, vertexColor } from 'three/tsl'
 
 type WetContact = {
   halfWidth: number
@@ -9,9 +9,10 @@ type WetContact = {
 }
 
 /** Mineral-scale variation shared by pool coping and waterfall stones. */
-export function createPoolRockMaterial(baseColor: string | Color, wetContact?: WetContact) {
+export function createPoolRockMaterial(baseColor: string | Color, wetContact?: WetContact, useVertexColors = false, vertexColorScale = 1) {
   const base = new Color(baseColor)
   const material = new MeshStandardNodeMaterial({ color: base, roughness: 0.86, metalness: 0 })
+  const pigment = useVertexColors ? vertexColor().rgb.mul(vertexColorScale) : color(base)
   const p = positionWorld
   const normal = abs(normalWorld)
   const weights = normal.mul(normal)
@@ -42,8 +43,8 @@ export function createPoolRockMaterial(baseColor: string | Color, wetContact?: W
     return across.mul(proximity).mul(belowLip).mul(0.72)
   })() : float(0)
   material.colorNode = mix(
-    mix(color(base), color(base).mul(0.73), moss.mul(0.32)).mul(shade),
-    color(base).mul(0.48),
+    mix(pigment, pigment.mul(0.73), moss.mul(0.32)).mul(shade),
+    pigment.mul(0.48),
     wet,
   )
   material.roughnessNode = mix(float(0.9), float(0.34), wet)

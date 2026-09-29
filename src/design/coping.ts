@@ -19,6 +19,7 @@ import { createPoolRockMaterial } from './rock-material'
 
 export type NaturalCopingOptions = NaturalCopingLayoutOptions & {
   color: string
+  preserveIndividualRocks?: boolean
 }
 
 export function createRockGeometry(
@@ -310,6 +311,8 @@ export function buildNaturalCopingGeometry(
   const layout = layoutNaturalCopingStones(points, options)
 
   const stoneGeometries: BufferGeometry[] = []
+  let sharedRockMaterial: ReturnType<typeof createPoolRockMaterial> | null = null
+  let sharedDarkRockMaterial: ReturnType<typeof createPoolRockMaterial> | null = null
 
   layout.forEach((item, index) => {
     const geometry = options.rockLike
@@ -381,15 +384,30 @@ export function buildNaturalCopingGeometry(
         ? 0
         : -Math.atan2(item.tangent[1], item.tangent[0]) + item.rockRotation
     }
-    // Keep rock coping as individual solids: spillover notch CSG relies on
-    // each boulder's closed end face when cutting an opening. Natural stone
-    // coping (the common tiled mode) is safely merged below.
+    // Straight rock runs without connection cuts can share one geometry and
+    // one procedural material. Keep stones separate where CSG needs each
+    // closed solid, and on curved runs with two material regions per stone.
     if (options.rockLike) {
-      const rockMaterial = createPoolRockMaterial(color)
+      const colors = new Float32Array(geometry.getAttribute('position').count * 3)
+      for (let vertex = 0; vertex < colors.length; vertex += 3) {
+        colors[vertex] = color.r
+        colors[vertex + 1] = color.g
+        colors[vertex + 2] = color.b
+      }
+      geometry.setAttribute('color', new Float32BufferAttribute(colors, 3))
+    }
+    if (options.rockLike && !options.smoothBoundary && !options.preserveIndividualRocks) {
+      stone.updateMatrix()
+      geometry.applyMatrix4(stone.matrix)
+      stoneGeometries.push(geometry)
+      return
+    }
+    if (options.rockLike) {
+      const rockMaterial = sharedRockMaterial ??= createPoolRockMaterial('#ffffff', undefined, true)
       stone.material = options.smoothBoundary
         ? [
             rockMaterial,
-            createPoolRockMaterial(color.clone().multiplyScalar(0.72)),
+            sharedDarkRockMaterial ??= createPoolRockMaterial('#ffffff', undefined, true, 0.72),
           ]
         : rockMaterial
       stone.name = `pool-coping-stone-${index + 1}`
@@ -419,12 +437,14 @@ export function buildNaturalCopingGeometry(
   stoneGeometries.forEach((geometry) => {
     if (geometry !== mergedGeometry) geometry.dispose()
   })
-  const material = new MeshStandardMaterial({
-    color: '#ffffff',
-    vertexColors: true,
-    roughness: options.rockLike ? 0.78 : options.smoothBoundary ? 0.68 : 0.58,
-    metalness: 0,
-  })
+  const material = options.rockLike
+    ? createPoolRockMaterial('#ffffff', undefined, true)
+    : new MeshStandardMaterial({
+        color: '#ffffff',
+        vertexColors: true,
+        roughness: options.smoothBoundary ? 0.68 : 0.58,
+        metalness: 0,
+      })
   const mergedStones = new Mesh(mergedGeometry, material)
   mergedStones.name = 'pool-coping-stones'
   mergedStones.castShadow = true

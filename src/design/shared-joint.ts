@@ -17,6 +17,18 @@ function worldPolygon(pool: PoolNode): PoolPoint[] {
   ])
 }
 
+function polygonBounds(points: PoolPoint[]) {
+  return points.reduce((bounds, [x, z]) => ({
+    minimumX: Math.min(bounds.minimumX, x), maximumX: Math.max(bounds.maximumX, x),
+    minimumZ: Math.min(bounds.minimumZ, z), maximumZ: Math.max(bounds.maximumZ, z),
+  }), { minimumX: Infinity, maximumX: -Infinity, minimumZ: Infinity, maximumZ: -Infinity })
+}
+
+function boundsOverlap(first: ReturnType<typeof polygonBounds>, second: ReturnType<typeof polygonBounds>) {
+  return first.minimumX <= second.maximumX && second.minimumX <= first.maximumX &&
+    first.minimumZ <= second.maximumZ && second.minimumZ <= first.maximumZ
+}
+
 function worldSegments(pool: PoolNode): WorldSegment[] {
   const points = worldPolygon(pool)
   return points.flatMap((start, index) => {
@@ -106,8 +118,11 @@ function trianglePolygons(points: PoolPoint[]) {
 
 /** Returns a non-overlapping convex decomposition of two pool polygons' overlap. */
 export function getPoolIntersectionRegions(first: PoolNode, second: PoolNode): PoolPoint[][] {
-  const firstTriangles = trianglePolygons(worldPolygon(first))
-  const secondTriangles = trianglePolygons(worldPolygon(second))
+  const firstPolygon = worldPolygon(first)
+  const secondPolygon = worldPolygon(second)
+  if (!boundsOverlap(polygonBounds(firstPolygon), polygonBounds(secondPolygon))) return []
+  const firstTriangles = trianglePolygons(firstPolygon)
+  const secondTriangles = trianglePolygons(secondPolygon)
   return firstTriangles.flatMap((firstTriangle) =>
     secondTriangles.flatMap((secondTriangle) => {
       const intersection = normalizeIntersectionPolygon(
@@ -331,7 +346,11 @@ function jointNeedsUpdate(node: PoolSharedJointNode, joint: SharedPoolJoint) {
 }
 
 /** Derives generated connections from the current pool scene. */
-export function syncSharedPoolJoints(nodes: Record<string, AnyNode>): SharedPoolJointChanges {
+export function syncSharedPoolJoints(
+  nodes: Record<string, AnyNode>,
+  affectedPoolIds?: ReadonlySet<string>,
+): SharedPoolJointChanges {
+  if (affectedPoolIds?.size === 0) return { create: [], update: [], delete: [] }
   const pools = Object.values(nodes)
     .filter((node) => (node.type as string) === 'pool:pool')
     .flatMap((node) => {
@@ -353,12 +372,15 @@ export function syncSharedPoolJoints(nodes: Record<string, AnyNode>): SharedPool
         : []
     }))
   const expected = new Map<string, { first: PoolNode; second: PoolNode; joint: SharedPoolJoint }>()
+  const bounds = pools.map((pool) => polygonBounds(worldPolygon(pool)))
 
   for (let firstIndex = 0; firstIndex < pools.length; firstIndex += 1) {
     for (let secondIndex = firstIndex + 1; secondIndex < pools.length; secondIndex += 1) {
       const first = pools[firstIndex]!
       const second = pools[secondIndex]!
+      if (affectedPoolIds && !affectedPoolIds.has(first.id) && !affectedPoolIds.has(second.id)) continue
       if (first.parentId !== second.parentId) continue
+      if (!boundsOverlap(bounds[firstIndex]!, bounds[secondIndex]!)) continue
       const id = sharedJointId(first.id, second.id)
       if (explicitSpilloverPairs.has(id)) continue
       // Intersecting pools are resolved by the spillover tool. A generated
@@ -375,6 +397,7 @@ export function syncSharedPoolJoints(nodes: Record<string, AnyNode>): SharedPool
   // their connection geometry in sync even though new intersecting pairs
   // require an explicit user-created connection.
   for (const node of existing) {
+    if (affectedPoolIds && !node.poolIds.some((id) => affectedPoolIds.has(id))) continue
     if (expected.has(node.id) || explicitSpilloverPairs.has(node.id)) continue
     const [firstId, secondId] = node.poolIds
     const first = pools.find((pool) => pool.id === firstId)
@@ -402,7 +425,7 @@ export function syncSharedPoolJoints(nodes: Record<string, AnyNode>): SharedPool
   }
 
   const deleteIds = existing
-    .filter((node) => !expected.has(node.id))
+    .filter((node) => (!affectedPoolIds || node.poolIds.some((id) => affectedPoolIds.has(id))) && !expected.has(node.id))
     .map((node) => node.id)
   return { create, update, delete: deleteIds }
 }

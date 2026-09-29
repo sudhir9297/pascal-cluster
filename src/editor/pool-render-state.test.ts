@@ -14,7 +14,13 @@ import {
   selectPoolConnectedPipes,
   selectPoolRenderNodes,
 } from './pool-render-plan'
-import { shouldAdvancePoolWater } from './pool-render-state'
+import { poolWaterSimulationHz, shouldAdvancePoolWater } from './pool-render-state'
+
+test('uses fewer water simulation steps for a small screen footprint', () => {
+  expect(poolWaterSimulationHz(80)).toBe(10)
+  expect(poolWaterSimulationHz(240)).toBe(15)
+  expect(poolWaterSimulationHz(500)).toBe(30)
+})
 
 function pool(id: string) {
   return PoolNode.parse({ id, type: 'pool:pool' }) as unknown as AnyNode
@@ -78,6 +84,19 @@ describe('pool render state', () => {
 
     expect(getPoolGeometrySignature(waterEdit)).toBe(getPoolGeometrySignature(original))
     expect(getPoolGeometrySignature(geometryEdit)).not.toBe(getPoolGeometrySignature(original))
+  })
+
+  test('replaces coping without rebuilding the basin', () => {
+    const original = PoolNode.parse({ copingStyle: 'continuous' })
+    const stone = PoolNode.parse({ ...original, copingStyle: 'natural-stone' })
+    expect(getPoolGeometrySignature(stone)).not.toBe(getPoolGeometrySignature(original))
+    expect(getPoolGeometrySignature(stone, false)).toBe(getPoolGeometrySignature(original, false))
+  })
+
+  test('does not rebuild geometry for an interior finish change', () => {
+    const original = PoolNode.parse({ interiorFinish: 'light-mosaic' })
+    const changed = PoolNode.parse({ ...original, interiorFinish: 'natural-pebble-aqua' })
+    expect(getPoolGeometrySignature(changed)).toBe(getPoolGeometrySignature(original))
   })
 
   test('does not rebuild geometry when only the pool transform changes', () => {

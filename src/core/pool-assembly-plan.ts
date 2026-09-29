@@ -4,6 +4,7 @@ import { getPoolDepthRange, getPoolDepthResolver } from '../design/depth-profile
 import { buildPoolOutlines } from '../design/outlines'
 import type { SpilloverNotch } from '../design/spillover-notch'
 import { PoolNode, resolvePoolPolygon, type PoolPoint } from './schema'
+import type { PoolWaterEffect } from '../shader/water-effect'
 
 export type PoolGeometryOptions = {
   overlaps?: PoolOverlap[]
@@ -14,6 +15,9 @@ export type PoolGeometryOptions = {
   removeWaterRegions?: PoolPoint[][]
   waterResolution?: number
   atmosphere?: SceneAtmosphereSource | null
+  waterEffect?: PoolWaterEffect
+  preserveIndividualRocks?: boolean
+  skipCoping?: boolean
 }
 
 export function createPoolAssemblyPlan(nodeInput: PoolNode, input: PoolGeometryOptions = {}) {

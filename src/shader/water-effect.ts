@@ -28,7 +28,6 @@ import {
   mix,
   normalize,
   perspectiveDepthToViewZ,
-  positionLocal,
   positionView,
   positionWorld,
   pow,
@@ -73,7 +72,6 @@ const WATER_MOTION_RATES = {
   causticsPrimaryY: 0.43,
   causticsSecondaryX: -0.61,
   causticsSecondaryY: 0.79,
-  displacement: 0.075,
 } as const
 
 const CALM_MOTION_INTENSITY = 0.45
@@ -461,13 +459,9 @@ export class PoolWaterEffect {
     const local = uv().mul(this.poolSize)
     const phase = local.x.mul(2.1).add(local.y.mul(1.3)).sub(this.time.mul(3.4))
     const phase2 = local.x.mul(-1.2).add(local.y.mul(2.8)).sub(this.time.mul(4.1))
-    const edge = uv().x.min(uv().y).min(uv().x.oneMinus()).min(uv().y.oneMinus())
-    const edgeFade = smoothstep(0, 0.08, edge)
-    const windHeight = phase.sin().mul(0.035).add(phase2.sin().mul(0.018))
-      .mul(this.stormIntensity).mul(edgeFade)
-    const displacement = float(WATER_MOTION_RATES.displacement)
-    material.positionNode = positionLocal.add(vec3(0,
-      state.r.mul(displacement).add(windHeight) as any, 0))
+    // Storm droplets are smaller than the water mesh triangles. Sampling the
+    // height field at vertices aliases them into long straight facets. Keep
+    // the surface planar and animate the normal, reflection and foam per pixel.
 
     const mapped = this.normalSample()
     const surfaceNormal = normalize(vec3(
@@ -805,7 +799,7 @@ export class PoolWaterEffect {
     this.swap()
   }
 
-  update(renderer: WebGPURenderer, delta: number) {
+  update(renderer: WebGPURenderer, delta: number, simulationHz = WATER_SIMULATION_HZ) {
     delta = Math.max(0, Math.min(Number.isFinite(delta) ? delta : 0, 0.05))
     const previousTarget = renderer.getRenderTarget()
     const previousAutoClear = renderer.autoClear
@@ -851,11 +845,12 @@ export class PoolWaterEffect {
       }
 
       this.accumulator += Math.min(delta, 0.05)
+      const stepDuration = 1 / Math.min(WATER_SIMULATION_HZ, Math.max(1, simulationHz))
       let steps = 0
-      while (this.accumulator >= 1 / WATER_SIMULATION_HZ && steps < 1) {
+      while (this.accumulator >= stepDuration && steps < 1) {
         this.pass(renderer, this.updateMaterial)
         this.pass(renderer, this.updateMaterial)
-        this.accumulator -= 1 / WATER_SIMULATION_HZ
+        this.accumulator -= stepDuration
         steps += 1
       }
     } finally {

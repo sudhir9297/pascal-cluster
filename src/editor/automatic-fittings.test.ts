@@ -2,9 +2,17 @@ import { expect, test } from 'bun:test'
 import { useScene, type AnyNode } from '@pascal-app/core'
 import { PoolNode } from '../core/schema'
 import { createPoolPluginNode } from './scene-nodes'
-import { initializePoolOpeningSync } from './opening-system'
+import { initializePoolOpeningSync, isAppearanceOnlyPoolChange } from './opening-system'
 import { poolParametrics } from './parametrics'
 import { syncAutomaticPoolFittings } from '../design/sync-pool-fittings'
+
+test('pool appearance changes skip opening and fitting reconciliation', () => {
+  const pool = PoolNode.parse({})
+  expect(isAppearanceOnlyPoolChange(PoolNode.parse({ ...pool, copingStyle: 'rock' }) as unknown as AnyNode, pool as unknown as AnyNode)).toBe(true)
+  expect(isAppearanceOnlyPoolChange(PoolNode.parse({ ...pool, interiorFinish: 'natural-pebble-aqua' }) as unknown as AnyNode, pool as unknown as AnyNode)).toBe(true)
+  expect(isAppearanceOnlyPoolChange(PoolNode.parse({ ...pool, rain: 0.8, waterColor: '#123456' }) as unknown as AnyNode, pool as unknown as AnyNode)).toBe(true)
+  expect(isAppearanceOnlyPoolChange(PoolNode.parse({ ...pool, copingWidth: 0.5 }) as unknown as AnyNode, pool as unknown as AnyNode)).toBe(false)
+})
 
 test('scene subscription reconciles resize and restored snapshots', () => {
   const before = useScene.getState()

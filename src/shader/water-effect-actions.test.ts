@@ -42,6 +42,20 @@ test('queued disturbances are combined into one render pass', () => {
   effect.dispose()
 })
 
+test('distant water uses fewer simulation render passes', () => {
+  const near = new PoolWaterEffect({}, 16)
+  const far = new PoolWaterEffect({}, 16)
+  const nearRenderer = rendererStub()
+  const farRenderer = rendererStub()
+  for (let frame = 0; frame < 60; frame++) {
+    near.update(nearRenderer.renderer, 1 / 60, 30)
+    far.update(farRenderer.renderer, 1 / 60, 10)
+  }
+  expect(farRenderer.passes()).toBeLessThan(nearRenderer.passes() / 2)
+  near.dispose()
+  far.dispose()
+})
+
 test('sustained slow frames lower simulation resolution and recovery restores it', () => {
   const effect = new PoolWaterEffect({}, 128)
   const { renderer } = rendererStub()

@@ -50,7 +50,9 @@ export function syncPoolSpillovers(nodes: Record<string, AnyNode>): PoolSpillove
     }
     const data = resolvePoolSpilloverSyncUpdate(spillover.data, source, target)
     if (!data) { deleteIds.push(spillover.data.id); continue }
-    update.push({ id: spillover.data.id, data })
+    if (Object.entries(data).some(([key, value]) =>
+      JSON.stringify((spillover.data as unknown as Record<string, unknown>)[key]) !== JSON.stringify(value),
+    )) update.push({ id: spillover.data.id, data })
   }
   return { update, delete: deleteIds }
 }

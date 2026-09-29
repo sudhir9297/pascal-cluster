@@ -14,3 +14,10 @@ export function shouldAdvancePoolWater(
 ) {
   return !immersiveXR && isWebGPURenderer && !isDragging
 }
+
+/** The ripple field needs fewer updates when it covers few screen pixels. */
+export function poolWaterSimulationHz(projectedDiameterPixels: number) {
+  if (projectedDiameterPixels < 120) return 10
+  if (projectedDiameterPixels < 360) return 15
+  return 30
+}

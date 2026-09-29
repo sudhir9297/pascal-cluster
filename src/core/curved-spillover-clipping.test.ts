@@ -18,7 +18,7 @@ for (const copingStyle of ['continuous', 'natural-stone', 'rock'] as const) {
       const nodes = { [upper.id]: upper, [lower.id]: lower, [connection.id]: connection }
       const pool = upper
       const notches = getPoolSpilloverNotches(pool, nodes as never)
-      const expected = buildPoolGeometry(pool)
+      const expected = buildPoolGeometry(pool, { preserveIndividualRocks: true })
       const actual = buildPoolGeometry(pool, { spilloverNotches: notches, overlaps: getPoolOverlaps(pool, nodes as never) })
       expected.updateMatrixWorld(true)
       actual.updateMatrixWorld(true)

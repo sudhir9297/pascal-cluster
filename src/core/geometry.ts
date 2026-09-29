@@ -8,6 +8,7 @@ import {
   Float32BufferAttribute,
   Group,
   Mesh,
+  MeshBasicMaterial,
   Path,
   Shape,
   ShapeGeometry,
@@ -15,7 +16,6 @@ import {
   Vector2,
 } from 'three'
 import { MeshStandardNodeMaterial } from 'three/webgpu'
-import { TessellateModifier } from 'three/examples/jsm/modifiers/TessellateModifier.js'
 import { normalLocal, positionLocal, smoothstep, vec2 } from 'three/tsl'
 import { outsetPoolPolygon } from '../design/outlines'
 import { PoolNode, type PoolPoint } from './schema'
@@ -24,6 +24,7 @@ import { buildNaturalCopingGeometry } from '../design/coping'
 import { buildSubmergedFeatureCopingGeometry } from '../design/feature-coping'
 import { getPoolFinishSettings } from '../design/pool-finishes'
 import { createPoolFinishSurface } from '../design/pool-finish-surface'
+import { poolColors } from './paint'
 
 function addPlanarUvAttribute(geometry: BufferGeometry) {
   const position = geometry.getAttribute('position')
@@ -1011,11 +1012,14 @@ function createWaterGeometry(points: PoolPoint[], removeWaterRegions: PoolPoint[
   const maxX = Math.max(...xs)
   const minZ = Math.min(...zs)
   const maxZ = Math.max(...zs)
-  const span = Math.max(maxX - minX, maxZ - minZ)
-  const maxEdge = Math.max(0.06, span / 96)
-  const sourceGeometry = new TessellateModifier(maxEdge, 8).modify(
-    new ShapeGeometry(traceShape(points)),
-  )
+  // The water shader animates per pixel. Tessellation only added vertices for
+  // height displacement, which aliased small storm ripples into visible facets.
+  let sourceGeometry: BufferGeometry = new ShapeGeometry(traceShape(points))
+  if (sourceGeometry.index) {
+    const nonIndexed = sourceGeometry.toNonIndexed()
+    sourceGeometry.dispose()
+    sourceGeometry = nonIndexed
+  }
   sourceGeometry.rotateX(-Math.PI / 2)
   const sourcePositions = sourceGeometry.getAttribute('position')
   const geometry = removeWaterRegions.length > 0 ? new BufferGeometry() : sourceGeometry
@@ -1087,7 +1091,166 @@ function createTileMaterial(node: PoolNode, effect: PoolWaterEffect, points: Poo
   const underwater = smoothstep(0.04, 0.35, positionLocal.y.negate())
   const caustic = effect.causticsAt(poolUv).mul(underwater).mul(0.5)
   material.colorNode = surface.add(caustic)
+  material.userData.poolInteriorFinish = node.interiorFinish
   return material
+}
+
+function poolInteriorMaterial(mesh: Mesh): MeshStandardNodeMaterial | undefined {
+  if (mesh.name !== 'pool-shell-floor' && mesh.name !== 'pool-shell-walls' &&
+    mesh.name !== 'pool-overlap-separating-wall' && !mesh.name.startsWith('pool-entry-') &&
+    mesh.name !== 'pool-bench') return undefined
+  const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material
+  return material instanceof MeshStandardNodeMaterial ? material : undefined
+}
+
+/** Replace only the interior material when its finish changes. The pool mesh,
+ * coping, and water simulation all remain attached to the same scene group. */
+export function updatePoolInteriorFinish(group: Group, node: PoolNode) {
+  const previous = group.userData.shellMaterial as MeshStandardNodeMaterial | undefined
+  const inner = group.userData.inner as PoolPoint[] | undefined
+  const effect = group.userData.waterEffect as PoolWaterEffect | undefined
+  if (!previous || !inner || !effect) return false
+  const shellMeshes: Mesh[] = []
+  group.traverse((child) => {
+    if (child instanceof Mesh && poolInteriorMaterial(child)) shellMeshes.push(child)
+  })
+  if (group.userData.interiorFinish === node.interiorFinish && shellMeshes.every((mesh) => {
+    const material = poolInteriorMaterial(mesh)!
+    return material.userData.poolInteriorFinish === node.interiorFinish ||
+      (material.userData.poolInteriorFinish === undefined && material === previous)
+  })) return false
+  const finishMaterials = group.userData.finishMaterials as Map<PoolNode['interiorFinish'], MeshStandardNodeMaterial>
+  let next = finishMaterials.get(node.interiorFinish)
+  if (!next) {
+    next = createTileMaterial(node, effect, inner)
+    finishMaterials.set(node.interiorFinish, next)
+  }
+  const paintedShellColor = poolColors(node).shell
+  for (const mesh of shellMeshes) {
+    const current = poolInteriorMaterial(mesh)!
+    if (current === next || current.userData.poolInteriorFinish === node.interiorFinish) continue
+    let replacement = next
+    if (current !== previous && current !== next) {
+      // A painted mesh owns a clone of the base finish material. Keep that
+      // clone so the paint cleanup still owns it, but replace its shader graph.
+      current.colorNode = next.colorNode
+      current.roughness = next.roughness
+      current.color.set(paintedShellColor ?? next.color)
+      current.userData.poolInteriorFinish = node.interiorFinish
+      current.needsUpdate = true
+      replacement = current
+    }
+    if (Array.isArray(mesh.material)) mesh.material = [replacement, ...mesh.material.slice(1)]
+    else mesh.material = replacement
+  }
+  group.userData.shellMaterial = next
+  group.userData.interiorFinish = node.interiorFinish
+  return true
+}
+
+/** Builds the replaceable coping layer without regenerating the basin or water. */
+export function buildPoolCopingGeometry(
+  nodeInput: PoolNode,
+  input: PoolGeometryOptions = {},
+  deferCuts = false,
+): Group {
+  const plan = createPoolAssemblyPlan(nodeInput, input)
+  const { node, inner, depth, outlines, options } = plan
+  const group = new Group()
+  group.name = 'pool-coping-assembly'
+  group.position.y = deferCuts ? 0 : node.finishedDeckElevation
+  const addSubmergedFeatureEdge = (start: PoolPoint, end: PoolPoint, topDepth: number, seed: number) => {
+    group.add(buildSubmergedFeatureCopingGeometry(start, end, {
+      width: node.copingWidth,
+      thickness: node.copingThickness,
+      stoneLength: node.copingStoneLength,
+      irregularity: node.copingIrregularity,
+      seed,
+      color: node.copingColor,
+      topDepth,
+    }))
+  }
+  if (node.copingStyle === 'rock') {
+    if (node.entryFeature === 'tanning-shelf') {
+      const endX = depth.minimumX + Math.min(node.entryLength, (depth.maximumX - depth.minimumX) * 0.6)
+      for (const [minimumZ, maximumZ] of getCrossSectionIntervals(inner, endX)) {
+        addSubmergedFeatureEdge([endX, minimumZ], [endX, maximumZ], node.entryWaterDepth, node.copingSeed + 101)
+        addSubmergedFeatureEdge([depth.minimumX, minimumZ], [endX, minimumZ], node.entryWaterDepth, node.copingSeed + 102)
+        addSubmergedFeatureEdge([depth.minimumX, maximumZ], [endX, maximumZ], node.entryWaterDepth, node.copingSeed + 103)
+      }
+    }
+    if (node.benchEnabled && node.benchStyle === 'perimeter') {
+      const benchBoundaries = perimeterBenchBoundaries(inner,
+        options.overlaps?.filter(overlap => overlap.trimBasin !== false && overlap.suppressSeparator !== true)
+          .map(overlap => overlap.footprint) ?? [],
+      )
+      for (const boundary of benchBoundaries) for (let index = 0; index < boundary.length; index++) {
+        addSubmergedFeatureEdge(boundary[index]!, boundary[(index + 1) % boundary.length]!,
+          node.benchWaterDepth, node.copingSeed + 202 + index)
+      }
+    }
+  }
+  if (node.copingStyle === 'natural-stone' || node.copingStyle === 'rock') {
+    group.add(buildNaturalCopingGeometry(inner, {
+      width: Math.max(node.copingWidth, node.shellThickness + 0.03),
+      thickness: node.copingThickness,
+      stoneLength: node.copingStoneLength,
+      jointWidth: node.copingStyle === 'rock' ? Math.min(node.copingJointWidth, 0.008) : node.copingJointWidth,
+      irregularity: node.copingStyle === 'rock' ? Math.max(node.copingIrregularity, 0.75) : node.copingIrregularity,
+      seed: node.copingSeed,
+      rockLike: node.copingStyle === 'rock',
+      preserveIndividualRocks: Boolean(options.preserveIndividualRocks || options.overlaps?.length || options.spilloverNotches?.length),
+      smoothBoundary: node.shape === 'spline' || node.shape === 'circle' || node.shape === 'kidney'
+        || node.shape === 'lagoon' || node.shape === 'roman',
+      color: node.copingColor,
+    }))
+  } else {
+    const material = new MeshStandardNodeMaterial({
+      color: node.copingColor, metalness: 0, roughness: 0.52, side: DoubleSide,
+    })
+    const coping = new Mesh(extrudeVertically(
+      ringShape(outlines.copingOuter, inner), node.copingThickness, 0, node.copingProfile, node.copingCorner,
+    ), material)
+    coping.name = 'pool-coping'
+    coping.castShadow = true
+    coping.receiveShadow = true
+    group.add(coping)
+  }
+  if (!deferCuts) {
+    cutOverlapCoping(group, options.overlaps ?? [])
+    cutPoolSpilloverNotches(group, options.spilloverNotches ?? [], signedArea(inner) > 0)
+  }
+  return group
+}
+
+/** A placement silhouette avoids water targets, stone meshes and connection CSG. */
+export function buildPoolPlacementPreviewGeometry(nodeInput: PoolNode): Group {
+  const { node, inner, outlines } = createPoolAssemblyPlan(nodeInput)
+  const group = new Group()
+  group.name = 'pool-placement-preview'
+  group.position.y = node.finishedDeckElevation
+  const previewDepth = node.floorProfile === 'flat' ? node.depth : node.deepDepth
+  const basin = new Mesh(
+    extrudeVertically(traceShape(inner), previewDepth, -previewDepth),
+    new MeshBasicMaterial({ color: node.shellColor, transparent: true, opacity: 0.27, depthWrite: false, side: DoubleSide }),
+  )
+  basin.name = 'pool-preview-basin'
+  group.add(basin)
+  const waterGeometry = new ShapeGeometry(traceShape(inner))
+  waterGeometry.rotateX(-Math.PI / 2)
+  waterGeometry.translate(0, node.designWaterElevation, 0)
+  const water = new Mesh(waterGeometry,
+    new MeshBasicMaterial({ color: node.waterColor, transparent: true, opacity: 0.4, depthWrite: false, side: DoubleSide }),
+  )
+  water.name = 'pool-preview-water'
+  group.add(water)
+  const coping = new Mesh(
+    extrudeVertically(ringShape(outlines.copingOuter, inner), node.copingThickness, 0),
+    new MeshBasicMaterial({ color: node.copingColor, transparent: true, opacity: 0.5, depthWrite: false, side: DoubleSide }),
+  )
+  coping.name = 'pool-preview-coping'
+  group.add(coping)
+  return group
 }
 
 export function buildPoolGeometry(nodeInput: PoolNode, options: PoolGeometryOptions = {}): Group {
@@ -1100,40 +1263,20 @@ export function buildPoolGeometry(nodeInput: PoolNode, options: PoolGeometryOpti
 
   const waterElevation = plan.waterElevation
   const shellOuter = outlines.shellOuter
-  const copingOuter = outlines.copingOuter
-  const waterEffect = new PoolWaterEffect(node, options.waterResolution, options.atmosphere)
+  const waterEffect = options.waterEffect ?? new PoolWaterEffect(node, options.waterResolution, options.atmosphere)
   waterEffect.setBoundary(inner, options.removeWaterRegions)
   const shellMaterial = createTileMaterial(node, waterEffect, inner)
+  group.userData.shellMaterial = shellMaterial
+  group.userData.interiorFinish = node.interiorFinish
+  group.userData.finishMaterials = new Map([[node.interiorFinish, shellMaterial]])
+  group.userData.inner = inner
   const outerWallMaterial = new MeshStandardNodeMaterial({
     color: node.shellColor,
     metalness: 0,
     roughness: 0.9,
     side: DoubleSide,
   })
-  const copingMaterial = new MeshStandardNodeMaterial({
-    color: node.copingColor,
-    metalness: 0,
-    roughness: 0.52,
-    side: DoubleSide,
-  })
   const safeCoveRadius = plan.safeCoveRadius
-  const addSubmergedFeatureEdge = (
-    start: PoolPoint,
-    end: PoolPoint,
-    topDepth: number,
-    seed: number,
-  ) => {
-    if (node.copingStyle !== 'rock') return
-    group.add(buildSubmergedFeatureCopingGeometry(start, end, {
-      width: node.copingWidth,
-      thickness: node.copingThickness,
-      stoneLength: node.copingStoneLength,
-      irregularity: node.copingIrregularity,
-      seed,
-      color: node.copingColor,
-      topDepth,
-    }))
-  }
 
   const floor = new Mesh(
     createPoolFloorGeometry(inner, depth.depthAtX, node.floorThickness, cuts, options.removeFloorRegions),
@@ -1197,12 +1340,6 @@ export function buildPoolGeometry(nodeInput: PoolNode, options: PoolGeometryOpti
     shelf.castShadow = false
     shelf.receiveShadow = true
     group.add(shelf)
-    const shelfIntervals = getCrossSectionIntervals(inner, endX)
-    for (const [minimumZ, maximumZ] of shelfIntervals) {
-      addSubmergedFeatureEdge([endX, minimumZ], [endX, maximumZ], node.entryWaterDepth, node.copingSeed + 101)
-      addSubmergedFeatureEdge([depth.minimumX, minimumZ], [endX, minimumZ], node.entryWaterDepth, node.copingSeed + 102)
-      addSubmergedFeatureEdge([depth.minimumX, maximumZ], [endX, maximumZ], node.entryWaterDepth, node.copingSeed + 103)
-    }
   } else if (node.entryFeature === 'beach-entry') {
     const length = Math.min(node.entryLength, (depth.maximumX - depth.minimumX) * 0.6)
     const beach = new Mesh(
@@ -1243,16 +1380,6 @@ export function buildPoolGeometry(nodeInput: PoolNode, options: PoolGeometryOpti
       benchAssembly.add(bench)
     }
     group.add(benchAssembly)
-    if (node.copingStyle === 'rock') {
-      if (perimeter) {
-        for (const boundary of benchBoundaries) for (let index = 0; index < boundary.length; index += 1) {
-          addSubmergedFeatureEdge(boundary[index]!, boundary[(index + 1) % boundary.length]!, node.benchWaterDepth, node.copingSeed + 202 + index)
-        }
-      } else {
-        // The end bench follows the selected boundary; its coping is generated
-        // by the same continuous perimeter mode when a natural edge is needed.
-      }
-    }
   }
 
   const water = new Mesh(createWaterGeometry(inner, options.removeWaterRegions), waterEffect.material)
@@ -1265,40 +1392,7 @@ export function buildPoolGeometry(nodeInput: PoolNode, options: PoolGeometryOpti
   water.raycast = () => undefined
   group.add(water)
 
-  if (node.copingStyle === 'natural-stone' || node.copingStyle === 'rock') {
-    const coping = buildNaturalCopingGeometry(inner, {
-      width: Math.max(node.copingWidth, node.shellThickness + 0.03),
-      thickness: node.copingThickness,
-      stoneLength: node.copingStoneLength,
-      jointWidth: node.copingStyle === 'rock' ? Math.min(node.copingJointWidth, 0.008) : node.copingJointWidth,
-      irregularity: node.copingStyle === 'rock' ? Math.max(node.copingIrregularity, 0.75) : node.copingIrregularity,
-      seed: node.copingSeed,
-      rockLike: node.copingStyle === 'rock',
-      smoothBoundary: node.shape === 'spline'
-        || node.shape === 'circle'
-        || node.shape === 'kidney'
-        || node.shape === 'lagoon'
-        || node.shape === 'roman',
-      color: node.copingColor,
-    })
-    group.add(coping)
-    copingMaterial.dispose()
-  } else {
-    const coping = new Mesh(
-      extrudeVertically(
-        ringShape(copingOuter, inner),
-        node.copingThickness,
-        0,
-        node.copingProfile,
-        node.copingCorner,
-      ),
-      copingMaterial,
-    )
-    coping.name = 'pool-coping'
-    coping.castShadow = true
-    coping.receiveShadow = true
-    group.add(coping)
-  }
+  if (!options.skipCoping) group.add(buildPoolCopingGeometry(node, options, true))
 
   if (options.overlaps?.length) {
     const positions: number[] = []
@@ -1329,7 +1423,7 @@ export function buildPoolGeometry(nodeInput: PoolNode, options: PoolGeometryOpti
       wall.name = 'pool-overlap-separating-wall'
       group.add(wall)
     }
-    cutOverlapCoping(group,options.overlaps)
+    if (!options.skipCoping) cutOverlapCoping(group, options.overlaps)
 
 
   }
