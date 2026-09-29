@@ -125,7 +125,6 @@ export const LOD_OPTIONS = [
   { key: 'lod2Density', name: 'LOD2 density', min: 0.2, max: 1, step: 0.05, default: 1 },
   { key: 'lod1Prune', name: 'LOD1 prune', min: 0, max: 0.85, step: 0.05, default: 0, temperateOnly: true },
   { key: 'lod2Prune', name: 'LOD2 prune', min: 0, max: 0.85, step: 0.05, default: 0.35, temperateOnly: true },
-  { key: 'mobileTarget', name: 'Mobile performance target', type: 'bool', default: false },
 ];
 
 /**
@@ -342,7 +341,7 @@ export function generate({ species, seed = 1, controls = {}, lod = {}, assets = 
   const merged = mergeControls(species, controls, seed);
   const shaped = applySpeciesControls(sp, merged);
   const bag = assets?.barkMat ? assets : (placeholders ? placeholderAssets(species) : (assets ?? {}));
-  const { group, stems, tips } = buildTree(shaped, seed, bag, lod);
+  const { group, stems, tips } = buildTree(shaped, seed, bag, { ...lod, mobileTarget: true });
   group.userData.species = sp.name;
   return { group, stems, tips, stats: statsOf(group), preset: toPreset({ species, seed, controls: merged }), shaped };
 }

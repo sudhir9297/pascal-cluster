@@ -10,6 +10,7 @@ import { landingDefinition } from './ground-access/landing/definition'
 import { edgingDefinition } from './ground-access/edging/definition'
 import { retainingWallDefinition } from './ground-access/retaining-wall/definition'
 import { treeDefinition } from './tree/definition'
+import { plantDefinition } from './plant/definition'
 
 type PluginHostPanel = {
   id: string
@@ -60,11 +61,18 @@ const treeInspector: InspectorExtension & { primaryWhen: (node: AnyNode) => bool
   primaryWhen: (node) => (node.type as string) === 'landscape:tree',
 }
 
+const plantInspector: InspectorExtension & { primaryWhen: (node: AnyNode) => boolean } = {
+  id: 'pascal:landscape:plant', pluginId: 'pascal:landscape', kinds: ['landscape:plant'],
+  icon: { kind: 'iconify', name: 'lucide:sprout' }, title: 'Plant',
+  component: () => import('./plant/editor/panel'),
+  primaryWhen: (node) => (node.type as string) === 'landscape:plant',
+}
+
 /** Public plugin manifest. Landscape tools and node kinds can be added here. */
 export const landscapePlugin: Plugin = {
   id: 'pascal:landscape',
   apiVersion: 1,
-  inspectorExtensions: [retainingWallInspector, groundAreaInspector, treeInspector],
+  inspectorExtensions: [retainingWallInspector, groundAreaInspector, treeInspector, plantInspector],
   nodes: [
     pergolaDefinition as unknown as AnyNodeDefinition,
     pathwayDefinition as unknown as AnyNodeDefinition,
@@ -76,6 +84,7 @@ export const landscapePlugin: Plugin = {
     edgingDefinition as unknown as AnyNodeDefinition,
     retainingWallDefinition as unknown as AnyNodeDefinition,
     treeDefinition as unknown as AnyNodeDefinition,
+    plantDefinition as unknown as AnyNodeDefinition,
   ],
 }
 
@@ -106,3 +115,5 @@ export { EdgingNode } from './ground-access/edging/domain/schema'
 export { RetainingWallNode } from './ground-access/retaining-wall/domain/schema'
 export { TreeNode, TREE_KIND } from './tree/domain/schema'
 export { treeDefinition } from './tree/definition'
+export { PlantNode, PLANT_KIND } from './plant/domain/schema'
+export { plantDefinition } from './plant/definition'
