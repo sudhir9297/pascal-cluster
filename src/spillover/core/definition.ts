@@ -2,6 +2,7 @@ import type { FloorplanGeometry, GeometryContext, NodeDefinition } from '@pascal
 import { poolSpilloverParametrics } from '../editor/parametrics'
 import { firstPoolHintVisibility, secondPoolHintVisibility } from '../design/stage'
 import { DEFAULT_POOL_SPILLOVER, PoolSpilloverNode } from './schema'
+import { bakePoolSpilloverAnimation } from '../../core/export-animation'
 
 const poolSpilloverToolHints = [
   { key: 'Click', label: 'Select the first pool', visible: firstPoolHintVisibility },
@@ -79,6 +80,7 @@ export const poolSpilloverDefinition: NodeDefinition<typeof PoolSpilloverNode> =
     snappable: {},
   },
   renderer: { kind: 'parametric', module: () => import('../editor/preview') },
+  exportAnimation: ({ node, object }) => bakePoolSpilloverAnimation(node, object),
   floorplan: poolSpilloverFloorplan,
   tool: () => import('../editor/tool'),
   toolHints: poolSpilloverToolHints,

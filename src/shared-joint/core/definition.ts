@@ -1,6 +1,7 @@
 import type { NodeDefinition } from '@pascal-app/core'
 import { PoolSharedJointNode } from './schema'
 import { poolSharedJointParametrics } from '../editor/parametrics'
+import { bakePoolConnectionAnimations } from '../../core/export-animation'
 
 const DEFAULT_POOL_SHARED_JOINT = {
   position: [0, 0, 0] as [number, number, number],
@@ -40,6 +41,7 @@ export const poolSharedJointDefinition: NodeDefinition<typeof PoolSharedJointNod
     snappable: {},
   },
   renderer: { kind: 'parametric', module: () => import('../editor/preview') },
+  exportAnimation: ({ node, object }) => bakePoolConnectionAnimations(node, object),
   parametrics: poolSharedJointParametrics,
   presentation: {
     label: 'Pool connection',
