@@ -1,6 +1,6 @@
 import type { NodeDefinition } from '@pascal-app/core'
 import { GROUND_AREA_KIND, GroundAreaNode } from './domain/schema'
-import { buildGroundAreaFloorplan, buildGroundAreaGeometry } from './rendering/geometry'
+import { buildGroundAreaFloorplan, buildGroundAreaLiveGeometry } from './rendering/geometry'
 import { groundAreaFloorplanAffordances } from './editor/floorplan-affordances'
 import { groundAreaDrawingModeHint } from './editor/drawing-mode'
 import { groundAreaPaint } from './editor/paint'
@@ -23,7 +23,7 @@ export const groundAreaDefinition: NodeDefinition<typeof GroundAreaNode> = {
     deletable: true,
     duplicable: true,
   },
-  geometry: buildGroundAreaGeometry,
+  geometry: buildGroundAreaLiveGeometry,
   system: { module: () => import('./rendering/footprint-system') },
   floorplan: buildGroundAreaFloorplan,
   floorplanAffordances: groundAreaFloorplanAffordances,

@@ -19,8 +19,11 @@ export const GROUND_SURFACES = [
 export type GroundSurface = (typeof GROUND_SURFACES)[number]
 
 export const grass2SettingsSchema = z.object({
+  mode: z.enum(['blades', 'billboards']).default('blades'),
+  lighting: z.boolean().default(true),
   density: z.number().finite().min(0.15).max(2).default(1),
   height: z.number().finite().min(0.35).max(2).default(1),
+  flowers: z.boolean().default(true),
   flowerDensity: z.number().finite().min(0).max(1).default(0.6),
   flowerMix: z.enum(['mixed', 'clover', 'dandelion', 'wildflowers']).default('mixed'),
   wind: z.number().finite().min(0).max(1).default(0.55),

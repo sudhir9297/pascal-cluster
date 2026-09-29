@@ -4,6 +4,8 @@ import { PanelSection, useEditor } from '@pascal-app/editor'
 import { type AnyNode, type AnyNodeId, useScene } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import { PergolaPanel } from './pergola/editor/panel'
+import TreePanel from './tree/editor/panel'
+import { TREE_SPECIES, TREE_SPECIES_BY_KEY, treeControls } from './tree/domain/species'
 import { PathwayPanel } from './pathways/editor/panel'
 import { GroundAccessPanel } from './ground-access/panel'
 import GroundAreaPanel from './ground-areas/editor/panel'
@@ -12,15 +14,16 @@ import { CatalogListRow } from './editor/catalog-list-row'
 import { GROUND_SURFACE_THUMBNAILS, LANDSCAPE_CATALOG_THUMBNAILS } from './editor/catalog-thumbnails'
 import type { GroundSurface } from './ground-areas/domain/schema'
 
-type Menu = 'root' | 'pergola' | 'pathway' | 'patio' | 'deck' | 'concrete-slab' | 'landing' | 'edging' | 'retaining-wall'
+type Menu = 'root' | 'pergola' | 'pathway' | 'patio' | 'deck' | 'concrete-slab' | 'landing' | 'edging' | 'retaining-wall' | 'tree'
 type Target = 'ground-area' | Exclude<Menu, 'root'>
-type CatalogItem = { label: string; target: Target }
+type CatalogItem = { label: string; target: Target; species?: string }
 type CatalogGroup = { title: string; items: CatalogItem[] }
 type LayoutTab = 'layout' | 'planting' | 'review'
-type SceneGroup = 'Structures' | 'Surfaces' | 'Pathways'
-type SceneRow = { key: string; label: string; detail: string; thumbnail: string; nodes: AnyNode[]; target: Target }
+type SceneGroup = 'Structures' | 'Surfaces' | 'Pathways' | 'Plants'
+type SceneRow = { key: string; label: string; detail: string; thumbnail: string; nodes: AnyNode[]; target: Target; species?: string }
 
 const catalog: CatalogGroup[] = [
+  { title: 'Plants', items: TREE_SPECIES.map((species) => ({ label: species.name, target: 'tree', species: species.key })) },
   { title: 'Site', items: [{ label: 'Ground areas', target: 'ground-area' }] },
   { title: 'Pathways', items: [{ label: 'Walkways', target: 'pathway' }] },
   { title: 'Structures', items: [
@@ -48,6 +51,7 @@ function CatalogThumb({ item, size = 36 }: { item: CatalogItem; size?: number })
 }
 
 function formatDetail(node: AnyNode) {
+  if ((node.type as string) === 'landscape:tree') return `SeedThree · ${TREE_SPECIES_BY_KEY[(node as AnyNode & { species?: string }).species ?? 'whiteOak']?.name ?? 'Tree'}`
   const raw = node as AnyNode & { width?: number; depth?: number; vertices?: unknown[]; edges?: unknown[] }
   if (Array.isArray(raw.edges)) return `${raw.edges.length} ${raw.edges.length === 1 ? 'segment' : 'segments'}`
   if (typeof raw.width === 'number' && typeof raw.depth === 'number') return `${raw.width.toFixed(1)} m × ${raw.depth.toFixed(1)} m`
@@ -59,8 +63,13 @@ function sceneRows(nodes: AnyNode[], group: SceneGroup): SceneRow[] {
   for (const node of nodes) {
     const type = node.type as string
     const metadata = (node as AnyNode & { metadata?: Record<string, unknown> }).metadata
-    let definition: { group: SceneGroup; key: string; label: string; target: Target; thumbnail: string } | null = null
+    let definition: { group: SceneGroup; key: string; label: string; target: Target; thumbnail: string; species?: string } | null = null
     if (type === 'landscape:pergola' && group === 'Structures') definition = { group, key: type, label: 'Pergola', target: 'pergola', thumbnail: LANDSCAPE_CATALOG_THUMBNAILS.pergola }
+    else if (type === 'landscape:tree' && group === 'Plants') {
+      const species = (node as AnyNode & { species?: string }).species ?? 'whiteOak'
+      definition = { group, key: `${type}:${species}`, label: TREE_SPECIES_BY_KEY[species]?.name ?? 'Tree',
+        target: 'tree', species, thumbnail: LANDSCAPE_CATALOG_THUMBNAILS.tree }
+    }
     else if (type === 'landscape:deck' && group === 'Structures') definition = { group, key: type, label: 'Deck', target: 'deck', thumbnail: LANDSCAPE_CATALOG_THUMBNAILS.deck }
     else if (type === 'wall' && metadata?.landscapeRetainingWall === true && group === 'Structures') definition = { group, key: 'landscape:retaining-wall', label: 'Retaining wall', target: 'retaining-wall', thumbnail: LANDSCAPE_CATALOG_THUMBNAILS['retaining-wall'] }
     else if (type === 'landscape:ground-area' && group === 'Surfaces') {
@@ -83,7 +92,7 @@ function sceneRows(nodes: AnyNode[], group: SceneGroup): SceneRow[] {
     }
     if (!definition) continue
     const row = buckets.get(definition.key) ?? { key: definition.key, label: definition.label,
-      detail: formatDetail(node), thumbnail: definition.thumbnail, nodes: [], target: definition.target }
+      detail: formatDetail(node), thumbnail: definition.thumbnail, nodes: [], target: definition.target, species: definition.species }
     row.nodes.push(node)
     buckets.set(definition.key, row)
   }
@@ -102,7 +111,10 @@ function inventoryRows(group: SceneGroup, placed: SceneRow[]): SceneRow[] {
       target: 'ground-area' as const, thumbnail: GROUND_SURFACE_THUMBNAILS[surface], detail: 'Ground cover', nodes: [] }))
   const pathways: SceneRow[] = [{ key: 'landscape:pathway', label: 'Walkways', target: 'pathway',
     thumbnail: LANDSCAPE_CATALOG_THUMBNAILS.pathway, detail: 'Connected pathways', nodes: [] }]
-  const defaults = group === 'Structures' ? structures : group === 'Surfaces' ? surfaces : pathways
+  const plants: SceneRow[] = TREE_SPECIES.map((species) => ({ key: `landscape:tree:${species.key}`,
+    label: species.name, target: 'tree', species: species.key,
+    thumbnail: LANDSCAPE_CATALOG_THUMBNAILS.tree, detail: 'SeedThree plant', nodes: [] }))
+  const defaults = group === 'Structures' ? structures : group === 'Surfaces' ? surfaces : group === 'Plants' ? plants : pathways
   const placedByKey = new Map(placed.map((row) => [row.key, row]))
   return defaults.map((row) => {
     const current = placedByKey.get(row.key)
@@ -171,6 +183,7 @@ export default function LandscapePanel() {
   const selectedProduct = catalog.flatMap((group) => group.items).find((item) => item.target === menu)
   const menuTitle: Record<Menu, string> = {
     root: 'Landscape', pergola: 'Pergola', pathway: 'Walkways',
+    tree: 'SeedThree plants',
     patio: 'Patio', deck: 'Deck', 'concrete-slab': 'Concrete slab', landing: 'Landing', edging: 'Edging', 'retaining-wall': 'Retaining wall',
   }
   const levelNodes = useMemo(() => Object.values(nodes).filter((node) => node.parentId === activeLevelId), [nodes, activeLevelId])
@@ -178,15 +191,22 @@ export default function LandscapePanel() {
     Structures: inventoryRows('Structures', sceneRows(levelNodes, 'Structures')),
     Surfaces: inventoryRows('Surfaces', sceneRows(levelNodes, 'Surfaces')),
     Pathways: inventoryRows('Pathways', sceneRows(levelNodes, 'Pathways')),
+    Plants: inventoryRows('Plants', sceneRows(levelNodes, 'Plants')),
   }), [levelNodes])
-  const openProduct = (target: Target, row?: SceneRow) => {
+  const openProduct = (target: Target, row?: SceneRow | CatalogItem) => {
     setMenu(target === 'ground-area' ? 'root' : target)
     const requestedSurface = target === 'ground-area'
-      ? row?.key.startsWith('landscape:ground-area:')
+      ? row && 'key' in row && row.key.startsWith('landscape:ground-area:')
         ? row.key.split(':').at(-1) as GroundSurface : 'grass'
       : null
-    if (!hasSelectedLevel) return
     const editor = useEditor.getState()
+    if (target === 'tree') {
+      const species = row?.species ?? 'whiteOak'
+      const current = editor.toolDefaults['landscape:tree']
+      editor.setToolDefaults('landscape:tree', current?.species === species
+        ? current : { ...current, species, controls: treeControls(species), lod: {} })
+    }
+    if (!hasSelectedLevel) return
     if (target === 'patio' || target === 'deck' || target === 'concrete-slab' || target === 'landing' || target === 'edging') {
       const tool = `landscape:${target}`
       if (target !== 'edging' && !editor.toolDefaults[tool]?.shape) editor.setToolDefaults(tool, { ...editor.toolDefaults[tool], shape: 'rectangle' })
@@ -208,6 +228,8 @@ export default function LandscapePanel() {
       const kind = 'landscape:pergola'
       editor.setToolDefaults(kind, { ...editor.toolDefaults[kind], roofForm: editor.toolDefaults[kind]?.roofForm ?? 'flat' })
       editor.setMode('build'); editor.setTool(kind)
+    } else if (target === 'tree') {
+      editor.setMode('build'); editor.setTool('landscape:tree')
     }
   }
   const selectNode = (node: AnyNode) => {
@@ -248,13 +270,19 @@ export default function LandscapePanel() {
           <div className="pt-3"><GroundAreaPanel inSidebar surfaceChoice={groundAreaDefaults?.surface as GroundSurface | undefined} /></div>}
         {menu === 'root' && tab === 'layout' && activeTool !== GROUND_AREA_KIND && <>
           {query.trim() && <PanelSection title="Add landscape elements">
-            {searchedItems.map((item) => <CatalogListRow key={item.target} label={item.label} thumbnail={<CatalogThumb item={item} />} chevron onClick={() => openProduct(item.target)} />)}
+            {searchedItems.map((item) => <CatalogListRow key={`${item.target}:${item.species ?? ''}`} label={item.label} thumbnail={<CatalogThumb item={item} />} chevron onClick={() => openProduct(item.target, item)} />)}
             {!searchedItems.length && <p className="px-1 py-2 text-xs text-muted-foreground">No landscape elements match “{query}”.</p>}
           </PanelSection>}
           {renderInventory(['Structures', 'Surfaces', 'Pathways'], false, 'grid')}
           {!activeLevelId && <p className="px-1 py-3 text-xs text-muted-foreground">Select a level to see its landscape items.</p>}
         </>}
         {menu === 'root' && tab === 'planting' && <>
+          <PanelSection title="Add trees">
+            {TREE_SPECIES.filter((species) => !query.trim() || species.name.toLowerCase().includes(query.trim().toLowerCase()))
+              .map((species) => <CatalogListRow key={species.key} label={species.name}
+                thumbnail={<CatalogThumb item={{ label: species.name, target: 'tree', species: species.key }} />}
+                chevron onClick={() => openProduct('tree', { label: species.name, target: 'tree', species: species.key })} />)}
+          </PanelSection>
           <p className="px-1 py-4 text-xs leading-5 text-muted-foreground">
             Grass and other ground covers are listed once under Layout → Surfaces.
           </p>
@@ -263,7 +291,7 @@ export default function LandscapePanel() {
           <div className="px-1 pb-2 pt-4"><h3 className="m-0 text-sm font-semibold">Landscape review</h3><p className="mb-0 mt-1 text-xs text-muted-foreground">A summary of the items in this scene.</p></div>
           {countAll > 0 ? <>
             <div className="mb-3 grid grid-cols-2 gap-2">
-              {(['Structures', 'Surfaces', 'Pathways'] as const).map((name) => {
+              {(['Structures', 'Surfaces', 'Pathways', 'Plants'] as const).map((name) => {
                 const total = groups[name].reduce((sum, row) => sum + row.nodes.length, 0)
                 return total > 0 && <div key={name} className="rounded-md border border-border bg-secondary/40 p-3"><span className="block text-xs text-muted-foreground">{name}</span><strong className="mt-1 block text-lg">{total}</strong></div>
               })}
@@ -273,6 +301,7 @@ export default function LandscapePanel() {
           </> : <p className="px-1 py-3 text-xs text-muted-foreground">Nothing has been placed in this scene yet.</p>}
         </>}
         {menu === 'pergola' && <PergolaPanel />}
+        {menu === 'tree' && <TreePanel />}
         {menu === 'pathway' && <PathwayPanel />}
         {menu !== 'root' && ['patio', 'deck', 'concrete-slab', 'landing', 'edging', 'retaining-wall'].includes(menu) && <GroundAccessPanel item={menu as 'patio' | 'deck' | 'concrete-slab' | 'landing' | 'edging' | 'retaining-wall'} />}
       </div>

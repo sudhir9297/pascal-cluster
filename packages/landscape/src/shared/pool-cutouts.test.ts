@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test'
 import type { GeometryContext } from '@pascal-app/core'
 import polygonClipping from 'polygon-clipping'
 import { Raycaster, Vector3 } from 'three'
-import { poolCutoutsFor, subtractPoolCutouts } from './pool-cutouts'
+import { poolCutoutSignature, poolCutoutsFor, subtractPoolCutouts } from './pool-cutouts'
 import { buildAccessGeometry } from '../ground-access/shared/geometry'
 import { GroundAreaNode } from '../ground-areas/domain/schema'
 import { buildGroundAreaGeometry } from '../ground-areas/rendering/geometry'
@@ -21,6 +21,14 @@ const pool = {
   polygon: [[-1, -1], [1, -1], [1, 1], [-1, 1]] as [number, number][], copingWidth: 0.2,
 }
 const context = { sceneNodes: { [pool.id]: pool } } as unknown as GeometryContext
+
+test('only invalidates cutouts when their actual pool opening changes', () => {
+  const original = poolCutoutSignature(pool)
+  expect(poolCutoutSignature({ ...pool, waterColor: '#ff0000', depth: 2, copingColor: '#ffffff' })).toBe(original)
+  expect(poolCutoutSignature({ ...pool, position: [2, 5, 0] })).not.toBe(original)
+  expect(poolCutoutSignature({ ...pool, copingStyle: 'rock' })).not.toBe(original)
+  expect(poolCutoutSignature({ ...pool, visible: false })).toBeNull()
+})
 
 test('pool footprints cut landscape surfaces in their local coordinates', () => {
   const cutouts = poolCutoutsFor(surface, context)

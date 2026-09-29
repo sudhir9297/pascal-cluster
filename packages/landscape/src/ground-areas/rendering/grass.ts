@@ -3,16 +3,19 @@ import {
   DataTexture,
   Float32BufferAttribute,
   FrontSide,
+  InstancedBufferAttribute,
   InstancedMesh,
   LinearFilter,
   LinearMipmapLinearFilter,
-  MeshStandardMaterial,
   Object3D,
   RGBAFormat,
   RepeatWrapping,
   SRGBColorSpace,
   Uint16BufferAttribute,
+  Vector3,
 } from 'three'
+import { MeshStandardNodeMaterial } from 'three/webgpu'
+import { attribute, positionLocal, time, vec3 } from 'three/tsl'
 import type { Point } from '../domain/schema'
 
 const TEXTURE_SIZE = 512
@@ -47,7 +50,7 @@ function grassPatchAt(x: number, z: number) {
   return noise(x / 4, -z / 4, 4)
 }
 
-function makeGrassTexture() {
+export function makeGrassTexture(base: readonly [number, number, number] = [109, 130, 79], metresPerRepeat = 16) {
   const pixels = new Uint8Array(TEXTURE_SIZE * TEXTURE_SIZE * 4)
   for (let z = 0; z < TEXTURE_SIZE; z++) {
     for (let x = 0; x < TEXTURE_SIZE; x++) {
@@ -60,9 +63,9 @@ function makeGrassTexture() {
       const shade = 0.82 + broad * 0.22 + fine * 0.07 + (grain - 0.5) * 0.035 + stripe
       const fleck = grain > 0.99 ? 0.06 : 0
       const offset = (z * TEXTURE_SIZE + x) * 4
-      pixels[offset] = Math.min(255, Math.round(109 * (shade + fleck)))
-      pixels[offset + 1] = Math.min(255, Math.round(130 * (shade + fleck)))
-      pixels[offset + 2] = Math.min(255, Math.round(79 * (shade + fleck * 0.6)))
+      pixels[offset] = Math.min(255, Math.round(base[0] * (shade + fleck)))
+      pixels[offset + 1] = Math.min(255, Math.round(base[1] * (shade + fleck)))
+      pixels[offset + 2] = Math.min(255, Math.round(base[2] * (shade + fleck * 0.6)))
       pixels[offset + 3] = 255
     }
   }
@@ -88,7 +91,7 @@ function makeGrassTexture() {
   texture.colorSpace = SRGBColorSpace
   texture.wrapS = RepeatWrapping
   texture.wrapT = RepeatWrapping
-  texture.repeat.set(1 / 16, 1 / 16)
+  texture.repeat.set(1 / metresPerRepeat, 1 / metresPerRepeat)
   texture.magFilter = LinearFilter
   texture.minFilter = LinearMipmapLinearFilter
   texture.generateMipmaps = true
@@ -123,6 +126,7 @@ function makeBladeGeometry() {
   geometry.setAttribute('normal', new Float32BufferAttribute([
     0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0,
   ], 3))
+  geometry.setAttribute('windWeight', new Float32BufferAttribute([0, 0, 0.2, 0.2, 1], 1))
   // Draw both faces with front-facing triangles so the renderer does not flip
   // those normals when a blade is seen from behind.
   geometry.setIndex(new Uint16BufferAttribute([
@@ -173,32 +177,45 @@ export function makeGrassBlades(outline: readonly Point[], elevation: number, co
   }
   if (!placements.length) return null
 
-  const material = new MeshStandardMaterial({
+  // Shuffle once so reducing InstancedMesh.count at a distance keeps an even
+  // spread across the whole lawn rather than revealing only the first rows.
+  for (let index = placements.length - 1; index > 0; index--) {
+    const swap = Math.floor(hash(index, placements.length) * (index + 1))
+    ;[placements[index], placements[swap]] = [placements[swap]!, placements[index]!]
+  }
+  const material = new MeshStandardNodeMaterial({
     color: '#ffffff',
     emissive: '#617744',
     emissiveIntensity: 0.25,
     roughness: 0.98,
     side: FrontSide,
   })
-  const blades = new InstancedMesh(makeBladeGeometry(), material, placements.length)
+  const geometry = makeBladeGeometry()
+  const phases = new Float32Array(placements.length)
+  geometry.setAttribute('windPhase', new InstancedBufferAttribute(phases, 1))
+  const phase = attribute<'float'>('windPhase', 'float')
+  const weight = attribute<'float'>('windWeight', 'float')
+  const wave = time.mul(0.83).add(phase).sin()
+    .add(time.mul(1.31).add(phase.mul(1.31)).sin().mul(0.35))
+  material.positionNode = positionLocal.add(vec3(
+    wave.mul(weight).mul(0.3),
+    0,
+    wave.mul(weight).mul(0.015),
+  ))
+  const blades = new InstancedMesh(geometry, material, placements.length)
   const dummy = new Object3D()
   const color = material.color.clone()
-  const poses: { x: number; z: number; height: number; width: number; depth: number; tiltX: number; tiltZ: number; angle: number; phase: number }[] = []
   placements.forEach(([x, z, variety, lean, seedX, seedZ, patch], index) => {
     const height = 0.055 + variety * 0.065
-    const pose = {
-      x, z, height,
-      width: 0.012 + lean * 0.011,
-      depth: 0.4 + variety * 0.5,
-      tiltX: (lean - 0.5) * 0.16,
-      tiltZ: (variety - 0.5) * 0.16,
-      angle: hash(seedX + 91, seedZ) * Math.PI * 2,
-      phase: x * 0.64 + z * 0.54 + hash(seedX - 11, seedZ + 29) * 0.65,
-    }
-    poses.push(pose)
+    const width = 0.012 + lean * 0.011
+    const depth = 0.4 + variety * 0.5
+    const tiltX = (lean - 0.5) * 0.16
+    const tiltZ = (variety - 0.5) * 0.16
+    const angle = hash(seedX + 91, seedZ) * Math.PI * 2
+    phases[index] = x * 0.64 + z * 0.54 + hash(seedX - 11, seedZ + 29) * 0.65
     dummy.position.set(x, elevation + 0.025, z)
-    dummy.rotation.set(pose.tiltX, pose.angle, pose.tiltZ)
-    dummy.scale.set(pose.width, height, pose.depth)
+    dummy.rotation.set(tiltX, angle, tiltZ)
+    dummy.scale.set(width, height, depth)
     dummy.updateMatrix()
     blades.setMatrixAt(index, dummy.matrix)
     color.set(GRASS_COLORS[Math.min(GRASS_COLORS.length - 1, Math.floor(hash(seedX, seedZ + 53) * GRASS_COLORS.length))]!)
@@ -209,24 +226,18 @@ export function makeGrassBlades(outline: readonly Point[], elevation: number, co
   if (blades.instanceColor) blades.instanceColor.needsUpdate = true
   blades.computeBoundingSphere()
   if (blades.boundingSphere) blades.boundingSphere.radius += 0.02
-  // Update visible grass at a modest rate. Instance transforms use the
-  // regular material path, avoiding custom TSL nodes in the WebGPU renderer.
-  let lastWindUpdate = 0
-  blades.onBeforeRender = () => {
-    const now = performance.now()
-    if (now - lastWindUpdate < 40) return
-    lastWindUpdate = now
-    const seconds = now / 1000
-    poses.forEach((pose, index) => {
-      const phase = pose.phase + seconds * 0.83
-      const sway = Math.sin(phase) + Math.sin(phase * 1.31 + seconds * 0.24) * 0.35
-      dummy.position.set(pose.x, elevation + 0.025, pose.z)
-      dummy.rotation.set(pose.tiltX + Math.cos(phase * 0.81) * 0.035, pose.angle, pose.tiltZ + sway * 0.08)
-      dummy.scale.set(pose.width, pose.height, pose.depth)
-      dummy.updateMatrix()
-      blades.setMatrixAt(index, dummy.matrix)
-    })
-    blades.instanceMatrix.needsUpdate = true
+  const fullCount = placements.length
+  const centerX = (minX + maxX) / 2
+  const centerZ = (minZ + maxZ) / 2
+  const radius = Math.hypot(width, depth) / 2
+  const cameraPosition = new Vector3()
+  blades.onBeforeRender = (_renderer, _scene, camera) => {
+    camera.getWorldPosition(cameraPosition)
+    blades.worldToLocal(cameraPosition)
+    const nearest = Math.max(0, Math.hypot(cameraPosition.x - centerX, cameraPosition.z - centerZ,
+      cameraPosition.y - elevation) - radius)
+    blades.count = nearest > 40 ? Math.max(1, Math.ceil(fullCount * 0.25))
+      : nearest > 15 ? Math.max(1, Math.ceil(fullCount * 0.5)) : fullCount
   }
   blades.name = 'ground-area-grass-blades'
   blades.castShadow = false
