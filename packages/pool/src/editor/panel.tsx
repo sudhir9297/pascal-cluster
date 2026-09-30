@@ -1,6 +1,6 @@
 'use client'
 
-import { useScene } from '@pascal-app/core'
+import { type AnyNodeId, useScene } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import { useEffect, useState } from 'react'
 import { useEditor } from '@pascal-app/editor'
@@ -9,7 +9,10 @@ import { PoolSystemsPanel } from './systems-panel'
 import { PoolReviewPanel } from './review-panel'
 import { getSelectedPool } from './pool-selection'
 
+import { usePoolOutlineControls } from './outline-control-state'
+
 export default function PoolPanel() {
+  const outlineControls = usePoolOutlineControls()
   const [step, setStep] = useState<'shell' | 'systems' | 'review'>('shell')
   const drawingPool = useEditor((state) => state.mode === 'build' && state.tool === 'pool:pool')
   const selectedIds = useViewer((state) => state.selection.selectedIds)
@@ -60,6 +63,14 @@ export default function PoolPanel() {
           </button>
         </div>
       </header>
+      {step === 'shell' && pool && (pool.shape === 'spline' || pool.shape === 'custom') && <label className="flex shrink-0 items-center gap-2 border-b border-sidebar-border/70 px-3 py-2 text-xs">
+        <input type="checkbox" checked={outlineControls.nodeId === pool.id && outlineControls.showAll}
+          onChange={(event) => {
+            outlineControls.setShowAll(pool.id, event.target.checked)
+            useScene.getState().markDirty(pool.id as AnyNodeId)
+          }} />
+        Show all outline points
+      </label>}
       {step === 'shell' ? <PoolShellSettings /> : step === 'systems' ? <PoolSystemsPanel /> : <PoolReviewPanel onOpenShell={() => setStep('shell')} onOpenSystems={() => setStep('systems')} />}
     </div>
   )

@@ -10,16 +10,27 @@ import type { PoolNode, PoolPoint } from '../core/schema'
 import { editPoolOutline, poolOutlineAnchors, poolOutlineMidpoint, poolOutlineTangents,
   type PoolOutlineAction, type PoolOutlinePatch } from '../design/outline-edit'
 
+import { poolOutlineInsertIndices, visiblePoolOutlineAnchors } from '../design/outline-control-visibility'
+import { usePoolOutlineControls } from './outline-control-state'
+
 const colors = { anchor: '#d6a56a', tangent: '#8381ed', insert: '#68c99b', hover: '#a5b4fc' }
 
 export function PoolOutlineControls({ node }: { node: PoolNode }) {
   const group = useRef<Group>(null)
   const { camera, gl, raycaster } = useThree()
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
+  const controlState = usePoolOutlineControls()
+  const selectedIndex = controlState.nodeId === node.id ? controlState.focusedIndex : null
+  const setSelectedIndex = (index: number | null) => {
+    controlState.focus(node.id, index)
+    useScene.getState().markDirty(node.id as AnyNodeId)
+  }
   const [hoveredHandle, setHoveredHandle] = useState<string | null>(null)
   const cancelDrag = useRef<(() => void) | null>(null)
   const anchors = poolOutlineAnchors(node)
   const tangents = node.shape === 'spline' ? poolOutlineTangents(node) : []
+  const visibleIndices = visiblePoolOutlineAnchors(anchors, controlState.nodeId === node.id && controlState.showAll, selectedIndex)
+  const insertIndices = poolOutlineInsertIndices(anchors.length, selectedIndex)
+  const activeTangents = selectedIndex !== null && tangents[selectedIndex] ? [selectedIndex] : []
   const y = node.finishedDeckElevation + node.copingThickness + 0.18
   const scale = camera instanceof OrthographicCamera ? 1 / camera.zoom : 1
   const outline = useMemo(() => new BufferGeometry().setFromPoints(node.polygon.flatMap((point, index) => {
@@ -27,11 +38,12 @@ export function PoolOutlineControls({ node }: { node: PoolNode }) {
     return [new Vector3(point[0], y, point[1]), new Vector3(next[0], y, next[1])]
   })), [node.polygon, y])
   useEffect(() => () => outline.dispose(), [outline])
-  const guides = useMemo(() => new BufferGeometry().setFromPoints(tangents.flatMap((tangent, index) => {
+  const guides = useMemo(() => new BufferGeometry().setFromPoints(activeTangents.flatMap((index) => {
+    const tangent = tangents[index]!
     const anchor = anchors[index]!
     return [new Vector3(anchor[0], y, anchor[1]), new Vector3(tangent.incoming[0], y, tangent.incoming[1]),
       new Vector3(anchor[0], y, anchor[1]), new Vector3(tangent.outgoing[0], y, tangent.outgoing[1])]
-  })), [anchors, tangents, y])
+  })), [anchors, tangents, selectedIndex, y])
   useEffect(() => () => guides.dispose(), [guides])
   useEffect(() => () => cancelDrag.current?.(), [])
   useEffect(() => {
@@ -51,7 +63,7 @@ export function PoolOutlineControls({ node }: { node: PoolNode }) {
   const start = (event: ThreeEvent<PointerEvent>, action: Exclude<PoolOutlineAction, 'delete'>, index: number) => {
     if (event.button !== 0 || cancelDrag.current || !group.current) return
     event.stopPropagation()
-    setSelectedIndex(action === 'insert' ? index + 1 : index)
+    setSelectedIndex(index)
     const id = node.id as AnyNodeId
     const controls = group.current
     controls.updateWorldMatrix(true, false)
@@ -80,7 +92,10 @@ export function PoolOutlineControls({ node }: { node: PoolNode }) {
       releaseHistory()
       useViewer.getState().setInputDragging(false)
       document.body.style.cursor = ''
-      if (commit && patch) useScene.getState().updateNode(id, patch as Partial<AnyNode>)
+      if (commit && patch) {
+        useScene.getState().updateNode(id, patch as Partial<AnyNode>)
+        if (action === 'insert') setSelectedIndex(index + 1)
+      }
       useLiveNodeOverrides.getState().clear(id)
       useScene.getState().markDirty(id)
     }
@@ -136,12 +151,12 @@ export function PoolOutlineControls({ node }: { node: PoolNode }) {
     <lineSegments geometry={outline} raycast={() => null} renderOrder={1010}>
       <lineBasicMaterial color={colors.anchor} depthTest={false} depthWrite={false} />
     </lineSegments>
-    {tangents.length > 0 && <lineSegments geometry={guides} raycast={() => null} renderOrder={1010}>
+    {activeTangents.length > 0 && <lineSegments geometry={guides} raycast={() => null} renderOrder={1010}>
       <lineBasicMaterial color={colors.tangent} depthTest={false} depthWrite={false} />
     </lineSegments>}
-    {anchors.map((point, index) => handle(point, 'move', index))}
-    {anchors.map((_, index) => handle(poolOutlineMidpoint(node, index), 'insert', index))}
-    {tangents.flatMap((tangent, index) => [handle(tangent.incoming, 'incoming', index),
-      handle(tangent.outgoing, 'outgoing', index)])}
+    {visibleIndices.map((index) => handle(anchors[index]!, 'move', index))}
+    {insertIndices.map((index) => handle(poolOutlineMidpoint(node, index), 'insert', index))}
+    {activeTangents.flatMap((index) => [handle(tangents[index]!.incoming, 'incoming', index),
+      handle(tangents[index]!.outgoing, 'outgoing', index)])}
   </group>
 }
