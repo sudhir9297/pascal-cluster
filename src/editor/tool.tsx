@@ -57,8 +57,8 @@ type Point = [number, number]
 
 const Y_OFFSET = 0.02
 const FREEHAND_CLOSE_DISTANCE = 0.25
-const FREEHAND_SAMPLE_DISTANCE = 0.08
-const FREEHAND_SIMPLIFY_TOLERANCE = 0.12
+const FREEHAND_SAMPLE_DISTANCE = 0.03
+const FREEHAND_SIMPLIFY_TOLERANCE = 0.04
 const SURFACE_UP = new Vector3(0, 1, 0)
 const surfacePointScratch = new Vector3()
 

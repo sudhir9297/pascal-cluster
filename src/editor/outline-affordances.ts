@@ -2,6 +2,8 @@ import { type AnyNode, type AnyNodeId, type FloorplanAffordance, useLiveNodeOver
 import type { PoolNode, PoolPoint } from '../core/schema'
 import { editPoolOutline, type PoolOutlinePatch } from '../design/outline-edit'
 
+import { usePoolOutlineControls } from './outline-control-state'
+
 function localPoint(node: PoolNode, [x, z]: readonly [number, number]): PoolPoint {
   const dx = x - node.position[0], dz = z - node.position[2]
   const angle = node.rotation[1]
@@ -14,6 +16,10 @@ function outlineAffordance(action: 'move' | 'insert' | 'delete' | 'incoming' | '
       const index = (payload as { index?: number }).index
       const id = node.id as AnyNodeId
       let patch: PoolOutlinePatch | null = null
+      if (index !== undefined) {
+        usePoolOutlineControls.getState().focus(node.id, index)
+        useScene.getState().markDirty(id)
+      }
       return {
         affectedIds: [id],
         apply({ planPoint }) {
@@ -27,7 +33,10 @@ function outlineAffordance(action: 'move' | 'insert' | 'delete' | 'incoming' | '
         },
         canCommit() { return patch !== null },
         commit() {
-          if (patch) useScene.getState().updateNode(id, patch as Partial<AnyNode>)
+          if (patch) {
+            useScene.getState().updateNode(id, patch as Partial<AnyNode>)
+            usePoolOutlineControls.getState().focus(node.id, action === 'insert' ? index! + 1 : action === 'delete' ? null : index!)
+          }
           useLiveNodeOverrides.getState().clear(id)
           useScene.getState().markDirty(id)
         },

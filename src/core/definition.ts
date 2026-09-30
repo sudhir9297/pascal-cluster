@@ -6,6 +6,8 @@ import { DEFAULT_POOL, PoolNode, resolvePoolPolygon } from './schema'
 import { createPoolShapePolygon, getPoolPolygonDimensions, isDrawnPoolShape } from '../design/shapes'
 import { poolOutlineAnchors, poolOutlineMidpoint, poolOutlineTangents } from '../design/outline-edit'
 import { poolOutlineAffordances } from '../editor/outline-affordances'
+import { poolOutlineInsertIndices, visiblePoolOutlineAnchors } from '../design/outline-control-visibility'
+import { usePoolOutlineControls } from '../editor/outline-control-state'
 import { bakePoolWaterAnimation } from './export-animation'
 
 type PoolDefinition = NodeDefinition<typeof PoolNode> & Record<string, unknown>
@@ -440,31 +442,39 @@ export function poolFloorplan(node: PoolNode, ctx?: GeometryContext): FloorplanG
     strokeWidth: 1.5, vectorEffect: 'non-scaling-stroke', pointerEvents: 'none',
   }
   if (!isDrawnPoolShape(node.shape)) return { kind: 'group', children: [basin, selectionOutline] }
-  const anchors = poolOutlineAnchors(node).map(toPlan)
+  const localAnchors = poolOutlineAnchors(node)
+  const anchors = localAnchors.map(toPlan)
+  const controls = usePoolOutlineControls.getState()
+  const focused = controls.nodeId === node.id ? controls.focusedIndex : null
+  const visibleIndices = visiblePoolOutlineAnchors(localAnchors, controls.nodeId === node.id && controls.showAll, focused)
+  const insertIndices = poolOutlineInsertIndices(anchors.length, focused)
   const tangents = node.shape === 'spline' ? poolOutlineTangents(node).map((tangent) => ({
     incoming: toPlan(tangent.incoming), outgoing: toPlan(tangent.outgoing),
   })) : []
   return { kind: 'group', children: [basin, selectionOutline,
-    ...anchors.map((point, index): FloorplanGeometry => ({
-      kind: 'endpoint-handle', point, state: 'idle', variant: 'endpoint',
+    ...visibleIndices.map((index): FloorplanGeometry => ({
+      kind: 'endpoint-handle', point: anchors[index]!, state: focused === index ? 'active' : 'idle', variant: 'endpoint',
       affordance: 'pool-outline-move', payload: { index },
     })),
-    ...anchors.map((_, index): FloorplanGeometry => ({
+    ...insertIndices.map((index): FloorplanGeometry => ({
       kind: 'midpoint-handle', point: toPlan(poolOutlineMidpoint(node, index)),
       affordance: 'pool-outline-insert', payload: { index },
     })),
-    ...tangents.flatMap((tangent, index): FloorplanGeometry[] => [
-      { kind: 'line', x1: anchors[index]![0], y1: anchors[index]![1],
-        x2: tangent.incoming[0], y2: tangent.incoming[1], stroke: '#8381ed',
-        strokeWidth: 1.25, vectorEffect: 'non-scaling-stroke' },
-      { kind: 'line', x1: anchors[index]![0], y1: anchors[index]![1],
-        x2: tangent.outgoing[0], y2: tangent.outgoing[1], stroke: '#8381ed',
-        strokeWidth: 1.25, vectorEffect: 'non-scaling-stroke' },
-      { kind: 'endpoint-handle', point: tangent.incoming, state: 'idle', variant: 'curve',
-        affordance: 'pool-outline-incoming', payload: { index } },
-      { kind: 'endpoint-handle', point: tangent.outgoing, state: 'idle', variant: 'curve',
-        affordance: 'pool-outline-outgoing', payload: { index } },
-    ]),
+    ...(focused !== null && tangents[focused] ? [focused] : []).flatMap((index): FloorplanGeometry[] => {
+      const tangent = tangents[index]!
+      return [
+        { kind: 'line', x1: anchors[index]![0], y1: anchors[index]![1],
+          x2: tangent.incoming[0], y2: tangent.incoming[1], stroke: '#8381ed',
+          strokeWidth: 1.25, vectorEffect: 'non-scaling-stroke' },
+        { kind: 'line', x1: anchors[index]![0], y1: anchors[index]![1],
+          x2: tangent.outgoing[0], y2: tangent.outgoing[1], stroke: '#8381ed',
+          strokeWidth: 1.25, vectorEffect: 'non-scaling-stroke' },
+        { kind: 'endpoint-handle', point: tangent.incoming, state: 'idle', variant: 'curve',
+          affordance: 'pool-outline-incoming', payload: { index } },
+        { kind: 'endpoint-handle', point: tangent.outgoing, state: 'idle', variant: 'curve',
+          affordance: 'pool-outline-outgoing', payload: { index } },
+      ]
+    }),
   ] }
 }
 

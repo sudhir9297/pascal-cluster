@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { PoolNode } from '../core/schema'
 import { editPoolOutline, poolOutlineAnchors, poolOutlineTangents } from './outline-edit'
 import { sampleClosedPoolSpline } from './shapes'
+import { usePoolOutlineControls } from '../editor/outline-control-state'
 import { poolFloorplan } from '../core/definition'
 import type { GeometryContext } from '@pascal-app/core'
 
@@ -43,16 +44,23 @@ describe('drawn pool outline edits', () => {
     expect(editPoolOutline(triangle, 'delete', 0)).toBeNull()
   })
 
-  test('shows anchor, insert, and tangent controls in the selected floorplan', () => {
+  test('shows secondary controls only for the focused floorplan anchor', () => {
     const anchors: [number, number][] = [[-4, -2], [4, -2], [4, 2], [-4, 2]]
     const pool = PoolNode.parse({ shape: 'spline', outlineControlPoints: anchors,
       polygon: sampleClosedPoolSpline(anchors, 8, 0.35) })
+    usePoolOutlineControls.setState({ nodeId: null, focusedIndex: null, showAll: false })
+    const context = { viewState: { selected: true, palette: { selectedStroke: '#22c55e' } } } as GeometryContext
     const plan = poolFloorplan(pool, { viewState: { selected: true, palette: { selectedStroke: '#22c55e' } } } as GeometryContext)
     expect(plan.kind).toBe('group')
     if (plan.kind !== 'group') return
     expect(plan.children.filter((item) => item.kind === 'endpoint-handle' && item.affordance === 'pool-outline-move')).toHaveLength(4)
-    expect(plan.children.filter((item) => item.kind === 'midpoint-handle' && item.affordance === 'pool-outline-insert')).toHaveLength(4)
-    expect(plan.children.filter((item) => item.kind === 'endpoint-handle' && item.affordance === 'pool-outline-incoming')).toHaveLength(4)
-    expect(plan.children.filter((item) => item.kind === 'endpoint-handle' && item.affordance === 'pool-outline-outgoing')).toHaveLength(4)
+    expect(plan.children.filter((item) => item.kind === 'midpoint-handle')).toHaveLength(0)
+    expect(plan.children.filter((item) => item.kind === 'endpoint-handle' && item.variant === 'curve')).toHaveLength(0)
+    usePoolOutlineControls.getState().focus(pool.id, 2)
+    const focused = poolFloorplan(pool, context)
+    if (focused.kind !== 'group') throw new Error('Expected outline controls')
+    expect(focused.children.filter((item) => item.kind === 'midpoint-handle')).toHaveLength(2)
+    expect(focused.children.filter((item) => item.kind === 'endpoint-handle' && item.variant === 'curve')).toHaveLength(2)
+    usePoolOutlineControls.setState({ nodeId: null, focusedIndex: null, showAll: false })
   })
 })
