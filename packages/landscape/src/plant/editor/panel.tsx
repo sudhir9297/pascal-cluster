@@ -31,10 +31,10 @@ export default function PlantPanel() {
       <label className="mb-2 flex items-center justify-between gap-2 text-xs text-foreground/80">
         <span>Plant</span><select className={selectClass} value={node.preset}
           onChange={(event) => update({ preset: event.currentTarget.value })}>
-          {PLANT_PRESETS.map((item) => <option key={item.key} value={item.key}>{item.name} · {item.source}</option>)}
+          {PLANT_PRESETS.map((item) => <option key={item.key} value={item.key}>{item.name}</option>)}
         </select>
       </label>
-      <p className="mb-2 text-xs text-muted-foreground">{preset?.category} · {preset?.source}</p>
+      <p className="mb-2 text-xs text-muted-foreground">{preset?.category}</p>
       {!selected && <button type="button" disabled={!levelId} onClick={start}
         className="w-full rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground disabled:opacity-50">
         {active ? 'Click in scene to place plant' : `Place ${preset?.name ?? 'plant'}`}

@@ -30,8 +30,8 @@ export const treeDefinition: NodeDefinition<typeof TreeNode> = {
     { key: 'Esc', label: 'Cancel' },
   ],
   presentation: {
-    label: 'SeedThree tree',
-    description: 'Procedural SeedThree species with editable growth, material, and LOD controls.',
+    label: 'Tree',
+    description: 'Procedural trees with editable growth, material, and LOD controls.',
     icon: { kind: 'iconify', name: 'lucide:tree-deciduous' },
     paletteSection: 'furnish',
     hidden: true,

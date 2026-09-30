@@ -65,7 +65,7 @@ export const PLANT_PRESETS: PlantPreset[] = [
     ['fab:hardleaf', 'Hard leaf', 1.2, 1.4, '#668e58'],
   ]),
   ...make('Claude grass artifact', 'Deciduous trees', 'tree', [
-    ['claude:oak', 'Oak', 9, 7, '#517749'], ['claude:kobushi', 'Kobushi', 7, 5, '#829a64'],
+    ['claude:oak', 'Oak tree', 9, 7, '#517749'], ['claude:kobushi', 'Kobushi', 7, 5, '#829a64'],
     ['claude:kaki', 'Persimmon', 6, 5, '#82944e', '#da8e40'],
     ['claude:willow', 'Willow', 8, 7, '#71925d'], ['claude:keyaki', 'Keyaki', 10, 8, '#5f8d51'],
   ]),
@@ -74,7 +74,7 @@ export const PLANT_PRESETS: PlantPreset[] = [
     ['claude:sakura', 'Sakura', 7, 6, '#78915d', '#efc8d7'],
   ]),
   ...make('Claude grass artifact', 'Conifers', 'conifer', [
-    ['claude:cedar', 'Cedar', 10, 4, '#3d6b52'],
+    ['claude:cedar', 'Cedar tree', 10, 4, '#3d6b52'],
     ['claude:evergreen', 'Evergreen', 7, 5, '#427054'],
   ]),
   ...make('Claude grass artifact', 'Shrubs and bamboo', 'shrub', [
@@ -83,7 +83,7 @@ export const PLANT_PRESETS: PlantPreset[] = [
     ['claude:tsutsuji', 'Tsutsuji azalea', 1.5, 2, '#578e51', '#d887aa'],
   ]),
   ...make('Claude grass artifact', 'Shrubs and bamboo', 'bamboo', [
-    ['claude:bamboo', 'Bamboo', 5, 1.7, '#63a45b'],
+    ['claude:bamboo', 'Bamboo stand', 5, 1.7, '#63a45b'],
   ]),
   ...make('Claude grass artifact', 'Grasses and meadows', 'grass', [
     ['claude:meadow', 'Meadow grass', 0.6, 2, '#74a153'],

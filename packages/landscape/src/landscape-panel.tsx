@@ -14,7 +14,7 @@ import { GroundAccessPanel } from './ground-access/panel'
 import GroundAreaPanel from './ground-areas/editor/panel'
 import { GROUND_AREA_KIND } from './ground-areas/domain/schema'
 import { CatalogListRow } from './editor/catalog-list-row'
-import { GROUND_SURFACE_THUMBNAILS, LANDSCAPE_CATALOG_THUMBNAILS } from './editor/catalog-thumbnails'
+import { GROUND_SURFACE_THUMBNAILS, LANDSCAPE_CATALOG_THUMBNAILS, TREE_SPECIES_THUMBNAILS } from './editor/catalog-thumbnails'
 import type { GroundSurface } from './ground-areas/domain/schema'
 
 type Menu = 'root' | 'pergola' | 'pathway' | 'patio' | 'deck' | 'concrete-slab' | 'landing' | 'edging' | 'retaining-wall' | 'tree' | 'plant'
@@ -28,7 +28,7 @@ type SceneRow = { key: string; label: string; detail: string; thumbnail: string;
 const catalog: CatalogGroup[] = [
   { title: 'Plants', items: TREE_SPECIES.map((species) => ({ label: species.name, target: 'tree', species: species.key })) },
   ...PLANT_CATEGORIES.map((category) => ({ title: category, items: PLANT_PRESETS.filter((plant) => plant.category === category)
-    .map((plant) => ({ label: `${plant.name} · ${plant.source}`, target: 'plant' as const, species: plant.key })) })),
+    .map((plant) => ({ label: plant.name, target: 'plant' as const, species: plant.key })) })),
   { title: 'Site', items: [{ label: 'Ground areas', target: 'ground-area' }] },
   { title: 'Pathways', items: [{ label: 'Walkways', target: 'pathway' }] },
   { title: 'Structures', items: [
@@ -50,14 +50,15 @@ function SearchIcon() {
 }
 
 function CatalogThumb({ item, size = 36 }: { item: CatalogItem; size?: number }) {
-  return <img src={item.target === 'plant' && item.species ? FAB_PLANT_THUMBNAILS[item.species] ?? LANDSCAPE_CATALOG_THUMBNAILS.plant : LANDSCAPE_CATALOG_THUMBNAILS[item.target]} alt="" aria-hidden="true"
+  const treeThumbnail = item.target === 'tree' && item.species ? TREE_SPECIES_THUMBNAILS[item.species] : undefined
+  return <img src={treeThumbnail ?? (item.target === 'plant' && item.species ? FAB_PLANT_THUMBNAILS[item.species] ?? LANDSCAPE_CATALOG_THUMBNAILS.plant : LANDSCAPE_CATALOG_THUMBNAILS[item.target])} alt="" aria-hidden="true"
     width={size} height={size} style={{ width: size, height: size, flex: `0 0 ${size}px`,
-      objectFit: 'cover', borderRadius: 5, border: '1px solid color-mix(in srgb, var(--foreground) 13%, transparent)' }} />
+      objectFit: treeThumbnail ? 'contain' : 'cover', borderRadius: 5, border: '1px solid color-mix(in srgb, var(--foreground) 13%, transparent)' }} />
 }
 
 function formatDetail(node: AnyNode) {
-  if ((node.type as string) === 'landscape:tree') return `SeedThree · ${TREE_SPECIES_BY_KEY[(node as AnyNode & { species?: string }).species ?? 'whiteOak']?.name ?? 'Tree'}`
-  if ((node.type as string) === 'landscape:plant') return PLANT_PRESET_BY_KEY[(node as AnyNode & { preset?: string }).preset ?? '']?.source ?? 'Plant'
+  if ((node.type as string) === 'landscape:tree') return 'Tree'
+  if ((node.type as string) === 'landscape:plant') return PLANT_PRESET_BY_KEY[(node as AnyNode & { preset?: string }).preset ?? '']?.category ?? 'Plant'
   const raw = node as AnyNode & { width?: number; depth?: number; vertices?: unknown[]; edges?: unknown[] }
   if (Array.isArray(raw.edges)) return `${raw.edges.length} ${raw.edges.length === 1 ? 'segment' : 'segments'}`
   if (typeof raw.width === 'number' && typeof raw.depth === 'number') return `${raw.width.toFixed(1)} m × ${raw.depth.toFixed(1)} m`
@@ -74,7 +75,7 @@ function sceneRows(nodes: AnyNode[], group: SceneGroup): SceneRow[] {
     else if (type === 'landscape:tree' && group === 'Plants') {
       const species = (node as AnyNode & { species?: string }).species ?? 'whiteOak'
       definition = { group, key: `${type}:${species}`, label: TREE_SPECIES_BY_KEY[species]?.name ?? 'Tree',
-        target: 'tree', species, thumbnail: LANDSCAPE_CATALOG_THUMBNAILS.tree }
+        target: 'tree', species, thumbnail: TREE_SPECIES_THUMBNAILS[species] ?? LANDSCAPE_CATALOG_THUMBNAILS.tree }
     }
     else if (type === 'landscape:plant' && group === 'Plants') {
       const preset = (node as AnyNode & { preset?: string }).preset ?? ''
@@ -124,10 +125,10 @@ function inventoryRows(group: SceneGroup, placed: SceneRow[]): SceneRow[] {
     thumbnail: LANDSCAPE_CATALOG_THUMBNAILS.pathway, detail: 'Connected pathways', nodes: [] }]
   const plants: SceneRow[] = [...TREE_SPECIES.map((species) => ({ key: `landscape:tree:${species.key}`,
     label: species.name, target: 'tree' as const, species: species.key,
-    thumbnail: LANDSCAPE_CATALOG_THUMBNAILS.tree, detail: 'SeedThree plant', nodes: [] })),
+    thumbnail: TREE_SPECIES_THUMBNAILS[species.key] ?? LANDSCAPE_CATALOG_THUMBNAILS.tree, detail: 'Tree', nodes: [] })),
     ...PLANT_PRESETS.map((plant) => ({ key: `landscape:plant:${plant.key}`, label: plant.name,
       target: 'plant' as const, species: plant.key, thumbnail: FAB_PLANT_THUMBNAILS[plant.key] ?? LANDSCAPE_CATALOG_THUMBNAILS.plant,
-      detail: plant.source, nodes: [] }))]
+      detail: plant.category, nodes: [] }))]
   const defaults = group === 'Structures' ? structures : group === 'Surfaces' ? surfaces : group === 'Plants' ? plants : pathways
   const placedByKey = new Map(placed.map((row) => [row.key, row]))
   return defaults.map((row) => {
@@ -154,15 +155,12 @@ function InventoryRow({ row, onAdd }: { row: SceneRow; onAdd: (row: SceneRow) =>
 }
 
 function InventoryGridCard({ row, onAdd }: { row: SceneRow; onAdd: (row: SceneRow) => void }) {
-  return <button type="button" onClick={() => onAdd(row)}
-    aria-label={`Add ${row.label}`}
-    className="overflow-hidden rounded-md border border-border bg-secondary/30 text-left text-foreground transition-colors hover:bg-accent/30 focus-visible:outline-2 focus-visible:outline-ring">
-    <img src={row.thumbnail} alt="" aria-hidden="true" width={112} height={54}
-      className="h-[54px] w-full object-cover" />
-    <span className="flex min-h-8 items-center gap-1.5 px-2 py-1">
-      <span className="min-w-0 flex-1 truncate text-[11px] font-medium">{row.label}</span>
-      <span aria-label={`${row.nodes.length} placed`} className="min-w-6 rounded bg-background/60 px-1.5 py-0.5 text-center text-[10px]">{row.nodes.length}</span>
-    </span>
+  const transparentTree = row.target === 'tree' && Boolean(TREE_SPECIES_THUMBNAILS[row.species ?? ''])
+  return <button type="button" onClick={() => onAdd(row)} aria-label={`Add ${row.label}`}
+    className="group min-w-0 border-0 bg-transparent p-0 text-left text-foreground focus-visible:outline-2 focus-visible:outline-ring">
+    <img src={row.thumbnail} alt="" aria-hidden="true" width={112} height={112}
+      className={`aspect-square w-full rounded-md border border-border bg-secondary/30 transition-colors group-hover:bg-accent/30 ${transparentTree ? 'object-contain p-2' : 'object-cover'}`} />
+    <span className="block truncate pt-1 text-[11px] font-medium leading-tight">{row.label}</span>
   </button>
 }
 
@@ -197,7 +195,7 @@ export default function LandscapePanel() {
   const selectedProduct = catalog.flatMap((group) => group.items).find((item) => item.target === menu)
   const menuTitle: Record<Menu, string> = {
     root: 'Landscape', pergola: 'Pergola', pathway: 'Walkways',
-    tree: 'SeedThree plants', plant: 'Plant',
+    tree: 'Trees', plant: 'Plant',
     patio: 'Patio', deck: 'Deck', 'concrete-slab': 'Concrete slab', landing: 'Landing', edging: 'Edging', 'retaining-wall': 'Retaining wall',
   }
   const levelNodes = useMemo(() => Object.values(nodes).filter((node) => node.parentId === activeLevelId), [nodes, activeLevelId])
@@ -259,11 +257,15 @@ export default function LandscapePanel() {
     if (placedOnly && rows.length === 0) return []
     return <PanelSection key={name} title={name}>
       {rows.length ? layout === 'grid'
-        ? <div className="grid grid-cols-2 gap-2 px-1 pb-2">{rows.map((row) => <InventoryGridCard key={row.key} row={row} onAdd={(item) => openProduct(item.target, item)} />)}</div>
+        ? <div className="grid grid-cols-3 gap-2 px-1 pb-2">{rows.map((row) => <InventoryGridCard key={row.key} row={row} onAdd={(item) => openProduct(item.target, item)} />)}</div>
         : rows.map((row) => <InventoryRow key={row.key} row={row} onAdd={(item) => openProduct(item.target, item)} />)
         : <p className="px-1 py-2 text-xs text-muted-foreground">{query ? `No ${name.toLowerCase()} match “${query}”.` : `No ${name.toLowerCase()} placed yet.`}</p>}
     </PanelSection>
   })
+  const renderPlantGrid = (rows: SceneRow[]) => <div className="grid grid-cols-3 gap-2 px-1 pb-2">
+    {rows.filter((row) => !query.trim() || row.label.toLowerCase().includes(query.trim().toLowerCase()))
+      .map((row) => <InventoryGridCard key={row.key} row={row} onAdd={(item) => openProduct(item.target, item)} />)}
+  </div>
   const searchedItems = filteredCatalog.flatMap((group) => group.items)
   const countAll = Object.values(groups).reduce((total, rows) => total + rows.reduce((subtotal, row) => subtotal + row.nodes.length, 0), 0)
   return (
@@ -295,18 +297,12 @@ export default function LandscapePanel() {
           {!activeLevelId && <p className="px-1 py-3 text-xs text-muted-foreground">Select a level to see its landscape items.</p>}
         </>}
         {menu === 'root' && tab === 'planting' && <>
-          <PanelSection title="SeedThree trees">
-            {TREE_SPECIES.filter((species) => !query.trim() || species.name.toLowerCase().includes(query.trim().toLowerCase()))
-              .map((species) => <CatalogListRow key={species.key} label={species.name}
-                thumbnail={<CatalogThumb item={{ label: species.name, target: 'tree', species: species.key }} />}
-                chevron onClick={() => openProduct('tree', { label: species.name, target: 'tree', species: species.key })} />)}
+          <PanelSection title="Trees">
+            {renderPlantGrid(groups.Plants.filter((row) => row.target === 'tree'))}
           </PanelSection>
           {PLANT_CATEGORIES.map((category) => <PanelSection key={category} title={category} defaultExpanded={category === 'Deciduous trees'}>
-            {PLANT_PRESETS.filter((plant) => plant.category === category && (!query.trim() ||
-              `${plant.name} ${plant.source}`.toLowerCase().includes(query.trim().toLowerCase())))
-              .map((plant) => <CatalogListRow key={plant.key} label={`${plant.name} · ${plant.source}`}
-                thumbnail={<CatalogThumb item={{ label: plant.name, target: 'plant', species: plant.key }} />}
-                chevron onClick={() => openProduct('plant', { label: plant.name, target: 'plant', species: plant.key })} />)}
+            {renderPlantGrid(groups.Plants.filter((row) => row.target === 'plant' &&
+              PLANT_PRESET_BY_KEY[row.species ?? '']?.category === category))}
           </PanelSection>)}
         </>}
         {menu === 'root' && tab === 'review' && <>
