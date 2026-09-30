@@ -56,7 +56,7 @@ const treeInspector: InspectorExtension & { primaryWhen: (node: AnyNode) => bool
   pluginId: 'pascal:landscape',
   kinds: ['landscape:tree'],
   icon: { kind: 'iconify', name: 'lucide:tree-deciduous' },
-  title: 'SeedThree tree',
+  title: 'Tree',
   component: () => import('./tree/editor/panel'),
   primaryWhen: (node) => (node.type as string) === 'landscape:tree',
 }

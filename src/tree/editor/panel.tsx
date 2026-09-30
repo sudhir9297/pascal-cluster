@@ -93,7 +93,7 @@ export default function TreePanel() {
     const editor = useEditor.getState()
     editor.setMode('build'); editor.setTool(TREE_KIND)
   }
-  return <section aria-label="SeedThree tree settings" className="flex flex-col">
+  return <section aria-label="Tree settings" className="flex flex-col">
     <div className="px-2 pb-3">
       <label className="mb-2 flex items-center justify-between gap-2 text-xs text-foreground/80">
         <span>Species</span><select className={selectClass} value={node.species}
@@ -101,7 +101,7 @@ export default function TreePanel() {
           {TREE_SPECIES.map((species) => <option key={species.key} value={species.key}>{species.name}</option>)}
         </select>
       </label>
-      <p className="mb-2 text-xs text-muted-foreground">{schema.latin} · SeedThree</p>
+      {schema.latin && <p className="mb-2 text-xs text-muted-foreground">{schema.latin}</p>}
       {!selected && <button type="button" disabled={!levelId} onClick={start}
         className="w-full rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground disabled:opacity-50">
         {active ? 'Click in scene to place plant' : `Place ${schema.name}`}
