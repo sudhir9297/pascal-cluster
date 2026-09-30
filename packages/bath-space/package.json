@@ -1,0 +1,42 @@
+{
+  "name": "@pascal-app/plugin-bath-space",
+  "version": "0.1.0",
+  "description": "Bathroom design plugin for the Pascal editor.",
+  "homepage": "https://editor.pascal.app/docs/developers/plugins",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "files": ["src", "README.md"],
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "test": "bun test src/freestanding-vanity/model.test.ts"
+  },
+  "peerDependencies": {
+    "@pascal-app/core": "^1.0.1",
+    "@pascal-app/editor": "^1.0.1",
+    "@pascal-app/viewer": "^1.0.1",
+    "@react-three/fiber": "^9",
+    "react": "^18 || ^19",
+    "three": "^0.186.0",
+    "zod": ">=4.5.4 <4.6"
+  },
+  "devDependencies": {
+    "@pascal-app/core": "1.0.1",
+    "@pascal-app/editor": "1.0.1",
+    "@pascal-app/viewer": "1.0.1",
+    "@types/react": "^19.2.2",
+    "@types/three": "^0.184.0",
+    "typescript": "6.0.3",
+    "react": "19.2.7",
+    "three": "^0.186.0",
+    "zod": "4.5.4"
+  },
+  "keywords": ["pascal", "bathroom", "interior", "plugin"],
+  "license": "MIT"
+}
