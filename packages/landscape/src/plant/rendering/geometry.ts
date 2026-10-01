@@ -2,6 +2,7 @@ import { ConeGeometry, CylinderGeometry, DoubleSide, Group, InstancedMesh, Mesh,
   MeshStandardMaterial, Object3D, PlaneGeometry, SphereGeometry } from 'three'
 import type { PlantNode } from '../domain/schema'
 import { PLANT_PRESET_BY_KEY } from '../domain/catalog'
+import { mergePlantParts } from './merge-parts'
 
 const unit = new Object3D()
 const brown = '#66513c'
@@ -132,6 +133,11 @@ export function buildPlantGeometry(node: PlantNode) {
       }
     }
   }
+  mergePlantParts(root)
+  const usedMaterials = new Set(root.children.flatMap((child) => child instanceof Mesh
+    ? Array.isArray(child.material) ? child.material : [child.material] : []))
+  for (const material of [leafMaterial, woodMaterial, accentMaterial])
+    if (!usedMaterials.has(material)) material.dispose()
   root.scale.setScalar(node.scale)
   return root
 }
@@ -140,6 +146,7 @@ export function disposePlantGeometry(group: Group) {
   const geometries = new Set<object>(), materials = new Set<object>()
   group.traverse((object) => {
     if (!(object instanceof Mesh || object instanceof InstancedMesh)) return
+    if (object instanceof InstancedMesh) object.dispose()
     geometries.add(object.geometry)
     const source = Array.isArray(object.material) ? object.material : [object.material]
     source.forEach((material) => materials.add(material))

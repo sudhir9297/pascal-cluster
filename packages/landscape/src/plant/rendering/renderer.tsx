@@ -22,7 +22,7 @@ export default function PlantRenderer({ node }: { node: PlantNode }) {
   const rotation = liveTransform?.rotation ?? (override?.rotation as PlantNode['rotation'] | undefined)?.[1] ?? node.rotation[1]
   return <group ref={ref} position={position} rotation={[0, rotation, 0]}
     visible={node.visible !== false} {...handlers}>
-    {node.preset.startsWith('fab:') ? <FabModel node={node} />
+    {node.preset.startsWith('fab:') ? <FabModel node={node} instanced />
       : isClaudeTree(node.preset) ? <ClaudeTree node={node} />
         : plant && <primitive object={plant} />}
   </group>

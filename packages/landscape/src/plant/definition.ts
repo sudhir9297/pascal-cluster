@@ -16,6 +16,7 @@ export const plantDefinition: NodeDefinition<typeof PlantNode> = {
     duplicable: true, deletable: true, groupable: true, snappable: {},
   },
   renderer: { kind: 'parametric', module: () => import('./rendering/renderer') },
+  system: { module: () => import('./rendering/instance-system') },
   preview: () => import('./rendering/preview'),
   tool: () => import('./editor/tool'),
   parametrics: { groups: [] },
