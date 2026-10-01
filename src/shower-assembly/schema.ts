@@ -1,0 +1,158 @@
+import { ShowerHeadNode } from '../shower-head/schema'
+import { HandShowerNode } from '../hand-shower/schema'
+import { BaseNode, nodeType, objectId } from '@pascal-app/core'
+import { z } from 'zod'
+export const SHOWER_ASSEMBLY = 'bath-space:shower-assembly'
+export const ShowerAssemblyNode = BaseNode.extend({
+  id: objectId('bath-space-shower-assembly'),
+  type: nodeType(SHOWER_ASSEMBLY),
+  children: z.array(z.string()).default([]),
+  wallId: z.string().nullable().default(null),
+  position: z
+    .tuple([z.number().finite(), z.number().finite(), z.number().finite()])
+    .default([0, 1, 0]),
+  rotation: z.number().finite().default(0),
+  side: z.enum(['front', 'back']).default('front'),
+  mountingHeight: z.number().finite().min(0.3).max(2).default(1),
+  family: z.enum(['column', 'panel']).default('column'),
+  profile: z.enum(['round', 'square', 'rounded', 'curved']).default('round'),
+  height: z.number().finite().min(0.7).max(1.8).default(1.1),
+  width: z.number().finite().min(0.14).max(0.4).default(0.22),
+  depth: z.number().finite().min(0.025).max(0.12).default(0.055),
+  projection: z.number().finite().min(0.08).max(0.2).default(0.1),
+  armLength: z.number().finite().min(0.15).max(0.6).default(0.35),
+  tubeSize: z.number().finite().min(0.02).max(0.05).default(0.028),
+  flangeEnabled: z.boolean().default(true),
+  flangeSize: z.number().finite().min(0.04).max(0.15).default(0.065),
+  holderSlide: z.number().finite().min(0.15).max(0.8).default(0.4),
+  holderTilt: z.number().finite().min(-30).max(40).default(10),
+  holderSide: z.enum(['left', 'right']).default('right'),
+  holderOffset: z.number().finite().min(0.04).max(0.18).default(0.065),
+  controlStyle: z.enum(['thermostat', 'lever', 'cross']).default('thermostat'),
+  jets: z.number().int().min(0).max(4).default(0),
+  jetShape: z.enum(['round', 'square', 'rectangle']).default('round'),
+  jetSize: z.number().finite().min(0.04).max(0.12).default(0.065),
+  jetTilt: z.number().finite().min(-25).max(25).default(0),
+  shelfEnabled: z.boolean().default(false),
+  spoutEnabled: z.boolean().default(false),
+  waterfallEnabled: z.boolean().default(false),
+  headEnabled: z.boolean().default(true),
+  handEnabled: z.boolean().default(true),
+  hoseEnabled: z.boolean().default(true),
+  defaultHead: ShowerHeadNode.shape.style,
+  defaultHand: HandShowerNode.shape.style,
+  slots: z.record(z.string(), z.string()).optional(),
+})
+export type ShowerAssemblyNode = z.infer<typeof ShowerAssemblyNode>
+export const showerAssemblyPresets = [
+  {
+    id: 'round-column',
+    label: 'Round thermostatic column',
+    family: 'column',
+    profile: 'round',
+    defaultHead: 'round-rain',
+    defaultHand: 'round',
+  },
+  {
+    id: 'square-column',
+    label: 'Square thermostatic column',
+    family: 'column',
+    profile: 'square',
+    defaultHead: 'square-rain',
+    defaultHand: 'square',
+  },
+  {
+    id: 'curved-column',
+    label: 'Curved column',
+    family: 'column',
+    profile: 'curved',
+    defaultHead: 'round-rain',
+    defaultHand: 'oval',
+    controlStyle: 'lever',
+  },
+  {
+    id: 'classic-column',
+    label: 'Classic cross-handle column',
+    family: 'column',
+    profile: 'round',
+    defaultHead: 'bell',
+    defaultHand: 'round-wand',
+    controlStyle: 'cross',
+    spoutEnabled: true,
+  },
+  {
+    id: 'flat-panel',
+    label: 'Flat panel',
+    family: 'panel',
+    profile: 'square',
+    height: 1.5,
+    mountingHeight: 0.7,
+    defaultHead: 'square-rain',
+    defaultHand: 'square',
+    jets: 3,
+    jetShape: 'square',
+  },
+  {
+    id: 'rounded-panel',
+    label: 'Rounded panel',
+    family: 'panel',
+    profile: 'rounded',
+    height: 1.5,
+    mountingHeight: 0.7,
+    defaultHead: 'round-rain',
+    defaultHand: 'round',
+    jets: 2,
+    shelfEnabled: true,
+  },
+  {
+    id: 'curved-panel',
+    label: 'Curved panel',
+    family: 'panel',
+    profile: 'curved',
+    height: 1.5,
+    mountingHeight: 0.7,
+    defaultHead: 'rectangular',
+    defaultHand: 'oval',
+    jets: 3,
+    spoutEnabled: true,
+  },
+  {
+    id: 'waterfall-panel',
+    label: 'Waterfall panel',
+    family: 'panel',
+    profile: 'square',
+    height: 1.5,
+    mountingHeight: 0.7,
+    defaultHead: 'rectangular',
+    defaultHand: 'square-wand',
+    jets: 2,
+    jetShape: 'rectangle',
+    waterfallEnabled: true,
+    shelfEnabled: true,
+    spoutEnabled: true,
+  },
+] as const
+export function assemblyPresetNode(p: (typeof showerAssemblyPresets)[number]) {
+  const { id, label, ...params } = p
+  return ShowerAssemblyNode.parse({ ...params, name: label })
+}
+export function assemblyPresetParameters(p: (typeof showerAssemblyPresets)[number]) {
+  const {
+    id,
+    type,
+    object,
+    parentId,
+    children,
+    wallId,
+    position,
+    rotation,
+    side,
+    mountingHeight,
+    metadata,
+    visible,
+    name,
+    slots,
+    ...params
+  } = assemblyPresetNode(p)
+  return params
+}

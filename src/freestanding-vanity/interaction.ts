@@ -1,4 +1,4 @@
-import { type AnyNode, type AnyNodeId, getEffectiveNode, useLiveNodeOverrides, useScene } from '@pascal-app/core'
+import { type AnyNode, type AnyNodeId, getEffectiveNode, sceneRegistry, useLiveNodeOverrides, useScene } from '@pascal-app/core'
 import { VanityNode, isVanityKind } from './schema'
 import { vanityParts, vanityPartOpening } from './layout'
 
@@ -21,7 +21,8 @@ function currentVanity(id: AnyNodeId) {
 export function toggleVanityOpening(nodeId: AnyNodeId, partId?: string): boolean {
   const node = currentVanity(nodeId)
   if (!node) return false
-  const parts = vanityParts(node)
+  const root = sceneRegistry.nodes.get(nodeId)
+  const parts = vanityParts(node).filter(part => !root?.getObjectByName(part.id)?.userData.basinBlocked)
   const running = animations.get(nodeId)
   const now = performance.now()
   if (partId) {

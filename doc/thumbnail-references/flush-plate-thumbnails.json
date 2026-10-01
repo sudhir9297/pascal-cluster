@@ -1,0 +1,262 @@
+{
+  "sceneId": "90469fd342d2",
+  "generator": "Built-in image_gen",
+  "transparentBackground": true,
+  "items": [
+    {
+      "key": "rectangle",
+      "label": "Rectangular plate",
+      "node": {
+        "object": "node",
+        "id": "bath-space-flush-plate_6onavcfz83ji3wtj",
+        "type": "bath-space:wall-flush-plate",
+        "name": "Rectangular plate",
+        "parentId": "wall_5qqc9o5zk1jv1b4w",
+        "visible": true,
+        "metadata": {},
+        "position": [
+          1,
+          1,
+          0.06
+        ],
+        "rotation": 0,
+        "children": [],
+        "shape": "rectangle",
+        "buttonShape": "rectangle",
+        "flushMode": "dual",
+        "width": 0.24,
+        "height": 0.16,
+        "thickness": 0.008,
+        "buttonSize": 0.065,
+        "edgeRadius": 0.0015,
+        "seamWidth": 0.0008,
+        "buttonProjection": 0.005,
+        "wallId": "wall_5qqc9o5zk1jv1b4w",
+        "side": "front",
+        "mountingHeight": 1,
+        "servesToiletId": null
+      },
+      "camera": {
+        "eye": [
+          0.25,
+          1.13,
+          0.65
+        ],
+        "target": [
+          0,
+          1,
+          0.07
+        ]
+      },
+      "version": 25,
+      "reference": "/Users/sudhir/.t3/userdata/browser-artifacts/browser-screenshot-localhost-mupaf4cb-7240e07d.png",
+      "prompt": "Use case: product-mockup. Create a polished catalog thumbnail of ONLY the Rectangular plate in this scene screenshot reference. Preserve exact rectangle outer outline, width-to-height proportions, thin beveled plate thickness, dark backing seam and exactly two rectangle flush buttons: larger left, smaller right. Keep button positions and shape precisely as shown. Render satin silver/chrome metal with subtle realistic highlights and dark narrow button seams for readability. Match screenshot front three-quarter angle, slightly above, enough side depth to read thin bevel. Remove wall, floor, room, shadows on wall, all editor UI. Single full uncropped centered product with even padding, 80 percent width occupancy in square canvas. Genuine transparent alpha background; no solid background or checkerboard. Clean anti-aliased edges with no speckles/fringe. No logos, text, watermarks, extra objects, extra buttons, redesign or toilet.",
+      "generated": "/Users/sudhir/.codex/generated_images/01a0f629-533e-7351-82e4-ee8903ea145a/exec-5f4af3cc-23dd-4a49-a2d1-67d18c860165.png",
+      "asset": "packages/bath-space/src/flush-control/assets/rectangle.png"
+    },
+    {
+      "key": "rounded",
+      "label": "Rounded plate",
+      "node": {
+        "object": "node",
+        "id": "bath-space-flush-plate_dqy6669xqn5u7i41",
+        "type": "bath-space:wall-flush-plate",
+        "name": "Rounded plate",
+        "parentId": "wall_5qqc9o5zk1jv1b4w",
+        "visible": true,
+        "metadata": {},
+        "position": [
+          1,
+          1,
+          0.06
+        ],
+        "rotation": 0,
+        "children": [],
+        "shape": "rounded",
+        "buttonShape": "round",
+        "flushMode": "dual",
+        "width": 0.24,
+        "height": 0.16,
+        "thickness": 0.01,
+        "buttonSize": 0.06,
+        "edgeRadius": 0.0015,
+        "seamWidth": 0.0008,
+        "buttonProjection": 0.005,
+        "wallId": "wall_5qqc9o5zk1jv1b4w",
+        "side": "front",
+        "mountingHeight": 1,
+        "servesToiletId": null
+      },
+      "camera": {
+        "eye": [
+          0.25,
+          1.13,
+          0.65
+        ],
+        "target": [
+          0,
+          1,
+          0.07
+        ]
+      },
+      "version": 26,
+      "reference": "/Users/sudhir/.t3/userdata/browser-artifacts/browser-screenshot-localhost-mupags2e-f686cd19.png",
+      "prompt": "Use case: product-mockup. Create a polished catalog thumbnail of ONLY the Rounded plate in this scene screenshot reference. Preserve exact rounded outer outline, width-to-height proportions, thin beveled plate thickness, dark backing seam and exactly two round flush buttons: larger left, smaller right. Keep button positions and shape precisely as shown. Render satin silver/chrome metal with subtle realistic highlights and dark narrow button seams for readability. Match screenshot front three-quarter angle, slightly above, enough side depth to read thin bevel. Remove wall, floor, room, shadows on wall, all editor UI. Single full uncropped centered product with even padding, 80 percent width occupancy in square canvas. Genuine transparent alpha background; no solid background or checkerboard. Clean anti-aliased edges with no speckles/fringe. No logos, text, watermarks, extra objects, extra buttons, redesign or toilet.",
+      "generated": "/Users/sudhir/.codex/generated_images/01a0f629-533e-7351-82e4-ee8903ea145a/exec-72342021-c136-47e1-b05c-5b20830d4439.png",
+      "asset": "packages/bath-space/src/flush-control/assets/rounded.png"
+    },
+    {
+      "key": "square",
+      "label": "Square plate",
+      "node": {
+        "object": "node",
+        "id": "bath-space-flush-plate_hgu1bi6jgpe4fu8j",
+        "type": "bath-space:wall-flush-plate",
+        "name": "Square plate",
+        "parentId": "wall_5qqc9o5zk1jv1b4w",
+        "visible": true,
+        "metadata": {},
+        "position": [
+          1,
+          1,
+          0.06
+        ],
+        "rotation": 0,
+        "children": [],
+        "shape": "square",
+        "buttonShape": "rectangle",
+        "flushMode": "dual",
+        "width": 0.18,
+        "height": 0.18,
+        "thickness": 0.008,
+        "buttonSize": 0.048,
+        "edgeRadius": 0.0015,
+        "seamWidth": 0.0008,
+        "buttonProjection": 0.005,
+        "wallId": "wall_5qqc9o5zk1jv1b4w",
+        "side": "front",
+        "mountingHeight": 1,
+        "servesToiletId": null
+      },
+      "camera": {
+        "eye": [
+          0.25,
+          1.13,
+          0.65
+        ],
+        "target": [
+          0,
+          1,
+          0.07
+        ]
+      },
+      "version": 27,
+      "reference": "/Users/sudhir/.t3/userdata/browser-artifacts/browser-screenshot-localhost-mupai4x2-15129b8a.png",
+      "prompt": "Use case: product-mockup. Create a polished catalog thumbnail of ONLY the Square plate in this scene screenshot reference. Preserve exact square outer outline, width-to-height proportions, thin beveled plate thickness, dark backing seam and exactly two rectangle flush buttons: larger left, smaller right. Keep button positions and shape precisely as shown. Render satin silver/chrome metal with subtle realistic highlights and dark narrow button seams for readability. Match screenshot front three-quarter angle, slightly above, enough side depth to read thin bevel. Remove wall, floor, room, shadows on wall, all editor UI. Single full uncropped centered product with even padding, 80 percent width occupancy in square canvas. Genuine transparent alpha background; no solid background or checkerboard. Clean anti-aliased edges with no speckles/fringe. No logos, text, watermarks, extra objects, extra buttons, redesign or toilet.",
+      "generated": "/Users/sudhir/.codex/generated_images/01a0f629-533e-7351-82e4-ee8903ea145a/exec-a007bdea-051c-46dd-9e52-507ec7588813.png",
+      "asset": "packages/bath-space/src/flush-control/assets/square.png"
+    },
+    {
+      "key": "round",
+      "label": "Round plate",
+      "node": {
+        "object": "node",
+        "id": "bath-space-flush-plate_a8bwfd5xp69rerl0",
+        "type": "bath-space:wall-flush-plate",
+        "name": "Round plate",
+        "parentId": "wall_5qqc9o5zk1jv1b4w",
+        "visible": true,
+        "metadata": {},
+        "position": [
+          1,
+          1,
+          0.06
+        ],
+        "rotation": 0,
+        "children": [],
+        "shape": "round",
+        "buttonShape": "round",
+        "flushMode": "dual",
+        "width": 0.18,
+        "height": 0.18,
+        "thickness": 0.01,
+        "buttonSize": 0.045,
+        "edgeRadius": 0.0015,
+        "seamWidth": 0.0008,
+        "buttonProjection": 0.005,
+        "wallId": "wall_5qqc9o5zk1jv1b4w",
+        "side": "front",
+        "mountingHeight": 1,
+        "servesToiletId": null
+      },
+      "camera": {
+        "eye": [
+          0.25,
+          1.13,
+          0.65
+        ],
+        "target": [
+          0,
+          1,
+          0.07
+        ]
+      },
+      "version": 28,
+      "reference": "/Users/sudhir/.t3/userdata/browser-artifacts/browser-screenshot-localhost-mupajfap-8aca0dba.png",
+      "prompt": "Use case: product-mockup. Create a polished catalog thumbnail of ONLY the Round plate in this scene screenshot reference. Preserve exact round outer outline, width-to-height proportions, thin beveled plate thickness, dark backing seam and exactly two round flush buttons: larger left, smaller right. Keep button positions and shape precisely as shown. Render satin silver/chrome metal with subtle realistic highlights and dark narrow button seams for readability. Match screenshot front three-quarter angle, slightly above, enough side depth to read thin bevel. Remove wall, floor, room, shadows on wall, all editor UI. Single full uncropped centered product with even padding, 80 percent width occupancy in square canvas. Genuine transparent alpha background; no solid background or checkerboard. Clean anti-aliased edges with no speckles/fringe. No logos, text, watermarks, extra objects, extra buttons, redesign or toilet.",
+      "generated": "/Users/sudhir/.codex/generated_images/01a0f629-533e-7351-82e4-ee8903ea145a/exec-b89c1064-f0ae-4e60-ae0e-25981ce35901.png",
+      "asset": "packages/bath-space/src/flush-control/assets/round.png"
+    },
+    {
+      "key": "oval",
+      "label": "Oval plate",
+      "node": {
+        "object": "node",
+        "id": "bath-space-flush-plate_34tygy19w7j225vx",
+        "type": "bath-space:wall-flush-plate",
+        "name": "Oval plate",
+        "parentId": "wall_5qqc9o5zk1jv1b4w",
+        "visible": true,
+        "metadata": {},
+        "position": [
+          1,
+          1,
+          0.06
+        ],
+        "rotation": 0,
+        "children": [],
+        "shape": "oval",
+        "buttonShape": "oval",
+        "flushMode": "dual",
+        "width": 0.25,
+        "height": 0.14,
+        "thickness": 0.008,
+        "buttonSize": 0.07,
+        "edgeRadius": 0.0015,
+        "seamWidth": 0.0008,
+        "buttonProjection": 0.005,
+        "wallId": "wall_5qqc9o5zk1jv1b4w",
+        "side": "front",
+        "mountingHeight": 1,
+        "servesToiletId": null
+      },
+      "camera": {
+        "eye": [
+          0.25,
+          1.13,
+          0.65
+        ],
+        "target": [
+          0,
+          1,
+          0.07
+        ]
+      },
+      "version": 29,
+      "reference": "/Users/sudhir/.t3/userdata/browser-artifacts/browser-screenshot-localhost-mupakr1h-deedeb13.png",
+      "prompt": "Use case: product-mockup. Create a polished catalog thumbnail of ONLY the Oval plate in this scene screenshot reference. Preserve exact oval outer outline, width-to-height proportions, thin beveled plate thickness, dark backing seam and exactly two oval flush buttons: larger left, smaller right. Keep button positions and shape precisely as shown. Render satin silver/chrome metal with subtle realistic highlights and dark narrow button seams for readability. Match screenshot front three-quarter angle, slightly above, enough side depth to read thin bevel. Remove wall, floor, room, shadows on wall, all editor UI. Single full uncropped centered product with even padding, 80 percent width occupancy in square canvas. Genuine transparent alpha background; no solid background or checkerboard. Clean anti-aliased edges with no speckles/fringe. No logos, text, watermarks, extra objects, extra buttons, redesign or toilet.",
+      "generated": "/Users/sudhir/.codex/generated_images/01a0f629-533e-7351-82e4-ee8903ea145a/exec-decba644-41b4-452b-8139-df1c7870f520.png",
+      "asset": "packages/bath-space/src/flush-control/assets/oval.png"
+    }
+  ]
+}

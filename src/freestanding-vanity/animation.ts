@@ -11,7 +11,7 @@ export function poseVanityMovingParts(root: Object3D, node: VanityNode) {
     const pose = part.userData.vanityPose as VanityPose | undefined
     if (!pose) return
     const progress = vanityPartOpening(node, pose)
-    if (pose.kind === 'drawer') part.position.z = pose.closedZ - progress * pose.travel
-    else part.rotation.y = pose.direction * progress * Math.PI / 2
+    if (pose.kind === 'drawer') part.position.z = pose.closedZ - (part.userData.basinBlocked ? 0 : progress) * pose.travel
+    else part.rotation.y = pose.direction * (part.userData.basinBlocked ? 0 : progress) * Math.PI / 2
   })
 }
