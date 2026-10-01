@@ -15,7 +15,8 @@
   "files": ["src", "README.md"],
   "scripts": {
     "check-types": "tsc --noEmit",
-    "test": "bun test src/freestanding-vanity/model.test.ts"
+    "test": "bun test src",
+    "thumbnails": "bun scripts/tap-thumbnail-studio.ts"
   },
   "peerDependencies": {
     "@pascal-app/core": "^1.0.1",

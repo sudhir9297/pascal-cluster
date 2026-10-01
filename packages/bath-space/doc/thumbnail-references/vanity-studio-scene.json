@@ -1,0 +1,131 @@
+{
+  "id": "8d89fd3ca068",
+  "name": "Bath Space · vanity thumbnail studio",
+  "projectId": null,
+  "ownerId": null,
+  "thumbnailUrl": null,
+  "version": 28,
+  "createdAt": "2026-10-01T09:51:39.848Z",
+  "updatedAt": "2026-10-01T10:01:59.840Z",
+  "sizeBytes": 1244,
+  "nodeCount": 4,
+  "editorUrl": "/editor/8d89fd3ca068",
+  "url": "/editor/8d89fd3ca068",
+  "published": true,
+  "graphHash": "645397c852616b3803125b6c4cc25c4b9db1c34108abbc37ec9a17092a3028d2",
+  "graph": {
+    "nodes": {
+      "site_yiu9ng9kpew8lrvc": {
+        "object": "node",
+        "id": "site_yiu9ng9kpew8lrvc",
+        "type": "site",
+        "name": "Vanity thumbnail studio",
+        "parentId": null,
+        "visible": true,
+        "metadata": {},
+        "polygon": {
+          "type": "polygon",
+          "points": [
+            [
+              -15,
+              -15
+            ],
+            [
+              15,
+              -15
+            ],
+            [
+              15,
+              15
+            ],
+            [
+              -15,
+              15
+            ]
+          ]
+        },
+        "children": [
+          "building_daqqoxju5cf1usxg"
+        ]
+      },
+      "building_daqqoxju5cf1usxg": {
+        "object": "node",
+        "id": "building_daqqoxju5cf1usxg",
+        "type": "building",
+        "name": "Bath Space",
+        "parentId": "site_yiu9ng9kpew8lrvc",
+        "visible": true,
+        "metadata": {},
+        "children": [
+          "level_xe2s9thqbpbkpksn"
+        ],
+        "position": [
+          0,
+          0,
+          0
+        ],
+        "rotation": [
+          0,
+          0,
+          0
+        ]
+      },
+      "level_xe2s9thqbpbkpksn": {
+        "object": "node",
+        "id": "level_xe2s9thqbpbkpksn",
+        "type": "level",
+        "name": "One vanity at a time",
+        "parentId": "building_daqqoxju5cf1usxg",
+        "visible": true,
+        "metadata": {},
+        "children": [
+          "slab_2ruhy3advxpqpobe"
+        ],
+        "level": 0,
+        "baseElevation": 0,
+        "height": 2.8
+      },
+      "slab_2ruhy3advxpqpobe": {
+        "object": "node",
+        "id": "slab_2ruhy3advxpqpobe",
+        "type": "slab",
+        "name": "Studio floor",
+        "parentId": "level_xe2s9thqbpbkpksn",
+        "visible": true,
+        "metadata": {},
+        "polygon": [
+          [
+            -2,
+            -1.5
+          ],
+          [
+            2,
+            -1.5
+          ],
+          [
+            2,
+            1.5
+          ],
+          [
+            -2,
+            1.5
+          ]
+        ],
+        "holes": [],
+        "holeMetadata": [],
+        "elevation": 0,
+        "thickness": 0.05,
+        "recessed": false,
+        "autoFromWalls": false
+      }
+    },
+    "rootNodeIds": [
+      "site_yiu9ng9kpew8lrvc"
+    ],
+    "collections": {},
+    "materials": {},
+    "installedPlugins": [
+      "pascal:bath-space"
+    ]
+  }
+}

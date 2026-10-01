@@ -158,6 +158,7 @@ export function buildFreestandingVanityGeometry(rawNode: VanityNode, ctx?: Geome
       const wall = 0.009
       const bottomY = -rowHeight / 2 + 0.009
       const rear = t + boxDepth
+      drawer.userData.drawerBox = { width: boxWidth, height: boxHeight, depth: boxDepth, wall, bottomY, front: t, rear }
       box(`${drawer.name}-bottom`, [boxWidth, wall, boxDepth], [0, bottomY, t + boxDepth / 2], drawer)
       for (const side of [-1, 1]) {
         box(`${drawer.name}-side-${side}`, [wall, boxHeight, boxDepth], [side * (boxWidth - wall) / 2, bottomY + boxHeight / 2, t + boxDepth / 2], drawer)
