@@ -15,7 +15,13 @@ describe('Landscape plugin manifest', () => {
       'landscape:landing',
       'landscape:edging',
       'landscape:retaining-wall',
+      'landscape:tree',
+      'landscape:plant',
     ])
+  })
+
+  test('plant rendering registers the instance system', () => {
+    expect(landscapePlugin.nodes?.find((node) => node.kind === 'landscape:plant')?.system?.module).toBeFunction()
   })
 
   test('associates the Landscape panel with the plugin', () => {
