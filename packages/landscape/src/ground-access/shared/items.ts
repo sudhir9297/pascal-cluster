@@ -1,3 +1,4 @@
+import { PondNode } from '../../pond/schema'
 import { PatioNode } from '../patio/domain/schema'
 import { DeckNode } from '../deck/domain/schema'
 import { ConcreteSlabNode } from '../concrete-slab/domain/schema'
@@ -18,10 +19,11 @@ export type AccessItem = (typeof accessItems)[number]
 export const accessItemFor = (kind: string) => accessItems.find((item) => `landscape:${item.kind}` === kind)
 
 export const DRAWN_ACCESS_KINDS = ['landscape:patio', 'landscape:deck',
-  'landscape:concrete-slab', 'landscape:landing'] as const
+  'landscape:concrete-slab', 'landscape:landing', 'landscape:pond'] as const
 export type DrawnAccessKind = (typeof DRAWN_ACCESS_KINDS)[number]
-export type DrawnAccessItem = Extract<AccessItem, { kind: 'patio' | 'deck' | 'concrete-slab' | 'landing' }>
+const pondItem = { kind: 'pond', label: 'Pond', schema: PondNode, color: '#328e92' } as const
+export type DrawnAccessItem = Extract<AccessItem, { kind: 'patio' | 'deck' | 'concrete-slab' | 'landing' }> | typeof pondItem
 export const isDrawnAccessKind = (kind: string): kind is DrawnAccessKind =>
   (DRAWN_ACCESS_KINDS as readonly string[]).includes(kind)
 export const drawnAccessItemFor = (kind: string): DrawnAccessItem | undefined =>
-  isDrawnAccessKind(kind) ? accessItemFor(kind) as DrawnAccessItem | undefined : undefined
+  kind === 'landscape:pond' ? pondItem : isDrawnAccessKind(kind) ? accessItemFor(kind) as DrawnAccessItem | undefined : undefined

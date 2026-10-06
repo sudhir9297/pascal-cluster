@@ -8,8 +8,8 @@ import { broadleafControls } from './broadleaf-controls.js';
 export const loblolly = {
   name: 'Loblolly Pine',
   latin: 'Pinus taeda',
-  bark: 'loblolly_albedo.png',
-  leaf: 'loblolly_needle_albedo.png',
+  bark: 'loblolly_albedo.webp',
+  leaf: 'loblolly_needle_albedo.webp',
   biome: 'temperate',
   tileWorldSize: 1.2,
   controls: broadleafControls,

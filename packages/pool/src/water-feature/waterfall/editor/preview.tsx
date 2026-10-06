@@ -1,10 +1,11 @@
 'use client'
 
 import { useFrame } from '@react-three/fiber'
-import { useLiveNodeOverrides } from '@pascal-app/core'
+import { sceneRegistry, useLiveNodeOverrides } from '@pascal-app/core'
 import { useSceneAtmosphere } from '@pascal-app/viewer'
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { Box3, Frustum, Matrix4, Sphere, Vector3, type Group, type Mesh } from 'three'
+import { usePoolAnimationActivity } from '../../../editor/animation-activity'
 import { useAttachmentPool } from '../../../editor/attachment-pool'
 import { usePoolNodeHost } from '../../../editor/node-host'
 import type {
@@ -26,6 +27,7 @@ type WaterfallEffect =
   | WaterfallBubbleCloudEffect
 
 export default function PoolWaterfallPreview({ node }: { node: PoolWaterfallNode }) {
+  const animationActive = usePoolAnimationActivity()
   const rootRef = useRef<Group>(null!)
   const atmosphere = useSceneAtmosphere()
   const handlers = usePoolNodeHost(node, rootRef)
@@ -61,8 +63,6 @@ export default function PoolWaterfallPreview({ node }: { node: PoolWaterfallNode
   const simulationAccumulator = useRef(0)
   const impactAccumulator = useRef(0)
   const impactWorld = useRef(new Vector3())
-  const poolPosition = useRef(new Vector3())
-  const verticalAxis = useRef(new Vector3(0, 1, 0))
   const viewProjection = useRef(new Matrix4())
   const viewFrustum = useRef(new Frustum())
   const worldBounds = useRef(new Sphere())
@@ -79,7 +79,7 @@ export default function PoolWaterfallPreview({ node }: { node: PoolWaterfallNode
     'mesh' in effect && effect.mesh.name.startsWith('waterfall-bubble-cloud-'),
   ), [effects])
   useFrame(({ camera, gl, invalidate }, delta) => {
-    if (node.visible === false || !mounted.showFlow || !rootRef.current) {
+    if (!animationActive || node.visible === false || !mounted.showFlow || !rootRef.current) {
       for (const effect of bubbleEffects) effect.mesh.visible = false
       return
     }
@@ -108,13 +108,13 @@ export default function PoolWaterfallPreview({ node }: { node: PoolWaterfallNode
         if (water && rootRef.current) {
           const width = mounted.waterfallType === 'modern' ? mounted.width - 0.08
             : mounted.width * (mounted.waterfallType === 'spillover' ? 0.72 : 0.3)
-          poolPosition.current.fromArray(pool.position)
+          const poolRoot = sceneRegistry.nodes.get(mounted.poolId as never)
+          if (!poolRoot) return
           for (const across of [-0.55, 0, 0.55]) {
             const [x, z] = getWaterfallImpactLocalPoint(mounted, across)
             impactWorld.current.set(x, mounted.targetWaterOffset, z)
             rootRef.current.localToWorld(impactWorld.current)
-            impactWorld.current.sub(poolPosition.current)
-              .applyAxisAngle(verticalAxis.current, -(pool.rotation[1] ?? 0))
+            poolRoot.worldToLocal(impactWorld.current)
             water.addDropAt(impactWorld.current.x, impactWorld.current.z,
               Math.max(0.008, width * 0.012), 0.015 * mounted.flowStrength)
           }

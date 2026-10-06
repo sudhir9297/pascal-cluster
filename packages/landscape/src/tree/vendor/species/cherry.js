@@ -10,8 +10,8 @@ import { broadleafControls } from './broadleaf-controls.js';
 export const cherry = {
   name: 'Sweet Cherry',
   latin: 'Prunus avium',
-  bark: 'cherry_bark_albedo.png',
-  leaf: 'cherry_single_albedo.png',
+  bark: 'cherry_bark_albedo.webp',
+  leaf: 'cherry_single_albedo.webp',
   biome: 'temperate',
   tileWorldSize: 1.3,
   controls: broadleafControls,

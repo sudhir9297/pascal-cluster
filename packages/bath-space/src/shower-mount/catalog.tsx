@@ -3,6 +3,30 @@ import { useEditor } from '@pascal-app/editor'
 import ShowerPresetCatalog from '../shower-common/preset-catalog'
 import { SHOWER_MOUNT, showerMountPresets, type ShowerMountNode } from './schema'
 import { setShowerMountStyle, useShowerMountStyle } from './placement-settings'
+import roundHolderThumbnail from './assets/round-holder.webp'
+import squareHolderThumbnail from './assets/square-holder.webp'
+import adjustableHolderThumbnail from './assets/adjustable-holder.webp'
+import roundCombinedThumbnail from './assets/round-combined.webp'
+import squareCombinedThumbnail from './assets/square-combined.webp'
+import roundOutletThumbnail from './assets/round-outlet.webp'
+import squareOutletThumbnail from './assets/square-outlet.webp'
+import roundRailThumbnail from './assets/round-rail.webp'
+import squareRailThumbnail from './assets/square-rail.webp'
+
+type ThumbnailAsset = string | { src: string }
+const thumbnailSrc = (asset: ThumbnailAsset | undefined) => typeof asset === 'string' ? asset : asset?.src
+
+const showerMountThumbnails: Record<ShowerMountNode['style'], ThumbnailAsset> = {
+  'round-holder': roundHolderThumbnail,
+  'square-holder': squareHolderThumbnail,
+  'adjustable-holder': adjustableHolderThumbnail,
+  'round-combined': roundCombinedThumbnail,
+  'square-combined': squareCombinedThumbnail,
+  'round-outlet': roundOutletThumbnail,
+  'square-outlet': squareOutletThumbnail,
+  'round-rail': roundRailThumbnail,
+  'square-rail': squareRailThumbnail,
+}
 export function ShowerMountPreview({
   style = 'round-holder',
 }: {
@@ -76,7 +100,9 @@ export default function ShowerMountCatalog({ query }: { query: string }) {
         setShowerMountStyle(id as ShowerMountNode['style'])
         useEditor.getState().setTool(SHOWER_MOUNT)
       }}
-      renderPreview={(id) => <ShowerMountPreview style={id as ShowerMountNode['style']} />}
+      renderPreview={(id) => (
+        <img src={thumbnailSrc(showerMountThumbnails[id as ShowerMountNode['style']])} alt="" className="h-full w-full object-contain p-1" />
+      )}
       hint={'Click a wall to place.'}
     />
   )

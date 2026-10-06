@@ -6,6 +6,7 @@ describe('Landscape plugin manifest', () => {
     expect(landscapePlugin.id).toBe('pascal:landscape')
     expect(landscapePlugin.apiVersion).toBe(1)
     expect(landscapePlugin.nodes?.map((node) => node.kind)).toEqual([
+      'landscape:pond',
       'landscape:pergola',
       'landscape:pathway',
       'landscape:ground-area',
@@ -17,6 +18,11 @@ describe('Landscape plugin manifest', () => {
       'landscape:retaining-wall',
       'landscape:tree',
       'landscape:plant',
+      'landscape:irrigation-head',
+      'landscape:irrigation-run',
+      'landscape:irrigation-valve',
+      'landscape:irrigation-controller',
+      'landscape:irrigation-source', 'landscape:dripline', 'landscape:irrigation-fitting', 'landscape:irrigation-zone', 'landscape:irrigation-preview',
     ])
   })
 

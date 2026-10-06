@@ -13,6 +13,48 @@ import {
   useShowerControlPreset,
   type ControlPresetId,
 } from './placement-settings'
+import RoundLeverThumbnail from './assets/round-lever.webp'
+import SquareLeverThumbnail from './assets/square-lever.webp'
+import DualRoundThumbnail from './assets/dual-round.webp'
+import DualSquareThumbnail from './assets/dual-square.webp'
+import ButtonTrimThumbnail from './assets/button-trim.webp'
+import BarRoundThumbnail from './assets/bar-round.webp'
+import BarSquareThumbnail from './assets/bar-square.webp'
+import BridgeCrossThumbnail from './assets/bridge-cross.webp'
+import RoundDiverterThumbnail from './assets/round-diverter.webp'
+import SquareDiverterThumbnail from './assets/square-diverter.webp'
+import RoundFlowThumbnail from './assets/round-flow.webp'
+import SquareFlowThumbnail from './assets/square-flow.webp'
+import BathBridgeRoundThumbnail from './assets/bath-bridge-round.webp'
+import BathBridgeSquareThumbnail from './assets/bath-bridge-square.webp'
+import BathSingleRoundThumbnail from './assets/bath-single-round.webp'
+import BathSingleSquareThumbnail from './assets/bath-single-square.webp'
+import BathThermostatThumbnail from './assets/bath-thermostat.webp'
+import BathWaterfallThumbnail from './assets/bath-waterfall.webp'
+
+type ThumbnailAsset = string | { src: string }
+const thumbnailSrc = (asset: ThumbnailAsset | undefined) => typeof asset === 'string' ? asset : asset?.src
+
+const showerControlThumbnails: Record<ControlPresetId, ThumbnailAsset> = {
+  'round-lever': RoundLeverThumbnail,
+  'square-lever': SquareLeverThumbnail,
+  'dual-round': DualRoundThumbnail,
+  'dual-square': DualSquareThumbnail,
+  'button-trim': ButtonTrimThumbnail,
+  'bar-round': BarRoundThumbnail,
+  'bar-square': BarSquareThumbnail,
+  'bridge-cross': BridgeCrossThumbnail,
+  'round-diverter': RoundDiverterThumbnail,
+  'square-diverter': SquareDiverterThumbnail,
+  'round-flow': RoundFlowThumbnail,
+  'square-flow': SquareFlowThumbnail,
+  'bath-bridge-round': BathBridgeRoundThumbnail,
+  'bath-bridge-square': BathBridgeSquareThumbnail,
+  'bath-single-round': BathSingleRoundThumbnail,
+  'bath-single-square': BathSingleSquareThumbnail,
+  'bath-thermostat': BathThermostatThumbnail,
+  'bath-waterfall': BathWaterfallThumbnail,
+}
 export function ShowerControlPreview({
   preset = 'round-lever',
   node,
@@ -118,7 +160,9 @@ export default function ShowerControlCatalog({ query }: { query: string }) {
         setShowerControlPreset(id as ControlPresetId)
         useEditor.getState().setTool(SHOWER_CONTROL)
       }}
-      renderPreview={(id) => <ShowerControlPreview preset={id as ControlPresetId} />}
+      renderPreview={(id) => (
+        <img src={thumbnailSrc(showerControlThumbnails[id as ControlPresetId])} alt="" className="h-full w-full object-contain p-1" />
+      )}
       hint="Click a wall to place."
     />
   )

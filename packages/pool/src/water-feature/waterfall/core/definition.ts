@@ -1,3 +1,5 @@
+import { poolComponentFloorplan } from '../../../rendering/component-floorplan'
+import { poolPlanDependencies } from '../../../rendering/plan-frame'
 import type { NodeDefinition } from '@pascal-app/core'
 import { poolWaterfallParametrics } from '../editor/parametrics'
 import { DEFAULT_POOL_WATERFALL, PoolWaterfallNode } from './schema'
@@ -18,6 +20,8 @@ export const poolWaterfallDefinition: NodeDefinition<typeof PoolWaterfallNode> =
     groupable: true,
     snappable: {},
   },
+  floorplan: poolComponentFloorplan,
+  floorplanDependencies: poolPlanDependencies,
   renderer: { kind: 'parametric', module: () => import('../editor/preview') },
   exportAnimation: ({ node, object }) => bakePoolWaterfallAnimations(node, object),
   tool: () => import('../editor/tool'),

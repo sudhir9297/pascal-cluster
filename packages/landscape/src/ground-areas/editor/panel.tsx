@@ -1,6 +1,6 @@
 'use client'
 import { type AnyNode, type AnyNodeId, useScene } from '@pascal-app/core'
-import { SliderControl, ToggleControl, useEditor } from '@pascal-app/editor'
+import { MetricControl, SliderControl, ToggleControl, useEditor } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { useState } from 'react'
 import { ellipseBounds, ellipseOutline, isEllipseShape } from '../domain/ellipse'
@@ -9,6 +9,8 @@ import { groundAreaDrawingMode, setGroundAreaDrawingMode } from './drawing-mode'
 import { DrawingModeControl } from '../../ground-access/shared/drawing-mode-control'
 import { GROUND_SURFACE_THUMBNAILS } from '../../editor/catalog-thumbnails'
 import { CatalogListRow } from '../../editor/catalog-list-row'
+import { PanelSelect } from '../../editor/panel-select'
+import { useGroundAreaStatus } from './session'
 
 const surfaces: { value: GroundSurface; label: string; color: string }[] = [
   { value: 'grass', label: 'Grass', color: '#718451' },
@@ -36,6 +38,7 @@ export function GroundAreaPanel({ surfaceChoice = null, inSidebar = false }: {
 }) {
   const levelId = useViewer((state) => state.selection.levelId)
   const active = useEditor((state) => state.tool === GROUND_AREA_KIND)
+  const drawingStatus = useGroundAreaStatus()
   const defaults = useEditor((state) => state.toolDefaults[GROUND_AREA_KIND])
   const selectedId = useViewer((state) => state.selection.selectedIds.length === 1
     ? state.selection.selectedIds[0] : undefined)
@@ -52,7 +55,7 @@ export function GroundAreaPanel({ surfaceChoice = null, inSidebar = false }: {
     if (!levelId) return
     setSurface(nextSurface)
     const editor = useEditor.getState()
-    editor.setToolDefaults(GROUND_AREA_KIND, { surface: nextSurface, shape: groundAreaDrawingMode() })
+    editor.setToolDefaults(GROUND_AREA_KIND, { ...editor.toolDefaults[GROUND_AREA_KIND], surface: nextSurface, shape: groundAreaDrawingMode() })
     editor.setMode('build')
     editor.setTool(GROUND_AREA_KIND)
   }
@@ -108,6 +111,12 @@ export function GroundAreaPanel({ surfaceChoice = null, inSidebar = false }: {
       useScene.getState().updateNode(selected.id as AnyNodeId, { surface: nextSurface } as Partial<AnyNode>)
     }
   }
+  const settings = selected ?? GroundAreaNode.parse({ ...defaults, surface: detailSurface ?? surface })
+  const updateSettings = (data: Partial<GroundAreaNode>) => {
+    if (useScene.getState().readOnly) return
+    if (selected) useScene.getState().updateNode(selected.id as AnyNodeId, data as Partial<AnyNode>)
+    else { const editor = useEditor.getState(); editor.setToolDefaults(GROUND_AREA_KIND, { ...editor.toolDefaults[GROUND_AREA_KIND], ...data }) }
+  }
   return (
     <section aria-label="Ground areas" className={`flex min-w-0 flex-col gap-4 ${inSidebar ? '' : 'p-3'}`}>
       {detailSurface && <div className="rounded-lg border border-border/50 bg-secondary/30 px-3 py-2.5">
@@ -119,9 +128,22 @@ export function GroundAreaPanel({ surfaceChoice = null, inSidebar = false }: {
           <ToggleControl label="Experimental grass" checked={detailSurface === 'grass2'} onChange={updateGrassVariant} />
           <p className="m-0 px-1 text-[11px] leading-4 text-muted-foreground">Use the flowering grass renderer for this area.</p>
         </div>}
+      {(detailSurface === 'soil' || detailSurface === 'mulch' || settings.plantingBed) && <ToggleControl label="Planting bed" checked={settings.plantingBed} onChange={plantingBed => updateSettings({ plantingBed })} />}
+      {settings.plantingBed && <PanelSelect label="Bed surface" value={settings.surface} onChange={event => updateSettings({ surface: event.target.value as GroundSurface })}>
+        {surfaces.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
+      </PanelSelect>}
+      {settings.surface === 'mulch' && <div className="flex flex-col gap-1.5">
+        <MetricControl label="Mulch depth" value={settings.mulchDepth} min={0.01} max={0.5} step={0.005} precision={3} unit="m" onChange={mulchDepth => updateSettings({ mulchDepth })} />
+        <MetricControl label="Bag size" value={settings.mulchBagLitres} min={1} max={1000} step={5} precision={0} unit="L" onChange={mulchBagLitres => updateSettings({ mulchBagLitres })} />
+      </div>}
       {!selected && <div className="flex flex-col gap-2">
         <div className="px-1 text-xs font-medium">Drawing mode</div>
         <DrawingModeControl value={groundAreaDrawingMode()} onChange={setGroundAreaDrawingMode} />
+        {active && <p role="status" className="m-0 px-1 text-xs leading-5 text-muted-foreground">
+          {drawingStatus.message || (drawingStatus.shape === 'rectangle'
+            ? drawingStatus.points ? 'Choose the opposite corner.' : 'Choose the first corner.'
+            : 'Draw the outline in the viewport.')}
+        </p>}
       </div>}
       {!detailSurface && <>
         <div aria-label="Ground surface" role="group" className="flex flex-col gap-1">

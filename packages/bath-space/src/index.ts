@@ -1,3 +1,6 @@
+import { wallLightDefinition } from './wall-light/definition'
+import { towelRailDefinition } from './towel-rail/definition'
+import { mirrorDefinition } from './mirror/definition'
 import { toiletPaperHolderDefinition } from './toilet-paper-holder/definition'
 import { showerDividerDefinition } from './shower-divider/definition'
 import { showerFlangeDefinition } from './shower-flange/definition'
@@ -27,10 +30,12 @@ import { semiRecessedBasinDefinition } from './countertop-basin/semi-recessed-de
 import { dropInBasinDefinition } from './countertop-basin/drop-in-definition'
 import { undermountBasinDefinition } from './countertop-basin/undermount-definition'
 import { countertopBasinDefinition } from './countertop-basin/definition'
+import { bathroomDrawingSchedule } from './workspace/drawing-schedule'
 import type { AnyNodeDefinition, Plugin } from '@pascal-app/core'
 import { freestandingVanityDefinition } from './freestanding-vanity/definition'
 import { wallMountedVanityDefinition } from './freestanding-vanity/wall-mounted-definition'
 import { cornerVanityDefinition } from './freestanding-vanity/corner-definition'
+import { BATH_SPACE_ICON } from './bath-space-icon'
 
 type BathSpaceHostPanel = {
   id: string
@@ -39,7 +44,7 @@ type BathSpaceHostPanel = {
   description: string
   creator: { name: string; url?: string }
   pluginUrl: string
-  icon: { kind: 'iconify'; name: string }
+  icon: { kind: 'url'; src: string }
   component: () => Promise<{ default: React.ComponentType }>
   defaultInstalled: boolean
 }
@@ -47,7 +52,16 @@ type BathSpaceHostPanel = {
 export const bathSpacePlugin: Plugin = {
   id: 'pascal:bath-space',
   apiVersion: 1,
-  nodes: [toiletPaperHolderDefinition as unknown as AnyNodeDefinition,showerConnectorDefinition as unknown as AnyNodeDefinition,showerDividerDefinition as unknown as AnyNodeDefinition,showerFlangeDefinition as unknown as AnyNodeDefinition,showerValveDefinition as unknown as AnyNodeDefinition,bathShowerDefinition as unknown as AnyNodeDefinition,bathScreenDefinition as unknown as AnyNodeDefinition,showerAssemblyDefinition as unknown as AnyNodeDefinition, wallSpoutDefinition as unknown as AnyNodeDefinition, bodyJetDefinition as unknown as AnyNodeDefinition, showerControlDefinition as unknown as AnyNodeDefinition, bathDeckDefinition as unknown as AnyNodeDefinition,showerHoseDefinition as unknown as AnyNodeDefinition, showerMountDefinition as unknown as AnyNodeDefinition, handShowerDefinition as unknown as AnyNodeDefinition, showerHeadDefinition as unknown as AnyNodeDefinition, floorStandingToiletDefinition as unknown as AnyNodeDefinition, wallFlushPlateDefinition as unknown as AnyNodeDefinition, cisternFlushControlDefinition as unknown as AnyNodeDefinition, bathtubDefinition as unknown as AnyNodeDefinition, showerArmDefinition as unknown as AnyNodeDefinition, wallHungToiletDefinition as unknown as AnyNodeDefinition, halfPedestalBasinDefinition as unknown as AnyNodeDefinition, fullPedestalBasinDefinition as unknown as AnyNodeDefinition, tapDefinition as unknown as AnyNodeDefinition, wallHungBasinDefinition as unknown as AnyNodeDefinition, semiRecessedBasinDefinition as unknown as AnyNodeDefinition, dropInBasinDefinition as unknown as AnyNodeDefinition, undermountBasinDefinition as unknown as AnyNodeDefinition, countertopBasinDefinition as unknown as AnyNodeDefinition, freestandingVanityDefinition as unknown as AnyNodeDefinition, wallMountedVanityDefinition as unknown as AnyNodeDefinition, cornerVanityDefinition as unknown as AnyNodeDefinition],
+  nodes: [wallLightDefinition as unknown as AnyNodeDefinition,towelRailDefinition as unknown as AnyNodeDefinition,mirrorDefinition as unknown as AnyNodeDefinition,toiletPaperHolderDefinition as unknown as AnyNodeDefinition,showerConnectorDefinition as unknown as AnyNodeDefinition,showerDividerDefinition as unknown as AnyNodeDefinition,showerFlangeDefinition as unknown as AnyNodeDefinition,showerValveDefinition as unknown as AnyNodeDefinition,bathShowerDefinition as unknown as AnyNodeDefinition,bathScreenDefinition as unknown as AnyNodeDefinition,showerAssemblyDefinition as unknown as AnyNodeDefinition, wallSpoutDefinition as unknown as AnyNodeDefinition, bodyJetDefinition as unknown as AnyNodeDefinition, showerControlDefinition as unknown as AnyNodeDefinition, bathDeckDefinition as unknown as AnyNodeDefinition,showerHoseDefinition as unknown as AnyNodeDefinition, showerMountDefinition as unknown as AnyNodeDefinition, handShowerDefinition as unknown as AnyNodeDefinition, showerHeadDefinition as unknown as AnyNodeDefinition, floorStandingToiletDefinition as unknown as AnyNodeDefinition, wallFlushPlateDefinition as unknown as AnyNodeDefinition, cisternFlushControlDefinition as unknown as AnyNodeDefinition, bathtubDefinition as unknown as AnyNodeDefinition, showerArmDefinition as unknown as AnyNodeDefinition, wallHungToiletDefinition as unknown as AnyNodeDefinition, halfPedestalBasinDefinition as unknown as AnyNodeDefinition, fullPedestalBasinDefinition as unknown as AnyNodeDefinition, tapDefinition as unknown as AnyNodeDefinition, wallHungBasinDefinition as unknown as AnyNodeDefinition, semiRecessedBasinDefinition as unknown as AnyNodeDefinition, dropInBasinDefinition as unknown as AnyNodeDefinition, undermountBasinDefinition as unknown as AnyNodeDefinition, countertopBasinDefinition as unknown as AnyNodeDefinition, freestandingVanityDefinition as unknown as AnyNodeDefinition, wallMountedVanityDefinition as unknown as AnyNodeDefinition, cornerVanityDefinition as unknown as AnyNodeDefinition].map(definition => ({
+    ...definition,
+    extensions: {
+      ...definition.extensions,
+      'pascal:editor/floorplan': {
+        ...((definition.extensions?.['pascal:editor/floorplan'] ?? {}) as Record<string, unknown>),
+        schedule: bathroomDrawingSchedule,
+      },
+    },
+  })),
 }
 
 export const bathSpaceHostPanel: BathSpaceHostPanel = {
@@ -57,7 +71,7 @@ export const bathSpaceHostPanel: BathSpaceHostPanel = {
   description: 'Procedural bathroom fixtures and furniture.',
   creator: { name: 'Pascal' },
   pluginUrl: 'https://editor.pascal.app/docs/developers/plugins',
-  icon: { kind: 'iconify', name: 'lucide:bath' },
+  icon: { kind: 'url', src: BATH_SPACE_ICON },
   component: () => import('./panel'),
   defaultInstalled: true,
 }

@@ -2,11 +2,12 @@
 import {
   PanelSection,
   PanelWrapper,
-  SliderControl,
   ToggleControl,
   PanelSelect,
 } from '../inspector-controls'
 
+import { SectionSizingProvider } from '../section/sizing-mode'
+import { VanitySliderControl as SliderControl } from './size-controls'
 import { SectionAccordion } from '../section/section-card'
 import { vanitySection } from '../section/model'
 import type { AnyNode, AnyNodeId, ParamField } from '@pascal-app/core'
@@ -29,9 +30,9 @@ export default function FreestandingVanityInspector({ node: rawNode }: { node: V
   const node = VanityNode.parse(rawNode)
   const clearanceStatus = useDrawerClearanceStatus(node.id)
   const wallMounted = node.type === WALL_MOUNTED_VANITY
-  const host = wallMounted
-    ? useScene.getState().nodes[(node.wallId ?? node.parentId) as AnyNodeId]
-    : undefined
+  const host = useScene((state) =>
+    wallMounted ? state.nodes[(node.wallId ?? node.parentId) as AnyNodeId] : undefined,
+  )
   const wallLength =
     host?.type === 'wall'
       ? Math.hypot(host.end[0] - host.start[0], host.end[1] - host.start[1])
@@ -121,6 +122,9 @@ export default function FreestandingVanityInspector({ node: rawNode }: { node: V
               : (field.max ?? 100)
       return (
         <SliderControl
+          node={node}
+          dimensionKey={String(key)}
+          elevation={elevation}
           key={key}
           label={label}
           value={(Number(node[key]) + elevation) * multiplier}
@@ -184,7 +188,7 @@ export default function FreestandingVanityInspector({ node: rawNode }: { node: V
   }
 
   return (
-    <PanelWrapper
+    <SectionSizingProvider key={node.id}><PanelWrapper
       title={wallMounted ? 'Wall-mounted Vanity' : 'Freestanding Vanity'}
       onClose={() => setSelection({ selectedIds: [] })}
       width={340}
@@ -240,20 +244,25 @@ export default function FreestandingVanityInspector({ node: rawNode }: { node: V
         .filter((section) =>
           section.fields.some((field) => !field.visibleIf || field.visibleIf(node)),
         )
-        .map((section, index) => (
-          <PanelSection key={section.label} title={section.label} defaultExpanded={index < 2}>
+        .map((section) => (
+          <PanelSection
+            key={section.label}
+            title={section.label}
+            defaultExpanded={section.label === 'Dimensions' || section.label === 'Storage'}
+          >
             {section.fields.map(fieldControl)}
             {section.label === 'Storage' && node.storageLayout === 'custom' && (
               <CustomStorageEditor node={node} onChange={update} />
             )}
           </PanelSection>
         ))}
+
       <div className="flex items-center justify-between gap-3 px-3 py-3 text-xs text-muted-foreground">
         <span>Click a front to open it · E opens all</span>
         <kbd className="rounded border border-border/60 px-1.5 py-0.5 font-sans text-foreground/80">
           E
         </kbd>
       </div>
-    </PanelWrapper>
+    </PanelWrapper></SectionSizingProvider>
   )
 }

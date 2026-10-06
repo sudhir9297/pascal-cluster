@@ -21,7 +21,8 @@ async function renderAll() {
   const distance=Math.max(size.y,size.x,size.z)*2.45
   camera.position.copy(center).add(new Vector3(.7,.38,-1).normalize().multiplyScalar(distance));camera.lookAt(center)
   renderer.render(scene,camera)
-  const blob=await new Promise<Blob>(resolve=>renderer.domElement.toBlob(blob=>resolve(blob!),'image/png'))
+  const blob=await new Promise<Blob>(resolve=>renderer.domElement.toBlob(blob=>resolve(blob!),'image/webp',.95))
+  if(blob.type!=='image/webp')throw new Error('This browser cannot export WebP thumbnails')
   await fetch(`/thumbnail/${preset.id}`,{method:'POST',body:blob})
   const card=document.createElement('div'),img=document.createElement('img');img.src=URL.createObjectURL(blob);img.style.width='100%';card.append(img,document.createTextNode(preset.label));document.body.append(card)
   scene.remove(model);model.traverse((part:any)=>{if(part.isMesh){part.geometry.dispose();part.material.dispose()}})

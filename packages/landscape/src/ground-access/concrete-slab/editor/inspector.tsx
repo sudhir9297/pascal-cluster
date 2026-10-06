@@ -114,7 +114,7 @@ export default function ConcreteSlabInspector({ node: rawNode }: { node: Concret
           <span><span className="block text-xs">{finish.label}</span><span className="block text-[10px] text-muted-foreground">{finish.detail}</span></span>
         </InspectorChoice>)}
       </div>}
-      {tab === 'notes' && <InspectorNotes item="concrete slab" />}
+      {tab === 'notes' && <InspectorNotes item="concrete slab" nodeId={node.id} />}
     </div>
     <div className="flex shrink-0 items-center border-t border-border/50 px-3 py-2">
       <InspectorDeleteButton item="concrete slab" onDelete={() => {

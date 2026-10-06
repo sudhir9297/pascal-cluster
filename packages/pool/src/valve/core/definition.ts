@@ -1,3 +1,5 @@
+import { poolComponentFloorplan } from '../../rendering/component-floorplan'
+import { poolPlanDependencies, poolPlanMovableFrame } from '../../rendering/plan-frame'
 import { useEditor } from '@pascal-app/editor'
 import { useScene, type AnyNode, type NodeDefinition } from '@pascal-app/core'
 import { connectionPorts } from '../../core/connection-ports'
@@ -20,7 +22,7 @@ export const poolValveDefinition: NodeDefinition<typeof PoolValveNode> = {
     ...DEFAULT_POOL_VALVE,
   }),
   capabilities: {
-    movable: { axes: ['x', 'y', 'z'], gridSnap: true, cursorAttached: true, portSnap: { systems: ['waste'] } },
+    movable: { parentFrame: poolPlanMovableFrame, axes: ['x', 'y', 'z'], gridSnap: true, cursorAttached: true, portSnap: { systems: ['waste'] } },
     rotatable: { axes: ['x', 'y', 'z'] },
     selectable: { hitVolume: 'bbox' },
     duplicable: true,
@@ -54,6 +56,8 @@ export const poolValveDefinition: NodeDefinition<typeof PoolValveNode> = {
       },
     },
   },
+  floorplan: poolComponentFloorplan,
+  floorplanDependencies: poolPlanDependencies,
   renderer: { kind: 'parametric', module: () => import('../editor/preview') },
   parametrics: poolValveParametrics,
   tool: () => import('../editor/tool'),

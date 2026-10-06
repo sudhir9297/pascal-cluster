@@ -13,9 +13,10 @@ export default function PoolStairPreview({ node }: { node: PoolStairNode }) {
   const committedPool = useAttachmentPool(node.poolId)
   const mounted = useMemo(() => resolveMountedPoolStair(node, pool), [node, pool])
   const committedMounted = useMemo(() => resolveMountedPoolStair(node, committedPool), [node, committedPool])
+  const mounting = resolvePoolStairMounting(committedMounted, committedPool)
   const buildGeometry = useCallback(
-    (value: PoolStairNode) => buildPoolStairGeometry(value, resolvePoolStairMounting(value, committedPool)),
-    [committedPool],
+    (value: PoolStairNode) => buildPoolStairGeometry(value, mounting),
+    [mounting.deckReach, mounting.innerOffset, mounting.railHeight],
   )
   return <GeometryPreview node={mounted} geometryNode={committedMounted} buildGeometry={buildGeometry} />
 }

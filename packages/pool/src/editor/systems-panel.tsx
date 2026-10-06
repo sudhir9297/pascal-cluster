@@ -6,7 +6,7 @@ import { useViewer } from '@pascal-app/viewer'
 import { type KeyboardEvent as ReactKeyboardEvent, type ReactNode, useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import type { PoolNode } from '../core/schema'
-import { planPoolFittings } from '../design/pool-fitting-layout'
+import { getPoolFittingSummary, planPoolFittings } from '../design/pool-fitting-layout'
 import { createDefaultPoolAttachments } from '../design/default-pool-attachments'
 import type { PoolFilterNode } from '../filter/core/schema'
 import { getPoolFilterData, POOL_FILTER_CATALOG } from '../filter/data/catalog'
@@ -98,7 +98,7 @@ export function PoolSystemsPanel() {
     fittingFlowRate: state.fittingFlowRate,
     drainFlowCapacity: state.drainFlowCapacity,
   })))
-  const fittingPlan = useMemo(() => system.pool ? planPoolFittings(system.pool) : null, [system.pool])
+  const fittingPlan = useMemo(() => system.pool ? getPoolFittingSummary(system.pool) : null, [system.pool])
   const recommendation = fittingPlan?.counts ?? null
   const fittings: FittingRow[] = [
     { type: 'pool:skimmer', label: 'Skimmers', image: THUMBNAILS.skimmer, recommended: recommendation?.skimmer ?? 0 },

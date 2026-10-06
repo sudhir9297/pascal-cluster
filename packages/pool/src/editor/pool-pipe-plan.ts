@@ -1,14 +1,15 @@
 import { findLevelAncestorId, nodeRegistry, useScene, PipeSegmentNode, PipeFittingNode, type AnyNode } from '@pascal-app/core'
 import { PoolNode } from '../core/schema'
-import { planPoolPipes, type PoolPipeOptions } from '../design/pool-pipe-layout'
+import { type PoolPipeOptions } from '../design/pool-pipe-layout'
 import { resolvePoolAttachment } from '../design/pool-attachments'
 import { PoolDrainNode } from '../drain/core/schema'
 import { PoolSkimmerNode } from '../skimmer/core/schema'
 import { PoolInletNode } from '../inlet/core/schema'
+import { searchPoolPipeLayout } from '../design/pool-pipe-search'
 import { connectionIndex } from './connection-index'
-import { pipeVolumes, pipeVolumesOverlap } from '../design/pool-pipe-clearance'
+import { pipeVolumes } from '../design/pool-pipe-clearance'
 
-export function preparePoolPipes(poolId: string, options: PoolPipeOptions, nodes = useScene.getState().nodes) {
+export function collectPoolPipeInput(poolId: string, options: PoolPipeOptions, nodes = useScene.getState().nodes) {
   const drains = options.circuit === 'drains'
   const skimmers = options.circuit === 'skimmers'
   const kind = drains ? 'pool:drain' : skimmers ? 'pool:skimmer' : 'pool:inlet'
@@ -35,17 +36,13 @@ export function preparePoolPipes(poolId: string, options: PoolPipeOptions, nodes
   const pipes = siblings.flatMap((node) => node.type === 'pipe-segment' ? [PipeSegmentNode.parse(node)] : [])
   const fittings = siblings.flatMap((node) => node.type === 'pipe-fitting' ? [PipeFittingNode.parse(node)] : [])
   const existing = pipeVolumes(pipes, fittings, fittingPorts)
-  const first = planPoolPipes(pool, ports, options, fittingPorts)
-  if (!pipeVolumesOverlap(pipeVolumes(first.pipes, first.fittings, fittingPorts), existing)) return { ...first, levelId, poolId, circuit: options.circuit, snapshot: nodes }
-  // Search nearby elevations first, then wider corridors to clear vertical drops too.
-  for (let distance = 1; distance <= 24; distance++) for (let lateral = 0; lateral <= Math.min(6, distance); lateral++) {
-    const adjusted = { ...options, drop: options.drop + (distance - lateral) * 0.2, clearance: options.clearance + lateral * 0.2 }
-    try {
-      const layout = planPoolPipes(pool, ports, adjusted, fittingPorts, lateral * 0.2)
-      if (!pipeVolumesOverlap(pipeVolumes(layout.pipes, layout.fittings, fittingPorts), existing)) return { ...layout, levelId, poolId, circuit: options.circuit, snapshot: nodes }
-    } catch { continue }
-  }
-  throw new Error('No clear pipe route was found. Move nearby pipes or fittings, or choose another exit position.')
+  return { pool, ports, options, existing, fittingPorts, levelId, poolId, circuit: options.circuit, snapshot: nodes }
+}
+
+export function preparePoolPipes(poolId: string, options: PoolPipeOptions, nodes = useScene.getState().nodes) {
+  const input = collectPoolPipeInput(poolId, options, nodes)
+  const { pool, ports, existing, fittingPorts, levelId, circuit, snapshot } = input
+  return { ...searchPoolPipeLayout(pool, ports, options, fittingPorts, existing), levelId, poolId, circuit, snapshot }
 }
 
 export function commitPoolPipes(plan: ReturnType<typeof preparePoolPipes>) {
@@ -53,4 +50,16 @@ export function commitPoolPipes(plan: ReturnType<typeof preparePoolPipes>) {
   if (scene.readOnly) throw new Error('This scene is read-only.')
   if (scene.nodes !== plan.snapshot) throw new Error('The scene changed. Review the updated preview before connecting.')
   scene.applyNodeChanges({ create: [...plan.pipes, ...plan.fittings].map((node) => ({ node: { ...node, metadata: { ...node.metadata, poolConnection: { poolId: plan.poolId, circuit: plan.circuit } } }, parentId: plan.levelId as AnyNode['id'] })) })
+}
+
+/** Capture registry-specific socket geometry once; workers receive only plain data. */
+export function serializePoolPipeInput(input: ReturnType<typeof collectPoolPipeInput>) {
+  const first = input.ports[0]
+  const templates = Object.fromEntries(['elbow', 'sanitary-tee'].map(fittingType => {
+    const node = PipeFittingNode.parse({ fittingType, diameter: first?.diameter, diameter2: first?.diameter, system: first?.system, pipeMaterial: 'pvc', angle: 90, position: [0, 0, 0], rotation: [0, 0, 0] })
+    return [fittingType, input.fittingPorts(node)]
+  }))
+  return { pool: input.pool, ports: input.ports, options: input.options, templates,
+    existing: input.existing.map(v => ({ ...v, a: v.a.toArray(), b: v.b.toArray(), sockets: v.sockets.map(p => p.toArray()) })),
+  }
 }

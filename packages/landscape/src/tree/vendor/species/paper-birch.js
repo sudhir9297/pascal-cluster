@@ -10,8 +10,8 @@ import { broadleafControls } from './broadleaf-controls.js';
 export const paperBirch = {
   name: 'Paper Birch',
   latin: 'Betula papyrifera',
-  bark: 'paper_birch_albedo.png',
-  leaf: 'paper_birch_single_albedo.png',
+  bark: 'paper_birch_albedo.webp',
+  leaf: 'paper_birch_single_albedo.webp',
   biome: 'temperate',
   tileWorldSize: 1.0,
   controls: broadleafControls,

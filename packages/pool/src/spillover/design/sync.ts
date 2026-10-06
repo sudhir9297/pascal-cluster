@@ -30,8 +30,9 @@ export function resolvePoolSpilloverSyncUpdate(
 }
 
 /** Recomputes a spillover's direction, drop, and footprint after either pool moves. */
-export function syncPoolSpillovers(nodes: Record<string, AnyNode>): PoolSpilloverChanges {
+export function syncPoolSpillovers(nodes: Record<string, AnyNode>, affectedPoolIds?: ReadonlySet<string>): PoolSpilloverChanges {
   const pools = Object.values(nodes)
+    .filter(node => String(node.type) === 'pool:pool')
     .map((node) => PoolNode.safeParse(node))
     .filter((result): result is { success: true; data: PoolNode } => result.success)
     .map((result) => result.data)
@@ -40,6 +41,8 @@ export function syncPoolSpillovers(nodes: Record<string, AnyNode>): PoolSpillove
   const deleteIds: string[] = []
   for (const node of Object.values(nodes)) {
     if (String(node.type) !== 'pool:spillover') continue
+    const endpoints = node as unknown as { sourcePoolId?: string; targetPoolId?: string }
+    if (affectedPoolIds && !affectedPoolIds.has(endpoints.sourcePoolId ?? '') && !affectedPoolIds.has(endpoints.targetPoolId ?? '')) continue
     const spillover = PoolSpilloverNode.safeParse(node)
     if (!spillover.success) { deleteIds.push(node.id); continue }
     const source = byId.get(String(spillover.data.sourcePoolId))

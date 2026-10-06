@@ -3,6 +3,7 @@ import { Color, Vector3 } from 'three/webgpu'
 import { vec3 } from 'three/tsl'
 import type { SceneAtmosphereSource } from '@pascal-app/viewer'
 import { PoolWaterEffect, createImmersiveXRPoolWaterMaterial } from './water-effect'
+import { WaterfallWaterEffect } from './waterfall-effect'
 
 function atmosphere(reflectionRadiance: SceneAtmosphereSource['reflectionRadiance'] = () => vec3(0.1, 0.2, 0.3)): SceneAtmosphereSource {
   return {
@@ -89,3 +90,41 @@ test('changing quality rebuilds the shader even when simulation resolution stays
   expect(effect.resolution).toBe(64)
   effect.dispose()
 })
+
+for (const [name, createEffect] of [
+  ['pool', () => new PoolWaterEffect({ waterQuality: 'high' }, 16)],
+  ['waterfall', () => new WaterfallWaterEffect({})],
+] as const) {
+  test(`${name} framebuffer copies remain distinct across differently sized render passes`, () => {
+    const effect = createEffect()
+    try {
+      type FramebufferCopy = {
+        uuid: string
+        referenceNode?: FramebufferCopy
+        getTextureForReference(reference: object): object
+      }
+      const copies = new Map<string, FramebufferCopy>()
+      effect.material.colorNode!.traverse((node) => {
+        if (node.constructor.name === 'ViewportSharedTextureNode' || node.constructor.name === 'ViewportTextureNode') {
+          const copy = node as unknown as FramebufferCopy
+          const base = copy.referenceNode ?? copy
+          copies.set(base.uuid, base)
+        }
+      })
+      // Reflection and refraction share one copy within each render pass.
+      expect(copies.size).toBe(1)
+      const scenePass = { width: 1564, height: 963 }
+      const previewPass = { width: 512, height: 512 }
+      for (const copy of copies.values()) {
+        const sceneTexture = copy.getTextureForReference(scenePass)
+        const previewTexture = copy.getTextureForReference(previewPass)
+        // Reallocating the preview must never destroy a texture encoded by the scene pass.
+        expect(previewTexture).not.toBe(sceneTexture)
+        expect(copy.getTextureForReference(scenePass)).toBe(sceneTexture)
+        expect(copy.getTextureForReference(previewPass)).toBe(previewTexture)
+      }
+    } finally {
+      effect.dispose()
+    }
+  })
+}

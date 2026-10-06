@@ -28,7 +28,7 @@ function JunctionGrip({ node, vertex }: { node: PathwayNode; vertex: PathVertex 
     if (event.button !== 0) return
     event.stopPropagation()
     const id = node.id as AnyNodeId
-    const plane = new Plane(new Vector3(0, 1, 0), -(node.elevation + node.thickness))
+    const plane = new Plane(new Vector3(0, 1, 0), -(node.elevation + (vertex.elevationOffset ?? 0) + node.thickness))
     const start = event.ray.intersectPlane(plane, new Vector3())
     if (!start) return
     const pointer = new Vector2()
@@ -86,7 +86,7 @@ function JunctionGrip({ node, vertex }: { node: PathwayNode; vertex: PathVertex 
   }
 
   return <group layers={EDITOR_LAYER}
-    position={[vertex.point[0], node.elevation + node.thickness + 0.22, vertex.point[1]]}
+    position={[vertex.point[0], node.elevation + (vertex.elevationOffset ?? 0) + node.thickness + 0.22, vertex.point[1]]}
     scale={scale * (hovered ? 1.12 : 1)}>
     <mesh raycast={() => null} renderOrder={1010}>
       <sphereGeometry args={[0.2, 16, 12]} />

@@ -1,12 +1,25 @@
 import { expect, test } from 'bun:test'
 import { lerp, type Curve } from './curves'
-import { addCurves } from './network'
+import { addCurves, PathwayGradeConflictError } from './network'
 import { pathComponents } from './components'
 import { planPathwayItems } from './items'
 import { PathwayNode, type Point } from './schema'
 
 const line = (a: Point, b: Point): Curve => [a, lerp(a, b, 1 / 3), lerp(a, b, 2 / 3), b]
 const base = PathwayNode.parse({ parentId: 'level_test' })
+
+test('merging existing crossings rejects incompatible heights without changing either saved route', () => {
+  const first = PathwayNode.parse({ ...base, ...addCurves({ vertices: [], edges: [] }, [line([-4, 0], [4, 0])], 1) })
+  const second = PathwayNode.parse({ ...base, id: undefined, ...addCurves({ vertices: [], edges: [] }, [line([0, -4], [0, 4])], 1) })
+  first.vertices[1]!.elevationOffset = 2
+  const before = JSON.stringify([first, second])
+  expect(() => planPathwayItems([first, second], [], 1, first)).toThrow(PathwayGradeConflictError)
+  expect(JSON.stringify([first, second])).toBe(before)
+  second.vertices.forEach((vertex) => { vertex.elevationOffset = 1 })
+  const joined = planPathwayItems([first, second], [], 1, first)
+  expect(joined.update[0]!.edges).toHaveLength(4)
+  expect(joined.update[0]!.vertices.find((vertex) => vertex.point[0] === 0 && vertex.point[1] === 0)?.elevationOffset).toBeCloseTo(1)
+})
 
 test('unconnected drawings become individually selectable pathway nodes', () => {
   const first = planPathwayItems([], [line([0, 0], [4, 0])], 1, base)

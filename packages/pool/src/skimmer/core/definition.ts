@@ -1,3 +1,6 @@
+import { poolFittingFloorplanMove } from '../../editor/floorplan-fitting-move'
+import { poolComponentFloorplan } from '../../rendering/component-floorplan'
+import { poolPlanDependencies, poolPlanMovableFrame } from '../../rendering/plan-frame'
 import { useScene, type NodeDefinition } from '@pascal-app/core'
 import { PoolNode } from '../../core/schema'
 import { resolveMountedSkimmer } from '../design/placement'
@@ -22,7 +25,7 @@ export const poolSkimmerDefinition: NodeDefinition<typeof PoolSkimmerNode> = {
     ...DEFAULT_POOL_SKIMMER,
   }),
   capabilities: {
-    movable: { axes: ['x', 'y', 'z'], gridSnap: true },
+    movable: { parentFrame: poolPlanMovableFrame, axes: ['x', 'y', 'z'], gridSnap: true },
     rotatable: { axes: ['y'] },
     selectable: { hitVolume: 'bbox' },
     duplicable: true,
@@ -35,6 +38,9 @@ export const poolSkimmerDefinition: NodeDefinition<typeof PoolSkimmerNode> = {
     const mounted = resolveMountedSkimmer(node, pool.success ? pool.data : null)
     return connectionPorts(mounted, getSkimmerPortsLocal(mounted))
   },
+  floorplan: poolComponentFloorplan,
+  floorplanMoveTarget: poolFittingFloorplanMove,
+  floorplanDependencies: poolPlanDependencies,
   renderer: { kind: 'parametric', module: () => import('../editor/preview') },
   parametrics: poolSkimmerParametrics,
   tool: () => import('../editor/tool'),

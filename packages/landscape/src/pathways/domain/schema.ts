@@ -16,7 +16,7 @@ export type PathwayCorner = 'round' | 'square'
 export const STONE_LAYOUT_DEFAULTS = { length: 0.29, joint: 0.03, variation: 0.25 } as const
 const point = z.tuple([z.number().finite(), z.number().finite()])
 export type Point = z.infer<typeof point>
-const vertex = z.object({ id: z.string(), point, curveMode: z.enum(['smooth', 'corner']).optional() })
+const vertex = z.object({ id: z.string(), point, elevationOffset: z.number().finite().min(-100).max(100).optional(), curveMode: z.enum(['smooth', 'corner']).optional() })
 const edge = z.object({
   id: z.string(),
   from: z.string(),

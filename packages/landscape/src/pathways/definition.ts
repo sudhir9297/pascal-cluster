@@ -1,3 +1,4 @@
+import { hardscapeSchedule } from '../editor/schedules'
 import type { NodeDefinition } from '@pascal-app/core'
 import { PATHWAY_KIND, PathwayNode } from './domain/schema'
 import { PathwayFinishControl } from './editor/finish-control'
@@ -22,6 +23,7 @@ export const pathwayDefinition: NodeDefinition<typeof PathwayNode> = {
   category: 'structure',
   extensions: {
     'pascal:editor/floorplan': {
+      schedule: hardscapeSchedule,
       tool: () => import('./editor/floorplan-tool'),
       preferredView: '3d',
     },
@@ -36,7 +38,7 @@ export const pathwayDefinition: NodeDefinition<typeof PathwayNode> = {
   renderer: { kind: 'parametric', module: () => import('./rendering/renderer') },
   floorplan: buildPathwayFloorplan,
   floorplanDependencies: (node, nodes) => Object.values(nodes)
-    .filter((candidate) => candidate.parentId === node.parentId && (candidate.type as string) === 'pool:pool')
+    .filter((candidate) => candidate.parentId === node.parentId && ((candidate.type as string) === 'pool:pool' || (candidate.type as string) === 'landscape:pond'))
     .map((candidate) => candidate.id),
   floorplanAffordances: {
     'pathway-extend-endpoint': pathwayExtendEndpointAffordance,

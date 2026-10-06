@@ -1,8 +1,8 @@
 'use client'
+import {BasinSliderControl as SliderControl,BasinSizingProvider} from '../countertop-basin/size-controls'
 import {
   PanelSection,
   PanelWrapper,
-  SliderControl,
   ToggleControl,
   PanelButton,
 } from '../inspector-controls'
@@ -29,7 +29,7 @@ export default function HalfPedestalInspector({ node: raw }: { node: HalfPedesta
   const update = (patch: Partial<HalfPedestalBasinNode>) =>
     useScene.getState().updateNode(node.id as AnyNodeId, prepare(patch) as Partial<AnyNode>)
   return (
-    <PanelWrapper
+    <BasinSizingProvider node={node}><PanelWrapper
       title="Half Pedestal Basin"
       onClose={() => useViewer.getState().setSelection({ selectedIds: [] })}
     >
@@ -65,7 +65,7 @@ export default function HalfPedestalInspector({ node: raw }: { node: HalfPedesta
           unit="m"
           onChange={(height) => update({ position: [node.position[0], height, node.position[2]] })}
         />
-        <SliderControl
+        <SliderControl dimensionKey="width"
           label="Basin width"
           value={node.width}
           min={0.45}
@@ -74,7 +74,7 @@ export default function HalfPedestalInspector({ node: raw }: { node: HalfPedesta
           unit="m"
           onChange={(width) => update({ width })}
         />
-        <SliderControl
+        <SliderControl dimensionKey="depth"
           label="Basin depth"
           value={node.depth}
           min={0.42}
@@ -83,7 +83,7 @@ export default function HalfPedestalInspector({ node: raw }: { node: HalfPedesta
           unit="m"
           onChange={(depth) => update({ depth })}
         />
-        <SliderControl
+        <SliderControl dimensionKey="height"
           label="Bowl height"
           value={node.height}
           min={0.08}
@@ -92,7 +92,7 @@ export default function HalfPedestalInspector({ node: raw }: { node: HalfPedesta
           unit="m"
           onChange={(height) => update({ height })}
         />
-        <SliderControl
+        <SliderControl dimensionKey="shroudWidth"
           label="Shroud width"
           value={node.shroudWidth}
           min={0.18}
@@ -101,7 +101,7 @@ export default function HalfPedestalInspector({ node: raw }: { node: HalfPedesta
           unit="m"
           onChange={(shroudWidth) => update({ shroudWidth })}
         />
-        <SliderControl
+        <SliderControl dimensionKey="shroudDepth"
           label="Shroud depth"
           value={node.shroudDepth}
           min={0.18}
@@ -110,7 +110,7 @@ export default function HalfPedestalInspector({ node: raw }: { node: HalfPedesta
           unit="m"
           onChange={(shroudDepth) => update({ shroudDepth })}
         />
-        <SliderControl
+        <SliderControl dimensionKey="shroudHeight"
           label="Shroud height"
           value={node.shroudHeight}
           min={0.12}
@@ -132,6 +132,6 @@ export default function HalfPedestalInspector({ node: raw }: { node: HalfPedesta
           onChange={(overflowEnabled) => update({ overflowEnabled })}
         />
       </PanelSection>
-    </PanelWrapper>
+    </PanelWrapper></BasinSizingProvider>
   )
 }

@@ -1,6 +1,8 @@
+import { hardscapeSchedule } from '../../editor/schedules'
 import type { NodeDefinition } from '@pascal-app/core'
 import { DeckNode, DECK_KIND } from './domain/schema'
 import { buildDeckGeometry, buildDeckFloorplan } from './rendering/geometry'
+import { deckRailingLevelOutline } from './domain/railing'
 import { drawingModeHint } from '../shared/drawing-mode'
 import { surfaceFloorplanAffordances } from '../shared/floorplan-affordances'
 import { deckParametrics } from './editor/parametrics'
@@ -11,6 +13,7 @@ import { surfaceHeightHandle } from '../shared/height-handle'
 export const deckDefinition: NodeDefinition<typeof DeckNode> = {
   kind: DECK_KIND,
   schemaVersion: 1,
+  extensions: { 'pascal:editor/floorplan': { schedule: hardscapeSchedule } },
   schema: DeckNode,
   category: 'site',
   snapProfile: 'item',
@@ -21,7 +24,7 @@ export const deckDefinition: NodeDefinition<typeof DeckNode> = {
   },
   capabilities: {
     selectable: { hitVolume: 'mesh' },
-    surfaces: { top: { height: (raw) => (raw as unknown as DeckNode).thickness } },
+    surfaces: { top: { height: (raw) => (raw as unknown as DeckNode).thickness, boundary: (raw, inset) => deckRailingLevelOutline(DeckNode.parse(raw), inset) } },
     paint: deckPaint,
     movable: { axes: ['x', 'z'], gridSnap: true },
     rotatable: { axes: ['y'] },
@@ -32,7 +35,7 @@ export const deckDefinition: NodeDefinition<typeof DeckNode> = {
   system: { module: () => import('./editor/boundary-system') },
   floorplan: buildDeckFloorplan,
   floorplanDependencies: (node, nodes) => Object.values(nodes)
-    .filter((candidate) => candidate.parentId === node.parentId && (candidate.type as string) === 'pool:pool')
+    .filter((candidate) => candidate.parentId === node.parentId && ((candidate.type as string) === 'pool:pool' || (candidate.type as string) === 'landscape:pond'))
     .map((candidate) => candidate.id),
   floorplanAffordances: surfaceFloorplanAffordances(DECK_KIND),
   tool: () => import('../shared/drawing-tool'),

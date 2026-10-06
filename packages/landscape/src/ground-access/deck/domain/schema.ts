@@ -30,6 +30,12 @@ export const DeckNode = BaseNode.extend({
   postColor: z.string().regex(/^#[0-9a-f]{6}$/i).default('#66513f'),
   skirtStyle: z.enum(['none', 'solid', 'slatted']).default('none'),
   skirtColor: z.string().regex(/^#[0-9a-f]{6}$/i).default('#785339'),
+  railingStyle: z.enum(['none', 'wood', 'metal', 'cable', 'glass']).default('none'),
+  railingHeight: z.number().finite().min(0.3).default(1),
+  railingColor: z.string().regex(/^#[0-9a-f]{6}$/i).default('#5b5046'),
+  railingPostSpacing: z.number().finite().min(0.1).default(1.8),
+  railingEdgeMode: z.enum(['all', 'selected']).default('all'),
+  railingEdges: z.array(z.number().int().min(0)).default([]),
   paintedMaterials: z.record(z.string(), z.object({
     material: MaterialSchema.optional(),
     materialPreset: z.string().optional(),

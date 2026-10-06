@@ -6,9 +6,9 @@ type SceneNode = {
 }
 
 /** Restore the render tree from pool parent IDs before deriving site openings. */
-export function poolParentLinkUpdates(nodes: Record<string, SceneNode>) {
+export function poolParentLinkUpdates(nodes: Record<string, SceneNode>, affectedPoolIds?: ReadonlySet<string>) {
   const pools = Object.values(nodes).filter((node) =>
-    node.type === 'pool:pool' && Boolean(node.parentId && Array.isArray(nodes[node.parentId]?.children)),
+    node.type === 'pool:pool' && (!affectedPoolIds || affectedPoolIds.has(node.id)) && Boolean(node.parentId && Array.isArray(nodes[node.parentId]?.children)),
   )
   const poolById = new Map(pools.map((pool) => [pool.id, pool]))
   const nextChildren = new Map<string, string[]>()

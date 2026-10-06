@@ -4,12 +4,14 @@ import { acquireSceneHistoryPause, type AnyNode, type AnyNodeId, useLiveNodeOver
 import { EDITOR_LAYER } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { type ThreeEvent, useThree } from '@react-three/fiber'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { BufferGeometry, Group, OrthographicCamera, Plane, Vector2, Vector3 } from 'three'
 import type { PoolNode, PoolPoint } from '../core/schema'
 import { editPoolOutline, poolOutlineAnchors, poolOutlineMidpoint, poolOutlineTangents,
   type PoolOutlineAction, type PoolOutlinePatch } from '../design/outline-edit'
 
+import { createFrameInput } from './frame-input'
+import { updateDynamicLine } from './dynamic-line'
 import { poolOutlineInsertIndices, visiblePoolOutlineAnchors } from '../design/outline-control-visibility'
 import { usePoolOutlineControls } from './outline-control-state'
 
@@ -33,18 +35,20 @@ export function PoolOutlineControls({ node }: { node: PoolNode }) {
   const activeTangents = selectedIndex !== null && tangents[selectedIndex] ? [selectedIndex] : []
   const y = node.finishedDeckElevation + node.copingThickness + 0.18
   const scale = camera instanceof OrthographicCamera ? 1 / camera.zoom : 1
-  const outline = useMemo(() => new BufferGeometry().setFromPoints(node.polygon.flatMap((point, index) => {
-    const next = node.polygon[(index + 1) % node.polygon.length]!
-    return [new Vector3(point[0], y, point[1]), new Vector3(next[0], y, next[1])]
-  })), [node.polygon, y])
-  useEffect(() => () => outline.dispose(), [outline])
-  const guides = useMemo(() => new BufferGeometry().setFromPoints(activeTangents.flatMap((index) => {
-    const tangent = tangents[index]!
-    const anchor = anchors[index]!
-    return [new Vector3(anchor[0], y, anchor[1]), new Vector3(tangent.incoming[0], y, tangent.incoming[1]),
-      new Vector3(anchor[0], y, anchor[1]), new Vector3(tangent.outgoing[0], y, tangent.outgoing[1])]
-  })), [anchors, tangents, selectedIndex, y])
-  useEffect(() => () => guides.dispose(), [guides])
+  const outline = useMemo(() => new BufferGeometry(), [])
+  const guides = useMemo(() => new BufferGeometry(), [])
+  useLayoutEffect(() => {
+    updateDynamicLine(outline, node.polygon.flatMap((point, index) => {
+      const next = node.polygon[(index + 1) % node.polygon.length]!
+      return [new Vector3(point[0], y, point[1]), new Vector3(next[0], y, next[1])]
+    }))
+    updateDynamicLine(guides, activeTangents.flatMap(index => {
+      const tangent = tangents[index]!, anchor = anchors[index]!
+      return [new Vector3(anchor[0], y, anchor[1]), new Vector3(tangent.incoming[0], y, tangent.incoming[1]),
+        new Vector3(anchor[0], y, anchor[1]), new Vector3(tangent.outgoing[0], y, tangent.outgoing[1])]
+    }))
+  }, [outline, guides, node.polygon, y, selectedIndex])
+  useEffect(() => () => { outline.dispose(); guides.dispose() }, [outline, guides])
   useEffect(() => () => cancelDrag.current?.(), [])
   useEffect(() => {
     const onDelete = (event: KeyboardEvent) => {
@@ -83,7 +87,9 @@ export function PoolOutlineControls({ node }: { node: PoolNode }) {
     useViewer.getState().setInputDragging(true)
     document.body.style.cursor = 'grabbing'
     const finish = (commit: boolean) => {
-      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointermove', frameInput.push)
+      if (commit) frameInput.flush()
+      frameInput.dispose()
       window.removeEventListener('pointerup', up)
       window.removeEventListener('pointercancel', cancel)
       window.removeEventListener('blur', cancel)
@@ -110,9 +116,10 @@ export function PoolOutlineControls({ node }: { node: PoolNode }) {
       const next = editPoolOutline(node, action, index, [local.x + offset[0], local.z + offset[1]])
       if (!next) return
       patch = next
-      useLiveNodeOverrides.getState().set(id, next)
+      useLiveNodeOverrides.getState().set(id, { ...next, __poolEditPreview: true })
       useScene.getState().markDirty(id)
     }
+    const frameInput = createFrameInput(move, () => false)
     const up = (pointerEvent: PointerEvent) => {
       if (pointerEvent.button !== 0) return
       finish(true)
@@ -127,7 +134,7 @@ export function PoolOutlineControls({ node }: { node: PoolNode }) {
       }
     }
     cancelDrag.current = cancel
-    window.addEventListener('pointermove', move)
+    window.addEventListener('pointermove', frameInput.push)
     window.addEventListener('pointerup', up)
     window.addEventListener('pointercancel', cancel)
     window.addEventListener('blur', cancel)
@@ -148,10 +155,10 @@ export function PoolOutlineControls({ node }: { node: PoolNode }) {
     </mesh>
 
   return <group ref={group} layers={EDITOR_LAYER}>
-    <lineSegments geometry={outline} raycast={() => null} renderOrder={1010}>
+    <lineSegments frustumCulled={false} geometry={outline} raycast={() => null} renderOrder={1010}>
       <lineBasicMaterial color={colors.anchor} depthTest={false} depthWrite={false} />
     </lineSegments>
-    {activeTangents.length > 0 && <lineSegments geometry={guides} raycast={() => null} renderOrder={1010}>
+    {activeTangents.length > 0 && <lineSegments frustumCulled={false} geometry={guides} raycast={() => null} renderOrder={1010}>
       <lineBasicMaterial color={colors.tangent} depthTest={false} depthWrite={false} />
     </lineSegments>}
     {visibleIndices.map((index) => handle(anchors[index]!, 'move', index))}

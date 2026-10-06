@@ -10,12 +10,13 @@ import { insertPathCurvePoint, isCurvedPathEdge, moveInsertedPathPoint, movePath
   showPathEdgeControls, type CurveSide } from '../domain/edit-curve'
 import type { PathGraph, PathwayNode, Point } from '../domain/schema'
 import { buildOutline } from '../rendering/outline'
+import { pathwayGradeField } from '../rendering/grade-mesh'
 import { editHandleColors } from '../../shared/edit-handle-style'
 
-function Guide({ from, to, height }: { from: Point; to: Point; height: number }) {
+function Guide({ from, to, fromHeight, toHeight }: { from: Point; to: Point; fromHeight: number; toHeight: number }) {
   const geometry = useMemo(() => new BufferGeometry().setFromPoints([
-    new Vector3(from[0], height, from[1]), new Vector3(to[0], height, to[1]),
-  ]), [from, to, height])
+    new Vector3(from[0], fromHeight, from[1]), new Vector3(to[0], toHeight, to[1]),
+  ]), [from, to, fromHeight, toHeight])
   useEffect(() => () => geometry.dispose(), [geometry])
   return <lineSegments geometry={geometry} raycast={() => null} layers={EDITOR_LAYER} renderOrder={1010}>
     <lineBasicMaterial color={editHandleColors.tangent} depthTest={false} depthWrite={false} />
@@ -28,7 +29,8 @@ function CurveGrip({ node, edgeId, side, point }: {
   const { camera, gl, raycaster } = useThree()
   const cleanup = useRef<(() => void) | null>(null)
   const scale = camera instanceof OrthographicCamera ? 1 / camera.zoom : 1
-  const height = node.elevation + node.thickness + 0.24
+  const gradeAt = useMemo(() => pathwayGradeField(node), [node])
+  const height = node.elevation + node.thickness + 0.24 + gradeAt(point[0], point[1])
   useEffect(() => () => cleanup.current?.(), [])
 
   const onPointerDown = (event: ThreeEvent<PointerEvent>) => {
@@ -115,15 +117,16 @@ function CurveGrip({ node, edgeId, side, point }: {
 }
 
 export function PathwayCurveControls({ node }: { node: PathwayNode }) {
-  const height = node.elevation + node.thickness + 0.24
+  const gradeAt = useMemo(() => pathwayGradeField(node), [node])
+  const heightAt = (point: Point) => node.elevation + node.thickness + 0.24 + gradeAt(point[0], point[1])
   return <group>{node.edges.map((edge) => {
     if (!showPathEdgeControls(node, edge)) return null
     const curve = edgeCurve(node, edge)
     return <group key={edge.id}>
       <CurveGrip node={node} edgeId={edge.id} side="insert" point={evaluate(curve, 0.5)} />
       {isCurvedPathEdge(node, edge) && <>
-        <Guide from={curve[0]} to={curve[1]} height={height} />
-        <Guide from={curve[3]} to={curve[2]} height={height} />
+        <Guide from={curve[0]} to={curve[1]} fromHeight={heightAt(curve[0])} toHeight={heightAt(curve[1])} />
+        <Guide from={curve[3]} to={curve[2]} fromHeight={heightAt(curve[3])} toHeight={heightAt(curve[2])} />
         <CurveGrip node={node} edgeId={edge.id} side="from" point={curve[1]} />
         <CurveGrip node={node} edgeId={edge.id} side="to" point={curve[2]} />
       </>}

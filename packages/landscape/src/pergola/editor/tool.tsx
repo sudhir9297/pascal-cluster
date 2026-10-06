@@ -13,10 +13,12 @@ import {
 import {
   getFloorStackPreviewPosition,
   isGridSnapActive,
+  resolvePointerSupportSurface,
   useEditor,
   usePlacementPreview,
   useRegistryToolContext,
 } from '@pascal-app/editor'
+import { useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { type Group, Vector3 } from 'three'
 import { PergolaNode, PERGOLA_KIND } from '../domain/schema'
@@ -25,6 +27,9 @@ import PergolaPreview from '../rendering/preview'
 
 type PlacementEvent = GridEvent | NodeEvent<AnyNode>
 export default function PergolaTool() {
+  const camera = useThree((state) => state.camera)
+  const cameraRef = useRef(camera)
+  cameraRef.current = camera
   const { activeLevelId, selectNode, isCameraDragging } =
     useRegistryToolContext()
   const defaults = useEditor((s) => s.toolDefaults[PERGOLA_KIND])
@@ -33,11 +38,13 @@ export default function PergolaTool() {
     [defaults],
   )
   const previewRef = useRef(preview)
+  const [ghostNode, setGhostNode] = useState(preview)
   const refreshPreview = useRef<() => void>(() => {})
   const cursor = useRef<Group>(null)
   const [visible, setVisible] = useState(false)
   useEffect(() => {
     previewRef.current = preview
+    setGhostNode(preview)
     refreshPreview.current()
   }, [preview])
   useEffect(() => {
@@ -50,7 +57,13 @@ export default function PergolaTool() {
       useEditor.getState().setMode('select')
     }
     const resolve = (event: PlacementEvent) => {
-      const point = new Vector3(...event.position)
+      // Grid events hit the construction plane, which can lie beneath a deck.
+      // Resolve the actual walking face along the pointer ray for hover and commit.
+      const pointed = resolvePointerSupportSurface(cameraRef.current, event.position, {
+        includeNodeTopSurfaces: true,
+        pointerRay: 'node' in event ? event.nativeEvent?.ray : undefined,
+      })
+      const point = new Vector3(...(pointed?.worldPoint ?? event.position))
       const level = sceneRegistry.nodes.get(activeLevelId)
       if (level) {
         level.updateWorldMatrix(true, false)
@@ -69,7 +82,7 @@ export default function PergolaTool() {
         n as unknown as AnyNode,
         useScene.getState().nodes,
       )
-      const preferredId = 'node' in event ? event.node.id : undefined
+      const preferredId = pointed?.sourceNodeId ?? ('node' in event ? event.node.id : undefined)
       const support = findPergolaSupportSurface(n, useScene.getState().nodes, preferredId, point.y)
       const local = support ? pergolaPointOnSupport(support, [x, z]) : [x, z]
       return PergolaNode.parse({
@@ -87,6 +100,10 @@ export default function PergolaTool() {
     const move = (event: PlacementEvent) => {
       last = event
       const node = resolve(event)
+      setGhostNode(node)
+      // The preview cursor is inside the building-local tool group, while
+      // hosted node positions are local to the active level / support.
+      const levelY = sceneRegistry.nodes.get(activeLevelId)?.position.y ?? 0
       const position = node.supportSurfaceId
         ? (() => {
             const host = useScene.getState().nodes[node.supportSurfaceId! as AnyNodeId] as { position?: [number, number, number]; rotation?: [number, number, number] } | undefined
@@ -94,15 +111,22 @@ export default function PergolaTool() {
             const c = Math.cos(angle), s = Math.sin(angle)
             return [
               (host?.position?.[0] ?? 0) + c * node.position[0] + s * node.position[2],
-              (host?.position?.[1] ?? 0) + node.position[1],
+              levelY + (host?.position?.[1] ?? 0) + node.position[1],
               (host?.position?.[2] ?? 0) - s * node.position[0] + c * node.position[2],
             ] as [number, number, number]
           })()
-        : getFloorStackPreviewPosition({
-            node: node as unknown as AnyNode,
-            position: node.position,
-            levelId: activeLevelId,
-          })
+        : (() => {
+            const floorPosition = getFloorStackPreviewPosition({
+              node: node as unknown as AnyNode,
+              position: node.position,
+              levelId: activeLevelId,
+            })
+            return [floorPosition[0], floorPosition[1] + levelY, floorPosition[2]] as [
+              number,
+              number,
+              number,
+            ]
+          })()
       cursor.current?.position.set(...position)
       cursor.current?.rotation.set(0, yaw, 0)
       setVisible(true)
@@ -162,7 +186,7 @@ export default function PergolaTool() {
   }, [activeLevelId, selectNode, isCameraDragging])
   return (
     <group ref={cursor} visible={visible}>
-      <PergolaPreview node={preview} />
+      <PergolaPreview node={ghostNode} />
     </group>
   )
 }

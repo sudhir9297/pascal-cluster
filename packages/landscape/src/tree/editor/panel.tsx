@@ -1,9 +1,11 @@
 'use client'
+import { ActionButton, PanelSection } from '../../editor/panel-controls'
 import { type AnyNode, type AnyNodeId, useScene } from '@pascal-app/core'
-import { PanelSection, SliderControl, ToggleControl, useEditor } from '@pascal-app/editor'
+import { MetricControl, SegmentedControl, SliderControl, ToggleControl, useEditor } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { TREE_KIND, TreeNode } from '../domain/schema'
 import { TREE_SPECIES, treeControls } from '../domain/species'
+import { PlacementContinuation } from '../../editor/placement-continuation'
 // @ts-expect-error Vendored JavaScript has no TypeScript declarations.
 import { ADVANCED_LEVEL_PARAMS, getSchema, SPECIES } from '../vendor/api/seedthree.js'
 
@@ -11,10 +13,11 @@ type Knob = { key?: string; path?: string; name: string; group?: string; default
   min?: number; max?: number; step?: number; type?: 'bool' | 'color'; options?: Record<string, number> }
 type TreeSchema = { name: string; latin: string; shape: Knob[]; advanced: Knob[];
   global: Knob[]; lod: Knob[]; generator: string }
-const selectClass = 'max-w-[58%] rounded-md border border-border/50 bg-[#2C2C2E] px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/30'
+const selectClass = 'max-w-[58%] rounded-md border border-border/50 bg-[#2C2C2E] min-h-9 px-3 py-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/30'
 
 export default function TreePanel() {
   const levelId = useViewer((state) => state.selection.levelId)
+  const readOnly = useScene((state) => state.readOnly)
   const active = useEditor((state) => state.tool === TREE_KIND)
   const defaults = useEditor((state) => state.toolDefaults[TREE_KIND])
   const selectedId = useViewer((state) => state.selection.selectedIds.length === 1
@@ -23,6 +26,8 @@ export default function TreePanel() {
   const selected = (selectedRaw?.type as string | undefined) === TREE_KIND
     ? TreeNode.parse(selectedRaw) : null
   const node = selected ?? TreeNode.parse(defaults ?? {})
+  const paintMode = defaults?.landscapePaintMode === 'brush' || defaults?.landscapePaintMode === 'erase' ? defaults.landscapePaintMode : 'point'
+  const setPaint = (patch: Record<string, unknown>) => useEditor.getState().setToolDefaults(TREE_KIND, { ...useEditor.getState().toolDefaults[TREE_KIND], ...patch })
   const speciesDefaults = treeControls(node.species)
   const schema = getSchema(node.species) as TreeSchema
   const advanced: Knob[] = schema.generator === 'weber-penn' && Number(node.controls.levels ?? SPECIES[node.species].params.levels) >= 4 &&
@@ -89,12 +94,21 @@ export default function TreePanel() {
       onChange={(next) => update(field, key, next)} />
   }
   const start = () => {
-    if (!levelId) return
+    if (!levelId || useScene.getState().readOnly) return
     const editor = useEditor.getState()
     editor.setMode('build'); editor.setTool(TREE_KIND)
   }
   return <section aria-label="Tree settings" className="flex flex-col">
-    <div className="px-2 pb-3">
+    {!selected && <div className="space-y-3 px-3 py-3" role="group" aria-label="Tree planting tool mode">
+      <SegmentedControl value={paintMode} onChange={(landscapePaintMode) => setPaint({ landscapePaintMode })}
+        options={[{ value: 'point', label: 'Point' }, { value: 'brush', label: 'Brush' }, { value: 'erase', label: 'Erase' }]} />
+      {paintMode === 'point' ? <PlacementContinuation /> : <>
+        <MetricControl label={paintMode === 'brush' ? 'Brush spacing' : 'Erase radius'} value={Number(defaults?.landscapeBrushSize ?? 5)} min={0.1} max={10} step={0.1} unit="m" precision={2}
+          onChange={(landscapeBrushSize) => setPaint({ landscapeBrushSize })} />
+        <p className="text-xs leading-5 text-muted-foreground">{paintMode === 'brush' ? 'Drag to plant a spaced row, up to 500 plants per stroke.' : 'Drag to erase visible trees on this level, including other species. Plants are retained.'} Release to apply one undoable stroke. Escape cancels.</p>
+      </>}
+    </div>}
+    <div className="space-y-3 px-3 pb-3">
       <label className="mb-2 flex items-center justify-between gap-2 text-xs text-foreground/80">
         <span>Species</span><select className={selectClass} value={node.species}
           onChange={(event) => changeSpecies(event.currentTarget.value)}>
@@ -102,10 +116,8 @@ export default function TreePanel() {
         </select>
       </label>
       {schema.latin && <p className="mb-2 text-xs text-muted-foreground">{schema.latin}</p>}
-      {!selected && <button type="button" disabled={!levelId} onClick={start}
-        className="w-full rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground disabled:opacity-50">
-        {active ? 'Click in scene to place plant' : `Place ${schema.name}`}
-      </button>}
+      {!selected && <div className="flex"><ActionButton type="button" disabled={!levelId || readOnly} onClick={start}
+        label={active ? paintMode === 'point' ? 'Click in scene to place tree' : paintMode === 'brush' ? 'Drag in scene to plant trees' : 'Drag in scene to erase trees' : `Place ${schema.name}`} className="disabled:opacity-50" /></div>}
     </div>
     <PanelSection title="Growth and placement">
       {schema.global.filter((knob) => knob.group === 'global').map((knob) => control('controls', knob))}

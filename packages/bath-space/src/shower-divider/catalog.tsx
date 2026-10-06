@@ -1,6 +1,10 @@
 'use client'
 import { useEditor } from '@pascal-app/editor'
 import { SHOWER_DIVIDER } from './schema'
+import { CatalogGrid, CatalogHeading, CatalogItemCard } from '../catalog-ui'
+import dividerThumbnail from './assets/divider.webp'
+type ThumbnailAsset = string | { src: string }
+const thumbnailSrc = (asset: ThumbnailAsset | undefined) => typeof asset === 'string' ? asset : asset?.src
 export function DividerPreview({ columns = 1, rows = 1 }: { columns?: number; rows?: number }) {
   return (
     <svg
@@ -26,23 +30,22 @@ export default function DividerCatalog({ query }: { query: string }) {
   if (!'shower divider glass partition screen'.includes(query.trim().toLowerCase())) return null
   return (
     <section className="space-y-2 border-t border-border/60 pt-3">
-      <h3 className="text-xs font-semibold">Shower divider</h3>
-      <button
-        type="button"
-        aria-label="Draw shower divider"
-        aria-pressed={active}
-        className={`w-full rounded-lg border p-2 text-left ${active ? 'border-primary bg-primary/10' : 'border-border hover:bg-accent/30'}`}
-        onClick={() => useEditor.getState().setTool(SHOWER_DIVIDER)}
-      >
-        <span className="flex h-24 items-center justify-center">
-          <DividerPreview />
-        </span>
-        <span className="block text-xs font-medium">Draw shower divider</span>
-      </button>
+      <CatalogHeading>Shower divider</CatalogHeading>
+      <CatalogGrid>
+        <CatalogItemCard
+          type="button"
+          aria-label="Draw shower divider"
+          aria-pressed={active}
+          label="Draw shower divider"
+          onClick={() => useEditor.getState().setTool(SHOWER_DIVIDER)}
+        >
+          <img src={thumbnailSrc(dividerThumbnail)} alt="" className="h-full w-full object-contain p-1" />
+        </CatalogItemCard>
+      </CatalogGrid>
       {active && (
         <p role="status" className="text-[11px] text-muted-foreground">
-          Click a start and endpoint, as with walls. R switches line / rectangle. Enter finishes.
-          Esc cancels the draft, then exits. Change rows and columns after drawing.
+          Click a start and end point. R toggles line or rectangle. Enter finishes.
+          Esc cancels the draft; press again to exit.
         </p>
       )}
     </section>

@@ -1,8 +1,8 @@
 'use client'
+import {BasinSliderControl as SliderControl,BasinSizingProvider} from '../countertop-basin/size-controls'
 import {
   PanelSection,
   PanelWrapper,
-  SliderControl,
   ToggleControl,
   PanelButton,
 } from '../inspector-controls'
@@ -27,7 +27,7 @@ export default function FullPedestalInspector({ node: raw }: { node: FullPedesta
     state.updateNode(node.id as AnyNodeId, { ...patch, ...pose } as Partial<AnyNode>)
   }
   return (
-    <PanelWrapper
+    <BasinSizingProvider node={node}><PanelWrapper
       title="Full Pedestal Basin"
       onClose={() => useViewer.getState().setSelection({ selectedIds: [] })}
     >
@@ -49,7 +49,7 @@ export default function FullPedestalInspector({ node: raw }: { node: FullPedesta
         </div>
       </PanelSection>
       <PanelSection title="Dimensions" defaultExpanded>
-        <SliderControl
+        <SliderControl dimensionKey="totalHeight"
           label="Total height"
           value={node.totalHeight}
           min={0.7}
@@ -58,7 +58,7 @@ export default function FullPedestalInspector({ node: raw }: { node: FullPedesta
           unit="m"
           onChange={(totalHeight) => update({ totalHeight })}
         />
-        <SliderControl
+        <SliderControl dimensionKey="width"
           label="Basin width"
           value={node.width}
           min={0.45}
@@ -67,7 +67,7 @@ export default function FullPedestalInspector({ node: raw }: { node: FullPedesta
           unit="m"
           onChange={(width) => update({ width })}
         />
-        <SliderControl
+        <SliderControl dimensionKey="depth"
           label="Basin depth"
           value={node.depth}
           min={0.42}
@@ -76,7 +76,7 @@ export default function FullPedestalInspector({ node: raw }: { node: FullPedesta
           unit="m"
           onChange={(depth) => update({ depth })}
         />
-        <SliderControl
+        <SliderControl dimensionKey="height"
           label="Bowl height"
           value={node.height}
           min={0.08}
@@ -85,7 +85,7 @@ export default function FullPedestalInspector({ node: raw }: { node: FullPedesta
           unit="m"
           onChange={(height) => update({ height })}
         />
-        <SliderControl
+        <SliderControl dimensionKey="pedestalWidth"
           label="Pedestal width"
           value={node.pedestalWidth}
           min={0.14}
@@ -94,7 +94,7 @@ export default function FullPedestalInspector({ node: raw }: { node: FullPedesta
           unit="m"
           onChange={(pedestalWidth) => update({ pedestalWidth })}
         />
-        <SliderControl
+        <SliderControl dimensionKey="pedestalDepth"
           label="Pedestal depth"
           value={node.pedestalDepth}
           min={0.14}
@@ -116,6 +116,6 @@ export default function FullPedestalInspector({ node: raw }: { node: FullPedesta
           onChange={(overflowEnabled) => update({ overflowEnabled })}
         />
       </PanelSection>
-    </PanelWrapper>
+    </PanelWrapper></BasinSizingProvider>
   )
 }

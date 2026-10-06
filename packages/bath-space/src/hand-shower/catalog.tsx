@@ -3,6 +3,24 @@ import { useEditor } from '@pascal-app/editor'
 import ShowerPresetCatalog from '../shower-common/preset-catalog'
 import { HandShowerNode, HAND_SHOWER, handShowerPresets } from './schema'
 import { setHandShowerStyle, useHandShowerStyle } from './placement-settings'
+import roundThumbnail from './assets/round.webp'
+import squareThumbnail from './assets/square.webp'
+import softSquareThumbnail from './assets/soft-square.webp'
+import ovalThumbnail from './assets/oval.webp'
+import roundWandThumbnail from './assets/round-wand.webp'
+import squareWandThumbnail from './assets/square-wand.webp'
+
+type ThumbnailAsset = string | { src: string }
+const thumbnailSrc = (asset: ThumbnailAsset | undefined) => typeof asset === 'string' ? asset : asset?.src
+
+const handShowerThumbnails: Record<HandShowerNode['style'], ThumbnailAsset> = {
+  round: roundThumbnail,
+  square: squareThumbnail,
+  'soft-square': softSquareThumbnail,
+  oval: ovalThumbnail,
+  'round-wand': roundWandThumbnail,
+  'square-wand': squareWandThumbnail,
+}
 export function HandShowerPreview({ style = 'round' }: { style?: HandShowerNode['style'] }) {
   const wand = style.endsWith('wand')
   return (
@@ -42,7 +60,9 @@ export default function HandShowerCatalog({ query }: { query: string }) {
         setHandShowerStyle(id as HandShowerNode['style'])
         useEditor.getState().setTool(HAND_SHOWER)
       }}
-      renderPreview={(id) => <HandShowerPreview style={id as HandShowerNode['style']} />}
+      renderPreview={(id) => (
+        <img src={thumbnailSrc(handShowerThumbnails[id as HandShowerNode['style']])} alt="" className="h-full w-full object-contain p-1" />
+      )}
       hint={'Click a holder or rail to attach. Replaces an existing handset.'}
     />
   )

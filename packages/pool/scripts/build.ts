@@ -23,20 +23,22 @@ if (!bundle.success) {
   throw new Error('JavaScript bundle failed')
 }
 
-const workerBundle = await Bun.build({
-  entrypoints: [fileURLToPath(new URL('../src/editor/routing-worker.ts', import.meta.url))],
-  outdir: outputDirectory,
-  target: 'browser',
-  format: 'esm',
-  naming: 'routing-worker.js',
-})
-if (!workerBundle.success) throw new Error('Routing worker bundle failed')
+for (const workerName of ['routing-worker', 'pool-pipe-worker']) {
+  const workerBundle = await Bun.build({
+    entrypoints: [fileURLToPath(new URL(`../src/editor/${workerName}.ts`, import.meta.url))],
+    outdir: outputDirectory,
+    target: 'browser',
+    format: 'esm',
+    naming: `${workerName}.js`,
+  })
+  if (!workerBundle.success) throw new Error(`${workerName} bundle failed`)
+}
 
 for (const output of bundle.outputs) {
   if (!output.path.endsWith('.js')) continue
   const source = await readFile(output.path, 'utf8')
   const directive = /^\s*["']use client["'];?\s*$/gm
-  const compiledSource = source.replaceAll('./routing-worker.ts', './routing-worker.js')
+  const compiledSource = source.replaceAll('./routing-worker.ts', './routing-worker.js').replaceAll('./pool-pipe-worker.ts', './pool-pipe-worker.js')
   await writeFile(
     output.path,
     directive.test(compiledSource)

@@ -81,7 +81,7 @@ test('supporting countertop holes follow the layout and switching to single rest
   const root = buildFreestandingVanityGeometry(host), top = root.getObjectByName('vanity-countertop') as Mesh
   top.updateMatrix(); const source = top.geometry.clone().applyMatrix4(top.matrix)
   const holes = cutVanityCountertop(source, host, [basin as unknown as AnyNode]), mesh = new Mesh(holes, top.material)
-  const points = basinTapMountingPoints(basin)
+  const points = basinTapMountingPoints(basin).map(point => ({ ...point, position: [-point.position[0], point.position[1], -point.position[2]] }))
   const hits = (x: number, z: number) => new Raycaster(new Vector3(x, 2, z), new Vector3(0, -1, 0)).intersectObject(mesh)
   for (const point of points) expect(hits(point.position[0], point.position[2])).toHaveLength(0)
   mesh.geometry = cutVanityCountertop(source, host, [{ ...basin, tapMountingLayout: 'single-hole' } as unknown as AnyNode])

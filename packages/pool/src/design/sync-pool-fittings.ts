@@ -1,3 +1,4 @@
+import { poolSceneIndex } from './pool-scene-index'
 import { PoolNode } from '../core/schema'
 import { createDefaultPoolAttachments, isAutomaticPoolFitting } from './default-pool-attachments'
 import { resolvePoolAttachment } from './pool-attachments'
@@ -5,16 +6,19 @@ import { resolvePoolAttachment } from './pool-attachments'
 const placementKeys = ['position', 'rotation', 'parentId', 'poolId', 'wallIndex', 'wallT', 'floorAnchor'] as const
 
 /** Update existing generated slots. Missing slots may have been deliberately deleted. */
-export function syncAutomaticPoolFittings(nodes: Record<string, unknown>) {
+export function syncAutomaticPoolFittings(nodes: Record<string, unknown>, affectedPoolIds?: ReadonlySet<string>) {
   const create: ReturnType<typeof createDefaultPoolAttachments> = []
   const update: { id: string; data: Record<string, unknown> }[] = []
   const remove: string[] = []
-  for (const value of Object.values(nodes)) {
+  const index = poolSceneIndex(nodes)
+  for (const value of index.pools) {
     if (!value || typeof value !== 'object' || !('type' in value) || value.type !== 'pool:pool') continue
+    if (affectedPoolIds && !affectedPoolIds.has(String((value as { id?: string }).id))) continue
     const parsed = PoolNode.safeParse(value)
     if (!parsed.success || !parsed.data.automaticFittings) continue
     const pool = parsed.data
-    const desired = Object.values(nodes).flatMap(value => {
+    const attachedNodes = index.attachments.get(pool.id) ?? []
+    const desired = attachedNodes.flatMap(value => {
       const attached = resolvePoolAttachment(value, pool)
       return attached && isAutomaticPoolFitting(attached, pool.id) ? [attached] : []
     })
@@ -29,7 +33,7 @@ export function syncAutomaticPoolFittings(nodes: Record<string, unknown>) {
       }))
       if (Object.keys(data).length) update.push({ id: node.id, data })
     }
-    for (const item of Object.values(nodes)) {
+    for (const item of attachedNodes) {
       if (!item || typeof item !== 'object' || !('id' in item) || !('type' in item) || !('poolId' in item)) continue
       if (typeof item.id !== 'string' || typeof item.type !== 'string' || item.poolId !== pool.id) continue
       if (isAutomaticPoolFitting({ id: item.id, type: item.type }, pool.id) && !wanted.has(item.id)) remove.push(item.id)

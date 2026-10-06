@@ -52,6 +52,7 @@ function ExtensionArrow({ node, terminal }: { node: PathwayNode; terminal: PathT
   const cleanup = useRef<(() => void) | null>(null)
   const { camera, gl, raycaster } = useThree()
   const geometry = useMemo(arrowGeometry, [])
+  const elevation = node.elevation + (node.vertices.find((vertex) => vertex.id === terminal.vertexId)?.elevationOffset ?? 0)
   const scale = (camera instanceof OrthographicCamera ? 1 / camera.zoom : 1) * 0.65
   useEffect(() => () => { cleanup.current?.(); geometry.dispose() }, [geometry])
 
@@ -59,7 +60,7 @@ function ExtensionArrow({ node, terminal }: { node: PathwayNode; terminal: PathT
     if (event.button !== 0) return
     event.stopPropagation()
     const id = node.id as AnyNodeId
-    const origin = new Vector3(terminal.point[0], node.elevation, terminal.point[1])
+    const origin = new Vector3(terminal.point[0], elevation, terminal.point[1])
     const direction = new Vector3(terminal.direction[0], 0, terminal.direction[1])
     const initial = axisParameter(origin, direction, event.ray)
     const pointer = new Vector2()
@@ -128,7 +129,7 @@ function ExtensionArrow({ node, terminal }: { node: PathwayNode; terminal: PathT
   }
   return <group layers={EDITOR_LAYER}
     position={[terminal.point[0] + terminal.direction[0] * 0.68,
-      node.elevation + node.thickness + 0.16,
+      elevation + node.thickness + 0.16,
       terminal.point[1] + terminal.direction[1] * 0.68]}
     rotation={[0, -terminal.angle, 0]} scale={scale * (hovered ? 1.12 : 1)}>
     <mesh geometry={geometry} raycast={() => null} renderOrder={1010}>

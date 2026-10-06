@@ -1,6 +1,7 @@
 'use client'
+import { useCatalogPreferences } from '../shower-common/catalog-preferences'
 import { useEditor } from '@pascal-app/editor'
-import { CatalogEmptyState } from '../catalog-ui'
+import { CatalogEmptyState, CatalogGrid, CatalogHeading, CatalogItemCard } from '../catalog-ui'
 import {
   FloorStandingToiletNode,
   FLOOR_STANDING_TOILET,
@@ -11,20 +12,20 @@ import {
   useToiletPlacementStyle,
 } from './placement-settings'
 const toiletThumbnails: Record<FloorStandingToiletNode['design'], string> = {
-  'back-to-wall': new URL('./assets/back-to-wall.png', import.meta.url).href,
-  'compact-back-to-wall': new URL('./assets/compact-back-to-wall.png', import.meta.url).href,
-  'square-back-to-wall': new URL('./assets/square-back-to-wall.png', import.meta.url).href,
-  'close-coupled': new URL('./assets/close-coupled.png', import.meta.url).href,
-  'one-piece': new URL('./assets/one-piece.png', import.meta.url).href,
-  'traditional': new URL('./assets/traditional.png', import.meta.url).href,
-  'two-piece-round': new URL('./assets/two-piece-round.png', import.meta.url).href,
-  'two-piece-elongated': new URL('./assets/two-piece-elongated.png', import.meta.url).href,
-  'two-piece-skirted': new URL('./assets/two-piece-skirted.png', import.meta.url).href,
-  'two-piece-classic': new URL('./assets/two-piece-classic.png', import.meta.url).href,
-  'one-piece-compact': new URL('./assets/one-piece-compact.png', import.meta.url).href,
-  'one-piece-low-profile': new URL('./assets/one-piece-low-profile.png', import.meta.url).href,
-  'one-piece-square': new URL('./assets/one-piece-square.png', import.meta.url).href,
-  'one-piece-sculpted': new URL('./assets/one-piece-sculpted.png', import.meta.url).href,
+  'back-to-wall': new URL('./assets/back-to-wall.webp', import.meta.url).href,
+  'compact-back-to-wall': new URL('./assets/compact-back-to-wall.webp', import.meta.url).href,
+  'square-back-to-wall': new URL('./assets/square-back-to-wall.webp', import.meta.url).href,
+  'close-coupled': new URL('./assets/close-coupled.webp', import.meta.url).href,
+  'one-piece': new URL('./assets/one-piece.webp', import.meta.url).href,
+  'traditional': new URL('./assets/traditional.webp', import.meta.url).href,
+  'two-piece-round': new URL('./assets/two-piece-round.webp', import.meta.url).href,
+  'two-piece-elongated': new URL('./assets/two-piece-elongated.webp', import.meta.url).href,
+  'two-piece-skirted': new URL('./assets/two-piece-skirted.webp', import.meta.url).href,
+  'two-piece-classic': new URL('./assets/two-piece-classic.webp', import.meta.url).href,
+  'one-piece-compact': new URL('./assets/one-piece-compact.webp', import.meta.url).href,
+  'one-piece-low-profile': new URL('./assets/one-piece-low-profile.webp', import.meta.url).href,
+  'one-piece-square': new URL('./assets/one-piece-square.webp', import.meta.url).href,
+  'one-piece-sculpted': new URL('./assets/one-piece-sculpted.webp', import.meta.url).href,
 }
 
 export function ToiletPreview({
@@ -35,52 +36,38 @@ export function ToiletPreview({
   return <img src={toiletThumbnails[design]} alt="" loading="lazy" className="h-full w-full object-contain p-1" />
 }
 
-export default function ToiletCatalog({
-  query,
+export default function ToiletCatalog({ query }: { query: string }) {
+  const preferences = useCatalogPreferences()
 
-
-
-}: {
-  query: string
-
-}) {
+  const key = (id: string) => `floor-standing-toilet:${id}`
+  const words = query.trim().toLowerCase().replaceAll('-', ' ').split(/\s+/).filter(Boolean)
   const style = useToiletPlacementStyle(),
     active = useEditor((s) => s.tool === FLOOR_STANDING_TOILET)
-  const visible = toiletPresets.filter(
-    (p) =>
-      `floor standing toilet ${p.label} concealed external tank cistern`
-        .toLowerCase()
-        .replaceAll('-', ' ')
-        .includes(query.trim().toLowerCase().replaceAll('-', ' ')),
-  )
+  const visible = toiletPresets.filter(p =>
+    words.every(word => `floor standing toilet ${p.label}`.toLowerCase().replaceAll('-', ' ').includes(word)))
   return (
     <section className="space-y-2 border-t border-border/60 pt-3">
-      <h3 className="text-xs font-semibold">Floor standing toilets</h3>
-      <div className="grid grid-cols-3 gap-2" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }} >
+      <CatalogHeading count={visible.length}>Floor standing toilets</CatalogHeading>
+      <CatalogGrid>
         {visible.map((p) => (
           <div key={p.design} className="relative group">
-            <button
-              type="button"
+            <CatalogItemCard type="button"
               aria-label={`Add ${p.label} floor standing toilet`}
               aria-pressed={active && style === p.design}
               onClick={() => {
+                preferences.remember(key(p.design))
                 setToiletPlacementStyle(p.design)
                 useEditor.getState().setTool(FLOOR_STANDING_TOILET)
-              }}
-              className={`w-full overflow-hidden rounded-lg border text-left ${active && style === p.design ? 'border-primary bg-primary/10' : 'border-border hover:bg-accent/30'}`}
-            >
-              <span className="flex aspect-[7/4] items-center justify-center bg-background/40">
-                <ToiletPreview design={p.design} />
-              </span>
-              <span className="block min-h-8 px-2 py-1.5 text-[11px] font-medium leading-4">{p.label}</span>
-            </button>
-            
+              }} label={p.label}>
+              <ToiletPreview design={p.design} />
+            </CatalogItemCard>
+
           </div>
         ))}
-      </div>
+      </CatalogGrid>
       {!visible.length && (
         <CatalogEmptyState>
-          No matching items.
+          {'No matching items.'}
         </CatalogEmptyState>
       )}
       {active && (

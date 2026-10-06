@@ -44,7 +44,7 @@ import {
   vec3,
   vec4,
   viewportDepthTexture,
-  viewportSharedTexture,
+  viewportTexture,
 } from 'three/tsl'
 import type { SceneAtmosphereSource } from '@pascal-app/viewer'
 import {
@@ -95,10 +95,10 @@ export type WaterSettings = WaterPresetSettings & {
 // straight and refracted samples. Creating one node per sample duplicates the
 // full viewport depth copy and is needlessly expensive.
 const viewportDepth = viewportDepthTexture()
-// The viewport node performs the copy for refraction. Reflection samples its
-// framebuffer as an ordinary texture, so it does not request a second copy.
-const viewportColor = viewportSharedTexture()
-const viewportColorSample = texture(viewportColor.value)
+// Keep a framebuffer copy per render target. A globally shared copy is resized
+// between scene and post-processing passes, destroying textures still in use.
+// Both samples reference this node so the copy runs once per render.
+const viewportColor = viewportTexture()
 
 function finite(value: unknown, fallback: number, min: number, max: number) {
   return typeof value === 'number' && Number.isFinite(value)
@@ -566,7 +566,7 @@ export class PoolWaterEffect {
     const reflectionConfidence = smoothstep(0.015, 0.12, screenEdge)
       .mul(smoothstep(0.02, 0.3, facing.oneMinus()))
     const nearbyScene = usesLocalReflections
-      ? viewportColorSample.sample(reflectedUv).rgb
+      ? viewportColor.sample(reflectedUv).rgb
       : sky
     const localReflectionWeight = this.settings.waterQuality === 'ultra' ? 0.52 : 0.38
     const reflectedScene = mix(sky, nearbyScene, reflectionConfidence.mul(localReflectionWeight))

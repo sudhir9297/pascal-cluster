@@ -1,9 +1,10 @@
+import { landscapeToolColors } from '../../shared/tool-colors'
 import { normalizeOutline, rectangleOutline, validateOutline } from '../domain/polygon'
 import type { Point } from '../domain/schema'
 import type { GroundAreaShape } from './session'
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
-export const GROUND_AREA_DRAFT_COLOR = '#818cf8'
+export const GROUND_AREA_DRAFT_COLOR = landscapeToolColors.draft
 
 function pointsAttribute(points: readonly Point[]) {
   return points.map(([x, z]) => `${x},${z}`).join(' ')

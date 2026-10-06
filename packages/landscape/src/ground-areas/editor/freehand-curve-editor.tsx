@@ -1,4 +1,5 @@
 'use client'
+import { landscapeToolColors } from '../../shared/tool-colors'
 import { type AnyNode, type AnyNodeId, sceneRegistry, useLiveNodeOverrides, useScene } from '@pascal-app/core'
 import { boundaryReshapeScope, EDITOR_LAYER, useInteractionScope } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
@@ -100,7 +101,7 @@ export function FreehandCurveEditor({ node, height }: { node: CurveNode; height:
     key={`${index}-${action}`} position={[point[0], y, point[1]]} renderOrder={1011}
     onPointerDown={(event: ThreeEvent<PointerEvent>) => start(event, index, action)}>
     <sphereGeometry args={[radius * (action === 'anchor' ? 1.25 : 0.8), 12, 8]} />
-    <meshBasicMaterial color={action === 'insert' ? '#68c99b' : action === 'anchor' ? '#d6a56a' : '#8381ed'} depthTest={false} depthWrite={false} />
+    <meshBasicMaterial color={action === 'insert' ? '#68c99b' : action === 'anchor' ? landscapeToolColors.spline : '#8381ed'} depthTest={false} depthWrite={false} />
   </mesh>
   const content = <group layers={EDITOR_LAYER}>{curve.map((point, index) => <group key={index}>
     <TangentLine points={[

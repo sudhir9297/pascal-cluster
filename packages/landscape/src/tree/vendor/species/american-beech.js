@@ -6,8 +6,8 @@ import { broadleafControls } from './broadleaf-controls.js';
 export const americanBeech = {
   name: 'American Beech',
   latin: 'Fagus grandifolia',
-  bark: 'american_beech_albedo.png',
-  leaf: 'american_beech_single_albedo.png',
+  bark: 'american_beech_albedo.webp',
+  leaf: 'american_beech_single_albedo.webp',
   biome: 'temperate',
   tileWorldSize: 1.5,
   controls: broadleafControls,

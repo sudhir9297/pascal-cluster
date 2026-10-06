@@ -78,6 +78,105 @@ export default function BathInspector({ node: raw }: { node: BathtubNode }) {
       }
       onClose={() => useViewer.getState().setSelection({ selectedIds: [] })}
     >
+      <PanelSection title="Shape" defaultExpanded>
+        <div className="flex flex-wrap gap-2">
+          {bathtubPresets.map((p) => (
+            <PanelButton
+              key={p.shape}
+              type="button"
+              disabled={
+                Boolean(deck && p.shape !== node.shape) ||
+                Boolean(p.shape === 'corner' && combination) ||
+                Boolean(
+                  p.shape === 'corner' &&
+                    node.children.some(
+                      (id) => String(nodes[id as AnyNodeId]?.type) === BATH_SCREEN,
+                    ),
+                )
+              }
+              aria-pressed={node.shape === p.shape}
+              onClick={() =>
+                update({
+                  shape: p.shape,
+                  height: p.shape === 'walk-in' ? 0.99 : Math.min(0.75, node.height),
+                  width:
+                    p.shape === 'corner' ? Math.max(1.2, node.width) : Math.min(1.1, node.width),
+                })
+              }
+              className={`rounded px-2 py-1 text-xs ${node.shape === p.shape ? 'bg-primary text-primary-foreground' : 'bg-accent'}`}
+            >
+              {p.label}
+            </PanelButton>
+          ))}
+        </div>
+      </PanelSection>
+      <PanelSection title="Dimensions" defaultExpanded>
+        {(
+          [
+            ['length', 'Length', 1.2, limits.length],
+            ['width', 'Width', 0.65, limits.width],
+            ['height', 'Rim height', node.shape === 'walk-in' ? 0.85 : 0.45, limits.height],
+            [
+              'bowlDepth',
+              'Bowl depth',
+              Math.min(0.3, bathBowlDepth(node)),
+              Math.min(0.55, node.height - bathBaseHeight(node) - 0.07),
+            ],
+            ['rimWidth', 'Rim width', node.tapMount === 'rim' ? 0.09 : 0.035, 0.12],
+          ] as const
+        )
+          .filter(([key]) => node.shape !== 'walk-in' || key !== 'bowlDepth')
+          .map(([key, label, min, max]) => (
+            <SliderControl
+              key={key}
+              label={label}
+              value={
+                key === 'bowlDepth'
+                  ? bathBowlDepth(node)
+                  : key === 'rimWidth'
+                    ? bathRimWidth(node)
+                    : node[key]
+              }
+              min={min}
+              max={max}
+              step={0.005}
+              precision={3}
+              unit="m"
+              onChange={(value) => update({ [key]: value })}
+            />
+          ))}
+      </PanelSection>
+      <PanelSection title="Bath fittings" defaultExpanded>
+        <div className="flex gap-2">
+          {(['wall', 'rim', 'none'] as const).map((tapMount) => (
+            <PanelButton
+              key={tapMount}
+              type="button"
+              aria-pressed={node.tapMount === tapMount}
+              disabled={node.shape === 'undermount' && tapMount === 'rim'}
+              onClick={() => update({ tapMount })}
+              className={`rounded px-2 py-1 text-xs ${node.tapMount === tapMount ? 'bg-primary text-primary-foreground' : 'bg-accent'}`}
+            >
+              {tapMount === 'wall'
+                ? 'Wall mounted'
+                : tapMount === 'rim'
+                  ? 'On the rim'
+                  : 'No target'}
+            </PanelButton>
+          ))}
+        </div>
+
+        <ToggleControl
+          label="Drain cover"
+          checked={node.drainCover}
+          onChange={(drainCover) => update({ drainCover })}
+        />
+        <ToggleControl
+          label="Overflow trim"
+          checked={node.overflow}
+          onChange={(overflow) => update({ overflow })}
+        />
+      </PanelSection>
       <SectionAccordion node={node} model={section} onChange={update} />
       {bathUsesDeck(node) && (
         <PanelSection title="Deck attachment" defaultExpanded>
@@ -119,7 +218,7 @@ export default function BathInspector({ node: raw }: { node: BathtubNode }) {
         </PanelSection>
       )}
       {node.shape !== 'corner' && (
-        <PanelSection title="Bath shower" defaultExpanded>
+        <PanelSection title="Bath shower" defaultExpanded={false}>
           {(['left', 'right'] as const).map((end) => (
             <PanelButton
               key={end}
@@ -145,7 +244,7 @@ export default function BathInspector({ node: raw }: { node: BathtubNode }) {
         </PanelSection>
       )}
       {node.shape !== 'corner' && !combination && (
-        <PanelSection title="Bath shower screen" defaultExpanded>
+        <PanelSection title="Bath shower screen" defaultExpanded={false}>
           <PanelButton
             type="button"
             onClick={() => {
@@ -176,7 +275,7 @@ export default function BathInspector({ node: raw }: { node: BathtubNode }) {
         </PanelSection>
       )}
       {node.shape !== 'walk-in' && (
-        <PanelSection title="Backrest profiles" defaultExpanded>
+        <PanelSection title="Backrest profiles" defaultExpanded={false}>
           <div className="flex flex-wrap gap-2">
             {bathBackrestPresets.map((p) => (
               <PanelButton
@@ -220,7 +319,7 @@ export default function BathInspector({ node: raw }: { node: BathtubNode }) {
           )}
         </PanelSection>
       )}
-      <PanelSection title="Waste connections" defaultExpanded>
+      <PanelSection title="Waste connections" defaultExpanded={false}>
         <ToggleControl
           label="Show waste plumbing"
           checked={node.showPlumbing}
@@ -260,38 +359,6 @@ export default function BathInspector({ node: raw }: { node: BathtubNode }) {
             />
           </>
         )}
-      </PanelSection>
-      <PanelSection title="Shape" defaultExpanded>
-        <div className="flex flex-wrap gap-2">
-          {bathtubPresets.map((p) => (
-            <PanelButton
-              key={p.shape}
-              type="button"
-              disabled={
-                Boolean(deck && p.shape !== node.shape) ||
-                Boolean(p.shape === 'corner' && combination) ||
-                Boolean(
-                  p.shape === 'corner' &&
-                    node.children.some(
-                      (id) => String(nodes[id as AnyNodeId]?.type) === BATH_SCREEN,
-                    ),
-                )
-              }
-              aria-pressed={node.shape === p.shape}
-              onClick={() =>
-                update({
-                  shape: p.shape,
-                  height: p.shape === 'walk-in' ? 0.99 : Math.min(0.75, node.height),
-                  width:
-                    p.shape === 'corner' ? Math.max(1.2, node.width) : Math.min(1.1, node.width),
-                })
-              }
-              className={`rounded px-2 py-1 text-xs ${node.shape === p.shape ? 'bg-primary text-primary-foreground' : 'bg-accent'}`}
-            >
-              {p.label}
-            </PanelButton>
-          ))}
-        </div>
       </PanelSection>
       {node.shape === 'undermount' && (
         <PanelSection title="Bathing well" defaultExpanded>
@@ -371,44 +438,8 @@ export default function BathInspector({ node: raw }: { node: BathtubNode }) {
           />
         </PanelSection>
       )}
-      <PanelSection title="Dimensions" defaultExpanded>
-        {(
-          [
-            ['length', 'Length', 1.2, limits.length],
-            ['width', 'Width', 0.65, limits.width],
-            ['height', 'Rim height', node.shape === 'walk-in' ? 0.85 : 0.45, limits.height],
-            [
-              'bowlDepth',
-              'Bowl depth',
-              Math.min(0.3, bathBowlDepth(node)),
-              Math.min(0.55, node.height - bathBaseHeight(node) - 0.07),
-            ],
-            ['rimWidth', 'Rim width', node.tapMount === 'rim' ? 0.09 : 0.035, 0.12],
-          ] as const
-        )
-          .filter(([key]) => node.shape !== 'walk-in' || key !== 'bowlDepth')
-          .map(([key, label, min, max]) => (
-            <SliderControl
-              key={key}
-              label={label}
-              value={
-                key === 'bowlDepth'
-                  ? bathBowlDepth(node)
-                  : key === 'rimWidth'
-                    ? bathRimWidth(node)
-                    : node[key]
-              }
-              min={min}
-              max={max}
-              step={0.005}
-              precision={3}
-              unit="m"
-              onChange={(value) => update({ [key]: value })}
-            />
-          ))}
-      </PanelSection>
       {
-        <PanelSection title="Drain position" defaultExpanded>
+        <PanelSection title="Drain position" defaultExpanded={false}>
           <div className="flex gap-2">
             {(['left', 'center', 'right'] as const).map((drainEnd) => (
               <PanelButton
@@ -467,7 +498,7 @@ export default function BathInspector({ node: raw }: { node: BathtubNode }) {
         node.shape !== 'corner' &&
         node.shape !== 'walk-in' &&
         !bathUsesDeck(node) && (
-          <PanelSection title="Feet and base" defaultExpanded>
+          <PanelSection title="Feet and base" defaultExpanded={false}>
             <div className="flex flex-wrap gap-2">
               {(['automatic', 'integrated', 'claw', 'rounded', 'pedestal'] as const).map(
                 (baseStyle) => (
@@ -503,37 +534,6 @@ export default function BathInspector({ node: raw }: { node: BathtubNode }) {
             />
           </PanelSection>
         )}
-      <PanelSection title="Bath fittings" defaultExpanded>
-        <div className="flex gap-2">
-          {(['wall', 'rim', 'none'] as const).map((tapMount) => (
-            <PanelButton
-              key={tapMount}
-              type="button"
-              aria-pressed={node.tapMount === tapMount}
-              disabled={node.shape === 'undermount' && tapMount === 'rim'}
-              onClick={() => update({ tapMount })}
-              className={`rounded px-2 py-1 text-xs ${node.tapMount === tapMount ? 'bg-primary text-primary-foreground' : 'bg-accent'}`}
-            >
-              {tapMount === 'wall'
-                ? 'Wall mounted'
-                : tapMount === 'rim'
-                  ? 'On the rim'
-                  : 'No target'}
-            </PanelButton>
-          ))}
-        </div>
-
-        <ToggleControl
-          label="Drain cover"
-          checked={node.drainCover}
-          onChange={(drainCover) => update({ drainCover })}
-        />
-        <ToggleControl
-          label="Overflow trim"
-          checked={node.overflow}
-          onChange={(overflow) => update({ overflow })}
-        />
-      </PanelSection>
     </PanelWrapper>
   )
 }

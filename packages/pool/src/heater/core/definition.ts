@@ -1,3 +1,5 @@
+import { poolComponentFloorplan } from '../../rendering/component-floorplan'
+import { poolPlanDependencies, poolPlanMovableFrame } from '../../rendering/plan-frame'
 import type { NodeDefinition } from '@pascal-app/core'
 import { connectionPorts } from '../../core/connection-ports'
 import { DEFAULT_POOL_HEATER, PoolHeaterNode } from './schema'
@@ -13,7 +15,7 @@ export const poolHeaterDefinition: NodeDefinition<typeof PoolHeaterNode> = {
   snapProfile: 'item',
   defaults: () => ({ object: 'node', parentId: null, visible: true, metadata: {}, ...DEFAULT_POOL_HEATER }),
   capabilities: {
-    movable: { axes: ['x', 'y', 'z'], gridSnap: true, portSnap: { systems: ['waste'] } },
+    movable: { parentFrame: poolPlanMovableFrame, axes: ['x', 'y', 'z'], gridSnap: true, portSnap: { systems: ['waste'] } },
     rotatable: { axes: ['y'] },
     selectable: { hitVolume: 'bbox' },
     duplicable: true,
@@ -22,6 +24,8 @@ export const poolHeaterDefinition: NodeDefinition<typeof PoolHeaterNode> = {
     snappable: {},
   },
   ports: (node) => connectionPorts(node, getHeaterConnectionPortsLocal(node)),
+  floorplan: poolComponentFloorplan,
+  floorplanDependencies: poolPlanDependencies,
   renderer: { kind: 'parametric', module: () => import('../editor/preview') },
   parametrics: poolHeaterParametrics,
   tool: () => import('../editor/tool'),

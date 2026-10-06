@@ -1,3 +1,4 @@
+import { hardscapeSchedule } from '../editor/schedules'
 import type { NodeDefinition } from '@pascal-app/core'
 import { GROUND_AREA_KIND, GroundAreaNode } from './domain/schema'
 import { buildGroundAreaFloorplan, buildGroundAreaLiveGeometry } from './rendering/geometry'
@@ -8,6 +9,7 @@ import { groundAreaPaint } from './editor/paint'
 export const groundAreaDefinition: NodeDefinition<typeof GroundAreaNode> = {
   kind: GROUND_AREA_KIND,
   schemaVersion: 1,
+  extensions: { 'pascal:editor/floorplan': { schedule: hardscapeSchedule } },
   schema: GroundAreaNode,
   category: 'site',
   snapProfile: 'structural',
@@ -30,7 +32,7 @@ export const groundAreaDefinition: NodeDefinition<typeof GroundAreaNode> = {
   floorplanDependencies: (node, nodes) => Object.values(nodes)
     .filter((candidate) => (candidate.id as string) !== node.id && candidate.parentId === node.parentId &&
       ((candidate.type as string) === GROUND_AREA_KIND || candidate.type === 'slab' ||
-        (candidate.type as string) === 'pool:pool'))
+        ((candidate.type as string) === 'pool:pool' || (candidate.type as string) === 'landscape:pond')))
     .map((candidate) => candidate.id),
   tool: () => import('./editor/tool'),
   preview: () => import('./rendering/preview'),

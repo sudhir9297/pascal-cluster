@@ -1,3 +1,5 @@
+import { poolComponentFloorplan } from '../../rendering/component-floorplan'
+import { poolPlanDependencies, poolPlanMovableFrame } from '../../rendering/plan-frame'
 import type { NodeDefinition } from '@pascal-app/core'
 import { connectionPorts } from '../../core/connection-ports'
 import { DEFAULT_POOL_FILTER, PoolFilterNode } from './schema'
@@ -13,7 +15,7 @@ export const poolFilterDefinition: NodeDefinition<typeof PoolFilterNode> = {
   snapProfile: 'item',
   defaults: () => ({ object: 'node', parentId: null, visible: true, metadata: {}, ...DEFAULT_POOL_FILTER }),
   capabilities: {
-    movable: { axes: ['x', 'y', 'z'], gridSnap: true, portSnap: { systems: ['waste'] } },
+    movable: { parentFrame: poolPlanMovableFrame, axes: ['x', 'y', 'z'], gridSnap: true, portSnap: { systems: ['waste'] } },
     rotatable: { axes: ['y'] },
     selectable: { hitVolume: 'bbox' },
     duplicable: true,
@@ -22,6 +24,8 @@ export const poolFilterDefinition: NodeDefinition<typeof PoolFilterNode> = {
     snappable: {},
   },
   ports: (node) => connectionPorts(node, getFilterConnectionPortsLocal(node)),
+  floorplan: poolComponentFloorplan,
+  floorplanDependencies: poolPlanDependencies,
   renderer: { kind: 'parametric', module: () => import('../editor/preview') },
   parametrics: poolFilterParametrics,
   tool: () => import('../editor/tool'),

@@ -1,6 +1,7 @@
 'use client'
+import { useCatalogPreferences } from '../shower-common/catalog-preferences'
 import { useEditor } from '@pascal-app/editor'
-import { CatalogEmptyState } from '../catalog-ui'
+import { CatalogEmptyState, CatalogGrid, CatalogHeading, CatalogItemCard } from '../catalog-ui'
 import { BATHTUB, bathtubPresets } from './schema'
 import { bathThumbnails } from './thumbnails'
 import {
@@ -17,55 +18,39 @@ export function BathPreview({ shape = 'oval' }: { shape?: string }) {
     />
   )
 }
-export default function BathCatalog({
-  query,
+export default function BathCatalog({ query }: { query: string }) {
+  const preferences = useCatalogPreferences()
 
-
-
-}: {
-  query: string
-
-}) {
+  const key = (id: string) => `bath:${id}`
+  const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
   const shape = useBathPlacementShape(),
     tool = useEditor((state) => state.tool)
-  const items = bathtubPresets.filter(
-    (p) =>
-      `${p.label} ${p.description} freestanding wall bathtub`
-        .toLowerCase()
-        .includes(query.trim().toLowerCase()),
-  )
+  const items = bathtubPresets.filter(p =>
+    words.every(word => `${p.label} ${p.description} bath bathtub`.toLowerCase().includes(word)))
   return (
-    <section className="pt-2">
-      <div
-        className="grid grid-cols-3 gap-2"
-        style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }} aria-label="Bath shapes"
-      >
+    <section className="space-y-2 border-t border-border/60 pt-3">
+
+      <CatalogHeading count={items.length}>Baths</CatalogHeading>
+      <CatalogGrid aria-label="Bath shapes">
         {items.map((p) => (
           <div key={p.shape} className="relative">
-            <button
-              type="button"
+            <CatalogItemCard type="button"
               aria-label={`Add ${p.label}`}
               aria-pressed={tool === BATHTUB && shape === p.shape}
               onClick={() => {
+                preferences.remember(key(p.shape))
                 setBathPlacementShape(p.shape)
                 useEditor.getState().setTool(BATHTUB)
-              }}
-              className={`w-full overflow-hidden rounded-lg border text-left ${tool === BATHTUB && shape === p.shape ? 'border-primary bg-accent/30' : 'border-border bg-secondary/40'}`}
-            >
-              <span className="flex aspect-[7/4] items-center justify-center">
-                <BathPreview shape={p.shape} />
-              </span>
-              <span className="block min-h-8 px-2 py-1.5 text-[11px] font-medium leading-4">
-                {p.label}
-              </span>
-            </button>
-            
+              }} label={p.label}>
+              <BathPreview shape={p.shape} />
+            </CatalogItemCard>
+
           </div>
         ))}
-      </div>
+      </CatalogGrid>
       {!items.length && (
         <CatalogEmptyState>
-          No baths match this search.
+          {'No baths match this search.'}
         </CatalogEmptyState>
       )}
       {tool === BATHTUB && <p role="status" className="mt-2 text-[11px] text-muted-foreground">Click the floor to place. Esc to cancel.</p>}

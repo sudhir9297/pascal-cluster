@@ -1,6 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { type AnyNodeId, useScene } from '@pascal-app/core'
+import { ActionButton, SegmentedControl } from '@pascal-app/editor'
 
 export type InspectorTab = 'properties' | 'materials' | 'notes'
 
@@ -11,13 +13,10 @@ export function useInspectorTab() {
 export function InspectorTabBar({ value, onChange, label, tabs = ['properties', 'materials', 'notes'] }: {
   value: InspectorTab; onChange: (tab: InspectorTab) => void; label: string; tabs?: InspectorTab[]
 }) {
-  return <div role="tablist" aria-label={label} className={`mb-3 grid ${tabs.length === 2 ? 'grid-cols-2' : 'grid-cols-3'} rounded-lg bg-secondary/70 p-1`}>
-    {tabs.map((tab) => <button key={tab} type="button" role="tab"
-      aria-selected={value === tab} onClick={() => onChange(tab)}
-      className={`rounded-md px-2 py-1.5 text-xs capitalize transition-colors ${value === tab
-        ? 'bg-primary/20 font-medium text-foreground' : 'text-muted-foreground hover:text-foreground'}`}>
-      {tab}
-    </button>)}
+  return <div role="group" aria-label={label} className="mb-3">
+    <SegmentedControl value={value} onChange={onChange} options={tabs.map((tab) => ({
+      value: tab, label: tab.charAt(0).toUpperCase() + tab.slice(1),
+    }))} />
   </div>
 }
 
@@ -47,22 +46,31 @@ export function InspectorSwatch({ color, direction = 'horizontal' }: {
   </svg>
 }
 
-export function InspectorNotes({ item }: { item: string }) {
-  const [note, setNote] = useState('')
+export function InspectorNotes({ item, nodeId }: { item: string; nodeId: string }) {
+  const saved = useScene((state) => {
+    const value = state.nodes[nodeId as AnyNodeId]?.metadata?.landscapeNote
+    return typeof value === 'string' ? value : ''
+  })
+  const readOnly = useScene((state) => state.readOnly)
+  const [note, setNote] = useState(saved)
+  useEffect(() => setNote(saved), [saved, nodeId])
+  const save = () => {
+    const state = useScene.getState()
+    const node = state.nodes[nodeId as AnyNodeId]
+    if (!node || state.readOnly || note === saved) return
+    state.updateNode(node.id, { metadata: { ...node.metadata, landscapeNote: note } })
+  }
   return <div className="flex flex-col gap-2">
     <InspectorFieldLabel>Notes</InspectorFieldLabel>
-    <textarea value={note} onChange={(event) => setNote(event.currentTarget.value)} rows={5}
+    <textarea value={note} onChange={(event) => setNote(event.currentTarget.value)} rows={5} disabled={readOnly}
       placeholder={`Add a note about this ${item}…`} aria-label={`${item} notes`}
       className="resize-y rounded-lg border border-border/70 bg-secondary/40 p-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/60" />
-    <p className="text-[10px] text-muted-foreground">Notes are a temporary preview and won’t be saved to the scene.</p>
+    <ActionButton type="button" label="Save notes" onClick={save} disabled={readOnly || note === saved} className="disabled:opacity-50" />
+    <p role="status" className="text-[10px] text-muted-foreground">{note === saved ? 'Notes saved to this object.' : 'Unsaved changes. Save before leaving this tab.'}</p>
   </div>
 }
 
 export function InspectorDeleteButton({ item, onDelete }: { item: string; onDelete: () => void }) {
-  return <button type="button" aria-label={`Delete ${item}`} title={`Delete ${item}`} onClick={onDelete}
-    className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/15 hover:text-destructive">
-    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3" />
-    </svg>
-  </button>
+  return <ActionButton type="button" label={`Delete ${item}`} onClick={onDelete}
+    className="text-destructive hover:bg-destructive/15" />
 }

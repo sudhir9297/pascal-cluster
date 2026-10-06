@@ -3,7 +3,7 @@ import { expect, test } from 'bun:test'
 import { CountertopBasinNode, UndermountBasinNode, DropInBasinNode, SemiRecessedBasinNode, WallHungBasinNode, FullPedestalBasinNode, HalfPedestalBasinNode } from '../countertop-basin/schema'
 import { FreestandingVanityNode, WallMountedVanityNode, CornerVanityNode } from '../freestanding-vanity/schema'
 import { TapNode } from '../taps/schema'
-import { basinSection, vanitySection, tapSection, boundedDimensionValue } from './model'
+import { basinSection, vanitySection, tapSection, boundedDimensionValue, dimensionSpanAt, dimensionCrossAt } from './model'
 import { WallHungToiletNode } from '../wall-hung-toilet/schema'
 import { toiletSection } from '../wall-hung-toilet/section'
 import { WallFlushPlateNode, CisternFlushControlNode } from '../flush-control/schema'
@@ -84,4 +84,23 @@ test('inactive component dimensions stay out of section details', () => {
   expect(tapSection(TapNode.parse({ baseStyle: 'none' })).dimensions.map(f => f.key)).not.toContain('baseHeight')
   expect(toiletSection(WallHungToiletNode.parse({ seatEnabled: false })).dimensions.map(f => f.key)).not.toContain('seatThickness')
   expect(toiletSection(WallHungToiletNode.parse({ tankType: 'attached' })).dimensions.map(f => f.key)).not.toContain('tankBottom')
+})
+
+test('plan handles and snap stops share the outline including overhang and flange', () => {
+ for (const schema of [FreestandingVanityNode, WallMountedVanityNode, CornerVanityNode]) {
+  const node = schema.parse({width: .6, countertopOverhang: .02})
+  const model = vanitySection(node)
+  const width = model.dimensions.find(field => field.key === 'width')!
+  expect(dimensionSpanAt(width, node.width)).toBeCloseTo(model.drawing.width)
+  expect(dimensionSpanAt(width, .9)).toBeCloseTo((node.type === 'bath-space:corner-vanity' ? .9 * Math.SQRT2 : .9) + .04)
+  const depth = model.dimensions.find(field => field.key === 'depth')
+  if (depth) expect(dimensionSpanAt(depth, node.depth)).toBeCloseTo(model.drawing.depth)
+  else expect(dimensionCrossAt(width, .9)).toBeCloseTo(.9 / Math.SQRT2 * .35 + .02)
+ }
+ for (const schema of [UndermountBasinNode, DropInBasinNode]) {
+  const node = schema.parse({shape: 'rectangle', flangeWidth: .03})
+  const model = basinSection(node)
+  expect(dimensionSpanAt(model.dimensions.find(field => field.key === 'width')!, node.width)).toBeCloseTo(model.drawing.width)
+  expect(dimensionSpanAt(model.dimensions.find(field => field.key === 'depth')!, node.depth)).toBeCloseTo(model.drawing.depth)
+ }
 })

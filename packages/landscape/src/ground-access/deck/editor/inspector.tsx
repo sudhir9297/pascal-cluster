@@ -5,6 +5,7 @@ import { useScene } from '@pascal-app/core'
 import { PanelWrapper, SliderControl, ToggleControl } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import { DeckNode } from '../domain/schema'
+import { DeckRailingControls } from './railing-controls'
 import { deckParametrics } from './parametrics'
 import { LANDSCAPE_CATALOG_THUMBNAILS } from '../../../editor/catalog-thumbnails'
 import { InspectorChoice, InspectorDeleteButton, InspectorFieldLabel, InspectorNotes,
@@ -38,6 +39,7 @@ export default function DeckInspector({ node: rawNode }: { node: DeckNode }) {
       <InspectorTabBar value={tab} onChange={setTab} label="Deck settings" />
 
       {tab === 'properties' && <div className="flex flex-col gap-2.5">
+        <DeckRailingControls node={node} selected onUpdate={update} />
         <div className="rounded-lg border border-border/70 bg-secondary/25 p-2.5">
           <InspectorFieldLabel>Deck type</InspectorFieldLabel>
           <div className="grid grid-cols-2 gap-1.5">
@@ -111,7 +113,7 @@ export default function DeckInspector({ node: rawNode }: { node: DeckNode }) {
             className="h-7 w-10 cursor-pointer rounded border border-border/60 bg-secondary p-0.5" />
         </label>
       </div>}
-      {tab === 'notes' && <InspectorNotes item="deck" />}
+      {tab === 'notes' && <InspectorNotes item="deck" nodeId={node.id} />}
     </div>
     <div className="flex shrink-0 items-center border-t border-border/50 px-3 py-2">
       <InspectorDeleteButton item="deck" onDelete={() => {

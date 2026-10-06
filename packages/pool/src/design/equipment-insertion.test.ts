@@ -11,6 +11,7 @@ import { disposeObject3D } from '../editor/dispose-object'
 import { connectionPorts } from '../core/connection-ports'
 import { equipmentPortsLocal, planEquipmentInsertion, planEquipmentInsertionAsync } from './equipment-insertion'
 import { planEquipmentInsertionAsync as planEquipmentPipeAsync } from './pipe-planning'
+import { createRoutingClient } from '../editor/routing-client'
 import { routePipe, segmentHitsBox } from './pipe-route'
 
 function ports(node: PipeFittingNode) {
@@ -41,6 +42,18 @@ for (const { node, geometry } of fixtures) {
     for (const pipe of plan.members.filter(member => member.type === 'pipe-segment')) {
       expect(new Vector3(...pipe.path[0]!).distanceTo(new Vector3(...pipe.path[1]!))).toBeGreaterThanOrEqual(0.05 - 1e-6)
     }
+  })
+  test(`${node.type} previews an automatic DWV insertion without workers`, async () => {
+    const worker = globalThis.Worker
+    globalThis.Worker = class { constructor() { throw new Error('Worker unavailable') } } as unknown as typeof Worker
+    const client = createRoutingClient()
+    try {
+      const run = PipeSegmentNode.parse({ path: [[-6, 0, 0], [6, 0, 0]], diameter: 2 })
+      const plan = await planEquipmentPipeAsync({ run, index: 0, point: [0, 0, 0], template: node, localBounds: bounds, fittingPorts: ports }, args => client.route(args))
+      expect(plan).not.toBeNull()
+      expect(plan!.members.length).toBeGreaterThan(0)
+      expect(plan!.update.id).toBe(run.id)
+    } finally { client.dispose(); globalThis.Worker = worker }
   })
   test(`${node.type} async routing matches synchronous geometry and propagates cancellation`, async () => {
     const run = PipeSegmentNode.parse({ path: [[-1.5, 0.0254, 2.5], [3.5, 0.0254, 1.5]], diameter: 2 })

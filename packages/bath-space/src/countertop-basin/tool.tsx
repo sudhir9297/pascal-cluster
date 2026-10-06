@@ -1,5 +1,7 @@
 'use client'
 
+import { basinModelRotation } from './orientation'
+
 import { emitter, sceneRegistry, useScene, type AnyNode, type AnyNodeId, type GridEvent } from '@pascal-app/core'
 import { isGridSnapActive, triggerSFX, useEditor, usePlacementPreview } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
@@ -149,5 +151,5 @@ export default function CountertopBasinTool({ undermount = false, dropIn = false
 
   const level = levelId ? sceneRegistry.nodes.get(levelId) : undefined
   const pose = candidate?.preview
-  return level && pose ? createPortal(<primitive object={preview} position={pose.position} rotation={[0, pose.rotation, 0]} />, level) : null
+  return level && pose ? createPortal(<primitive object={preview} position={pose.position} rotation={[0, basinModelRotation(pose.rotation), 0]} />, level) : null
 }

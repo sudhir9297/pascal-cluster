@@ -1,29 +1,34 @@
 'use client'
 
+import { useCatalogPreferences } from '../shower-common/catalog-preferences'
 import { useEditor } from '@pascal-app/editor'
 import { getTapPreset, tapPresets } from './presets'
 import { setTapPlacementPreset, useTapPlacementPreset } from './placement-settings'
 import { TAP } from './schema'
-import { CatalogEmptyState } from '../catalog-ui'
+import { CatalogEmptyState, CatalogGrid, CatalogItemCard } from '../catalog-ui'
 
 export default function TapCatalog({ query }: { query: string }) {
+  const preferences = useCatalogPreferences()
+
+  const key = (id: string) => `tap:${id}`
   const selected = useTapPlacementPreset()
   const placing = useEditor(state => state.tool === TAP)
   const setTool = useEditor(state => state.setTool)
   const search = query.trim().toLowerCase()
+  const words = search.split(/\s+/).filter(Boolean)
   const groups = (['countertop', 'wall'] as const).map((mount) => {
-    const mountMatches = !search || search === 'tap' || search === 'taps' || mount.includes(search)
     return {
       mount,
-      items: tapPresets.filter((preset) => preset.mount === mount && (mountMatches || preset.label.toLowerCase().includes(search))),
+      items: tapPresets.filter((preset) => preset.mount === mount && words.every(word => `tap taps ${mount === 'wall' ? 'wall mounted' : 'countertop'} ${preset.label}`.toLowerCase().includes(word))),
     }
   }).filter(({ items }) => items.length > 0)
-  if (search && groups.length === 0) return null
   const matching = groups.flatMap((group) => group.items)
   return <section className="border-t border-border/60 pt-2">
     <details open className="group">
       <summary className="mb-2 flex h-7 cursor-pointer list-none items-center justify-between text-xs font-semibold text-foreground [&::-webkit-details-marker]:hidden">
-        Taps
+        <span className="flex flex-1 items-center justify-between gap-2 pr-2">Taps
+          <span className="text-[11px] font-normal tabular-nums text-muted-foreground">{matching.length} {matching.length === 1 ? 'style' : 'styles'}</span>
+        </span>
         <svg aria-hidden="true" viewBox="0 0 16 16" className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m4 6 4 4 4-4" /></svg>
       </summary>
       <div className="flex flex-col gap-2">
@@ -31,19 +36,19 @@ export default function TapCatalog({ query }: { query: string }) {
       <summary className="mb-2 cursor-pointer rounded-md bg-secondary/40 px-2 py-2 text-xs font-medium focus-visible:outline-2 focus-visible:outline-ring">
         {mount === 'countertop' ? 'Countertop' : 'Wall mounted'}
       </summary>
-      <div className="grid grid-cols-3 gap-2" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }} aria-label={`${mount === 'countertop' ? 'Countertop' : 'Wall mounted'} taps`}>
+      <CatalogGrid aria-label={`${mount === 'countertop' ? 'Countertop' : 'Wall mounted'} taps`}>
         {items.map(preset => <div key={preset.id} className="group relative">
-          <button type="button" aria-label={`Select ${preset.label} tap`} aria-pressed={placing && selected === preset.id}
-            onClick={() => { setTapPlacementPreset(preset.id); setTool(TAP) }}
-            className={`w-full overflow-hidden rounded-lg border text-left transition-colors focus-visible:outline-2 focus-visible:outline-ring ${placing && selected === preset.id ? 'border-primary ring-1 ring-primary/50' : 'border-border bg-secondary/40 hover:bg-accent/30'}`}>
-            <img src={preset.thumbnail} alt="" loading="lazy" style={{ aspectRatio: '7 / 4' }} className="aspect-[7/4] w-full object-cover" />
-            <span style={{ minHeight: 38 }} className="block min-h-[38px] px-2 py-1.5 text-[11px] font-medium leading-4">{preset.label}</span>
-          </button>
-          
+          <CatalogItemCard type="button"
+            aria-label={`Select ${preset.label} tap`}
+            aria-pressed={placing && selected === preset.id}
+            onClick={() => { preferences.remember(key(preset.id)); setTapPlacementPreset(preset.id); setTool(TAP) }} label={preset.label}>
+            <img src={preset.thumbnail} alt="" loading="lazy" className="h-full w-full object-contain" />
+          </CatalogItemCard>
+
         </div>)}
-      </div>
+      </CatalogGrid>
     </details>)}
-    {search && matching.length === 0 && <CatalogEmptyState>No taps match "{query.trim()}".</CatalogEmptyState>}
+    {matching.length === 0 && <CatalogEmptyState>{'No matching taps.'}</CatalogEmptyState>}
     {placing && <p role="status" className="text-[11px] leading-relaxed text-muted-foreground">
       {getTapPreset(selected).mount === 'wall' ? 'Click a wall to attach.' : 'Click a basin to attach or replace its tap.'} Esc to cancel.
     </p>}

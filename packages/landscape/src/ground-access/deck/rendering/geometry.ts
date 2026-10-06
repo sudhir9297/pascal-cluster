@@ -1,3 +1,5 @@
+import { railFootprint } from './rail-joins'
+import { landscapeToolColors } from '../../../shared/tool-colors'
 import { freehandFloorplanHandles } from '../../../ground-areas/domain/curve-edit'
 import type { FloorplanGeometry, GeometryContext } from '@pascal-app/core'
 import { useScene } from '@pascal-app/core'
@@ -9,6 +11,7 @@ import { extrudePaving } from '../../../pathways/rendering/safe-extrusion'
 import { isCurvedSurface, surfaceOutline } from '../../shared/outline'
 import { deckBorderWidth } from '../domain/settings'
 import { DeckNode } from '../domain/schema'
+import { deckRailingOutline, deckRailingEdgeIndex } from '../domain/railing'
 import { poolCutoutsFor } from '../../../shared/pool-cutouts'
 
 type Point = [number, number]
@@ -22,6 +25,20 @@ function polygonMesh(group: Group, polygon: Polygon, depth: number, y: number,
   geometry.translate(0, y, 0)
   const mesh = new Mesh(geometry, material)
   mesh.name = name
+  mesh.castShadow = true
+  mesh.receiveShadow = true
+  group.add(mesh)
+}
+
+function edgeMesh(group: Group, a: Point, b: Point, height: number, width: number,
+  y: number, material: MeshStandardMaterial, name: string, trim = 0) {
+  const dx = b[0] - a[0], dz = b[1] - a[1]
+  const length = Math.hypot(dx, dz) - trim * 2
+  if (length < 0.01 || height < 0.01) return
+  const mesh = new Mesh(new BoxGeometry(length, height, width), material)
+  mesh.name = name
+  mesh.position.set((a[0] + b[0]) / 2, y, (a[1] + b[1]) / 2)
+  mesh.rotation.y = -Math.atan2(dz, dx)
   mesh.castShadow = true
   mesh.receiveShadow = true
   group.add(mesh)
@@ -175,6 +192,51 @@ function applyPaintedMaterials(node: DeckNode, group: Group) {
   for (const material of replaced) material.dispose()
 }
 
+function deckRailing(group: Group, node: DeckNode, outline: Point[]) {
+  if (node.railingStyle === 'none') return
+  const rail = new MeshStandardMaterial({ color: node.railingColor, roughness: 0.8 })
+  const glass = new MeshStandardMaterial({ color: '#9fc3c9', transparent: true,
+    opacity: 0.38, depthWrite: false, roughness: 0.2 })
+  const top = node.thickness + node.railingHeight
+  const selected = new Set(node.railingEdges)
+  // Smooth freehand boundaries can contain hundreds of tiny edges.
+  const step = outline.length > 160 && node.railingEdgeMode === 'all'
+    ? Math.ceil(outline.length / 160) : 1
+  const vertices = step === 1 ? outline : outline.filter((_, i) => i % step === 0)
+  const enabled = vertices.map((a, edge) => node.railingEdgeMode !== 'selected' || selected.has(deckRailingEdgeIndex(node, a, vertices[(edge + 1) % vertices.length]!)))
+  const seen = new Set<string>()
+  vertices.forEach((a, edge) => {
+    const b = vertices[(edge + 1) % vertices.length]!
+    if (!enabled[edge]) return
+    polygonMesh(group, [railFootprint(vertices, edge, 0.065, enabled)], 0.045, top - 0.045, rail, 'deck-top-rail')
+    if (node.railingStyle === 'wood' || node.railingStyle === 'metal')
+      polygonMesh(group, [railFootprint(vertices, edge, 0.05, enabled)], 0.035, node.thickness + 0.1 - 0.0175, rail, 'deck-bottom-rail')
+    const posts = edgeSamples(a, b, node.railingPostSpacing)
+    for (const p of posts) {
+      const key = `${Math.round(p[0] * 100)},${Math.round(p[1] * 100)}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      post(group, p, node.railingStyle === 'wood' ? 0.09 : 0.055,
+        node.thickness, top, rail, 'deck-railing-post')
+    }
+    for (let i = 0; i < posts.length - 1; i++) {
+      const p = posts[i]!, q = posts[i + 1]!
+      if (node.railingStyle === 'glass') {
+        edgeMesh(group, p, q, node.railingHeight - 0.2, 0.012,
+          node.thickness + node.railingHeight / 2, glass, 'deck-glass-panel', 0.07)
+      } else if (node.railingStyle === 'cable') {
+        for (let h = 0.16; h < node.railingHeight - 0.08; h += 0.13)
+          edgeMesh(group, p, q, 0.008, 0.008, node.thickness + h, rail, 'deck-cable', 0.03)
+      } else {
+        const spacing = node.railingStyle === 'wood' ? 0.13 : 0.11
+        for (const baluster of edgeSamples(p, q, spacing).slice(1, -1))
+          post(group, baluster, node.railingStyle === 'wood' ? 0.045 : 0.02,
+            node.thickness + 0.12, top - 0.04, rail, 'deck-baluster')
+      }
+    }
+  })
+}
+
 export function buildDeckGeometry(raw: DeckNode, ctx?: GeometryContext): Group {
   const node = DeckNode.parse(raw)
   const group = new Group()
@@ -240,6 +302,7 @@ export function buildDeckGeometry(raw: DeckNode, ctx?: GeometryContext): Group {
     } else for (const p of ringSamples(outline, 0.12))
       post(group, p, 0.045, 0, frameBottom + 0.005, skirt, 'deck-skirt-slat')
   }
+  deckRailing(group, node, deckRailingOutline(node))
   applyPaintedMaterials(node, group)
   return group
 }
@@ -254,7 +317,7 @@ export function buildDeckFloorplan(raw: DeckNode, ctx: GeometryContext): Floorpl
   const outline = surfaceOutline(node)
   const outer: MultiPolygon = [[outline]]
   const { field, bands } = deckSurfaceRegions(node, outer)
-  const stroke = ctx.viewState?.selected ? (ctx.viewState.palette?.selectedStroke ?? '#f97316') : '#66513f'
+  const stroke = ctx.viewState?.selected ? (ctx.viewState.palette?.selectedStroke ?? landscapeToolColors.selected) : '#66513f'
   const children: FloorplanGeometry[] = [{ kind: 'path', d: path(outer[0]!),
     fill: bands.length ? node.frameColor : node.boardColor,
     stroke, strokeWidth: ctx.viewState?.selected ? 0.045 : 0.018 }]
@@ -270,6 +333,16 @@ export function buildDeckFloorplan(raw: DeckNode, ctx: GeometryContext): Floorpl
     boardPolygons(node, field, (polygon) => seams.push(path(polygon)))
     if (seams.length) children.push({ kind: 'path', d: seams.join(' '),
       fill: 'none', stroke: node.frameColor, strokeWidth: 0.005 })
+  }
+  if (node.railingStyle !== 'none') {
+    const selected = new Set(node.railingEdges)
+    const railingOutline = deckRailingOutline(node)
+    railingOutline.forEach((a, index) => {
+      const b = railingOutline[(index + 1) % railingOutline.length]!
+      if (node.railingEdgeMode === 'selected' && !selected.has(deckRailingEdgeIndex(node, a, b))) return
+      children.push({ kind: 'path', d: `M ${a[0]} ${a[1]} L ${b[0]} ${b[1]}`,
+        fill: 'none', stroke: node.railingColor, strokeWidth: 0.03 })
+    })
   }
   if (ctx.viewState?.selected && node.shape === 'freehand') children.push(...freehandFloorplanHandles(node))
   if (ctx.viewState?.selected && node.shape !== 'freehand' && !isCurvedSurface(node.shape)) {

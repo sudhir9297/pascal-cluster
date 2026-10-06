@@ -1,61 +1,87 @@
-import type { routePipe } from '../design/pipe-route'
+import { routePipe } from '../design/pipe-route'
+
+type Request = {
+  id: number
+  args: Parameters<typeof routePipe>
+  resolve: (value: ReturnType<typeof routePipe>) => void
+  reject: (error: Error) => void
+}
 
 export function createRoutingClient() {
-  // Static Worker + URL syntax lets the host bundler transpile the worker too.
-  const worker = new Worker(new URL('./routing-worker.ts', import.meta.url), { type: 'module' })
+  let worker: Worker | undefined
   let nextId = 0
-  const pending = new Map<number, { resolve: (value: ReturnType<typeof routePipe>) => void; reject: (error: Error) => void }>()
-  let queued: { id: number; args: Parameters<typeof routePipe>; resolve: (value: ReturnType<typeof routePipe>) => void; reject: (error: Error) => void } | null = null
-  let failed = false
+  let active: Request | null = null
+  let queued: Request | null = null
+  let disposed = false
   let ready = false
-  const flush = () => {
-    if (!queued || !ready || pending.size) return
-    const next = queued
-    queued = null
-    pending.set(next.id, next)
-    worker.postMessage({ id: next.id, args: next.args })
-  }
-  worker.onmessage = ({ data }) => {
-    if (data.ready) { ready = true; clearTimeout(startupTimeout); flush(); return }
-    const request = pending.get(data.id)
-    if (!request) return
-    pending.delete(data.id)
-    if (data.error) request.reject(new Error(data.error))
-    else request.resolve(data.result)
+  let local = false
+  let localTimer: ReturnType<typeof setTimeout> | undefined
+  let startup: ReturnType<typeof setTimeout> | undefined
+  const complete = (id: number, result?: ReturnType<typeof routePipe>, error?: Error) => {
+    if (disposed || active?.id !== id) return
+    const request = active
+    active = null
+    if (error) request.reject(error)
+    else request.resolve(result ?? null)
     flush()
   }
-  const fail = () => {
-    failed = true
-    clearTimeout(startupTimeout)
-    for (const request of pending.values()) request.reject(new Error('Pipe routing worker failed'))
-    pending.clear()
-    queued?.reject(new Error('Pipe routing worker failed'))
-    queued = null
+  const runLocally = () => {
+    if (!active || disposed) return
+    const request = active
+    localTimer = setTimeout(() => {
+      if (disposed || active !== request) return
+      try { complete(request.id, routePipe(...request.args)) }
+      catch (error) { complete(request.id, undefined, error instanceof Error ? error : new Error(String(error))) }
+    }, 0)
   }
-  const startupTimeout = setTimeout(fail, 10000)
-  worker.onerror = fail
+  const fallback = () => {
+    if (disposed || local) return
+    local = true
+    ready = true
+    clearTimeout(startup)
+    worker?.terminate()
+    if (active) runLocally()
+    else flush()
+  }
+  const flush = () => {
+    if (!queued || !ready || active || disposed) return
+    active = queued
+    queued = null
+    if (local) runLocally()
+    else {
+      try { worker!.postMessage({ id: active.id, args: active.args }) }
+      catch { fallback() }
+    }
+  }
+  try {
+    // Static syntax allows the host bundler to transpile the worker.
+    worker = new Worker(new URL('./routing-worker.ts', import.meta.url), { type: 'module' })
+    startup = setTimeout(fallback, 5000)
+    worker.onmessage = ({ data }) => {
+      if (disposed || local) return
+      if (data.ready) { ready = true; clearTimeout(startup); flush(); return }
+      complete(data.id, data.result, data.error ? new Error(data.error) : undefined)
+    }
+    worker.onerror = (event) => { event.preventDefault(); fallback() }
+    worker.onmessageerror = fallback
+  } catch { fallback() }
   return {
     route(args: Parameters<typeof routePipe>) {
       return new Promise<ReturnType<typeof routePipe>>((resolve, reject) => {
-        if (failed) { reject(new Error('Pipe routing worker unavailable')); return }
-        const id = ++nextId
-        if (!ready || pending.size) {
-          queued?.reject(new DOMException('Superseded pipe route', 'AbortError'))
-          queued = { id, args, resolve, reject }
-          return
-        }
-        pending.set(id, { resolve, reject })
-        worker.postMessage({ id, args })
+        if (disposed) { reject(new DOMException('Pipe routing cancelled', 'AbortError')); return }
+        queued?.reject(new DOMException('Superseded pipe route', 'AbortError'))
+        queued = { id: ++nextId, args, resolve, reject }
+        flush()
       })
     },
     dispose() {
-      failed = true
-      clearTimeout(startupTimeout)
-      worker.terminate()
-      for (const request of pending.values()) request.reject(new Error('Pipe routing cancelled'))
-      pending.clear()
+      disposed = true
+      clearTimeout(startup)
+      clearTimeout(localTimer)
+      worker?.terminate()
+      active?.reject(new DOMException('Pipe routing cancelled', 'AbortError'))
       queued?.reject(new DOMException('Pipe routing cancelled', 'AbortError'))
-      queued = null
+      active = queued = null
     },
   }
 }

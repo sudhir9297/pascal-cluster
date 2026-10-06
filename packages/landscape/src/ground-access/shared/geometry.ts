@@ -1,3 +1,4 @@
+import { landscapeToolColors } from '../../shared/tool-colors'
 import { freehandFloorplanHandles, type CurveNode } from '../../ground-areas/domain/curve-edit'
 import type { FloorplanGeometry, GeometryContext } from '@pascal-app/core'
 import { BoxGeometry, Group, Mesh, MeshStandardMaterial } from 'three'
@@ -211,7 +212,7 @@ export function buildAccessFloorplan(node: AccessShape, kind: AccessKind, ctx: G
       : outline.map(([x, z], index) => `${index ? 'L' : 'M'} ${x} ${z}`).join(' ') + ' Z',
     fillRule: 'evenodd',
     fill: colors[kind],
-    stroke: ctx.viewState?.selected ? (ctx.viewState.palette?.selectedStroke ?? '#f97316') : '#6d655c',
+    stroke: ctx.viewState?.selected ? (ctx.viewState.palette?.selectedStroke ?? landscapeToolColors.selected) : '#6d655c',
     strokeWidth: ctx.viewState?.selected ? 0.045 : 0.018,
   }]
   if (ctx.viewState?.selected && node.shape === 'freehand') children.push(...freehandFloorplanHandles(node as AccessShape & CurveNode))

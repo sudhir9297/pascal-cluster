@@ -3,6 +3,23 @@ import { useEditor } from '@pascal-app/editor'
 import ShowerPresetCatalog from '../shower-common/preset-catalog'
 import { SHOWER_VALVE, showerValvePresets } from './schema'
 import { setShowerValvePreset, useShowerValvePreset } from './placement-settings'
+import PressureBalanceThumbnail from './assets/pressure-balance.webp'
+import PressureBalanceStopsThumbnail from './assets/pressure-balance-stops.webp'
+import ThermostaticThumbnail from './assets/thermostatic.webp'
+import TransferThumbnail from './assets/transfer.webp'
+import StopThumbnail from './assets/stop.webp'
+import UniversalThumbnail from './assets/universal.webp'
+
+type ThumbnailAsset = string | { src: string }
+const thumbnailSrc = (asset: ThumbnailAsset | undefined) => typeof asset === 'string' ? asset : asset?.src
+const showerValveThumbnails: Record<string, ThumbnailAsset> = {
+  'pressure-balance': PressureBalanceThumbnail,
+  'pressure-balance-stops': PressureBalanceStopsThumbnail,
+  'thermostatic': ThermostaticThumbnail,
+  'transfer': TransferThumbnail,
+  'stop': StopThumbnail,
+  'universal': UniversalThumbnail,
+}
 export default function ShowerValveCatalog({ query }: { query: string }) {
   const selected = useShowerValvePreset(),
     active = useEditor((s) => s.tool === SHOWER_VALVE)
@@ -33,25 +50,7 @@ export default function ShowerValveCatalog({ query }: { query: string }) {
       }}
       hint="Click compatible concealed trim to attach."
       renderPreview={(id) => (
-        <svg
-          viewBox="0 0 88 64"
-          className="h-full w-full p-2"
-          aria-hidden="true"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="3"
-        >
-          <path d="M20 32h48M44 12v40" />
-          <rect
-            x="30"
-            y={id === 'thermostatic' ? 12 : 22}
-            width="28"
-            height={id === 'thermostatic' ? 40 : 20}
-            rx="4"
-          />
-          <circle cx="44" cy="32" r="8" />
-          {id === 'universal' && <rect x="24" y="12" width="40" height="40" rx="8" />}
-        </svg>
+        <img src={thumbnailSrc(showerValveThumbnails[id])} alt="" className="h-full w-full object-contain p-1" />
       )}
     />
   )

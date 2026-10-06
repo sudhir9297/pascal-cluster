@@ -48,6 +48,8 @@ import {
   isPoolPolygonPlaceable,
   type PoolShape,
 } from '../design/shapes'
+import { updateDynamicLine } from './dynamic-line'
+import { createFrameInput } from './frame-input'
 import { usePoolStore } from './store'
 import { findSharedPoolJoint } from '../design/shared-joint'
 import { PoolSharedJointNode } from '../shared-joint/core/schema'
@@ -59,6 +61,13 @@ const Y_OFFSET = 0.02
 const FREEHAND_CLOSE_DISTANCE = 0.25
 const FREEHAND_SAMPLE_DISTANCE = 0.03
 const FREEHAND_SIMPLIFY_TOLERANCE = 0.04
+function drawingSurface(target: EventTarget | null) {
+  if (target instanceof HTMLCanvasElement) return target
+  if (!(target instanceof Element)) return null
+  const svg = target.closest('svg')
+  return svg?.querySelector('[data-floorplan-scene]') ? svg : null
+}
+
 const SURFACE_UP = new Vector3(0, 1, 0)
 const surfacePointScratch = new Vector3()
 
@@ -195,14 +204,16 @@ export default function PoolTool() {
   const pendingFreehandSelectionReturnRef = useRef(false)
   const previousSnappedPointRef = useRef<Point | null>(null)
   const constructionPlaneRef = useRef<HorizontalConstructionPlane | null>(null)
+  const freehandPointerIdRef = useRef<number | null>(null)
   const previousShapeRef = useRef(shape)
+  const presetLocalPoints = useMemo(() => isDrawnShape ? [] : createPoolShapePolygon(shape, length, width), [isDrawnShape, shape, length, width])
   const presetPoints = useMemo(() => {
     if (isDrawnShape) return []
-    return createPoolShapePolygon(shape, length, width).map(point => rotatePlanPoint(point, placementYaw)).map(([x, z]): Point => [
+    return presetLocalPoints.map(point => rotatePlanPoint(point, placementYaw)).map(([x, z]): Point => [
       x + snappedCursorPosition[0],
       z + snappedCursorPosition[1],
     ])
-  }, [isDrawnShape, length, shape, snappedCursorPosition, width, placementYaw])
+  }, [isDrawnShape, presetLocalPoints, snappedCursorPosition, placementYaw])
   const floorplanDraftPoints = useMemo(() => points, [points])
 
   useEffect(() => {
@@ -263,6 +274,7 @@ export default function PoolTool() {
     const resetDraft = () => {
       setDraftPoints([])
       isFreehandDrawingRef.current = false
+      freehandPointerIdRef.current = null
       pendingFreehandSelectionReturnRef.current = false
       constructionPlaneRef.current = null
       previousSnappedPointRef.current = null
@@ -288,8 +300,12 @@ export default function PoolTool() {
         { shape: 'spline', ...dimensions, outlineControlPoints: outline.anchors },
       )
       setSelection({ selectedIds: [poolId] })
+      const pointerId = freehandPointerIdRef.current
       resetDraft()
-      if (deferSelectionReturn) pendingFreehandSelectionReturnRef.current = true
+      if (deferSelectionReturn) {
+        freehandPointerIdRef.current = pointerId
+        pendingFreehandSelectionReturnRef.current = true
+      }
       else returnToSelection()
       return true
     }
@@ -367,7 +383,10 @@ export default function PoolTool() {
       }
     }
 
+    const frameInput = createFrameInput(onGridMove, () => isSpline && isFreehandDrawingRef.current)
+
     const finishCustomDrawing = () => {
+      frameInput.flush()
       const activePoints = pointsRef.current
       if (!isCustom || activePoints.length < 3 || !isPoolPolygonPlaceable(activePoints)) return
       const dimensions = getPoolPolygonDimensions(activePoints)
@@ -384,6 +403,7 @@ export default function PoolTool() {
     }
 
     const onGridClick = (event: GridEvent) => {
+      frameInput.flush()
       if (isSpline) return
       const clickPoint = previousSnappedPointRef.current ?? cursorPosition
       if (!isDrawnShape) {
@@ -391,7 +411,7 @@ export default function PoolTool() {
           resolveEventConstructionPlane(event, pointedSurfaceFor(event)),
           clickPoint,
         )
-        const translated = createPoolShapePolygon(shape, length, width).map(point => rotatePlanPoint(point, placementYawRef.current)).map(
+        const translated = presetLocalPoints.map(point => rotatePlanPoint(point, placementYawRef.current)).map(
           ([x, z]): Point => [x + clickPoint[0], z + clickPoint[1]],
         )
         triggerSFX('sfx:structure-build-start')
@@ -437,12 +457,21 @@ export default function PoolTool() {
     }
 
     const onPointerDown = (event: PointerEvent) => {
-      if (!isSpline || event.button !== 0 || !(event.target instanceof HTMLCanvasElement)) return
+      frameInput.flush()
+      const surface = drawingSurface(event.target)
+      if (!isSpline || event.button !== 0 || !surface) return
       const gridEvent = latestGridEventRef.current
-      const startPoint = latestFreehandPointRef.current
+      let startPoint = latestFreehandPointRef.current
+      if (surface instanceof SVGSVGElement) {
+        const matrix = surface.querySelector<SVGGraphicsElement>('[data-floorplan-scene]')?.getScreenCTM()
+        if (!matrix) return
+        const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse())
+        startPoint = [point.x, point.y]
+      }
       if (!gridEvent || !startPoint) return
       event.preventDefault()
-      event.stopPropagation()
+      if (surface instanceof HTMLCanvasElement) event.stopPropagation()
+      freehandPointerIdRef.current = event.pointerId
       const plane = resampleTerrainConstructionPlane(
         resolveEventConstructionPlane(gridEvent, pointedSurfaceFor(gridEvent)),
         startPoint,
@@ -461,6 +490,9 @@ export default function PoolTool() {
     }
 
     const onPointerUp = (event: PointerEvent) => {
+      frameInput.flush()
+      if (freehandPointerIdRef.current !== event.pointerId) return
+      freehandPointerIdRef.current = null
       if (pendingFreehandSelectionReturnRef.current) {
         event.preventDefault()
         event.stopPropagation()
@@ -481,7 +513,12 @@ export default function PoolTool() {
       if (!commitFreehandStroke([...activePoints, firstPoint])) resetDraft()
     }
 
+    const onPointerCancel = (event: PointerEvent) => {
+      frameInput.dispose()
+      if (freehandPointerIdRef.current === event.pointerId) resetDraft()
+    }
     const onCancel = () => {
+      frameInput.dispose()
       if (pointsRef.current.length > 0) markToolCancelConsumed()
       resetDraft()
     }
@@ -515,7 +552,8 @@ export default function PoolTool() {
     document.addEventListener('keydown', onKeyDown, true)
     document.addEventListener('pointerdown', onPointerDown, true)
     document.addEventListener('pointerup', onPointerUp, true)
-    emitter.on('grid:move', onGridMove)
+    document.addEventListener('pointercancel', onPointerCancel, true)
+    emitter.on('grid:move', frameInput.push)
     emitter.on('grid:click', onGridClick)
     emitter.on('grid:double-click', finishCustomDrawing)
     emitter.on('tool:cancel', onCancel)
@@ -523,7 +561,9 @@ export default function PoolTool() {
       document.removeEventListener('keydown', onKeyDown, true)
       document.removeEventListener('pointerdown', onPointerDown, true)
       document.removeEventListener('pointerup', onPointerUp, true)
-      emitter.off('grid:move', onGridMove)
+      document.removeEventListener('pointercancel', onPointerCancel, true)
+      frameInput.dispose()
+      emitter.off('grid:move', frameInput.push)
       emitter.off('grid:click', onGridClick)
       emitter.off('grid:double-click', finishCustomDrawing)
       emitter.off('tool:cancel', onCancel)
@@ -539,14 +579,14 @@ export default function PoolTool() {
     const y = levelY + Y_OFFSET
     const draftLine: Point[] = isSpline ? points : [...points, snappedCursorPosition]
     const linePoints = draftLine.map(([x, z]) => new Vector3(x, y, z))
-    mainLine.geometry.dispose()
-    mainLine.geometry = new BufferGeometry().setFromPoints(linePoints)
+    updateDynamicLine(mainLine.geometry, linePoints)
+    mainLine.frustumCulled = false
     mainLine.visible = true
 
     const firstPoint = points[0]
     if (!isSpline && points.length >= 2 && firstPoint) {
-      closingLine.geometry.dispose()
-      closingLine.geometry = new BufferGeometry().setFromPoints([
+      closingLine.frustumCulled = false
+      updateDynamicLine(closingLine.geometry, [
         new Vector3(snappedCursorPosition[0], y, snappedCursorPosition[1]),
         new Vector3(firstPoint[0], y, firstPoint[1]),
       ])
@@ -565,7 +605,7 @@ export default function PoolTool() {
 
   const previewShape = useMemo(() => {
     if (isSpline) return null
-    const anchors = isDrawnShape ? [...points, snappedCursorPosition] : presetPoints
+    const anchors = isDrawnShape ? [...points, snappedCursorPosition] : presetLocalPoints
     if ((isDrawnShape && points.length < 2) || anchors.length < 3) return null
     const first = anchors[0]
     if (!first) return null
@@ -574,7 +614,7 @@ export default function PoolTool() {
     for (const [x, z] of anchors.slice(1)) shape.lineTo(x, -z)
     shape.closePath()
     return shape
-  }, [isDrawnShape, isSpline, points, presetPoints, snappedCursorPosition])
+  }, [isDrawnShape, isSpline, points, presetLocalPoints, isDrawnShape ? snappedCursorPosition : null])
 
   return (
     <PoolLevelPreviewGroup>
@@ -584,8 +624,8 @@ export default function PoolTool() {
         <mesh
           frustumCulled={false}
           layers={EDITOR_LAYER}
-          position={[0, levelY + Y_OFFSET, 0]}
-          rotation={[-Math.PI / 2, 0, 0]}
+          position={[isDrawnShape ? 0 : snappedCursorPosition[0], levelY + Y_OFFSET, isDrawnShape ? 0 : snappedCursorPosition[1]]}
+          rotation={[-Math.PI / 2, 0, isDrawnShape ? 0 : -placementYaw]}
         >
           <shapeGeometry args={[previewShape]} />
           <meshBasicMaterial

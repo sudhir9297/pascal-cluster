@@ -1,3 +1,5 @@
+
+import { basinModelRotation } from './orientation'
 import { getEffectiveNode, type AnyNode } from '@pascal-app/core'
 import { Brush, Evaluator, SUBTRACTION, ensureRenderableGeometryAttributes } from '@pascal-app/viewer'
 import { BufferGeometry, CylinderGeometry, ExtrudeGeometry, Mesh, MeshBasicMaterial, Shape, type Object3D } from 'three'
@@ -20,7 +22,7 @@ export function basinCountertopCutGeometry(basin: BasinNode, host: VanityNode) {
   const cut = new ExtrudeGeometry(shape, { depth: host.countertopThickness + 0.04, bevelEnabled: false, steps: 1 })
   cut.rotateX(-Math.PI / 2)
   cut.translate(0, basin.type === UNDERMOUNT_BASIN ? -0.02 : -host.countertopThickness - 0.02, 0)
-  cut.rotateY(basin.rotation)
+  cut.rotateY(basinModelRotation(basin.rotation))
   cut.translate(...basin.position)
   return cut
 }
@@ -38,7 +40,7 @@ export function cutVanityCountertop(source: BufferGeometry, host: VanityNode, ch
     for (const point of basinTapMountingPoints(basin)) {
       const cut = new CylinderGeometry(.0175, .0175, host.countertopThickness + .04, 32)
       cut.translate(point.position[0], host.height - host.countertopThickness / 2 - basin.position[1], point.position[2])
-      cut.rotateY(basin.rotation); cut.translate(...basin.position); cuts.push(cut)
+      cut.rotateY(basinModelRotation(basin.rotation)); cut.translate(...basin.position); cuts.push(cut)
     }
     for (const cut of cuts) {
     const left = new Brush(geometry, cutMaterial), right = new Brush(cut, cutMaterial)

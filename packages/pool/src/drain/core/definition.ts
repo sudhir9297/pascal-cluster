@@ -1,3 +1,6 @@
+import { poolFittingFloorplanMove } from '../../editor/floorplan-fitting-move'
+import { poolComponentFloorplan } from '../../rendering/component-floorplan'
+import { poolPlanDependencies, poolPlanMovableFrame } from '../../rendering/plan-frame'
 import type { NodeDefinition } from '@pascal-app/core'
 import { connectionPorts } from '../../core/connection-ports'
 import { DEFAULT_POOL_DRAIN, PoolDrainNode } from './schema'
@@ -20,7 +23,7 @@ export const poolDrainDefinition: NodeDefinition<typeof PoolDrainNode> = {
     ...DEFAULT_POOL_DRAIN,
   }),
   capabilities: {
-    movable: { axes: ['x', 'y', 'z'], gridSnap: true },
+    movable: { parentFrame: poolPlanMovableFrame, axes: ['x', 'y', 'z'], gridSnap: true },
     rotatable: { axes: ['y'] },
     selectable: { hitVolume: 'bbox' },
     duplicable: true,
@@ -29,6 +32,9 @@ export const poolDrainDefinition: NodeDefinition<typeof PoolDrainNode> = {
     snappable: {},
   },
   ports: (node) => connectionPorts(node, getDrainPortsLocal(node)),
+  floorplan: poolComponentFloorplan,
+  floorplanMoveTarget: poolFittingFloorplanMove,
+  floorplanDependencies: poolPlanDependencies,
   renderer: { kind: 'parametric', module: () => import('../editor/preview') },
   parametrics: poolDrainParametrics,
   tool: () => import('../editor/tool'),

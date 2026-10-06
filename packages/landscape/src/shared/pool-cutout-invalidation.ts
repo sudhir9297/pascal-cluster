@@ -1,6 +1,6 @@
 import type { AnyNode } from '@pascal-app/core'
 import { boundsIntersect, worldBounds, type Bounds2D } from './spatial-bounds'
-import { poolCutoutSignature, poolCutoutWorldBounds } from './pool-cutouts'
+import { isWaterOpening, poolCutoutSignature, poolCutoutWorldBounds } from './pool-cutouts'
 
 type SceneNodes = Readonly<Record<string, AnyNode>>
 const CUTOUT_SURFACE_KINDS = new Set([
@@ -35,7 +35,7 @@ export function affectedPoolCutoutSurfaceIds(current: SceneNodes, previous: Scen
     const before = previous[id], after = current[id]
     if (before === after || poolCutoutSignature(before) === poolCutoutSignature(after)) continue
     for (const value of [before, after]) {
-      if (value && (value.type as string) === 'pool:pool' && poolCutoutSignature(value) !== null) changed.push({
+      if (value && isWaterOpening(value) && poolCutoutSignature(value) !== null) changed.push({
         parentId: value.parentId,
         bounds: poolCutoutWorldBounds(value),
       })

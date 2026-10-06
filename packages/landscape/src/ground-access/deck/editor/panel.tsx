@@ -4,6 +4,7 @@ import { SegmentedControl, SliderControl, ToggleControl, useEditor } from '@pasc
 import { useViewer } from '@pascal-app/viewer'
 import { SurfaceDrawingPanel } from '../../shared/drawing-panel'
 import { deckMinimumHeight } from '../domain/settings'
+import { DeckRailingControls } from './railing-controls'
 import { DECK_KIND, DeckNode } from '../domain/schema'
 
 export function DeckPanel() {
@@ -47,6 +48,7 @@ export function DeckPanel() {
     <ToggleControl label={title} checked={node[key]} onChange={(checked) => update({ [key]: checked })} />
   return <>
     <SurfaceDrawingPanel kind={DECK_KIND} minThickness={deckMinimumHeight(node)} />
+    <DeckRailingControls node={node} selected={selected !== null} onUpdate={update} />
     <section aria-label="Deck design settings" className="mt-3 flex flex-col gap-1.5">
       <h3 style={{ fontSize: 14, margin: '0 0 5px' }}>Deck design</h3>
       {choose('deckType', 'Deck type', [

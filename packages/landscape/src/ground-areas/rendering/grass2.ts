@@ -45,7 +45,7 @@ import {
   vec3,
   vec4,
 } from 'three/tsl'
-import grassAtlas from '../assets/grass2-clumps.png'
+import grassAtlas from '../assets/grass2-meadow-clumps.webp'
 import { densityCounts, Grass2Patch } from './grass2-lod'
 import { Grass2Stream } from './grass2-stream'
 import type { GrassEdgeSampler } from './grass2-edge'
@@ -326,7 +326,7 @@ function completeFlowerGeometry(kind: Flower) {
 function setPlantAttributes(geometry: BufferGeometry, plants: readonly Plant[], atlas?: 'grass' | 'flower') {
   const stride = atlas ? 8 : 6
   const data = new Float32Array(plants.length * stride)
-  const grassCells = [0, 1, 2, 3, 5, 6, 7, 8]
+  const grassCells = [0, 1, 2, 3, 4, 5, 6, 7, 8]
   plants.forEach((plant, index) => {
     const offset = index * stride
     data[offset] = plant.x

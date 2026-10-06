@@ -1,3 +1,4 @@
+import { landscapeToolColors } from '../../../shared/tool-colors'
 import { freehandFloorplanHandles } from '../../../ground-areas/domain/curve-edit'
 import { edgingCurveNode } from '../domain/curve'
 import { useScene, type AnyNode, type FloorplanGeometry, type GeometryContext } from '@pascal-app/core'
@@ -307,7 +308,7 @@ export function buildEdgingFloorplan(node: EdgingNode, ctx: GeometryContext): Fl
     ? `${rendered.map(([x, z], index) => `${index ? 'L' : 'M'} ${x} ${z}`).join(' ')}${node.closed ? ' Z' : ''}` : ''
   const children: FloorplanGeometry[] = d ? [{
     kind: 'path', d, fill: 'none', stroke: selected
-      ? (ctx.viewState?.palette?.selectedStroke ?? '#f97316') : '#8d877b',
+      ? (ctx.viewState?.palette?.selectedStroke ?? landscapeToolColors.selected) : '#8d877b',
     strokeWidth: Math.max(node.depth, selected ? 0.045 : 0.02),
     strokeLinecap: 'square', strokeLinejoin: 'miter',
   }] : []

@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext } from 'react'
+import { createContext, useContext, useMemo } from 'react'
 import { useLiveNodeOverrides, useScene } from '@pascal-app/core'
 import type { PoolNode } from '../core/schema'
 import { getPoolNode } from './scene-nodes'
@@ -13,9 +13,6 @@ export function useAttachmentPool(poolId: string | null, followLiveResize = fals
   const override = useLiveNodeOverrides((state) => (
     followLiveResize && poolId ? state.get(poolId) : undefined
   ))
-  if (parent?.id === poolId) {
-    if (!followLiveResize) return parent
-    return override ? { ...parent, ...override } as PoolNode : parent
-  }
-  return stored && override ? { ...stored, ...override } as PoolNode : stored
+  const pool = parent?.id === poolId ? parent : stored
+  return useMemo(() => pool && override ? { ...pool, ...override } as PoolNode : pool, [pool, override])
 }

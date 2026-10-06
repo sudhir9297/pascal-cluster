@@ -1,4 +1,5 @@
 'use client'
+import { landscapeToolColors } from '../../shared/tool-colors'
 import { type AnyNode, type AnyNodeId, useLiveNodeOverrides, useScene } from '@pascal-app/core'
 import { boundaryReshapeScope, PolygonEditor, useEditor, useInteractionScope } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
@@ -67,10 +68,11 @@ function BoundaryEditor({ kind }: { kind: DrawnAccessKind }) {
   if (!node || isCurvedSurface(node.shape) || outline.length < 3) return null
   if (node.shape === 'freehand') return <FreehandCurveEditor node={node}
     height={node.position[1] + node.thickness + (kind === 'landscape:patio'
-      ? ((node as SurfaceNode & { elevation: number }).elevation + Math.min(0.045, node.thickness / 3)) : 0)} />
+      ? ((node as SurfaceNode & { elevation: number }).elevation + Math.min(0.045, node.thickness / 3)) : kind === 'landscape:pond'
+        ? (node as SurfaceNode & { elevation: number }).elevation : 0)} />
   return <PolygonEditor
     allowEdgeMove
-    color="#d6a56a"
+    color={landscapeToolColors.spline}
     levelId={node.parentId ?? undefined}
     minVertices={3}
     polygon={outline}
@@ -79,6 +81,7 @@ function BoundaryEditor({ kind }: { kind: DrawnAccessKind }) {
     onDragStateChange={dragState}
     resolvePlanPoint={(context) => resolveBoundaryEditPoint(context, node)}
     surfaceHeight={node.position[1] + node.thickness + (kind === 'landscape:patio'
-      ? ((node as SurfaceNode & { elevation: number }).elevation + Math.min(0.045, node.thickness / 3)) : 0)}
+      ? ((node as SurfaceNode & { elevation: number }).elevation + Math.min(0.045, node.thickness / 3)) : kind === 'landscape:pond'
+        ? (node as SurfaceNode & { elevation: number }).elevation : 0)}
   />
 }

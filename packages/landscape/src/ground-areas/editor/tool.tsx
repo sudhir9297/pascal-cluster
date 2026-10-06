@@ -3,11 +3,13 @@ import {
   DEFAULT_ANGLE_STEP,
   emitter,
   type GridEvent,
+  type NodeEvent,
   type AnyNode,
   type AnyNodeId,
   snapPointAlongAngleRay,
   snapPointToGrid,
   useScene,
+  sceneRegistry,
 } from '@pascal-app/core'
 import {
   CursorSphere,
@@ -29,13 +31,16 @@ import GroundAreaPreview from '../rendering/preview'
 import { GROUND_AREA_DRAFT_COLOR, GroundAreaDraftOverlay } from './draft-overlay'
 import { onGroundAreaCommand, setGroundAreaStatus, type GroundAreaCommand, type GroundAreaShape } from './session'
 import { groundAreaModes } from './drawing-mode'
+import { groundDrawingPosition } from './drawing-position'
+
+type DrawingEvent = GridEvent | NodeEvent<AnyNode>
 
 function distance(a: Point, b: Point) {
   return Math.hypot(a[0] - b[0], a[1] - b[1])
 }
 
-function nextAreaName(surface: GroundSurface, levelId: AnyNodeId) {
-  const label = `${surface[0]!.toUpperCase()}${surface.slice(1)} area`
+function nextAreaName(surface: GroundSurface, levelId: AnyNodeId, bed = false) {
+  const label = bed ? 'Planting bed' : `${surface[0]!.toUpperCase()}${surface.slice(1)} area`
   const names = new Set(
     Object.values(useScene.getState().nodes)
       .filter((node) => (node.type as string) === GROUND_AREA_KIND && node.parentId === levelId)
@@ -134,7 +139,7 @@ export default function GroundAreaTool() {
     let shape: GroundAreaShape = groundAreaModes.includes(defaults?.shape as GroundAreaShape)
       ? defaults!.shape as GroundAreaShape : defaults?.shape === 'polygon' ? 'custom' : 'rectangle'
     const surface: GroundSurface = GROUND_SURFACES.find((value) => value === defaults?.surface) ?? 'grass'
-    const base = GroundAreaNode.parse({ parentId: levelId, surface, shape })
+    const base = GroundAreaNode.parse({ ...defaults, parentId: levelId, surface, shape })
     const overlay = new GroundAreaDraftOverlay()
     let points: Point[] = []
     let current: Point | null = null
@@ -152,12 +157,13 @@ export default function GroundAreaTool() {
       useEditor.getState().setDraftVertexCount(shape === 'custom' ? next.length : 0)
       setStatus()
     }
-    const rawPointOf = (event: GridEvent): Point => {
-      height = event.localPosition[1]
+    const rawPointOf = (event: DrawingEvent): Point => {
+      const local = groundDrawingPosition(event, sceneRegistry.nodes.get(levelId))
+      height = local.y
       setLevelY(height)
-      return [event.localPosition[0], event.localPosition[2]]
+      return [local.x, local.z]
     }
-    const pointOf = (event: GridEvent): Point => {
+    const pointOf = (event: DrawingEvent): Point => {
       const rawPoint = rawPointOf(event)
       if (shape === 'freehand') return rawPoint
       const gridStep = isGridSnapActive() ? useEditor.getState().gridSnapStep : 0
@@ -179,7 +185,7 @@ export default function GroundAreaTool() {
       const outline = isEllipseShape(shape) ? draftOutline() : normalizeOutline(draftOutline())
       setPreview(shape !== 'freehand' && outline.length >= 3 &&
         (isEllipseShape(shape) || !validateOutline(outline))
-        ? GroundAreaNode.parse({ ...base, shape, outline })
+        ? GroundAreaNode.parse({ ...base, ...useEditor.getState().toolDefaults[GROUND_AREA_KIND], id: base.id, parentId: levelId, shape, outline })
         : null)
       overlay.update(shape, isEllipseShape(shape) ? outline : points,
         isEllipseShape(shape) ? null : current, groundSurfaceColor(surface), points[0])
@@ -193,8 +199,11 @@ export default function GroundAreaTool() {
         0.09)
     }
     const commit = (rawOutline: Point[]) => {
+      if (useScene.getState().readOnly) return false
       const outline = isEllipseShape(shape) ? rawOutline : normalizeOutline(rawOutline)
-      const error = isEllipseShape(shape)
+      const error = shape === 'rectangle' && outline.length < 3
+        ? 'Choose an opposite corner with both width and depth. Snapping may align nearby clicks.'
+        : isEllipseShape(shape)
         ? outline.length < 3 ? 'Draw a circle or oval at least 0.2 m wide and deep.' : null
         : validateOutline(outline)
       if (error) {
@@ -204,7 +213,9 @@ export default function GroundAreaTool() {
       }
       const { id: _previewId, ...fields } = GroundAreaNode.parse({
         ...base,
-        name: nextAreaName(surface, levelId as AnyNodeId),
+        ...useEditor.getState().toolDefaults[GROUND_AREA_KIND],
+        id: base.id, parentId: levelId,
+        name: nextAreaName(surface, levelId as AnyNodeId, useEditor.getState().toolDefaults[GROUND_AREA_KIND]?.plantingBed === true),
         shape,
         outline,
       })
@@ -235,7 +246,7 @@ export default function GroundAreaTool() {
     const finish = () => {
       if (shape === 'custom' && points.length >= 3 && commit(points)) stop()
     }
-    const onMove = (event: GridEvent) => {
+    const onMove = (event: DrawingEvent) => {
       latestRaw = rawPointOf(event)
       current = shape === 'freehand' ? latestRaw : pointOf(event)
       setCursor(current)
@@ -254,8 +265,9 @@ export default function GroundAreaTool() {
       refresh()
       setStatus()
     }
-    const onClick = (event: GridEvent) => {
+    const onClick = (event: DrawingEvent) => {
       if (shape === 'freehand' || event.nativeEvent?.button !== 0 || useViewer.getState().cameraDragging) return
+      if ('node' in event) event.stopPropagation()
       const point = pointOf(event)
       current = point
       setCursor(point)
@@ -360,7 +372,9 @@ export default function GroundAreaTool() {
 
     const unsubscribe = onGroundAreaCommand(command)
     emitter.on('grid:move', onMove)
+    emitter.on('node:move', onMove)
     emitter.on('grid:click', onClick)
+    emitter.on('node:click', onClick)
     emitter.on('grid:double-click', finish)
     document.addEventListener('pointerdown', onPointerDown, true)
     document.addEventListener('pointerup', onPointerUp, true)
@@ -368,7 +382,9 @@ export default function GroundAreaTool() {
     setStatus()
     return () => {
       emitter.off('grid:move', onMove)
+      emitter.off('node:move', onMove)
       emitter.off('grid:click', onClick)
+      emitter.off('node:click', onClick)
       emitter.off('grid:double-click', finish)
       document.removeEventListener('pointerdown', onPointerDown, true)
       document.removeEventListener('pointerup', onPointerUp, true)

@@ -2,9 +2,10 @@
 
 import { useScene } from '@pascal-app/core'
 import { ActionButton, ActionGroup } from '@pascal-app/editor'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { DEFAULT_POOL_PIPE_OPTIONS, type PoolPipeLayout, type PoolPipeOptions, type PoolPipeCircuit } from '../design/pool-pipe-layout'
-import { commitPoolPipes, preparePoolPipes } from './pool-pipe-plan'
+import { commitPoolPipes, type preparePoolPipes } from './pool-pipe-plan'
+import { preparePoolPipesAsync } from './pool-pipe-client'
 import { deletePoolConnection, poolConnectionState } from './pool-connection-state'
 
 export function ConnectInlets({ node }: { node: { id: string } }) {
@@ -26,14 +27,30 @@ function PoolConnectionForm({ poolId, circuit }: { poolId: string; circuit: Pool
   const [active, setActive] = useState(false)
   const [message, setMessage] = useState('')
   const connection = useMemo(() => poolConnectionState(poolId, circuit, nodes), [poolId, circuit, nodes])
-  const result = useMemo(() => {
-    if (!active || connection.status !== 'empty') return null
-    try { return { plan: preparePoolPipes(poolId, options, nodes), error: '' } }
-    catch (error) { return { plan: null, error: error instanceof Error ? error.message : 'Could not plan pool pipes.' } }
+  const [result, setResult] = useState<{ plan: ReturnType<typeof preparePoolPipes> | null; error: string; options: PoolPipeOptions } | null>(null)
+  const [pending, setPending] = useState(false)
+  useEffect(() => {
+    if (!active || connection.status !== 'empty') { setResult(null); setPending(false); return }
+    let current = true
+    let cancel = () => {}
+    setPending(true)
+    try {
+      const request = preparePoolPipesAsync(poolId, options, nodes)
+      cancel = request.cancel
+      request.promise.then(plan => {
+        if (current) { setResult({ plan, error: '', options }); setPending(false) }
+      }, error => {
+        if (current) { setResult({ plan: null, error: error instanceof Error ? error.message : 'Could not plan pool pipes.', options }); setPending(false) }
+      })
+    } catch (error) {
+      setResult({ plan: null, error: error instanceof Error ? error.message : 'Could not plan pool pipes.', options })
+      setPending(false)
+    }
+    return () => { current = false; cancel() }
   }, [active, connection.status, nodes, options, poolId])
   const change = (patch: Partial<PoolPipeOptions>) => { setOptions((previous) => ({ ...previous, ...patch })); setMessage('') }
   const create = () => {
-    if (!result?.plan) return
+    if (pending || result?.options !== options || !result?.plan || result.plan.snapshot !== nodes) return
     try {
       commitPoolPipes(result.plan)
       setMessage('')
@@ -65,9 +82,10 @@ function PoolConnectionForm({ poolId, circuit }: { poolId: string; circuit: Pool
       <label className="flex items-center justify-between gap-2 text-xs">Additional depth (m)
         <input className="w-20 rounded border border-border bg-background p-1" type="number" min="0" step="0.1" value={Number.isFinite(options.drop) ? options.drop : ''} onChange={(event) => change({ drop: event.target.valueAsNumber })} />
       </label>
+      {pending && <p className="text-xs text-muted-foreground" role="status">Updating pipe route…</p>}
       {result?.error && <p className="text-xs text-muted-foreground" role="alert">{result.error}</p>}
       <ActionGroup>
-        <ActionButton label="Create pipes" disabled={!result?.plan || readOnly} onClick={create} />
+        <ActionButton label="Create pipes" disabled={pending || result?.options !== options || !result?.plan || result.plan.snapshot !== nodes || readOnly} onClick={create} />
         <ActionButton label="Cancel" onClick={() => { setActive(false); setMessage('') }} />
       </ActionGroup>
     </>}

@@ -1,4 +1,4 @@
-import { ShapeUtils, Vector2 } from 'three'
+import { Euler, Quaternion, ShapeUtils, Vector2, Vector3 } from 'three'
 import { resolvePoolPolygon, type PoolNode } from '../core/schema'
 import { getPoolDepthResolver } from './depth-profile'
 
@@ -15,30 +15,58 @@ export const POOL_FITTING_RULES = {
 type Point = [number, number]
 export type WallStation = { wallIndex: number; wallT: number; point: Point }
 
-function computePoolFittings(pool: PoolNode) {
-  const polygon = resolvePoolPolygon(pool)
-  const points = polygon.map(([x, z]) => new Vector2(x, z))
-  const triangles = ShapeUtils.triangulateShape(points, [])
-  const area = Math.abs(ShapeUtils.area(points))
-  const depth = getPoolDepthResolver(pool, polygon)
-  // Triangle-centroid quadrature estimates water volume for sloped floors.
-  const volume = triangles.reduce((sum, triangle) => {
-    const vertices = triangle.map((i) => points[i]!)
-    const x = vertices.reduce((total, point) => total + point.x, 0) / 3
-    return sum + Math.abs(ShapeUtils.area(vertices)) * Math.max(0, depth.depthAtX(x) + pool.designWaterElevation)
-  }, 0)
+const metricCache = new Map<string, { area: number; volume: number; perimeter: number }>()
+
+function metricKey(pool: PoolNode) {
+  return JSON.stringify([pool.polygon, pool.length, pool.width, pool.floorProfile, pool.depth,
+    pool.shallowDepth, pool.deepDepth, pool.slopeStart, pool.slopeEnd, pool.designWaterElevation])
+}
+
+/** Summary controls never run the boundary/floor placement search. */
+export function getPoolFittingSummary(pool: PoolNode) {
+  const key = metricKey(pool)
+  let metrics = metricCache.get(key)
+  if (!metrics) {
+    const polygon = resolvePoolPolygon(pool)
+    const points = polygon.map(([x, z]) => new Vector2(x, z))
+    const triangles = ShapeUtils.triangulateShape(points, [])
+    const area = Math.abs(ShapeUtils.area(points))
+    const depth = getPoolDepthResolver(pool, polygon)
+    // Triangle-centroid quadrature estimates water volume for sloped floors.
+    const volume = triangles.reduce((sum, triangle) => {
+      const vertices = triangle.map((i) => points[i]!)
+      const x = vertices.reduce((total, point) => total + point.x, 0) / 3
+      return sum + Math.abs(ShapeUtils.area(vertices)) * Math.max(0, depth.depthAtX(x) + pool.designWaterElevation)
+    }, 0)
+    const lengths = polygon.map((start, i) => {
+      const end = polygon[(i + 1) % polygon.length]!
+      return Math.hypot(end[0] - start[0], end[1] - start[1])
+    })
+    const perimeter = lengths.reduce((sum, length) => sum + length, 0)
+    metrics = { area, volume, perimeter }
+    if (metricCache.size >= 64) metricCache.delete(metricCache.keys().next().value!)
+    metricCache.set(key, metrics)
+  }
+  const { area, volume, perimeter } = metrics
   const flow = pool.fittingFlowRate > 0 ? pool.fittingFlowRate : volume / pool.turnoverHours
-  const lengths = polygon.map((start, i) => {
-    const end = polygon[(i + 1) % polygon.length]!
-    return Math.hypot(end[0] - start[0], end[1] - start[1])
-  })
-  const perimeter = lengths.reduce((sum, length) => sum + length, 0)
   const counts = {
     skimmer: Math.max(1, Math.ceil(area / POOL_FITTING_RULES.skimmerArea)),
     inlet: Math.max(2, Math.ceil(area / POOL_FITTING_RULES.inletArea), Math.ceil(perimeter / POOL_FITTING_RULES.inletPerimeter)),
     drain: Math.max(2, Math.ceil(flow / pool.drainFlowCapacity) + 1),
     stair: 1,
   }
+  return { ...metrics, flow, counts }
+}
+
+function computePoolFittings(pool: PoolNode) {
+  const { area, perimeter, volume, flow, counts } = getPoolFittingSummary(pool)
+  const polygon = resolvePoolPolygon(pool)
+  const points = polygon.map(([x, z]) => new Vector2(x, z))
+  const depth = getPoolDepthResolver(pool, polygon)
+  const lengths = polygon.map((start, i) => {
+    const end = polygon[(i + 1) % polygon.length]!
+    return Math.hypot(end[0] - start[0], end[1] - start[1])
+  })
   const minX = Math.min(...polygon.map(([x]) => x))
   const maxX = Math.max(...polygon.map(([x]) => x))
   const minZ = Math.min(...polygon.map(([, z]) => z))
@@ -183,13 +211,42 @@ export function planPoolFittings(pool: PoolNode) {
   const key = JSON.stringify([
     pool.polygon, pool.length, pool.width, pool.floorProfile, pool.depth,
     pool.shallowDepth, pool.deepDepth, pool.slopeStart, pool.slopeEnd,
-    pool.designWaterElevation, pool.coveRadius, pool.fittingFlowRate,
-    pool.turnoverHours, pool.drainFlowCapacity,
+    pool.coveRadius, getPoolFittingSummary(pool).counts,
   ])
   const cached = layoutCache.get(key)
-  if (cached) return cached
+  if (cached) return { ...cached, ...getPoolFittingSummary(pool) }
   const layout = computePoolFittings(pool)
   if (layoutCache.size >= 32) layoutCache.delete(layoutCache.keys().next().value!)
   layoutCache.set(key, layout)
   return layout
+}
+
+/** Check placed stations in linear/quadratic fitting count, without searching a new layout. */
+export function placedPoolFittingIssues(pool: PoolNode, values: readonly unknown[]) {
+  const polygon = resolvePoolPolygon(pool)
+  const fittings = values.flatMap(value => {
+    if (!value || typeof value !== 'object') return []
+    const node = value as { type?: string; position?: Point | [number, number, number]; parentId?: string; wallIndex?: number; wallT?: number }
+    if (!['pool:skimmer', 'pool:inlet', 'pool:drain'].includes(node.type ?? '')) return []
+    if (node.type !== 'pool:drain' && node.wallIndex !== undefined && node.wallT !== undefined) {
+      const a = polygon[node.wallIndex], b = polygon[(node.wallIndex + 1) % polygon.length]
+      if (a && b) return [{ type: node.type, point: [a[0] + (b[0] - a[0]) * node.wallT, a[1] + (b[1] - a[1]) * node.wallT] as Point }]
+    }
+    if (!node.position || node.position.length !== 3) return []
+    const point = new Vector3(...node.position)
+    if (node.parentId !== pool.id) point.sub(new Vector3(...pool.position)).applyQuaternion(new Quaternion().setFromEuler(new Euler(...pool.rotation)).invert())
+    return [{ type: node.type, point: [point.x, point.z] as Point }]
+  })
+  const issues = new Set<string>()
+  for (let i = 0; i < fittings.length; i++) for (let j = i + 1; j < fittings.length; j++) {
+    const a = fittings[i]!, b = fittings[j]!
+    const distance = Math.hypot(a.point[0] - b.point[0], a.point[1] - b.point[1])
+    if (a.type === 'pool:drain' || b.type === 'pool:drain') {
+      if (a.type === b.type && distance < POOL_FITTING_RULES.drainSeparation) issues.add('Placed drains are too close together.')
+      continue
+    }
+    const separation = a.type === b.type ? POOL_FITTING_RULES.wallClearance : POOL_FITTING_RULES.inletSkimmerClearance
+    if (distance < separation) issues.add('Placed wall fittings need more clearance.')
+  }
+  return [...issues]
 }

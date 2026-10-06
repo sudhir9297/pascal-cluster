@@ -8,6 +8,34 @@
         "turbo": "^2.11.3",
       },
     },
+    "packages/bath-space": {
+      "name": "@pascal-app/plugin-bath-space",
+      "version": "0.1.0",
+      "dependencies": {
+        "@tanstack/react-virtual": "^3.14.13",
+      },
+      "devDependencies": {
+        "@pascal-app/core": "1.0.1",
+        "@pascal-app/editor": "1.0.1",
+        "@pascal-app/viewer": "1.0.1",
+        "@types/react": "^19.2.2",
+        "@types/three": "^0.184.0",
+        "react": "19.2.7",
+        "three": "^0.186.0",
+        "typescript": "6.0.3",
+        "zod": "4.5.4",
+      },
+      "peerDependencies": {
+        "@pascal-app/core": "^1.0.1",
+        "@pascal-app/editor": "^1.0.1",
+        "@pascal-app/viewer": "^1.0.1",
+        "@react-three/fiber": "^9",
+        "react": "^18 || ^19",
+        "react-dom": "^18 || ^19",
+        "three": "^0.186.0",
+        "zod": ">=4.5.4 <4.6",
+      },
+    },
     "packages/landscape": {
       "name": "@pascal-app/plugin-landscape",
       "version": "0.1.0",
@@ -16,9 +44,11 @@
         "polygon-clipping": "^0.15.7",
       },
       "devDependencies": {
-        "@pascal-app/core": "1.0.1",
-        "@pascal-app/editor": "1.0.1",
-        "@pascal-app/viewer": "1.0.1",
+        "@pascal-app/core": "1.0.3",
+        "@pascal-app/editor": "1.0.3",
+        "@pascal-app/nodes": "1.0.1",
+        "@pascal-app/viewer": "1.0.3",
+        "@react-three/drei": "^10",
         "@react-three/fiber": "^9",
         "@types/blob-stream": "^0.1.33",
         "@types/bun": "^1.3.5",
@@ -27,6 +57,7 @@
         "@types/node": "^22.19.12",
         "@types/pdfkit": "^0.17.6",
         "@types/react": "^19.2.2",
+        "@types/react-dom": "^19.2.2",
         "@types/three": "^0.184.0",
         "react": "19.2.7",
         "react-dom": "19.2.7",
@@ -35,9 +66,11 @@
         "zod": ">=4.5.4 <4.6",
       },
       "peerDependencies": {
-        "@pascal-app/core": "^1.0.1",
-        "@pascal-app/editor": "^1.0.1",
-        "@pascal-app/viewer": "^1.0.1",
+        "@pascal-app/core": "^1.0.3",
+        "@pascal-app/editor": "^1.0.3",
+        "@pascal-app/nodes": "^1.0.1",
+        "@pascal-app/viewer": "^1.0.3",
+        "@react-three/drei": "^10",
         "@react-three/fiber": "^9",
         "react": "^18 || ^19",
         "three": "^0.186.0",
@@ -115,6 +148,7 @@
         "@pascal-app/viewer": ">=0.9.1 <1",
         "@react-three/fiber": "^9",
         "react": "^18 || ^19",
+        "react-dom": "^18 || ^19",
         "three": "^0.185",
         "zod": "^4",
         "zustand": "^5",
@@ -332,6 +366,10 @@
 
     "@pascal-app/lingo": ["@pascal-app/lingo@0.2.1", "", { "peerDependencies": { "react": "^19" }, "optionalPeers": ["react"] }, "sha512-Y6Nmb4vLSMp/dIdKABc7GjdTdB6yvUyBg95ySlThMz6zKrJjpVG0utexY4cnmWVPkGNSKOFotiHw8UJiQMUVnw=="],
 
+    "@pascal-app/nodes": ["@pascal-app/nodes@1.0.1", "", { "peerDependencies": { "@pascal-app/core": "^1.0.1", "@pascal-app/editor": "^1.0.1", "@pascal-app/viewer": "^1.0.1", "@react-three/drei": "^10", "@react-three/fiber": "^9", "lucide-react": "^1", "react": "^18 || ^19", "react-dom": "^18 || ^19", "three": "^0.186", "zustand": "^5" } }, "sha512-FxS/vejpSf6oWuAIX4mbwCl6VyecWjy0W/b0JsqTNYYOcToUYtOfnBxqanY95f2Jak+w1EcOoM5BPm6d5/2jvw=="],
+
+    "@pascal-app/plugin-bath-space": ["@pascal-app/plugin-bath-space@workspace:packages/bath-space"],
+
     "@pascal-app/plugin-landscape": ["@pascal-app/plugin-landscape@workspace:packages/landscape"],
 
     "@pascal-app/plugin-pool": ["@pascal-app/plugin-pool@workspace:packages/pool"],
@@ -431,6 +469,10 @@
     "@react-three/xr": ["@react-three/xr@6.6.30", "", { "dependencies": { "@pmndrs/pointer-events": "~6.6.30", "@pmndrs/xr": "~6.6.30", "suspend-react": "^0.1.3", "tunnel-rat": "^0.1.2", "zustand": "^4.5.2" }, "peerDependencies": { "@react-three/fiber": ">=8", "react": ">=18", "react-dom": ">=18", "three": "*" } }, "sha512-C+PYxnDsWvF2WG669DXwlcKnxcy7O+FMhxlaOq75HrRSJRtk4T5iZCv6qak2+8ztcYrip8t79W9E+LSV3P93hA=="],
 
     "@swc/helpers": ["@swc/helpers@0.5.23", "", { "dependencies": { "tslib": "^2.8.0" } }, "sha512-5lSsMOTXURePglDfvuAQUqkGek9Hg2kksOYay2m0+XR++b2NWYL/4sWyuvVBIs8oKnJaxkdi9whaL/sqN13afw=="],
+
+    "@tanstack/react-virtual": ["@tanstack/react-virtual@3.14.13", "", { "dependencies": { "@tanstack/virtual-core": "3.17.11" }, "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-JbDTAwtzZ99aOeCrAfW5EsE5KSq5RWh6Af2dtFwyLIIk48Ja7vm6n4axu/43T3vfjFnEGJalxJ1wyYjSQD6bSg=="],
+
+    "@tanstack/virtual-core": ["@tanstack/virtual-core@3.17.11", "", {}, "sha512-+ILjvtHup6Y2hzQ6YzwMgX1Q+oQpxEGOXCEsCNaPoIP0VxMbizIBTmYTDtkerkIQS8/CbP1BRuyt8V/8BCsy1g=="],
 
     "@turbo/darwin-64": ["@turbo/darwin-64@2.11.3", "", { "os": "darwin", "cpu": "x64" }, "sha512-D4EIKTgPpxFQL5aZNbNqy57XOiRldM+mwP1ME9ZLM4DJoV3oNK7GKyQWVusz1umjiFNmLvunNGw7Jq4RUyYL3A=="],
 
@@ -867,6 +909,12 @@
     "@iwer/devui/three": ["three@0.184.0", "", {}, "sha512-wtTRjG92pM5eUg/KuUnHsqSAlPM296brTOcLgMRqEeylYTh/CdtvKUvCyyCQTzFuStieWxvZb8mVTMvdPyUpxg=="],
 
     "@iwer/sem/three": ["three@0.165.0", "", {}, "sha512-cc96IlVYGydeceu0e5xq70H8/yoVT/tXBxV/W8A/U6uOq7DXc4/s1Mkmnu6SqoYGhSRWWYFOhVwvq6V0VtbplA=="],
+
+    "@pascal-app/plugin-landscape/@pascal-app/core": ["@pascal-app/core@1.0.3", "", { "dependencies": { "dedent": "^1.7.1", "idb-keyval": "^6.2.2", "mitt": "^3.0.1", "nanoid": "^5.1.6", "zod": ">=4.5.4 <4.6", "zundo": "^2.3.0", "zustand": "^5" }, "peerDependencies": { "@react-three/drei": "^10", "@react-three/fiber": "^9", "react": "^18 || ^19", "three": "^0.186" } }, "sha512-v95AfNJZDG/N7Biwt/ZQCtZuulRtqNuwAiT3cb1/F63hqZmqmoZnTLZGCu+w0Kxu57UFK084YrbtUP+cbGo1sQ=="],
+
+    "@pascal-app/plugin-landscape/@pascal-app/editor": ["@pascal-app/editor@1.0.3", "", { "dependencies": { "@dnd-kit/core": "^6.3.1", "@dnd-kit/sortable": "^10.0.0", "@dnd-kit/utilities": "^3.2.2", "@iconify/react": "^6.0.2", "@number-flow/react": "^0.6.0", "@pascal-app/lingo": "^0.2.0", "@radix-ui/react-alert-dialog": "^1.1.15", "@radix-ui/react-context-menu": "^2.2.16", "@radix-ui/react-dialog": "^1.1.15", "@radix-ui/react-dropdown-menu": "^2.1.16", "@radix-ui/react-popover": "^1.1.15", "@radix-ui/react-select": "^2.2.6", "@radix-ui/react-separator": "^1.1.8", "@radix-ui/react-slider": "^1.3.6", "@radix-ui/react-slot": "^1.2.4", "@radix-ui/react-switch": "^1.2.6", "@radix-ui/react-tabs": "^1.1.13", "@radix-ui/react-tooltip": "^1.2.8", "@visual-json/react": "^0.4.0", "blob-stream": "^0.1.3", "class-variance-authority": "^0.7.1", "clsx": "^2.1.1", "cmdk": "^1.1.1", "fflate": "^0.8.3", "howler": "^2.2.4", "lucide-react": "^1.7.0", "manifold-3d": "3.5.1", "mitt": "^3.0.1", "motion": "^12.34.3", "nanoid": "^5.1.6", "pdfkit": "^0.19.1", "tailwind-merge": "^3.5.0", "three-bvh-csg": "^0.0.18", "three-mesh-bvh": "~0.9.8", "zod": ">=4.5.4 <4.6", "zustand": "^5.0.11" }, "peerDependencies": { "@pascal-app/core": "^1.0.3", "@pascal-app/viewer": "^1.0.3", "@react-three/drei": "^10", "@react-three/fiber": "^9", "next": ">=15", "react": "^18 || ^19", "react-dom": "^18 || ^19", "three": "^0.186" } }, "sha512-+LSJ+mxj3JsTM18aay3qexn6OKGinN38ZBko3vNdf79sge/iFWPOXquniiMpkEVtMz4lRHlLM2+fc6WvXT5RHA=="],
+
+    "@pascal-app/plugin-landscape/@pascal-app/viewer": ["@pascal-app/viewer@1.0.3", "", { "dependencies": { "three-bvh-csg": "^0.0.18", "three-mesh-bvh": "^0.9.8", "zustand": "^5" }, "peerDependencies": { "@pascal-app/core": "^1.0.3", "@react-three/drei": "^10", "@react-three/fiber": "^9", "react": "^18 || ^19", "react-dom": "^18 || ^19", "three": "^0.186" } }, "sha512-HCoKEPVDhDJOl+ydivkwnwpE2If+EK6BgSwMsF/SZqZQJ9jkpt5ZTL1osVutr6XQP916Hf/pbHML8qhWqYjBkw=="],
 
     "@pascal-app/plugin-pool/@pascal-app/core": ["@pascal-app/core@1.0.0", "", { "dependencies": { "dedent": "^1.7.1", "idb-keyval": "^6.2.2", "mitt": "^3.0.1", "nanoid": "^5.1.6", "zod": ">=4.5.4 <4.6", "zundo": "^2.3.0", "zustand": "^5" }, "peerDependencies": { "@react-three/drei": "^10", "@react-three/fiber": "^9", "react": "^18 || ^19", "three": "^0.186" } }, "sha512-EKbRxIU6ZKugnouKcPAQ3l+zZYXHDce5pqw7yCp8ZeceSGIDDl5p2wTM41BWpF1Pn5MpL0RTbysiPNl/3frBEA=="],
 

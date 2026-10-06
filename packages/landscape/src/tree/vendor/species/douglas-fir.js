@@ -8,8 +8,8 @@ import { broadleafControls } from './broadleaf-controls.js';
 export const douglasFir = {
   name: 'Douglas Fir',
   latin: 'Pseudotsuga menziesii',
-  bark: 'douglas_fir_albedo.png',
-  leaf: 'douglas_fir_needle_albedo.png',
+  bark: 'douglas_fir_albedo.webp',
+  leaf: 'douglas_fir_needle_albedo.webp',
   biome: 'temperate',
   tileWorldSize: 1.3,
   controls: broadleafControls,

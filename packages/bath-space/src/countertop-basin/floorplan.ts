@@ -1,3 +1,5 @@
+
+import { basinModelRotation } from './orientation'
 import {
   type AnyNode, type AnyNodeId, type FloorplanMoveTarget, type GeometryContext,
   useLiveNodeOverrides, useScene, sceneRegistry,
@@ -21,7 +23,7 @@ export function basinFloorplan(node: BasinNode, ctx: GeometryContext) {
       if (host) nodes[host.id] = host
     }
   }
-  const pose = basinLevelPose(node, nodes), c = Math.cos(pose.rotation), s = Math.sin(pose.rotation)
+  const pose = basinLevelPose(node, nodes), c = Math.cos(basinModelRotation(pose.rotation)), s = Math.sin(basinModelRotation(pose.rotation))
   return { kind: 'polygon' as const, fill: '#ffffff', stroke: ctx.viewState?.selected ? ctx.viewState.palette?.selectedStroke ?? '#8b5cf6' : '#737373', strokeWidth: 0.015, cursor: 'move',
     points: (node.type === SEMI_RECESSED_BASIN ? semiRecessedOutline : basinOutline)(node.shape, node.width, basinDepth(node)).map(([x, z]) =>
       [pose.position[0] + x * c + z * s, pose.position[2] - x * s + z * c] as [number, number]) }

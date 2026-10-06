@@ -8,11 +8,11 @@ export const blackbrush = {
   name: 'Blackbrush',
   latin: 'Coleogyne ramosissima',
   category: 'shrub',
-  bark: 'blackbrush_branch_albedo.png',
-  leaf: 'blackbrush_albedo.png',
+  bark: 'blackbrush_branch_albedo.webp',
+  leaf: 'blackbrush_albedo.webp',
   biome: 'desert',
-  groundTexture: 'desert_ground_albedo.png',
-  rockTexture: 'desert_rock_albedo.png',
+  groundTexture: 'desert_ground_albedo.webp',
+  rockTexture: 'desert_rock_albedo.webp',
   tileWorldSize: 0.4,
   plantSink: 0.015,   // splayed multi-stem crown: deep sink buries the crotch
   barkTint: 0xbfc7d9, // cool the warm-brown wood tile toward the slate twigs

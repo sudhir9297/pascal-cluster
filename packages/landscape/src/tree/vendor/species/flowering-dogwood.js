@@ -9,8 +9,8 @@ import { broadleafControls } from './broadleaf-controls.js';
 export const floweringDogwood = {
   name: 'Flowering Dogwood',
   latin: 'Cornus florida',
-  bark: 'flowering_dogwood_albedo.png',
-  leaf: 'flowering_dogwood_single_albedo.png',
+  bark: 'flowering_dogwood_albedo.webp',
+  leaf: 'flowering_dogwood_single_albedo.webp',
   biome: 'temperate',
   tileWorldSize: 0.65,
   controls: broadleafControls,

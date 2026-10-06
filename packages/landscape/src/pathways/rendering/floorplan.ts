@@ -1,3 +1,4 @@
+import { landscapeToolColors } from '../../shared/tool-colors'
 import type { FloorplanGeometry, GeometryContext } from '@pascal-app/core'
 import { currentPathway, isNaturalStoneFinish, type PathwayNode } from '../domain/schema'
 import { pathTerminalEnds } from '../domain/terminals'
@@ -5,9 +6,9 @@ import { edgeCurve, evaluate } from '../domain/curves'
 import { isCurvedPathEdge, showPathEdgeControls, visiblePathVertices } from '../domain/edit-curve'
 import { buildOutline } from './outline'
 import { pavingJoints, polygonsToPath } from './plan-finish'
-import { laidPavingTiles } from './laid-paving'
+import { pathwayStoneFootprints } from './stone-footprints'
 import { pavingBorder } from './paving-border'
-import { naturalStones } from './natural-stones'
+import { subtractPoolCutouts, type PoolCutoutSurface } from '../../shared/pool-cutouts'
 
 function stoneShade(color: string, index: number, amount: number): string {
   const delta = (index - 1.5) * amount * 12
@@ -22,14 +23,14 @@ export function buildPathwayFloorplan(
 ): FloorplanGeometry {
   node = currentPathway(node)
   const selected = ctx.viewState?.selected || ctx.viewState?.highlighted
-  const outline = buildOutline(node)
+  const outline = subtractPoolCutouts(buildOutline(node), node as unknown as PoolCutoutSurface, ctx)
   const paving: FloorplanGeometry = {
     kind: 'path',
     d: polygonsToPath(outline),
     fill: node.color,
     fillRule: 'evenodd',
     stroke: selected
-      ? (ctx.viewState?.palette?.selectedStroke ?? '#f97316')
+      ? (ctx.viewState?.palette?.selectedStroke ?? landscapeToolColors.selected)
       : '#837b6c',
     strokeWidth: selected ? 0.045 : 0.018,
   }
@@ -37,9 +38,7 @@ export function buildPathwayFloorplan(
   const natural = isNaturalStoneFinish(node.finish)
   const open = node.finish === 'laidStone' || natural
   const surface: FloorplanGeometry[] = open ? [] : [paving]
-  const tiles = natural
-    ? naturalStones(node).map((stone) => ({ ...stone, border: false }))
-    : laidPavingTiles(node)
+  const tiles = pathwayStoneFootprints(node, ctx)
   if (node.finish === 'laidStone' || natural) surface.push(...tiles.map(({ ring, holes, border, shade }): FloorplanGeometry => ({
     kind: 'path', d: [ring, ...(holes ?? [])].map((r) => `M ${r.map(([x, z]) => `${x} ${z}`).join(' L ')} Z`).join(' '), fillRule: 'evenodd',
     fill: border ? '#9a9d88' : natural

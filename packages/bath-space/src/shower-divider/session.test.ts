@@ -50,7 +50,8 @@ test('split-view leases share one draft, create once, consume cancellation and r
     expect(
       (created[0] as { create: { node: { position: number[] } }[] }).create[0]!
         .node.position[1],
-    ).toBe(1.5)
+    ).toBe(0)
+    expect(canvas.session.getSnapshot().elevation).toBe(0)
     expect(plan.session.getSnapshot().start).toEqual([2, 0])
     expect(cancelActiveTool()).toBe(true)
     expect(plan.session.getSnapshot().start).toBeNull()

@@ -1,9 +1,0 @@
-{
-  "tool": "built-in image_gen",
-  "transparent_background": true,
-  "promptSet": {
-    "open": "Transparent catalog thumbnail based on open-reference.png. Single left circular rosette and forward support arm, horizontal chrome spindle, upward rounded right end stop, hollow off-white paper roll with cardboard core and curved tail. Three-quarter view, realistic metal and paper, soft product lighting. Center complete object with padding. Remove wall, floor and editor UI; no text, logos or extra fixtures.",
-    "double": "Transparent catalog thumbnail based on double-reference.png. Two round chrome wall rosettes, two forward arms, horizontal spindle with collars, hollow off-white paper roll and curved tail. Slightly elevated three-quarter view showing both supports. Realistic fittings, fine paper layers, soft lighting. Remove flush plate, wall, floor and editor UI; no text or extra parts.",
-    "covered": "Transparent catalog thumbnail based on covered-reference.png. Two circular rosettes and forward arms, spindle, white paper roll, curved half-cylinder silver cover, rear hinge barrel, front lip and hanging tail. Open side reveals cardboard core. Elevated three-quarter view, realistic chrome and paper. Remove wall, floor and editor UI; no text, logos or other fixtures."
-  }
-}

@@ -11,10 +11,18 @@ import {
   type Curve,
 } from './curves'
 import type { PathEdge, PathGraph, PathVertex, Point } from './schema'
+import { edgeElevationOffsetAt } from './grade'
 
 const id = () => crypto.randomUUID()
 const cross = (a: Point, b: Point) => a[0] * b[1] - a[1] * b[0]
 const subtract = (a: Point, b: Point): Point => [a[0] - b[0], a[1] - b[1]]
+
+export class PathwayGradeConflictError extends Error {
+  constructor() {
+    super('Existing walkways meet at different elevations. Match their junction grades before joining them.')
+    this.name = 'PathwayGradeConflictError'
+  }
+}
 
 function intersections(a: Curve, b: Curve) {
   const hits: [number, number][] = []
@@ -101,12 +109,15 @@ export function addCurves(
     ...v,
     point: [...v.point],
   }))
-  const vertexAt = (point: Point) => {
+  const vertexAt = (point: Point, elevationOffset?: number) => {
     let vertex = vertices.find((v) => distance(v.point, point) < EPSILON)
     if (!vertex) {
       vertex = { id: id(), point }
       vertices.push(vertex)
     }
+    // Existing authored junctions win; a new branch inherits the route it joins.
+    if (vertex.elevationOffset === undefined && elevationOffset !== undefined)
+      vertex.elevationOffset = elevationOffset
     return vertex.id
   }
   const edges = [...graph.edges]
@@ -128,9 +139,20 @@ export function addCurves(
     curve: edgeCurve(full, edge),
     cuts: [0, 1],
   }))
+  // Freeze profiles before assigning shared junctions so processing order cannot
+  // change interpolation on later portions of the same original edge.
+  const gradeGraph = { vertices: vertices.map((vertex) => ({ ...vertex })), edges }
+  const existingEdges = new Set(graph.edges.map((edge) => edge.id))
   for (let i = 0; i < data.length; i++) {
     for (let j = i + 1; j < data.length; j++) {
       for (const [t, u] of intersections(data[i]!.curve, data[j]!.curve)) {
+        // The graph has one height per junction: never silently choose one of
+        // two previously authored routes when merging their crossing.
+        if (existingEdges.has(data[i]!.edge.id) && existingEdges.has(data[j]!.edge.id)) {
+          const a = edgeElevationOffsetAt(gradeGraph, data[i]!.edge, t) ?? 0
+          const b = edgeElevationOffsetAt(gradeGraph, data[j]!.edge, u) ?? 0
+          if (Math.abs(a - b) > 0.01) throw new PathwayGradeConflictError()
+        }
         data[i]!.cuts.push(t)
         data[j]!.cuts.push(u)
       }
@@ -144,8 +166,8 @@ export function addCurves(
     for (let i = 1; i < sorted.length; i++) {
       const c = slice(curve, sorted[i - 1]!, sorted[i]!)
       if (sample(c).every((p) => distance(p.point, c[0]) < EPSILON)) continue
-      const from = vertexAt(c[0]),
-        to = vertexAt(c[3])
+      const from = vertexAt(c[0], edgeElevationOffsetAt(gradeGraph, edge, sorted[i - 1]!)),
+        to = vertexAt(c[3], edgeElevationOffsetAt(gradeGraph, edge, sorted[i]!))
       const existing = result.find((e) => {
         const same = e.from === from && e.to === to
         const reverse = e.from === to && e.to === from
