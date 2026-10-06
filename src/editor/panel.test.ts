@@ -8,6 +8,7 @@ test('pool design steps navigate without changing the active editor tool', async
   const reviewPath = import.meta.resolve('./review-panel')
   const selectionPath = import.meta.resolve('./pool-selection')
   const fittingPath = import.meta.resolve('../design/pool-fitting-layout')
+  const outlinePath = import.meta.resolve('./outline-control-state')
   const sectionPath = import.meta.resolve('./pool-section-bar')
   const process = Bun.spawn([Bun.which('bun')!, '-e', `
     import { mock } from 'bun:test'
@@ -24,6 +25,7 @@ test('pool design steps navigate without changing the active editor tool', async
     mock.module('@pascal-app/core', () => ({ useScene: selector => selector({ nodes: {} }) }))
     mock.module('@pascal-app/viewer', () => ({ useViewer: selector => selector({ selection: { selectedIds: [], levelId: null } }) }))
     mock.module('@pascal-app/editor', () => ({ useEditor }))
+    mock.module(${JSON.stringify(outlinePath)}, () => ({ usePoolOutlineControls: () => ({ nodeId: null, showAll: false }) }))
     mock.module(${JSON.stringify(shellPath)}, () => ({ PoolShellSettings() {} }))
     mock.module(${JSON.stringify(systemsPath)}, () => ({ PoolSystemsPanel() {} }))
     mock.module(${JSON.stringify(reviewPath)}, () => ({ PoolReviewPanel() {} }))

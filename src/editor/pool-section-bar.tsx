@@ -3,12 +3,12 @@
 import { useLiveNodeOverrides, useScene } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import type { PoolNode } from '../core/schema'
-import { planPoolFittings } from '../design/pool-fitting-layout'
+import { getPoolFittingSummary } from '../design/pool-fitting-layout'
 import { POOL_SHAPE_OPTIONS } from '../design/shapes'
 import { getPoolFinishSettings } from '../design/pool-finishes'
 import { getExplicitlySelectedPool } from './pool-selection'
 import { buildPoolSectionModel } from './pool-section-model'
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 
 export function PoolSectionBarPortal({ poolId }: { poolId?: string } = {}): ReactNode {
@@ -32,83 +32,22 @@ export default function PoolSectionBarInspector({ node }: { node: PoolNode }) {
 }
 
 export function PoolSectionBar() {
-  const barRef = useRef<HTMLDivElement>(null)
-  const [placement, setPlacement] = useState<{ left: number; width: number } | null>(null)
   const selectedIds = useViewer((state) => state.selection.selectedIds)
   const pool = useScene((state) => getExplicitlySelectedPool(state.nodes, selectedIds))
-  const volume = useMemo(() => pool ? planPoolFittings(pool).volume : null, [pool])
+  const volume = useMemo(() => pool ? getPoolFittingSummary(pool).volume : null, [pool])
   const [expanded, setExpanded] = useState(true)
 
   useEffect(() => {
     if (pool) setExpanded(true)
   }, [pool?.id])
 
-  useLayoutEffect(() => {
-    if (!pool) return
-    const bounds = barRef.current?.closest('[data-viewer-bounds]') ?? document.body
-    let inspector: Element | null = null
-    let frame = 0
-    const measure = () => {
-      frame = 0
-      const rect = bounds.getBoundingClientRect()
-      const panel = bounds.querySelector('[data-editor-inspector]')
-      const panelRect = panel?.getBoundingClientRect()
-      const sectionTop = rect.bottom - 88 - (barRef.current?.getBoundingClientRect().height ?? (expanded ? 252 : 46))
-      const overlaps = panelRect && panelRect.bottom > sectionTop && panelRect.top < rect.bottom - 88
-      let start = rect.left
-      let end = rect.right
-      if (overlaps && panelRect) {
-        const leftSpace = panelRect.left - 12 - rect.left
-        const rightSpace = rect.right - panelRect.right - 12
-        if (leftSpace >= rightSpace) end = panelRect.left - 12
-        else start = panelRect.right + 12
-      }
-      const width = Math.max(0, Math.min(720, end - start - 24))
-      const left = start - rect.left + (end - start) / 2
-      setPlacement((previous) => previous && Math.abs(previous.left - left) < 1 && Math.abs(previous.width - width) < 1
-        ? previous : { left, width })
-    }
-    const schedule = () => { if (!frame) frame = requestAnimationFrame(measure) }
-    const resize = new ResizeObserver(schedule)
-    const inspect = new MutationObserver(schedule)
-    const children = new MutationObserver(() => {
-      const next = bounds.querySelector('[data-editor-inspector]')
-      if (next !== inspector) {
-        inspect.disconnect()
-        if (inspector) resize.unobserve(inspector)
-        inspector = next
-        if (inspector) {
-          resize.observe(inspector)
-          inspect.observe(inspector, { attributes: true, attributeFilter: ['style', 'class'] })
-        }
-      }
-      schedule()
-    })
-    resize.observe(bounds)
-    if (barRef.current) resize.observe(barRef.current)
-    children.observe(bounds, { childList: true, subtree: true })
-    window.addEventListener('resize', schedule)
-    const next = bounds.querySelector('[data-editor-inspector]')
-    inspector = next
-    if (inspector) {
-      resize.observe(inspector)
-      inspect.observe(inspector, { attributes: true, attributeFilter: ['style', 'class'] })
-    }
-    measure()
-    return () => {
-      cancelAnimationFrame(frame)
-      resize.disconnect()
-      inspect.disconnect()
-      children.disconnect()
-      window.removeEventListener('resize', schedule)
-    }
-  }, [pool?.id, expanded])
-
   if (!pool) return null
 
   return (
-    <div className="pointer-events-none absolute text-white" ref={barRef} style={{ bottom: 88, left: placement?.left ?? '50%', width: placement?.width ?? 'min(720px, calc(100% - 24px))', transform: 'translateX(-50%)', zIndex: 40 }}>
-      <section aria-label="Selected pool section" className="pointer-events-auto overflow-hidden rounded-2xl border border-white/15" style={{ background: 'rgba(25, 26, 28, 0.96)', boxShadow: '0 16px 45px rgba(0, 0, 0, 0.35)', backdropFilter: 'blur(16px)' }}>
+    // Reserve the right overlay column even when its panels are closed. This
+    // keeps the section clear of both the inspector and the shortcuts card.
+    <div className="pointer-events-none absolute text-white" style={{ bottom: 88, left: 12, width: 'max(0px, calc(100% - 372px))', zIndex: 40 }}>
+      <section aria-label="Selected pool section" className="pointer-events-auto mx-auto w-full max-w-[720px] overflow-hidden rounded-2xl border border-white/15" style={{ background: 'rgba(25, 26, 28, 0.96)', boxShadow: '0 16px 45px rgba(0, 0, 0, 0.35)', backdropFilter: 'blur(16px)' }}>
         <div className="flex min-h-11 items-center justify-between gap-3 px-4 py-2">
           <div className="flex min-w-0 items-baseline gap-2">
             <h3 className="shrink-0 text-sm font-semibold">Section A–A</h3>
@@ -131,7 +70,7 @@ function PoolSectionDiagram({ pool: storedPool }: { pool: PoolNode }) {
   const pool = draft ?? storedPool
   const section = useMemo(() => buildPoolSectionModel(pool), [pool])
   const sectionRef = useRef<SVGSVGElement>(null)
-  const dragging = useRef<{ pointerId: number; handle: SectionHandle; rect: DOMRect; lastPreview: number } | null>(null)
+  const dragging = useRef<{ pointerId: number; handle: SectionHandle; rect: DOMRect } | null>(null)
   const pendingMove = useRef<{ x: number; y: number } | null>(null)
   const moveFrame = useRef(0)
   const [activeHandle, setActiveHandle] = useState<SectionHandle | null>(null)
@@ -197,13 +136,7 @@ function PoolSectionDiagram({ pool: storedPool }: { pool: PoolNode }) {
     const updated = { ...current, [session.handle]: next }
     draftRef.current = updated
     setDraft(updated)
-    // A full 3D mesh rebuild is much dearer than the SVG update. Publish a
-    // preview at roughly 12 fps while the local section follows every frame.
-    const now = performance.now()
-    if (now - session.lastPreview >= 80) {
-      session.lastPreview = now
-      useLiveNodeOverrides.getState().set(storedPool.id, { [session.handle]: next, __poolSectionPreview: true })
-    }
+    useLiveNodeOverrides.getState().set(storedPool.id, { [session.handle]: next, __poolSectionPreview: true })
   }
 
   function handlePointerMove(event: PointerEvent<SVGSVGElement>) {
@@ -244,7 +177,7 @@ function PoolSectionDiagram({ pool: storedPool }: { pool: PoolNode }) {
     event.stopPropagation()
     const rect = sectionRef.current?.getBoundingClientRect()
     if (!rect) return
-    dragging.current = { pointerId: event.pointerId, handle, rect, lastPreview: 0 }
+    dragging.current = { pointerId: event.pointerId, handle, rect }
     setActiveHandle(handle)
     useViewer.getState().setInputDragging(true)
     sectionRef.current?.setPointerCapture(event.pointerId)
@@ -299,7 +232,7 @@ function PoolSectionDiagram({ pool: storedPool }: { pool: PoolNode }) {
 
   return <div className="border-t border-white/10 px-4 pb-3 pt-2">
     <div style={{ display: 'flex', alignItems: 'stretch', gap: 12 }}>
-      <div style={{ flex: '0 0 136px', minWidth: 0 }}>
+      <div style={{ flex: '0 0 clamp(80px, 20%, 136px)', minWidth: 0 }}>
         <div className="mb-1 text-[10px] text-white/45">Plan · {shape}</div>
         <svg aria-label={`${shape} pool outline, ${dimensions}`} role="img" style={{ display: 'block', width: '100%', height: 119 }} viewBox="0 0 180 125">
           <defs><clipPath id={`pool-plan-${id}`}><path d={section.planPath} /></clipPath></defs>

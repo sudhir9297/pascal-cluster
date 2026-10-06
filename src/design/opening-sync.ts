@@ -469,15 +469,16 @@ function groundOpeningSlabsEqual(left: SlabNode, right: SlabNode) {
  */
 export function syncPoolGroundOpenings(
   nodes: Record<string, PoolSceneNode>,
+  affectedOwnerIds?: ReadonlySet<string>,
 ): PoolGroundOpeningChanges {
   const pools = Object.values(nodes)
-    .filter((node): node is PoolNode => node.type === 'pool:pool')
+    .filter((node): node is PoolNode => node.type === 'pool:pool' && (!affectedOwnerIds || affectedOwnerIds.has(node.id)))
     .sort((left, right) => left.id.localeCompare(right.id))
   const connections = Object.values(nodes)
     .flatMap((node) => {
-      const parsed = PoolSharedJointNode.safeParse(node).success
-        ? PoolSharedJointNode.safeParse(node)
-        : PoolSpilloverNode.safeParse(node)
+      if (affectedOwnerIds && !affectedOwnerIds.has(node.id)) return []
+      if (node.type !== 'pool:shared-joint' && node.type !== 'pool:spillover') return []
+      const parsed = node.type === 'pool:shared-joint' ? PoolSharedJointNode.safeParse(node) : PoolSpilloverNode.safeParse(node)
       return parsed.success ? [parsed.data] : []
     })
     .sort((left, right) => left.id.localeCompare(right.id))
@@ -487,7 +488,7 @@ export function syncPoolGroundOpenings(
     const owner = poolGroundOpeningOwner(node)
     const connectionOwner = connectionGroundOpeningOwner(node)
     const ownerKey = owner ?? connectionOwner
-    if (!ownerKey) continue
+    if (!ownerKey || (affectedOwnerIds && !affectedOwnerIds.has(ownerKey))) continue
     const helpers = helpersByOwner.get(ownerKey)
     if (helpers) helpers.push(node as SlabNode)
     else helpersByOwner.set(ownerKey, [node as SlabNode])
@@ -586,17 +587,18 @@ export function syncPoolGroundOpenings(
 /** Reconciles pool-owned holes without modifying manual, stair, or elevator openings. */
 export function syncPoolSlabOpenings(
   nodes: Record<string, PoolSceneNode>,
+  affectedLevelIds?: ReadonlySet<string>,
 ): PoolOpeningUpdate[] {
   const pools = Object.values(nodes)
-    .filter((node): node is PoolNode => node.type === 'pool:pool' && node.visible !== false)
+    .filter((node): node is PoolNode => node.type === 'pool:pool' && (!affectedLevelIds || affectedLevelIds.has((node as PoolNode).parentId ?? '')) && node.visible !== false)
     .sort((left, right) => left.id.localeCompare(right.id))
   const slabs = Object.values(nodes).filter(
-    (node): node is SlabNode => node.type === 'slab' && !isPoolGroundOpeningSlab(node),
+    (node): node is SlabNode => node.type === 'slab' && (!affectedLevelIds || affectedLevelIds.has(node.parentId ?? '')) && !isPoolGroundOpeningSlab(node),
   )
   const connections = Object.values(nodes).flatMap((node) => {
-    const parsed = PoolSharedJointNode.safeParse(node).success
-      ? PoolSharedJointNode.safeParse(node)
-      : PoolSpilloverNode.safeParse(node)
+    if (node.type !== 'pool:shared-joint' && node.type !== 'pool:spillover') return []
+    if (affectedLevelIds && !affectedLevelIds.has(node.parentId ?? '')) return []
+    const parsed = node.type === 'pool:shared-joint' ? PoolSharedJointNode.safeParse(node) : PoolSpilloverNode.safeParse(node)
     return parsed.success && parsed.data.visible !== false ? [parsed.data] : []
   })
   const updates: PoolOpeningUpdate[] = []
@@ -626,6 +628,11 @@ export function syncPoolSlabOpenings(
       )[0]?.id ?? null
   }
 
+  const plannedPoolHoles = pools.map(pool => {
+    const polygon = getPoolOpeningPolygon(pool)
+    return { ownerId: pool.id, polygon, supportId: resolveSupportSlabId(pool, polygon) }
+  })
+  const plannedConnectionHoles = connections.map(connection => ({ connection, ownerId: connection.id, polygon: getConnectionOpeningPolygon(connection) }))
   for (const slab of slabs) {
     const existingHoles = slab.holes ?? []
     const existingMetadata = normalizeMetadata(slab)
@@ -636,22 +643,10 @@ export function syncPoolSlabOpenings(
     const preserved = existingHoles
       .map((polygon, index) => ({ polygon, metadata: existingMetadata[index]! }))
       .filter((_, index) => !managedHoleIndices.has(index))
-    const poolHoles = pools
-      .map((pool) => ({
-        ownerId: pool.id,
-        polygon: getPoolOpeningPolygon(pool),
-      }))
-      .filter(({ ownerId, polygon }) => {
-        const pool = pools.find((candidate) => candidate.id === ownerId)
-        return pool ? resolveSupportSlabId(pool, polygon) === slab.id : false
-      })
+    const poolHoles = plannedPoolHoles
+      .filter(({ supportId }) => supportId === slab.id)
       .filter(({ polygon }) => polygonContainsPolygon(slab.polygon, polygon))
-    const connectionHoles = connections
-      .map((connection) => ({
-        connection,
-        ownerId: connection.id,
-        polygon: getConnectionOpeningPolygon(connection),
-      }))
+    const connectionHoles = plannedConnectionHoles
       .filter(({ connection }) => connection.parentId === slab.parentId)
       .filter(({ connection, polygon }) =>
         connection.type === 'pool:spillover' || polygonContainsPolygon(slab.polygon, polygon),

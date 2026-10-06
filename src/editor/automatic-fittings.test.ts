@@ -73,3 +73,29 @@ test('scene subscription reconciles resize and restored snapshots', () => {
     useScene.temporal.setState(history)
   }
 })
+
+test('targeted fitting synchronization ignores unchanged pools', async () => {
+  const { createDefaultPoolAttachments } = await import('../design/default-pool-attachments')
+  const first = PoolNode.parse({ automaticFittings: true }), second = PoolNode.parse({ automaticFittings: true })
+  const children = [...createDefaultPoolAttachments(first), ...createDefaultPoolAttachments(second)]
+  const patch = { length: 20, width: 12 }
+  const larger = { ...first, ...patch, ...poolParametrics.derive!({ ...first, ...patch }, patch) }
+  // Both pools have moved, but this pass is explicitly scoped to the first.
+  const movedSecond = { ...second, depth: 3 }
+  const nodes = Object.fromEntries([larger, movedSecond, ...children].map(n => [n.id, n]))
+  const changes = syncAutomaticPoolFittings(nodes, new Set([first.id]))
+  expect(changes.update.length).toBeGreaterThan(0)
+  expect(changes.update.every(u => (nodes[u.id] as { poolId?: string }).poolId === first.id)).toBe(true)
+})
+
+test('sync diff includes old and new levels and skips unrelated scene edits', async () => {
+  const { collectPoolSyncChanges } = await import('./opening-system')
+  const pool = PoolNode.parse({ parentId: 'level_old' }) as unknown as AnyNode
+  const next = { ...pool, parentId: 'level_new' } as AnyNode
+  const changes = collectPoolSyncChanges({ [pool.id]: next }, { [pool.id]: pool })
+  expect([...changes.poolIds]).toEqual([pool.id])
+  expect(changes.levelIds.has('level_old')).toBe(true)
+  expect(changes.levelIds.has('level_new')).toBe(true)
+  const appearance = { ...pool, waterColor: '#000000' } as unknown as AnyNode
+  expect(collectPoolSyncChanges({ [pool.id]: appearance }, { [pool.id]: pool }).relevant).toBe(false)
+})

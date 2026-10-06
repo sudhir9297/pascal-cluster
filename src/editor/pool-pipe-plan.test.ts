@@ -11,6 +11,7 @@ import { poolDrainDefinition } from '../drain/core/definition'
 import { poolSkimmerDefinition } from '../skimmer/core/definition'
 import { poolInletDefinition } from '../inlet/core/definition'
 import { commitPoolPipes, preparePoolPipes } from './pool-pipe-plan'
+import { preparePoolPipesAsync } from './pool-pipe-client'
 import { poolConnectionState, deletePoolConnection } from './pool-connection-state'
 
 const before = useScene.getState()
@@ -168,4 +169,78 @@ test('delete includes detached generated pieces and protects a shared connection
   const snapshot = useScene.getState().nodes
   expect(() => deletePoolConnection(pool.id, 'inlets')).toThrow('serves other pool connections')
   expect(useScene.getState().nodes).toBe(snapshot)
+})
+
+test.each(['inlets', 'skimmers', 'drains'] as const)('%s: serialized worker search matches native socket placement', async circuit => {
+  const { collectPoolPipeInput, serializePoolPipeInput } = await import('./pool-pipe-plan')
+  const { searchSerializedPoolPipes } = await import('../design/pool-pipe-worker-search')
+  const { pool } = setup('kidney')
+  const options = { ...DEFAULT_POOL_PIPE_OPTIONS, circuit }
+  const expected = preparePoolPipes(pool.id, options)
+  const actual = searchSerializedPoolPipes(structuredClone(serializePoolPipeInput(collectPoolPipeInput(pool.id, options))))
+  expect(actual.preview).toEqual(expected.preview)
+  const paths = actual.pipes.flatMap(p => p.path.flat())
+  const expectedPaths = expected.pipes.flatMap(p => p.path.flat())
+  expect(paths).toHaveLength(expectedPaths.length)
+  paths.forEach((value, i) => expect(value).toBeCloseTo(expectedPaths[i]!, 10))
+  expect(actual.fittings.map(p => p.position)).toEqual(expected.fittings.map(p => p.position))
+})
+
+test('real worker plans a circuit asynchronously and supports cancellation', async () => {
+  const { preparePoolPipesAsync } = await import('./pool-pipe-client')
+  const { pool } = setup()
+  const request = preparePoolPipesAsync(pool.id, DEFAULT_POOL_PIPE_OPTIONS)
+  const plan = await request.promise
+  expect(plan.poolId).toBe(pool.id)
+  expect(plan.pipes.length).toBeGreaterThan(0)
+  const cancelled = preparePoolPipesAsync(pool.id, DEFAULT_POOL_PIPE_OPTIONS)
+  cancelled.cancel()
+  await expect(cancelled.promise).rejects.toMatchObject({ name: 'AbortError' })
+}, 30000)
+
+
+test.each(['inlets', 'skimmers', 'drains'] as const)('%s: preview and creation survive unavailable routing workers', async (circuit) => {
+  const { pool } = setup()
+  const worker = globalThis.Worker
+  globalThis.Worker = class {
+    constructor() { throw new Error('Worker blocked by host') }
+  } as unknown as typeof Worker
+  try {
+    const request = preparePoolPipesAsync(pool.id, { ...DEFAULT_POOL_PIPE_OPTIONS, circuit })
+    const plan = await request.promise
+    expect(plan.preview.length).toBeGreaterThan(0)
+    expect(plan.corners.length).toBe(4)
+    const commit = spyOn(useScene.getState(), 'applyNodeChanges').mockImplementation(() => {})
+    spies.push(commit)
+    commitPoolPipes(plan)
+    expect(commit).toHaveBeenCalledTimes(1)
+  } finally { globalThis.Worker = worker }
+})
+
+test('worker load errors recover the route preview', async () => {
+  const { pool } = setup()
+  const worker = globalThis.Worker
+  globalThis.Worker = class {
+    onerror?: (event: { preventDefault(): void }) => void
+    constructor() { queueMicrotask(() => this.onerror?.({ preventDefault() {} })) }
+    terminate() {}
+  } as unknown as typeof Worker
+  try {
+    const plan = await preparePoolPipesAsync(pool.id, DEFAULT_POOL_PIPE_OPTIONS).promise
+    expect(plan.preview.length).toBeGreaterThan(0)
+    expect(plan.snapshot).toBe(useScene.getState().nodes)
+  } finally { globalThis.Worker = worker }
+})
+
+test('cancelling a local fallback rejects without creating pipes', async () => {
+  const { pool } = setup()
+  const worker = globalThis.Worker
+  globalThis.Worker = class {
+    constructor() { throw new Error('Worker unavailable') }
+  } as unknown as typeof Worker
+  try {
+    const request = preparePoolPipesAsync(pool.id, DEFAULT_POOL_PIPE_OPTIONS)
+    request.cancel()
+    await expect(request.promise).rejects.toThrow('cancelled')
+  } finally { globalThis.Worker = worker }
 })

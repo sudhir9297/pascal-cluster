@@ -64,66 +64,53 @@ export function isAppearanceOnlyPoolChange(next: AnyNode | undefined, previous: 
   return true
 }
 
-function hasOpeningRelevantChange(
-  nextNodes: Record<string, AnyNode>,
-  previousNodes: Record<string, AnyNode>,
-) {
-  if (nextNodes === previousNodes) return false
-  const ids = new Set([...Object.keys(nextNodes), ...Object.keys(previousNodes)])
-  for (const id of ids) {
-    const nextNode = nextNodes[id]
-    const previousNode = previousNodes[id]
-    if (nextNode === previousNode) continue
-    if (isAppearanceOnlyPoolChange(nextNode, previousNode)) continue
-    if (isOpeningRelevantNode(nextNode) || isOpeningRelevantNode(previousNode)) return true
+/** One diff pass identifies the pools and levels touched by a committed edit. */
+export function collectPoolSyncChanges(nextNodes: Record<string, AnyNode>, previousNodes: Record<string, AnyNode>) {
+  const poolIds = new Set<string>()
+  const ownerIds = new Set<string>()
+  const levelIds = new Set<string>()
+  let relevant = false
+  let full = false
+  for (const id of new Set([...Object.keys(nextNodes), ...Object.keys(previousNodes)])) {
+    const next = nextNodes[id], previous = previousNodes[id]
+    if (next === previous || isAppearanceOnlyPoolChange(next, previous)) continue
+    for (const value of [next, previous]) {
+      if (!value) continue
+      const type = String(value.type)
+      if (!isOpeningRelevantNode(value) && !isConnectionRelevantNode(value) && type !== 'site') continue
+      relevant = true
+      if (type === 'level' || type === 'building' || type === 'site') full = true
+      if (value.parentId) levelIds.add(value.parentId)
+      ownerIds.add(value.id)
+      if (type === 'pool:pool') poolIds.add(value.id)
+      const relation = value as unknown as { poolId?: string; sourcePoolId?: string; targetPoolId?: string; poolIds?: string[] }
+      for (const poolId of [relation.poolId, relation.sourcePoolId, relation.targetPoolId, ...(relation.poolIds ?? [])]) {
+        if (!poolId) continue
+        poolIds.add(poolId)
+        ownerIds.add(poolId)
+        for (const pool of [nextNodes[poolId], previousNodes[poolId]]) if (pool?.parentId) levelIds.add(pool.parentId)
+      }
+    }
   }
-  return false
-}
-
-function hasConnectionRelevantChange(
-  nextNodes: Record<string, AnyNode>,
-  previousNodes: Record<string, AnyNode>,
-) {
-  if (nextNodes === previousNodes) return false
-  const ids = new Set([...Object.keys(nextNodes), ...Object.keys(previousNodes)])
-  for (const id of ids) {
-    const nextNode = nextNodes[id]
-    const previousNode = previousNodes[id]
-    if (nextNode === previousNode) continue
-    if (isAppearanceOnlyPoolChange(nextNode, previousNode)) continue
-    if (isConnectionRelevantNode(nextNode) || isConnectionRelevantNode(previousNode)) return true
+  // Include connection-owned openings when either endpoint pool changes.
+  for (const value of [...Object.values(nextNodes), ...Object.values(previousNodes)]) {
+    const relation = value as unknown as { sourcePoolId?: string; targetPoolId?: string; poolIds?: string[] }
+    if ([relation.sourcePoolId, relation.targetPoolId, ...(relation.poolIds ?? [])].some(id => id && poolIds.has(id))) ownerIds.add(value.id)
   }
-  return false
+  return { relevant, full, poolIds, ownerIds, levelIds }
 }
 
 /** Keeps the site, shadow receiver, and host slabs open beneath every pool. */
 export function initializePoolOpeningSync() {
   let syncing = false
 
-  const applyUpdates = (nodes: Record<string, AnyNode>, previousNodes: Record<string, AnyNode> = {}) => {
-    const affectedPoolIds = new Set<string>()
-    if (Object.keys(previousNodes).length > 0) {
-      for (const id of new Set([...Object.keys(nodes), ...Object.keys(previousNodes)])) {
-        const next = nodes[id]
-        const previous = previousNodes[id]
-        if (next === previous) continue
-        for (const value of [next, previous]) {
-          if (!value) continue
-          if (String(value.type) === 'pool:pool') affectedPoolIds.add(id)
-          if (String(value.type) === 'pool:spillover') {
-            const spillover = value as { sourcePoolId?: string; targetPoolId?: string }
-            if (spillover.sourcePoolId) affectedPoolIds.add(spillover.sourcePoolId)
-            if (spillover.targetPoolId) affectedPoolIds.add(spillover.targetPoolId)
-          }
-          if (String(value.type) === 'pool:shared-joint') {
-            for (const poolId of (value as { poolIds?: string[] }).poolIds ?? []) affectedPoolIds.add(poolId)
-          }
-        }
-      }
-    }
-    const parentLinkUpdates = poolParentLinkUpdates(nodes)
+  const applyUpdates = (nodes: Record<string, AnyNode>, previousNodes: Record<string, AnyNode> = {}, changes = collectPoolSyncChanges(nodes, previousNodes)) => {
+    const initial = Object.keys(previousNodes).length === 0
+    const affectedPoolIds = initial || changes.full ? undefined : changes.poolIds
+    const parentLinkUpdates = poolParentLinkUpdates(nodes, affectedPoolIds)
     const genericChildUpdates: { id: string; data: Record<string, unknown> }[] = []
-    for (const previousValue of Object.values(previousNodes)) {
+    for (const previousValue of (affectedPoolIds ? [...affectedPoolIds].map(id => previousNodes[id]) : Object.values(previousNodes))) {
+      if (!previousValue || String(previousValue.type) !== 'pool:pool') continue
       const previousPool = PoolNode.safeParse(previousValue)
       if (!previousPool.success) continue
       const pool = PoolNode.safeParse(nodes[previousPool.data.id])
@@ -153,15 +140,15 @@ export function initializePoolOpeningSync() {
         }
       }
     }
-    const fittingChanges = syncAutomaticPoolFittings(nodes)
+    const fittingChanges = syncAutomaticPoolFittings(nodes, affectedPoolIds)
     const fittingNodes = { ...nodes }
     for (const node of fittingChanges.create) fittingNodes[node.id] = node as unknown as AnyNode
     for (const update of fittingChanges.update) {
       fittingNodes[update.id] = { ...fittingNodes[update.id], ...update.data } as AnyNode
     }
     for (const id of fittingChanges.delete) delete fittingNodes[id]
-    const attachmentUpdates = poolAttachmentUpdates(fittingNodes)
-    const spilloverChanges = syncPoolSpillovers(fittingNodes)
+    const attachmentUpdates = poolAttachmentUpdates(fittingNodes, affectedPoolIds)
+    const spilloverChanges = syncPoolSpillovers(fittingNodes, affectedPoolIds)
     // Resolve spillover endpoints before deriving slab/ground openings. The
     // stored node can contain the initial placeholder position and length for
     // one render; using it here leaves the floor cut behind because this sync
@@ -173,11 +160,17 @@ export function initializePoolOpeningSync() {
     }
     for (const id of spilloverChanges.delete) delete resolvedNodes[id]
 
-    const slabUpdates = syncPoolSlabOpenings(resolvedNodes)
-    const groundChanges = syncPoolGroundOpenings(resolvedNodes)
-    const connectionChanges = syncSharedPoolJoints(
-      resolvedNodes, Object.keys(previousNodes).length > 0 ? affectedPoolIds : undefined,
-    )
+    const connectionChanges = syncSharedPoolJoints(resolvedNodes, affectedPoolIds)
+    const openingNodes = connectionChanges.create.length || connectionChanges.update.length || connectionChanges.delete.length
+      ? { ...resolvedNodes } : resolvedNodes
+    for (const node of connectionChanges.create) { openingNodes[node.id] = node as unknown as AnyNode; changes.ownerIds.add(node.id) }
+    for (const update of connectionChanges.update) {
+      openingNodes[update.id] = { ...openingNodes[update.id], ...update.data } as AnyNode
+      changes.ownerIds.add(update.id)
+    }
+    for (const id of connectionChanges.delete) { delete openingNodes[id]; changes.ownerIds.add(id) }
+    const slabUpdates = syncPoolSlabOpenings(openingNodes, initial || changes.full ? undefined : changes.levelIds)
+    const groundChanges = syncPoolGroundOpenings(openingNodes, initial || changes.full ? undefined : changes.ownerIds)
     if (
       slabUpdates.length === 0 &&
       groundChanges.create.length === 0 &&
@@ -218,11 +211,10 @@ export function initializePoolOpeningSync() {
 
   applyUpdates(useScene.getState().nodes)
   return useScene.subscribe((state, previousState) => {
-    if (syncing || (
-      !hasOpeningRelevantChange(state.nodes, previousState.nodes) &&
-      !hasConnectionRelevantChange(state.nodes, previousState.nodes)
-    )) return
-    applyUpdates(state.nodes, previousState.nodes)
+    if (syncing || state.nodes === previousState.nodes) return
+    const changes = collectPoolSyncChanges(state.nodes, previousState.nodes)
+    if (!changes.relevant) return
+    applyUpdates(state.nodes, previousState.nodes, changes)
   })
 }
 

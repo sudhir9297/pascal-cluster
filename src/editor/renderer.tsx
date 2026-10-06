@@ -8,7 +8,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { Box3, Frustum, Matrix4, Mesh, Sphere, Vector3, type Group, type Material } from 'three'
 import { MeshBasicNodeMaterial, type WebGPURenderer } from 'three/webgpu'
 import { useShallow } from 'zustand/react/shallow'
-import { buildPoolCopingGeometry, buildPoolGeometry, updatePoolInteriorFinish } from '../core/geometry'
+import { buildPoolCopingGeometry, buildPoolGeometry, buildPoolPlacementPreviewGeometry, updatePoolInteriorFinish } from '../core/geometry'
 import { resolvePoolPolygon, type PoolNode } from '../core/schema'
 import { getPoolOverlaps } from '../design/pool-overlap'
 import { getPoolSpilloverNotches } from '../design/spillover-notch'
@@ -37,6 +37,8 @@ import {
 import { poolWaterSimulationHz, shouldAdvancePoolWater } from './pool-render-state'
 import { usePoolNodeHost } from './node-host'
 import { AttachmentPoolContext } from './attachment-pool'
+import { disposeObject3D } from './dispose-object'
+import { usePoolAnimationActivity } from './animation-activity'
 import { PoolOutlineControls } from './outline-controls'
 
 const NO_CONNECTED_PIPES: AnyNode[] = []
@@ -45,13 +47,14 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
   const ref = useRef<Group>(null!)
   const nodeRef = useRef<PoolNode>(storeNode)
   const resizeSessionRef = useRef<{ pool: PoolNode; positions: Map<string, [number, number, number]> } | null>(null)
+  const animationActive = usePoolAnimationActivity()
   const atmosphere = useSceneAtmosphere()
   const invalidate = useThree((state) => state.invalidate)
   // Native resize handles publish their in-flight patch here and commit it to
   // the scene only on pointer-up. Merge that patch into the render node so the
   // basin outline and floor depth follow the pointer throughout the drag.
   const liveOverride = useLiveNodeOverrides((state) => state.get(storeNode.id))
-  const sectionPreviewInProgress = Boolean(liveOverride?.__poolSectionPreview)
+  const sectionPreviewInProgress = Boolean(liveOverride?.__poolSectionPreview || liveOverride?.__poolEditPreview)
   const node = useMemo<PoolNode>(
     () => (liveOverride ? ({ ...storeNode, ...liveOverride } as PoolNode) : storeNode),
     [storeNode, liveOverride],
@@ -68,6 +71,7 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
   const selecting = useEditor((state) => state.mode === 'select')
   const horizontalResizeInProgress = Boolean(
     liveOverride
+    && !sectionPreviewInProgress
     && !('outlineTangents' in liveOverride)
     && ('length' in liveOverride || 'width' in liveOverride)
     && ('polygon' in liveOverride || 'outlineControlPoints' in liveOverride),
@@ -145,9 +149,9 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
   // Width/depth handles already provide a cheap scale/position preview below;
   // rebuilding the pool geometry from the live node on every pointer event
   // makes side-arrow dragging miss frames.
-  // Section A-A publishes a slower preview than its local SVG updates. Native
-  // resize handles still use the committed mesh and their cheap transforms.
-  const geometrySourceNode = sectionPreviewInProgress ? node : storeNode
+  // Section, settings and outline edits use a lightweight mesh. Native resize
+  // handles reuse the committed mesh with inexpensive transforms.
+  const geometrySourceNode = storeNode
   const geometrySignature = useMemo(
     () => getPoolGeometrySignature(geometrySourceNode),
     [geometrySourceNode],
@@ -164,7 +168,7 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
     const connection = candidate as unknown as { sourcePoolId?: string; targetPoolId?: string; id: string }
     return (connection.sourcePoolId === node.id || connection.targetPoolId === node.id) && Boolean(state.get(connection.id))
   }))
-  const suppressSpilloverGeometry = Boolean(liveOverride) || spilloverEditInProgress
+  const suppressSpilloverGeometry = spilloverEditInProgress
   const waterEffect = useMemo(
     () => new PoolWaterEffect(node, waterResolution, atmosphere),
     [node.id, node.waterQuality, waterResolution, atmosphere],
@@ -192,6 +196,8 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
     overlaps: getPoolOverlaps(copingNode, sceneNodes),
     spilloverNotches: suppressSpilloverGeometry ? [] : getPoolSpilloverNotches(copingNode, sceneNodes),
   }), [copingNode, sceneNodes, suppressSpilloverGeometry])
+  const editPreview = useMemo(() => sectionPreviewInProgress ? buildPoolPlacementPreviewGeometry(node) : null, [sectionPreviewInProgress, node])
+  useEffect(() => () => { if (editPreview) disposeObject3D(editPreview) }, [editPreview])
   const resizePreviewScaleY = resizePreviewTransform.scale[1]
   useLayoutEffect(() => {
     if (!depthResizeInProgress || resizePreviewScaleY === 1) return
@@ -301,7 +307,7 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
       Boolean((gl as unknown as { isWebGPURenderer?: boolean }).isWebGPURenderer),
       inputDragging,
     )
-    if (!animateWater) return
+    if (!animateWater || !animationActive || sectionPreviewInProgress) return
     waterEffect.update(gl as unknown as WebGPURenderer, delta, poolWaterSimulationHz(diameterPixels))
     // Keep demand-driven hosts rendering while animated uniforms and the
     // height-field simulation advance.
@@ -372,12 +378,14 @@ export default function PoolRenderer({ node: storeNode }: { node: PoolNode }) {
       {...handlers}
     >
       <group
+        visible={!sectionPreviewInProgress}
         position={resizePreviewTransform.position}
         scale={resizePreviewTransform.scale}
       >
         <primitive object={pool} />
         <primitive object={coping} />
       </group>
+      {editPreview && <primitive object={editPreview} />}
       <AttachmentPoolContext.Provider value={storeNode}>{node.children?.map((childId) => (
         <NodeRenderer key={`${node.id}:${childId}`} nodeId={childId as never} />
       ))}</AttachmentPoolContext.Provider>

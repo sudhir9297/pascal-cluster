@@ -4,6 +4,7 @@ import { type ReactNode, useEffect, useMemo, useRef } from 'react'
 import { type Group, type Object3D } from 'three'
 import { disposeObject3D } from './dispose-object'
 import { usePoolNodeHost } from './node-host'
+import { equipmentGeometrySignature } from './geometry-input'
 
 type PreviewNode = {
   id: string
@@ -31,7 +32,9 @@ export function GeometryPreview<Node extends PreviewNode>({
   const rootRef = useRef<Group>(null!)
   const handlers = usePoolNodeHost(node, rootRef)
   const geometryInput = geometryNode ?? node
-  const geometry = useMemo(() => buildGeometry(geometryInput), [buildGeometry, geometryInput])
+  const signature = equipmentGeometrySignature(geometryInput)
+  const stableInput = useMemo(() => geometryInput, [signature])
+  const geometry = useMemo(() => buildGeometry(stableInput), [buildGeometry, stableInput])
   useEffect(() => () => disposeObject3D(geometry), [geometry])
 
   return (

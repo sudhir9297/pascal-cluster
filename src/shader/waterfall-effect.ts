@@ -28,7 +28,7 @@ import {
   vec2,
   vec3,
   viewportDepthTexture,
-  viewportSharedTexture,
+  viewportTexture,
 } from 'three/tsl'
 import type { SceneAtmosphereSource } from '@pascal-app/viewer'
 import {
@@ -49,6 +49,7 @@ import {
 import type { WaterPreset } from './water-presets'
 
 const waterfallViewportDepth = viewportDepthTexture()
+const waterfallViewportColor = viewportTexture()
 
 export type WaterfallWaterStyle = {
   waterPreset: WaterPreset
@@ -200,12 +201,12 @@ export class WaterfallWaterEffect {
     const refractOffset = flowNormal.xz
       .mul(settings.refractionStrength * 0.018)
       .mul(1 + settings.reflectionDistortion * 0.35)
-    const refractedScene = viewportSharedTexture(screenUV.add(refractOffset).clamp(0, 1)).rgb
+    const refractedScene = waterfallViewportColor.sample(screenUV.add(refractOffset).clamp(0, 1)).rgb
     const reflectedDirection = reflect(eye.negate(), flowNormal)
     const sky = atmosphere
       ? atmosphere.reflectionRadiance(reflectedDirection)
       : mix(color('#d8eef9'), color('#1260a6'), smoothstep(-0.1, 0.8, reflectedDirection.y))
-    const reflectedScene = viewportSharedTexture(screenUV.add(refractOffset.mul(1.7)).clamp(0, 1)).rgb
+    const reflectedScene = waterfallViewportColor.sample(screenUV.add(refractOffset.mul(1.7)).clamp(0, 1)).rgb
     const reflection = mix(sky, reflectedScene, 0.42)
     const fresnel = pow(float(1).sub(facing).max(0.001), Math.max(1, settings.reflectionFresnel))
       .mul(Math.min(1.2, settings.reflectionStrength))

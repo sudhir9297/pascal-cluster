@@ -11,7 +11,9 @@ import { resolveMountedPoolStair } from '../stair/design/placement'
 import { resolveMountedWaterfall } from '../water-feature/waterfall/design/placement'
 import { getPoolDepthResolver } from './depth-profile'
 
-const schemas = [PoolDrainNode, PoolInletNode, PoolSkimmerNode, PoolStairNode, PoolWaterfallNode]
+import { poolSceneIndex } from './pool-scene-index'
+
+const schemas = { 'pool:drain': PoolDrainNode, 'pool:inlet': PoolInletNode, 'pool:skimmer': PoolSkimmerNode, 'pool:stair': PoolStairNode, 'pool:waterfall': PoolWaterfallNode }
 
 function remapWallAnchor<T extends { position: [number, number, number]; wallIndex?: number; wallT?: number }>(node: T, pool: PoolNode): T {
   const polygon = resolvePoolPolygon(pool)
@@ -43,7 +45,9 @@ function remapWallAnchor<T extends { position: [number, number, number]; wallInd
 
 /** Convert existing level siblings and recompute attachments in the pool's own frame. */
 export function resolvePoolAttachment(value: unknown, pool: PoolNode) {
-  const parsed = schemas.map((schema) => schema.safeParse(value)).find((result) => result.success)
+  if (!value || typeof value !== 'object' || !('type' in value)) return null
+  const schema = schemas[value.type as keyof typeof schemas]
+  const parsed = schema?.safeParse(value)
   if (!parsed?.success || parsed.data.poolId !== pool.id) return null
   const node = parsed.data
   const local = node.parentId === pool.id
@@ -76,18 +80,21 @@ export function resolvePoolAttachment(value: unknown, pool: PoolNode) {
   }
 }
 
-export function poolAttachmentUpdates(nodes: Record<string, unknown>) {
+export function poolAttachmentUpdates(nodes: Record<string, unknown>, affectedPoolIds?: ReadonlySet<string>) {
   const updates: { id: string; data: Record<string, unknown> }[] = []
-  for (const value of Object.values(nodes)) {
-    if (!value || typeof value !== 'object' || !('poolId' in value) || typeof value.poolId !== 'string') continue
-    const pool = PoolNode.safeParse(nodes[value.poolId])
+  const index = poolSceneIndex(nodes)
+  for (const [poolId, attachments] of index.attachments) {
+    if (affectedPoolIds && !affectedPoolIds.has(poolId)) continue
+    const pool = PoolNode.safeParse(nodes[poolId])
     if (!pool.success) continue
-    const resolved = resolvePoolAttachment(value, pool.data)
-    if (!resolved) continue
-    const data = Object.fromEntries(Object.entries(resolved).filter(([key, field]) =>
-      JSON.stringify(field) !== JSON.stringify((value as Record<string, unknown>)[key]),
-    ))
-    if (Object.keys(data).length) updates.push({ id: resolved.id, data })
+    for (const value of attachments) {
+      const resolved = resolvePoolAttachment(value, pool.data)
+      if (!resolved) continue
+      const data = Object.fromEntries(Object.entries(resolved).filter(([key, field]) =>
+        JSON.stringify(field) !== JSON.stringify((value as Record<string, unknown>)[key]),
+      ))
+      if (Object.keys(data).length) updates.push({ id: resolved.id, data })
+    }
   }
   return updates
 }

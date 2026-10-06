@@ -4,12 +4,16 @@ import { useScene } from '@pascal-app/core'
 import { useViewer } from '@pascal-app/viewer'
 import { useMemo } from 'react'
 import { useShallow } from 'zustand/react/shallow'
-import { planPoolFittings } from '../design/pool-fitting-layout'
+import { getPoolFittingSummary, placedPoolFittingIssues } from '../design/pool-fitting-layout'
+import { poolSceneIndex } from '../design/pool-scene-index'
 import { isPoolPolygonPlaceable } from '../design/shapes'
 import { resolvePoolPolygon } from '../core/schema'
 import type { PoolFilterNode } from '../filter/core/schema'
 import { getPoolFilterData } from '../filter/data/catalog'
 import { getSelectedPool } from './pool-selection'
+
+type ReviewNode = { type: string; poolId?: string | null; parentId?: string | null }
+const NO_POOL_NODES: ReviewNode[] = []
 
 type ReviewCheck = { label: string; detail: string; status: 'ready' | 'attention' | 'info' }
 
@@ -17,13 +21,15 @@ export function PoolReviewPanel({ onOpenShell, onOpenSystems }: { onOpenShell: (
   const selectedIds = useViewer((state) => state.selection.selectedIds)
   const review = useScene(useShallow((state) => {
     const pool = getSelectedPool(state.nodes, selectedIds)
-    const nodes = Object.values(state.nodes) as Array<{ type: string; poolId?: string | null; parentId?: string | null }>
-    const poolNodes = pool ? nodes.filter((node) => node.poolId === pool.id) : []
+    const nodes = Object.values(state.nodes) as ReviewNode[]
+    // Nested arrays must retain identity across repeated getSnapshot calls.
+    const poolNodes = (pool ? poolSceneIndex(state.nodes).attachments.get(pool.id) as ReviewNode[] | undefined : undefined) ?? NO_POOL_NODES
     const related = pool ? nodes.filter((node) => node.parentId === pool.parentId || node.poolId === pool.id) : []
     const filter = [...related].reverse().find((node) => node.type === 'pool:filter') as PoolFilterNode | undefined
     return {
       pool,
       filter,
+      fittings: poolNodes,
       skimmers: poolNodes.filter((node) => node.type === 'pool:skimmer').length,
       inlets: poolNodes.filter((node) => node.type === 'pool:inlet').length,
       drains: poolNodes.filter((node) => node.type === 'pool:drain').length,
@@ -36,7 +42,7 @@ export function PoolReviewPanel({ onOpenShell, onOpenSystems }: { onOpenShell: (
       spillovers: related.filter((node) => node.type === 'pool:spillover').length,
     }
   }))
-  const plan = useMemo(() => review.pool ? planPoolFittings(review.pool) : null, [review.pool])
+  const plan = useMemo(() => review.pool ? getPoolFittingSummary(review.pool) : null, [review.pool])
 
   if (!review.pool || !plan) {
     return <div className="min-h-0 flex-1 overflow-y-auto p-3">
@@ -48,6 +54,7 @@ export function PoolReviewPanel({ onOpenShell, onOpenSystems }: { onOpenShell: (
   }
 
   const pool = review.pool
+  const fittingIssues = placedPoolFittingIssues(pool, review.fittings)
   const outlineValid = isPoolPolygonPlaceable(resolvePoolPolygon(pool))
   const checks: ReviewCheck[] = [
     {
@@ -72,8 +79,8 @@ export function PoolReviewPanel({ onOpenShell, onOpenSystems }: { onOpenShell: (
     },
     {
       label: 'Fitting clearances',
-      detail: plan.issues[0] ?? 'Recommended layout fits the outline',
-      status: plan.issues.length ? 'attention' : 'ready',
+      detail: fittingIssues[0] ?? 'Placed fittings meet spacing checks',
+      status: fittingIssues.length ? 'attention' : 'ready',
     },
   ]
   const openChecks = checks.filter((check) => check.status === 'attention').length

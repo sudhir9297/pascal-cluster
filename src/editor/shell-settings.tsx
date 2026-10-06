@@ -3,7 +3,7 @@
 import { useScene } from '@pascal-app/core'
 import { SliderControl, ToggleControl, useEditor } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
-import { useState, type ReactNode } from 'react'
+import { createContext, useContext, useState, type ReactNode } from 'react'
 import { useShallow } from 'zustand/react/shallow'
 import { DEFAULT_POOL_SHAPE_DIMENSIONS, POOL_SHAPE_OPTIONS, type PoolShape } from '../design/shapes'
 import { POOL_ENTRY_FEATURES } from '../design/entry-features'
@@ -16,6 +16,10 @@ import { getSelectedPool } from './pool-selection'
 import { editPoolOutline, poolOutlineAnchors } from '../design/outline-edit'
 import { FinishSetting } from './finish-setting'
 import { WaterPresetSetting } from './water-preset-setting'
+
+import { usePoolSettingsEdit } from './use-settings-edit'
+
+const SettingsEditContext = createContext<ReturnType<typeof usePoolSettingsEdit> | null>(null)
 
 type Option = { label: string; value: string }
 
@@ -116,7 +120,8 @@ export function PoolShellSettings() {
     waterColor: state.waterColor,
     waterMode: state.waterMode,
   })))
-  const settings = drawingPool ? draft : selectedPool ?? draft
+  const edit = usePoolSettingsEdit(drawingPool ? null : selectedPool)
+  const settings = drawingPool ? draft : selectedPool ? { ...selectedPool, ...edit.patch } : draft
 
   function update(patch: Partial<PoolNode>) {
     if (patch.shallowDepth !== undefined && patch.deepDepth === undefined) {
@@ -131,6 +136,10 @@ export function PoolShellSettings() {
     }
     const next = { ...settings, ...patch } as PoolNode
     const derived = poolParametrics.derive?.(next, patch) ?? {}
+    if (selectedPool && !drawingPool && edit.previewing.current) {
+      edit.session.preview({ ...patch, ...derived })
+      return
+    }
     usePoolStore.setState({ ...patch, ...derived } as never)
     if (selectedPool && !drawingPool) {
       useScene.getState().updateNode(selectedPool.id as never, { ...patch, ...derived } as never)
@@ -151,6 +160,7 @@ export function PoolShellSettings() {
   }
 
   return (
+    <SettingsEditContext.Provider value={selectedPool && !drawingPool ? edit : null}>
     <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
       <section className="flex flex-col gap-3 border-b border-sidebar-border px-3 py-4">
         <h3 className="font-semibold text-sm">Shape</h3>
@@ -181,8 +191,8 @@ export function PoolShellSettings() {
           {POOL_SHAPE_OPTIONS.map(({ value, label }) => (
             <button
               aria-label={label}
-              aria-pressed={draft.shape === value}
-              className={`group min-w-0 overflow-hidden rounded-lg border text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${draft.shape === value ? 'border-sidebar-foreground ring-1 ring-sidebar-foreground/30' : 'border-sidebar-border hover:border-sidebar-foreground/60'}`}
+              aria-pressed={settings.shape === value}
+              className={`group min-w-0 overflow-hidden rounded-lg border text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${settings.shape === value ? 'border-sidebar-foreground ring-1 ring-sidebar-foreground/30' : 'border-sidebar-border hover:border-sidebar-foreground/60'}`}
               key={value}
               onClick={() => chooseShape(value)}
               type="button"
@@ -331,6 +341,7 @@ export function PoolShellSettings() {
         </details>
       </SettingsSection>
     </div>
+    </SettingsEditContext.Provider>
   )
 }
 
@@ -350,12 +361,20 @@ function SettingsSection({ title, summary, children }: { title: string; summary:
 }
 
 function NumberSetting({ label, value, min, max, step, unit, onChange }: { label: string; value: number; min: number; max: number; step: number; unit?: string; onChange: (value: number) => void }) {
+  const edit = useContext(SettingsEditContext)
   const precision = step.toString().split('.')[1]?.length ?? 0
   return <SliderControl
     label={label}
     max={max}
     min={min}
-    onChange={(next) => onChange(Math.max(min, Math.min(max, next)))}
+    onChange={(next) => {
+      const change = () => onChange(Math.max(min, Math.min(max, next)))
+      if (edit) edit.runPreview(change)
+      else change()
+    }}
+    onCommit={edit ? () => edit.session.commit() : undefined}
+    onCancel={edit ? () => edit.session.cancel() : undefined}
+    restoreOnCommit={!edit}
     precision={precision}
     step={step}
     unit={unit}

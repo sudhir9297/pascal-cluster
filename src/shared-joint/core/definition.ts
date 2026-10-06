@@ -1,4 +1,6 @@
-import type { NodeDefinition } from '@pascal-app/core'
+import { poolComponentFloorplan } from '../../rendering/component-floorplan'
+import { poolPlanMovableFrame } from '../../rendering/plan-frame'
+import type { AnyNodeId, NodeDefinition } from '@pascal-app/core'
 import { PoolSharedJointNode } from './schema'
 import { poolSharedJointParametrics } from '../editor/parametrics'
 import { bakePoolConnectionAnimations } from '../../core/export-animation'
@@ -32,7 +34,7 @@ export const poolSharedJointDefinition: NodeDefinition<typeof PoolSharedJointNod
   snapProfile: 'item',
   defaults: () => ({ object: 'node', parentId: null, visible: true, metadata: {}, ...DEFAULT_POOL_SHARED_JOINT }),
   capabilities: {
-    movable: { axes: ['x', 'y', 'z'], gridSnap: true },
+    movable: { parentFrame: poolPlanMovableFrame, axes: ['x', 'y', 'z'], gridSnap: true },
     rotatable: { axes: ['y'] },
     selectable: { hitVolume: 'bbox' },
     duplicable: false,
@@ -40,6 +42,8 @@ export const poolSharedJointDefinition: NodeDefinition<typeof PoolSharedJointNod
     groupable: true,
     snappable: {},
   },
+  floorplan: poolComponentFloorplan,
+  floorplanDependencies: (node) => node.poolIds as AnyNodeId[],
   renderer: { kind: 'parametric', module: () => import('../editor/preview') },
   exportAnimation: ({ node, object }) => bakePoolConnectionAnimations(node, object),
   parametrics: poolSharedJointParametrics,

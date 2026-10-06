@@ -1,3 +1,5 @@
+import { poolComponentFloorplan } from '../../rendering/component-floorplan'
+import { poolPlanDependencies, poolPlanMovableFrame } from '../../rendering/plan-frame'
 import type { NodeDefinition } from '@pascal-app/core'
 import { connectionPorts } from '../../core/connection-ports'
 import { getPumpPortsLocal } from './ports'
@@ -13,7 +15,7 @@ export const poolPumpDefinition: NodeDefinition<typeof PoolPumpNode> = {
   snapProfile: 'item',
   defaults: () => ({ object: 'node', parentId: null, visible: true, metadata: {}, ...DEFAULT_POOL_PUMP }),
   capabilities: {
-    movable: { axes: ['x', 'y', 'z'], gridSnap: true, portSnap: { systems: ['waste'] } },
+    movable: { parentFrame: poolPlanMovableFrame, axes: ['x', 'y', 'z'], gridSnap: true, portSnap: { systems: ['waste'] } },
     rotatable: { axes: ['x', 'y', 'z'] },
     selectable: { hitVolume: 'bbox' },
     duplicable: true,
@@ -27,6 +29,8 @@ export const poolPumpDefinition: NodeDefinition<typeof PoolPumpNode> = {
     groups: [{ label: 'Transform', fields: [{ key: 'position', kind: 'vec3' }, { key: 'rotation', kind: 'vec3' }] }],
     trailingSection: () => import('../../editor/connections'),
   },
+  floorplan: poolComponentFloorplan,
+  floorplanDependencies: poolPlanDependencies,
   renderer: { kind: 'parametric', module: () => import('../editor/preview') },
   tool: () => import('../editor/tool'),
   toolHints: [

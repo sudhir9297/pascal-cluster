@@ -1,3 +1,6 @@
+import { poolBasinFloorplan } from '../rendering/basin-floorplan'
+import { planPath, poolPlanPoint } from '../rendering/plan-frame'
+import { buildPoolOutlines } from '../design/outlines'
 import type { FloorplanGeometry, GeometryContext, HandleDescriptor, MovableConfig, NodeDefinition } from '@pascal-app/core'
 import { Euler, Vector3 } from 'three'
 import { getPoolDepthRange } from '../design/depth-profile'
@@ -417,31 +420,16 @@ function poolHandles(node: PoolNode): HandleDescriptor<PoolNode>[] {
 
 export function poolFloorplan(node: PoolNode, ctx?: GeometryContext): FloorplanGeometry {
   // Floorplan geometry is level-local; the host does not apply the node pose.
-  const cos = Math.cos(node.rotation[1])
-  const sin = Math.sin(node.rotation[1])
-  const toPlan = ([x, z]: readonly [number, number]): [number, number] => [
-    node.position[0] + x * cos + z * sin,
-    node.position[2] - x * sin + z * cos,
-  ]
-  const [first, ...rest] = resolvePoolPolygon(node).map(toPlan)
+  const toPlan = (point: readonly [number, number]) => poolPlanPoint(node, point, ctx)
   const selected = ctx?.viewState?.selected ?? false
-  const outlineWidth = Math.min(node.copingWidth, 0.25)
-  const basin: FloorplanGeometry = {
-    kind: 'path',
-    d: first
-      ? `M ${first[0]} ${first[1]} ${rest.map(([x, y]) => `L ${x} ${y}`).join(' ')} Z`
-      : '',
-    fill: node.waterColor,
-    fillOpacity: 0.55,
-    stroke: node.copingColor,
-    strokeWidth: outlineWidth,
-  }
-  if (!selected) return basin
+  const children = poolBasinFloorplan(node, ctx)
+  if (!selected) return { kind: 'group', children }
+  const outlines = buildPoolOutlines(resolvePoolPolygon(node), node)
   const selectionOutline: FloorplanGeometry = {
-    kind: 'path', d: basin.d, fill: 'none', stroke: '#475569',
+    kind: 'path', d: planPath(outlines.copingOuter.map(toPlan)), fill: 'none', stroke: '#475569',
     strokeWidth: 1.5, vectorEffect: 'non-scaling-stroke', pointerEvents: 'none',
   }
-  if (!isDrawnPoolShape(node.shape)) return { kind: 'group', children: [basin, selectionOutline] }
+  if (!isDrawnPoolShape(node.shape)) return { kind: 'group', children: [...children, selectionOutline] }
   const localAnchors = poolOutlineAnchors(node)
   const anchors = localAnchors.map(toPlan)
   const controls = usePoolOutlineControls.getState()
@@ -451,7 +439,7 @@ export function poolFloorplan(node: PoolNode, ctx?: GeometryContext): FloorplanG
   const tangents = node.shape === 'spline' ? poolOutlineTangents(node).map((tangent) => ({
     incoming: toPlan(tangent.incoming), outgoing: toPlan(tangent.outgoing),
   })) : []
-  return { kind: 'group', children: [basin, selectionOutline,
+  return { kind: 'group', children: [...children, selectionOutline,
     ...visibleIndices.map((index): FloorplanGeometry => ({
       kind: 'endpoint-handle', point: anchors[index]!, state: focused === index ? 'active' : 'idle', variant: 'endpoint',
       affordance: 'pool-outline-move', payload: { index },

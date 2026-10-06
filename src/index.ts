@@ -1,4 +1,5 @@
 import type { AnyNodeDefinition, Plugin } from '@pascal-app/core'
+import { POOL_ICON } from './pool-icon'
 import { poolPaint } from './core/paint'
 import { poolDefinition } from './core/definition'
 import { poolSkimmerDefinition } from './skimmer/core/definition'
@@ -41,7 +42,7 @@ export const poolPlugin: Plugin = {
 export const poolHostPanel: PoolHostPanel = {
   id: 'pascal:pool:catalog',
   label: 'Pools',
-  icon: { kind: 'iconify', name: 'lucide:waves' },
+  icon: { kind: 'url', src: POOL_ICON },
   component: () => import('./editor/panel'),
   pluginId: poolPlugin.id,
   description: 'Design and place swimming pools with animated water.',
@@ -139,7 +140,7 @@ type PoolHostPanel = {
   description: string
   creator: { name: string; url?: string }
   pluginUrl: string
-  icon: { kind: 'iconify'; name: string }
+  icon: { kind: 'url'; src: string }
   component: () => Promise<{ default: React.ComponentType }>
   defaultInstalled: boolean
 }

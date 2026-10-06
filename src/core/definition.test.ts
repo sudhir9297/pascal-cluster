@@ -20,12 +20,12 @@ describe('pool floorplan', () => {
       },
     } as unknown as GeometryContext)
 
-    expect(normal.kind).toBe('path')
+    expect(normal.kind).toBe('group')
     expect(selected.kind).toBe('group')
-    if (normal.kind !== 'path' || selected.kind !== 'group') return
-    expect(selected.children[0]).toEqual(normal)
-    expect(selected.children[1]).toMatchObject({
-      kind: 'path', d: normal.d, fill: 'none', stroke: '#475569',
+    if (normal.kind !== 'group' || selected.kind !== 'group') return
+    expect(selected.children.slice(0, -1)).toEqual(normal.children)
+    expect(selected.children.at(-1)).toMatchObject({
+      kind: 'path', d: normal.children[0]?.kind === 'path' ? normal.children[0].d : '', fill: 'none', stroke: '#475569',
       strokeWidth: 1.5, vectorEffect: 'non-scaling-stroke', pointerEvents: 'none',
     })
   })

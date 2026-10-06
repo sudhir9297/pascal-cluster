@@ -20,9 +20,12 @@ describe('swimming pool floor openings', () => {
       polygon, position: [11, 0.4, -7], rotation: [0, Math.PI / 5, 0],
     })
     const plan = poolFloorplan(pool)
-    expect(plan.kind).toBe('path')
-    if (plan.kind !== 'path') return
-    const planCoordinates = plan.d.match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi)!.map(Number)
+    expect(plan.kind).toBe('group')
+    if (plan.kind !== 'group') throw new Error('Missing pool plan')
+    const basin = plan.children[1]!
+    expect(basin.kind).toBe('path')
+    if (basin.kind !== 'path') throw new Error('Missing basin footprint')
+    const planCoordinates = basin.d.match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi)!.map(Number)
     polygon.forEach(([x, z], index) => {
       const point = new Vector3(x, 0, z).applyEuler(new Euler(...pool.rotation)).add(new Vector3(...pool.position))
       expect(planCoordinates[index * 2]).toBeCloseTo(point.x, 7)
@@ -50,9 +53,12 @@ describe('swimming pool floor openings', () => {
     })
     const placedHelper = syncPoolGroundOpenings({ [placedPool.id]: placedPool, [level.id]: level } as never).create[0]!
     const placedPlan = poolFloorplan(placedPool)
-    expect(placedPlan.kind).toBe('path')
-    if (placedPlan.kind !== 'path') return
-    const placedCoordinates = placedPlan.d.match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi)!.map(Number)
+    expect(placedPlan.kind).toBe('group')
+    if (placedPlan.kind !== 'group') throw new Error('Missing placed pool plan')
+    const placedBasin = placedPlan.children[1]!
+    expect(placedBasin.kind).toBe('path')
+    if (placedBasin.kind !== 'path') throw new Error('Missing placed basin footprint')
+    const placedCoordinates = placedBasin.d.match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi)!.map(Number)
     worldOutline.forEach(([x, z], index) => {
       expect(placedCoordinates[index * 2]).toBeCloseTo(x, 7)
       expect(placedCoordinates[index * 2 + 1]).toBeCloseTo(z, 7)

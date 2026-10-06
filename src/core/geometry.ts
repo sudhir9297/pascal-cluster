@@ -1,3 +1,4 @@
+import { clipAtX, getCrossSectionIntervals, sampleBoundaryBench } from '../design/feature-layout'
 import { cutOverlapCoping } from './overlap-coping'
 import { cutPoolSpilloverNotches } from './spillover-notch'
 import { createPoolAssemblyPlan, type PoolGeometryOptions } from './pool-assembly-plan'
@@ -9,6 +10,7 @@ import {
   Group,
   Mesh,
   MeshBasicMaterial,
+  type Material,
   Path,
   Shape,
   ShapeGeometry,
@@ -233,32 +235,6 @@ function normalizeClippedPolygon(points: PoolPoint[]) {
   return normalized
 }
 
-function clipAtX(points: PoolPoint[], boundary: number, keepRight: boolean) {
-  const clipped: PoolPoint[] = []
-  for (let index = 0; index < points.length; index += 1) {
-    const current = points[index]!
-    const next = points[(index + 1) % points.length]!
-    const currentInside = keepRight
-      ? current[0] >= boundary - GEOMETRY_EPSILON
-      : current[0] <= boundary + GEOMETRY_EPSILON
-    const nextInside = keepRight
-      ? next[0] >= boundary - GEOMETRY_EPSILON
-      : next[0] <= boundary + GEOMETRY_EPSILON
-
-    if (currentInside !== nextInside) {
-      const progress = (boundary - current[0]) / (next[0] - current[0])
-      const intersection: PoolPoint = [
-        boundary,
-        current[1] + (next[1] - current[1]) * progress,
-      ]
-      if (currentInside) clipped.push(intersection)
-      else clipped.push(intersection, next)
-    } else if (nextInside) {
-      clipped.push(next)
-    }
-  }
-  return clipped
-}
 
 function splitConvexPolygonAtCuts(points: PoolPoint[], cuts: number[]) {
   let fragments = [points]
@@ -659,22 +635,6 @@ function createPoolWallGeometry(
   return geometry
 }
 
-function getCrossSectionIntervals(points: PoolPoint[], x: number) {
-  const intersections: number[] = []
-  for (let index = 0; index < points.length; index += 1) {
-    const current = points[index]!
-    const next = points[(index + 1) % points.length]!
-    const crosses = (current[0] <= x && next[0] > x) || (next[0] <= x && current[0] > x)
-    if (!crosses) continue
-    const progress = (x - current[0]) / (next[0] - current[0])
-    intersections.push(current[1] + (next[1] - current[1]) * progress)
-  }
-  intersections.sort((left, right) => left - right)
-  return Array.from({ length: Math.floor(intersections.length / 2) }, (_, index) => [
-    intersections[index * 2]!,
-    intersections[index * 2 + 1]!,
-  ] as const)
-}
 
 function addClippedSurface(
   positions: number[],
@@ -797,39 +757,11 @@ function createBoundaryBenchGeometry(
 ) {
   const positions: number[] = []
   if (points.length < 3) return new BufferGeometry()
-  const winding = signedArea(points) >= 0 ? 1 : -1
-  const lengths = points.map((point, index) => {
-    const next = points[(index + 1) % points.length]!
-    return Math.hypot(next[0] - point[0], next[1] - point[1])
-  })
-  const perimeter = lengths.reduce((sum, length) => sum + length, 0)
-  const width = Math.max(0.05, requestedWidth)
-  const length = Math.min(Math.max(0.5, requestedLength), perimeter * 0.8)
-  const sampleCount = Math.max(4, Math.ceil(length / 0.18))
-  const pointAt = (distance: number): { point: PoolPoint; tangent: PoolPoint } => {
-    let remaining = ((distance % perimeter) + perimeter) % perimeter
-    for (let index = 0; index < points.length; index += 1) {
-      const edgeLength = lengths[index]!
-      if (remaining <= edgeLength || index === points.length - 1) {
-        const start = points[index]!
-        const end = points[(index + 1) % points.length]!
-        const progress = edgeLength <= 0.001 ? 0 : remaining / edgeLength
-        return {
-          point: [start[0] + (end[0] - start[0]) * progress, start[1] + (end[1] - start[1]) * progress],
-          tangent: [(end[0] - start[0]) / Math.max(edgeLength, 0.001), (end[1] - start[1]) / Math.max(edgeLength, 0.001)],
-        }
-      }
-      remaining -= edgeLength
-    }
-    return { point: points[0]!, tangent: [1, 0] }
-  }
-  const samples = Array.from({ length: sampleCount + 1 }, (_, index) => {
-    const sample = pointAt(perimeter * centerT - length / 2 + length * index / sampleCount)
-    const inward: PoolPoint = winding > 0 ? [-sample.tangent[1], sample.tangent[0]] : [sample.tangent[1], -sample.tangent[0]]
-    const inner: PoolPoint = [sample.point[0] + inward[0] * width, sample.point[1] + inward[1] * width]
-    const topDepth = Math.min(requestedTopDepth, floorDepthAtX(inner[0]) * 0.8)
-    return { point: sample.point, inner, topDepth, floorDepth: floorDepthAtX(inner[0]) }
-  })
+  const samples = sampleBoundaryBench(points, centerT, requestedLength, requestedWidth).map((sample) => ({
+    ...sample,
+    topDepth: Math.min(requestedTopDepth, floorDepthAtX(sample.inner[0]) * 0.8),
+    floorDepth: floorDepthAtX(sample.inner[0]),
+  }))
   for (let index = 0; index < samples.length - 1; index += 1) {
     const current = samples[index]!
     const next = samples[index + 1]!
@@ -1223,88 +1155,9 @@ export function buildPoolCopingGeometry(
   return group
 }
 
-/** A placement silhouette avoids water targets, stone meshes and connection CSG. */
-export function buildPoolPlacementPreviewGeometry(nodeInput: PoolNode): Group {
-  const { node, inner, outlines } = createPoolAssemblyPlan(nodeInput)
-  const group = new Group()
-  group.name = 'pool-placement-preview'
-  group.position.y = node.finishedDeckElevation
-  const previewDepth = node.floorProfile === 'flat' ? node.depth : node.deepDepth
-  const basin = new Mesh(
-    extrudeVertically(traceShape(inner), previewDepth, -previewDepth),
-    new MeshBasicMaterial({ color: node.shellColor, transparent: true, opacity: 0.27, depthWrite: false, side: DoubleSide }),
-  )
-  basin.name = 'pool-preview-basin'
-  group.add(basin)
-  const waterGeometry = new ShapeGeometry(traceShape(inner))
-  waterGeometry.rotateX(-Math.PI / 2)
-  waterGeometry.translate(0, node.designWaterElevation, 0)
-  const water = new Mesh(waterGeometry,
-    new MeshBasicMaterial({ color: node.waterColor, transparent: true, opacity: 0.4, depthWrite: false, side: DoubleSide }),
-  )
-  water.name = 'pool-preview-water'
-  group.add(water)
-  const coping = new Mesh(
-    extrudeVertically(ringShape(outlines.copingOuter, inner), node.copingThickness, 0),
-    new MeshBasicMaterial({ color: node.copingColor, transparent: true, opacity: 0.5, depthWrite: false, side: DoubleSide }),
-  )
-  coping.name = 'pool-preview-coping'
-  group.add(coping)
-  return group
-}
-
-export function buildPoolGeometry(nodeInput: PoolNode, options: PoolGeometryOptions = {}): Group {
-  const plan = createPoolAssemblyPlan(nodeInput, options)
-  const { node, outlines, inner, depth, cuts } = plan
-  options = plan.options
-  const group = new Group()
-  group.name = 'pool-assembly'
-  group.position.y = node.finishedDeckElevation
-
-  const waterElevation = plan.waterElevation
-  const shellOuter = outlines.shellOuter
-  const waterEffect = options.waterEffect ?? new PoolWaterEffect(node, options.waterResolution, options.atmosphere)
-  waterEffect.setBoundary(inner, options.removeWaterRegions)
-  const shellMaterial = createTileMaterial(node, waterEffect, inner)
-  group.userData.shellMaterial = shellMaterial
-  group.userData.interiorFinish = node.interiorFinish
-  group.userData.finishMaterials = new Map([[node.interiorFinish, shellMaterial]])
-  group.userData.inner = inner
-  const outerWallMaterial = new MeshStandardNodeMaterial({
-    color: node.shellColor,
-    metalness: 0,
-    roughness: 0.9,
-    side: DoubleSide,
-  })
-  const safeCoveRadius = plan.safeCoveRadius
-
-  const floor = new Mesh(
-    createPoolFloorGeometry(inner, depth.depthAtX, node.floorThickness, cuts, options.removeFloorRegions),
-    shellMaterial,
-  )
-  floor.name = 'pool-shell-floor'
-  floor.receiveShadow = true
-  group.add(floor)
-
-  const walls = new Mesh(
-    createPoolWallGeometry(
-      inner,
-      shellOuter,
-      depth.depthAtX,
-      cuts,
-      safeCoveRadius,
-      outlines.coveInner,
-      options.removeWallRegions,
-      options.removeWallCapRegions,
-      (options.spilloverNotches?.length ?? 0) > 0,
-    ),
-    [shellMaterial, outerWallMaterial],
-  )
-  walls.name = 'pool-shell-walls'
-  walls.castShadow = true
-  walls.receiveShadow = true
-  group.add(walls)
-
+function addPoolInteriorFeatures(group: Group, nodeInput: PoolNode,
+  plan: ReturnType<typeof createPoolAssemblyPlan>, shellMaterial: Material, options: PoolGeometryOptions) {
+  const { node, inner, depth } = plan
   if (node.entryFeature === 'steps') {
     const steps = new Mesh(
       createEntryStepsGeometry(
@@ -1381,6 +1234,99 @@ export function buildPoolGeometry(nodeInput: PoolNode, options: PoolGeometryOpti
     }
     group.add(benchAssembly)
   }
+
+}
+
+/** Lightweight edits retain floor slopes and features without water targets, stones or CSG. */
+export function buildPoolPlacementPreviewGeometry(nodeInput: PoolNode): Group {
+  const plan = createPoolAssemblyPlan(nodeInput)
+  const { node, inner, outlines, depth, cuts } = plan
+  const group = new Group()
+  group.name = 'pool-placement-preview'
+  group.position.y = node.finishedDeckElevation
+  const basin = new Mesh(
+    createPoolFloorGeometry(inner, depth.depthAtX, node.floorThickness, cuts),
+    new MeshBasicMaterial({ color: node.shellColor, transparent: true, opacity: 0.27, depthWrite: false, side: DoubleSide }),
+  )
+  basin.name = 'pool-preview-basin'
+  group.add(basin)
+  const walls = new Mesh(createPoolWallGeometry(inner, outlines.shellOuter, depth.depthAtX, cuts, 0, inner), basin.material)
+  walls.name = 'pool-preview-walls'
+  group.add(walls)
+  const waterGeometry = new ShapeGeometry(traceShape(inner))
+  waterGeometry.rotateX(-Math.PI / 2)
+  waterGeometry.translate(0, node.designWaterElevation - node.finishedDeckElevation, 0)
+  const water = new Mesh(waterGeometry,
+    new MeshBasicMaterial({ color: node.waterColor, transparent: true, opacity: 0.4, depthWrite: false, side: DoubleSide }),
+  )
+  water.name = 'pool-preview-water'
+  group.add(water)
+  const coping = new Mesh(
+    extrudeVertically(ringShape(outlines.copingOuter, inner), node.copingThickness, 0),
+    new MeshBasicMaterial({ color: node.copingColor, transparent: true, opacity: 0.5, depthWrite: false, side: DoubleSide }),
+  )
+  coping.name = 'pool-preview-coping'
+  group.add(coping)
+  if (node.entryFeature !== 'none' || node.benchEnabled) {
+    const shellMaterial = new MeshBasicMaterial({ color: node.shellColor, transparent: true, opacity: 0.8, side: DoubleSide })
+    addPoolInteriorFeatures(group, nodeInput, plan, shellMaterial, {})
+  }
+  return group
+}
+
+export function buildPoolGeometry(nodeInput: PoolNode, options: PoolGeometryOptions = {}): Group {
+  const plan = createPoolAssemblyPlan(nodeInput, options)
+  const { node, outlines, inner, depth, cuts } = plan
+  options = plan.options
+  const group = new Group()
+  group.name = 'pool-assembly'
+  group.position.y = node.finishedDeckElevation
+
+  const waterElevation = plan.waterElevation
+  const shellOuter = outlines.shellOuter
+  const waterEffect = options.waterEffect ?? new PoolWaterEffect(node, options.waterResolution, options.atmosphere)
+  waterEffect.setBoundary(inner, options.removeWaterRegions)
+  const shellMaterial = createTileMaterial(node, waterEffect, inner)
+  group.userData.shellMaterial = shellMaterial
+  group.userData.interiorFinish = node.interiorFinish
+  group.userData.finishMaterials = new Map([[node.interiorFinish, shellMaterial]])
+  group.userData.inner = inner
+  const outerWallMaterial = new MeshStandardNodeMaterial({
+    color: node.shellColor,
+    metalness: 0,
+    roughness: 0.9,
+    side: DoubleSide,
+  })
+  const safeCoveRadius = plan.safeCoveRadius
+
+  const floor = new Mesh(
+    createPoolFloorGeometry(inner, depth.depthAtX, node.floorThickness, cuts, options.removeFloorRegions),
+    shellMaterial,
+  )
+  floor.name = 'pool-shell-floor'
+  floor.receiveShadow = true
+  group.add(floor)
+
+  const walls = new Mesh(
+    createPoolWallGeometry(
+      inner,
+      shellOuter,
+      depth.depthAtX,
+      cuts,
+      safeCoveRadius,
+      outlines.coveInner,
+      options.removeWallRegions,
+      options.removeWallCapRegions,
+      (options.spilloverNotches?.length ?? 0) > 0,
+    ),
+    [shellMaterial, outerWallMaterial],
+  )
+  walls.name = 'pool-shell-walls'
+  walls.castShadow = true
+  walls.receiveShadow = true
+  group.add(walls)
+
+  addPoolInteriorFeatures(group, nodeInput, plan, shellMaterial, options)
 
   const water = new Mesh(createWaterGeometry(inner, options.removeWaterRegions), waterEffect.material)
   water.name = 'pool-water'

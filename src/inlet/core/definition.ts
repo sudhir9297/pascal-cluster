@@ -1,3 +1,6 @@
+import { poolFittingFloorplanMove } from '../../editor/floorplan-fitting-move'
+import { poolComponentFloorplan } from '../../rendering/component-floorplan'
+import { poolPlanDependencies, poolPlanMovableFrame } from '../../rendering/plan-frame'
 import type { NodeDefinition } from '@pascal-app/core'
 import { connectionPorts } from '../../core/connection-ports'
 import { poolInletParametrics } from '../editor/parametrics'
@@ -14,7 +17,7 @@ export const poolInletDefinition: NodeDefinition<typeof PoolInletNode> = {
   snapProfile: 'item',
   defaults: () => ({ object: 'node', parentId: null, visible: true, metadata: {}, ...DEFAULT_POOL_INLET }),
   capabilities: {
-    movable: { axes: ['x', 'y', 'z'], gridSnap: true },
+    movable: { parentFrame: poolPlanMovableFrame, axes: ['x', 'y', 'z'], gridSnap: true },
     rotatable: { axes: ['y'] },
     selectable: { hitVolume: 'bbox' },
     duplicable: true,
@@ -23,6 +26,9 @@ export const poolInletDefinition: NodeDefinition<typeof PoolInletNode> = {
     snappable: {},
   },
   ports: (node) => connectionPorts(node, getInletPortsLocal(node)),
+  floorplan: poolComponentFloorplan,
+  floorplanMoveTarget: poolFittingFloorplanMove,
+  floorplanDependencies: poolPlanDependencies,
   renderer: { kind: 'parametric', module: () => import('../editor/preview') },
   parametrics: poolInletParametrics,
   tool: () => import('../editor/tool'),

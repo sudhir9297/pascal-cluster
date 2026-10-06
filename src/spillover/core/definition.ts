@@ -2,6 +2,7 @@ import type { FloorplanGeometry, GeometryContext, NodeDefinition } from '@pascal
 import { poolSpilloverParametrics } from '../editor/parametrics'
 import { firstPoolHintVisibility, secondPoolHintVisibility } from '../design/stage'
 import { DEFAULT_POOL_SPILLOVER, PoolSpilloverNode } from './schema'
+import { poolPlanPoint } from '../../rendering/plan-frame'
 import { bakePoolSpilloverAnimation } from '../../core/export-animation'
 
 const poolSpilloverToolHints = [
@@ -11,27 +12,17 @@ const poolSpilloverToolHints = [
   { key: 'Esc', label: 'Cancel spillover placement' },
 ]
 
-function worldPointToLocal(node: PoolSpilloverNode, point: [number, number]) {
-  const angle = node.rotation[1] ?? 0
-  const dx = point[0] - node.position[0]
-  const dz = point[1] - node.position[2]
-  return [
-    dx * Math.cos(angle) - dz * Math.sin(angle),
-    dx * Math.sin(angle) + dz * Math.cos(angle),
-  ] as [number, number]
-}
-
 export function poolSpilloverFloorplan(
   node: PoolSpilloverNode,
   ctx?: GeometryContext,
 ): FloorplanGeometry {
   if (node.mergedSurface) return { kind: 'group', children: [] }
   const source = node.connectionPath[0]
-    ? worldPointToLocal(node, node.connectionPath[0])
-    : [node.sourceSide * node.length / 2, 0] as [number, number]
+    ? node.connectionPath[0]
+    : poolPlanPoint(node, [node.sourceSide * node.length / 2, 0], ctx)
   const target = node.connectionPath[1]
-    ? worldPointToLocal(node, node.connectionPath[1])
-    : [-node.sourceSide * node.length / 2, 0] as [number, number]
+    ? node.connectionPath[1]
+    : poolPlanPoint(node, [-node.sourceSide * node.length / 2, 0], ctx)
   const width = node.effectiveWidth ?? node.width
   const selected = ctx?.viewState?.selected ?? false
   return {
