@@ -1,4 +1,3 @@
-// @ts-expect-error Vendored SeedThree JavaScript has no TypeScript declarations.
 import { defaultControls, listSpecies, SPECIES } from '../vendor/api/seedthree.js'
 
 export type TreeSpecies = { key: string; name: string; latin: string | null;

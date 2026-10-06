@@ -6,8 +6,7 @@ import { useViewer } from '@pascal-app/viewer'
 import { TREE_KIND, TreeNode } from '../domain/schema'
 import { TREE_SPECIES, treeControls } from '../domain/species'
 import { PlacementContinuation } from '../../editor/placement-continuation'
-// @ts-expect-error Vendored JavaScript has no TypeScript declarations.
-import { ADVANCED_LEVEL_PARAMS, getSchema, SPECIES } from '../vendor/api/seedthree.js'
+import { ADVANCED_LEVEL_PARAMS, getSchema, speciesOrThrow } from '../vendor/api/seedthree.js'
 
 type Knob = { key?: string; path?: string; name: string; group?: string; default: number | boolean;
   min?: number; max?: number; step?: number; type?: 'bool' | 'color'; options?: Record<string, number> }
@@ -30,13 +29,13 @@ export default function TreePanel() {
   const setPaint = (patch: Record<string, unknown>) => useEditor.getState().setToolDefaults(TREE_KIND, { ...useEditor.getState().toolDefaults[TREE_KIND], ...patch })
   const speciesDefaults = treeControls(node.species)
   const schema = getSchema(node.species) as TreeSchema
-  const advanced: Knob[] = schema.generator === 'weber-penn' && Number(node.controls.levels ?? SPECIES[node.species].params.levels) >= 4 &&
+  const advanced: Knob[] = schema.generator === 'weber-penn' && Number(node.controls.levels ?? speciesOrThrow(node.species).params.levels) >= 4 &&
     !schema.advanced.some((knob) => knob.path?.endsWith('.3'))
     ? [...schema.advanced, ...ADVANCED_LEVEL_PARAMS.map((meta: { key: string; name: string;
       min: number; max: number; step: number; trunk: boolean; dflt: number }) => ({
         path: `paramOverrides.${meta.key}.3`, name: `${meta.name} · L3`,
         min: meta.min, max: meta.max, step: meta.step,
-        default: SPECIES[node.species].params[meta.key]?.[3] ?? meta.dflt,
+        default: speciesOrThrow(node.species).params[meta.key]?.[3] ?? meta.dflt,
       }))]
     : schema.advanced
   const changeSpecies = (species: string) => {

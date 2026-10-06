@@ -5,7 +5,7 @@ import { buildPatioGeometry, buildPatioFloorplan } from './rendering/geometry'
 import { patioParametrics } from './editor/parametrics'
 import { drawingModeHint } from '../shared/drawing-mode'
 import { patioFloorplanAffordances } from './editor/floorplan-affordances'
-import { circleSizePatch } from '../shared/outline'
+import { circleSizePatch, surfaceLevelOutline } from '../shared/outline'
 import { patioPaint } from './editor/paint'
 
 const resize = (axis: 'x' | 'z', key: 'width' | 'depth'): HandleDescriptor<PatioNode> => ({
@@ -32,9 +32,17 @@ export const patioDefinition: NodeDefinition<typeof PatioNode> = {
   capabilities: {
     selectable: { hitVolume: 'mesh' },
     paint: patioPaint,
-    surfaces: { top: { height: (raw) => {
+    surfaces: { top: { boundary: (raw) => surfaceLevelOutline(raw as unknown as PatioNode), height: (raw, context) => {
       const patio = raw as unknown as PatioNode
+      const point = context.point
+      const dx = point ? point[0] - patio.position[0] : 0
+      const dz = point ? point[1] - patio.position[2] : 0
+      const cos = Math.cos(patio.rotation[1]), sin = Math.sin(patio.rotation[1])
+      const x = dx * cos - dz * sin, z = dx * sin + dz * cos
+      const slope = patio.drainDirection === 'front' ? z : patio.drainDirection === 'back' ? -z
+        : patio.drainDirection === 'left' ? x : patio.drainDirection === 'right' ? -x : 0
       return patio.elevation + patio.thickness + Math.min(0.045, patio.thickness / 3)
+        + slope * patio.slopePercent / 100
     } } },
     movable: { axes: ['x', 'z'], gridSnap: true },
     rotatable: { axes: ['y'] },
