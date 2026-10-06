@@ -1,3 +1,4 @@
+import { surfaceLevelOutline } from '../shared/outline'
 import { hardscapeSchedule } from '../../editor/schedules'
 import type { NodeDefinition } from '@pascal-app/core'
 import { ConcreteSlabNode, CONCRETESLAB_KIND } from './domain/schema'
@@ -23,7 +24,7 @@ export const concreteSlabDefinition: NodeDefinition<typeof ConcreteSlabNode> = {
   capabilities: {
     selectable: { hitVolume: 'mesh' },
     paint: concreteSlabPaint,
-    surfaces: { top: { height: (raw) => (raw as unknown as ConcreteSlabNode).thickness } },
+    surfaces: { top: { height: (raw) => (raw as unknown as ConcreteSlabNode).thickness, boundary: (raw) => surfaceLevelOutline(raw as unknown as ConcreteSlabNode) } },
     movable: { axes: ['x', 'z'], gridSnap: true },
     rotatable: { axes: ['y'] },
     duplicable: true,

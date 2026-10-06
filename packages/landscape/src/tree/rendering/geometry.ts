@@ -2,15 +2,10 @@ import { Color, InstancedMesh, LOD, Mesh, SRGBColorSpace, TextureLoader, type Ob
 import { DEFAULT_TREE_LOD, resolveTreeLod, type TreeNode } from '../domain/schema'
 import { treeControls } from '../domain/species'
 import { TREE_TEXTURES } from './asset-manifest'
-// @ts-expect-error Vendored JavaScript has no TypeScript declarations.
-import { composeMaterials, generate, SPECIES } from '../vendor/api/seedthree.js'
-// @ts-expect-error Vendored SeedThree JavaScript has no TypeScript declarations.
+import { composeMaterials, generate, speciesOrThrow } from '../vendor/api/seedthree.js'
 import { buildFruits, makeFruitMaterial, prepareFruitGeometry } from '../vendor/core/fruit.js'
-// @ts-expect-error Vendored SeedThree JavaScript has no TypeScript declarations.
 import { Rng } from '../vendor/core/rng.js'
-// @ts-expect-error Vendored SeedThree JavaScript has no TypeScript declarations.
 import { bakeBranchCards, bakeRosetteCards, disposeBranchCards } from '../vendor/core/branch-cards.js'
-// @ts-expect-error Vendored SeedThree JavaScript has no TypeScript declarations.
 import { bakeImpostor, disposeBillboard } from '../vendor/core/impostor.js'
 
 const textures = new Map<string, Texture>()
@@ -54,7 +49,7 @@ function maps(folder: 'bark' | 'leaves', albedo: string) {
 }
 
 function makeAssets(species: string) {
-  const preset = SPECIES[species]
+  const preset = speciesOrThrow(species)
   const bark = maps('bark', preset.bark)
   const leaf = maps('leaves', preset.leaf)
   const assets: Record<string, unknown> = {
@@ -110,7 +105,7 @@ function loadFruit(mesh: string): Promise<FruitAsset | null> {
 
 function addFruitWhenReady(node: TreeNode, group: import('three').LOD, stems: any[], tips: any[],
   onUpdate?: (kind: TreeGeometryUpdate) => void) {
-  const preset = SPECIES[node.species]
+  const preset = speciesOrThrow(node.species)
   if (!preset.fruit?.mesh || node.controls.showLeaves === false || node.lod.mobileTarget || fruitAssets.has(preset.fruit.mesh)) return
   const seed = Number(node.controls.seed ?? 1)
   void loadFruit(preset.fruit.mesh).then((fruitAsset) => {
@@ -172,7 +167,7 @@ async function getBakeRenderer() {
 }
 
 async function getCards(node: TreeNode, shaped: any, assets: any, renderer: import('three/webgpu').WebGPURenderer) {
-  const species = SPECIES[node.species]
+  const species = speciesOrThrow(node.species)
   if (node.controls.showLeaves === false || species.foliage === false || species.cactus) return null
   const rosette = species.foliageType === 'rosette'
   if (rosette && !node.lod.mobileTarget) return null
@@ -234,7 +229,7 @@ async function bakeLods(node: TreeNode, group: LOD, controls: Record<string, unk
   if (group.userData.seedThreeDisposed) return
   let rebuiltCards = false
   if (cardEntry) {
-    const fruit = fruitAssets.get(SPECIES[node.species].fruit?.mesh)
+    const fruit = fruitAssets.get(speciesOrThrow(node.species).fruit?.mesh)
     if (fruit) { assets.fruitGeo = fruit.geometry; assets.fruitMat = fruit.material }
     const rebuilt = generate({ species: node.species, seed: Number(controls.seed ?? 1), controls,
       lod: { ...node.lod, branchCards: cardEntry.cards, cloneCardGeometry: true }, assets })
@@ -253,7 +248,7 @@ async function bakeLods(node: TreeNode, group: LOD, controls: Record<string, unk
   if (rebuiltCards) onUpdate?.('cards')
   const source = group.levels.find((level) => level.object.userData.lodName === 'LOD0')?.object
   if (!source || group.userData.seedThreeDisposed) return
-  const billboard = await bakeImpostor(renderer, source, { name: SPECIES[node.species].name,
+  const billboard = await bakeImpostor(renderer, source, { name: speciesOrThrow(node.species).name,
     lodName: `LOD${group.levels.length}`, size: DEFAULT_TREE_LOD.billboardRes })
   if (group.userData.seedThreeDisposed) { disposeBillboard(billboard); return }
   group.addLevel(billboard, Number(node.lod.billboardDist ?? 120), 0.05)

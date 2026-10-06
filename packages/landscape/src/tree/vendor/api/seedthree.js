@@ -47,7 +47,7 @@ import {
 
 export { SPECIES, DEFAULT_SPECIES, CROWN_SHAPES, ADVANCED_LEVEL_PARAMS };
 
-const speciesOrThrow = (key) => {
+export const speciesOrThrow = (key) => {
   const sp = SPECIES[key];
   if (!sp) throw new Error(`[seedthree] unknown species "${key}". Known: ${Object.keys(SPECIES).join(', ')}`);
   return sp;
@@ -334,7 +334,7 @@ export function skeleton({ species, seed = 1, controls = {} } = {}) {
  * @param {boolean} [o.placeholders=true]  when no material bag is given, self-supply
  *                  placeholder materials so the FULL plant grows (canopy included)
  *                  and stats match the app. false → bare skeleton (branches only).
- * @returns {{ group: THREE.LOD, stats: object, preset: object, shaped: object }}
+ * @returns {{ group: THREE.LOD, stems: object[], tips: object[], stats: object, preset: object, shaped: object }}
  */
 export function generate({ species, seed = 1, controls = {}, lod = {}, assets = null, placeholders = true } = {}) {
   const sp = speciesOrThrow(species);

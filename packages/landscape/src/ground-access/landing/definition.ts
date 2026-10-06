@@ -1,3 +1,4 @@
+import { surfaceLevelOutline } from '../shared/outline'
 import { hardscapeSchedule } from '../../editor/schedules'
 import type { NodeDefinition } from '@pascal-app/core'
 import { LandingNode, LANDING_KIND } from './domain/schema'
@@ -22,7 +23,7 @@ export const landingDefinition: NodeDefinition<typeof LandingNode> = {
   },
   capabilities: {
     selectable: { hitVolume: 'mesh' },
-    surfaces: { top: { height: (raw) => (raw as unknown as LandingNode).thickness } },
+    surfaces: { top: { height: (raw) => (raw as unknown as LandingNode).thickness, boundary: (raw) => surfaceLevelOutline(raw as unknown as LandingNode) } },
     paint: landingPaint,
     movable: { axes: ['x', 'z'], gridSnap: true },
     rotatable: { axes: ['y'] },
