@@ -28,18 +28,20 @@
     "dev:unlink": "bun scripts/dev.ts --unlink"
   },
   "peerDependencies": {
-    "@pascal-app/core": "^1.0.1",
+    "@pascal-app/core": "^1.0.3",
     "react": "^18 || ^19",
-    "@pascal-app/editor": "^1.0.1",
-    "@pascal-app/viewer": "^1.0.1",
+    "@pascal-app/editor": "^1.0.3",
+    "@pascal-app/viewer": "^1.0.3",
     "@react-three/fiber": "^9",
     "three": "^0.186.0",
-    "zod": ">=4.5.4 <4.6"
+    "zod": ">=4.5.4 <4.6",
+    "@pascal-app/nodes": "^1.0.1",
+    "@react-three/drei": "^10"
   },
   "devDependencies": {
-    "@pascal-app/core": "1.0.1",
-    "@pascal-app/editor": "1.0.1",
-    "@pascal-app/viewer": "1.0.1",
+    "@pascal-app/core": "1.0.3",
+    "@pascal-app/editor": "1.0.3",
+    "@pascal-app/viewer": "1.0.3",
     "@react-three/fiber": "^9",
     "@types/blob-stream": "^0.1.33",
     "@types/bun": "^1.3.5",
@@ -53,7 +55,10 @@
     "react-dom": "19.2.7",
     "three": "^0.186.0",
     "typescript": "6.0.3",
-    "zod": ">=4.5.4 <4.6"
+    "zod": ">=4.5.4 <4.6",
+    "@pascal-app/nodes": "1.0.1",
+    "@types/react-dom": "^19.2.2",
+    "@react-three/drei": "^10"
   },
   "keywords": [
     "pascal",

@@ -1,3 +1,4 @@
+import { hardscapeSchedule } from '../../editor/schedules'
 import type { NodeDefinition } from '@pascal-app/core'
 import { ConcreteSlabNode, CONCRETESLAB_KIND } from './domain/schema'
 import { buildConcreteSlabGeometry, buildConcreteSlabFloorplan } from './rendering/geometry'
@@ -10,6 +11,7 @@ import { concreteSlabPaint } from './editor/paint'
 export const concreteSlabDefinition: NodeDefinition<typeof ConcreteSlabNode> = {
   kind: CONCRETESLAB_KIND,
   schemaVersion: 1,
+  extensions: { 'pascal:editor/floorplan': { schedule: hardscapeSchedule } },
   schema: ConcreteSlabNode,
   category: 'site',
   snapProfile: 'item',
@@ -31,7 +33,7 @@ export const concreteSlabDefinition: NodeDefinition<typeof ConcreteSlabNode> = {
   system: { module: () => import('./editor/boundary-system') },
   floorplan: buildConcreteSlabFloorplan,
   floorplanDependencies: (node, nodes) => Object.values(nodes)
-    .filter((candidate) => candidate.parentId === node.parentId && (candidate.type as string) === 'pool:pool')
+    .filter((candidate) => candidate.parentId === node.parentId && ((candidate.type as string) === 'pool:pool' || (candidate.type as string) === 'landscape:pond'))
     .map((candidate) => candidate.id),
   floorplanAffordances: surfaceFloorplanAffordances(CONCRETESLAB_KIND),
   tool: () => import('../shared/drawing-tool'),

@@ -48,7 +48,7 @@ export default function LandingInspector({ node: rawNode }: { node: LandingNode 
         <SliderControl label="Thickness" value={node.thickness} min={0.03} max={2} step={0.01} precision={2} unit="m" onChange={(thickness) => update({ thickness })} />
       </div>}
 
-      {tab === 'notes' && <InspectorNotes item="landing" />}
+      {tab === 'notes' && <InspectorNotes item="landing" nodeId={node.id} />}
     </div>
     <div className="flex shrink-0 items-center border-t border-border/50 px-3 py-2">
       <InspectorDeleteButton item="landing" onDelete={() => {

@@ -1,3 +1,4 @@
+import { landscapeToolColors } from '../../shared/tool-colors'
 import type { FloorplanGeometry, GeometryContext } from '@pascal-app/core'
 import {
   pergolaDimensions,
@@ -24,7 +25,7 @@ export function buildPergolaFloorplan(
   ]
   const selected = ctx.viewState?.selected || ctx.viewState?.highlighted
   const stroke = selected
-    ? (ctx.viewState?.palette?.selectedStroke ?? '#f97316')
+    ? (ctx.viewState?.palette?.selectedStroke ?? landscapeToolColors.selected)
     : '#765536'
   const children: FloorplanGeometry[] = [
     {

@@ -9,8 +9,8 @@ import { broadleafControls } from './broadleaf-controls.js';
 export const quakingAspen = {
   name: 'Quaking Aspen',
   latin: 'Populus tremuloides',
-  bark: 'quaking_aspen_albedo.png',
-  leaf: 'quaking_aspen_single_albedo.png',
+  bark: 'quaking_aspen_albedo.webp',
+  leaf: 'quaking_aspen_single_albedo.webp',
   biome: 'temperate',
   tileWorldSize: 1.25,
   controls: broadleafControls,

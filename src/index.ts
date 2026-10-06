@@ -1,3 +1,8 @@
+import { LANDSCAPE_ICON } from './landscape-icon'
+import { pondDefinition } from './pond/definition'
+import { irrigationPreviewDefinition } from './irrigation/preview'
+import { irrigationZoneDefinition } from './irrigation/zone-model'
+import { irrigationFittingDefinition } from './irrigation/fitting'
 import type { AnyNode, AnyNodeDefinition, InspectorExtension, Plugin } from '@pascal-app/core'
 
 import { pergolaDefinition } from './pergola/definition'
@@ -11,6 +16,12 @@ import { edgingDefinition } from './ground-access/edging/definition'
 import { retainingWallDefinition } from './ground-access/retaining-wall/definition'
 import { treeDefinition } from './tree/definition'
 import { plantDefinition } from './plant/definition'
+import { irrigationHeadDefinition } from './irrigation/definition'
+import { irrigationRunDefinition } from './irrigation/run'
+import { irrigationValveDefinition } from './irrigation/valve'
+import { irrigationControllerDefinition } from './irrigation/controller'
+import { irrigationSourceDefinition } from './irrigation/source'
+import { driplineDefinition } from './irrigation/dripline'
 
 type PluginHostPanel = {
   id: string
@@ -23,12 +34,6 @@ type PluginHostPanel = {
   pluginUrl: string
   defaultInstalled: boolean
 }
-
-const LANDSCAPE_ICON =
-  'data:image/svg+xml,' +
-  encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#78a86b" d="M2 19 8.5 8l3.3 5.1 2.5-3.6L22 19z"/><path fill="#a8c98d" d="m2 19 6.5-7 3.3 3.5 2.5-2.2L22 19z"/></svg>',
-  )
 
 const retainingWallInspector: InspectorExtension & { primaryWhen: (node: AnyNode) => boolean } = {
   id: 'pascal:landscape:retaining-wall-finish',
@@ -72,8 +77,9 @@ const plantInspector: InspectorExtension & { primaryWhen: (node: AnyNode) => boo
 export const landscapePlugin: Plugin = {
   id: 'pascal:landscape',
   apiVersion: 1,
-  inspectorExtensions: [retainingWallInspector, groundAreaInspector, treeInspector, plantInspector],
+  inspectorExtensions: [{ id: 'pascal:landscape:irrigation-fitting-properties', pluginId: 'pascal:landscape', kinds: ['landscape:irrigation-fitting'], icon: { kind: 'iconify', name: 'lucide:git-branch' }, title: 'Irrigation fitting settings', component: () => import('./irrigation/fitting-inspector'), primaryWhen: () => true }, { id: 'pascal:landscape:irrigation-source-properties', pluginId: 'pascal:landscape', kinds: ['landscape:irrigation-source'], icon: { kind: 'iconify', name: 'lucide:gauge' }, title: 'Irrigation supply', component: () => import('./irrigation/source-inspector'), primaryWhen: () => true }, { id: 'pascal:landscape:dripline-properties', pluginId: 'pascal:landscape', kinds: ['landscape:dripline'], icon: { kind: 'iconify', name: 'lucide:droplets' }, title: 'Dripline', component: () => import('./irrigation/dripline-inspector'), primaryWhen: () => true }, { id: 'pascal:landscape:irrigation-controller-properties', pluginId: 'pascal:landscape', kinds: ['landscape:irrigation-controller'], icon: { kind: 'iconify', name: 'lucide:calendar-clock' }, title: 'Irrigation controller', component: () => import('./irrigation/controller-inspector'), primaryWhen: () => true }, { id: 'pascal:landscape:irrigation-valve-properties', pluginId: 'pascal:landscape', kinds: ['landscape:irrigation-valve'], icon: { kind: 'iconify', name: 'lucide:circle-gauge' }, title: 'Irrigation valve', component: () => import('./irrigation/valve-inspector'), primaryWhen: () => true }, { id: 'pascal:landscape:irrigation-run-properties', pluginId: 'pascal:landscape', kinds: ['landscape:irrigation-run'], icon: { kind: 'iconify', name: 'lucide:route' }, title: 'Irrigation run', component: () => import('./irrigation/run-inspector'), primaryWhen: () => true }, { id: 'pascal:landscape:irrigation-properties', pluginId: 'pascal:landscape', kinds: ['landscape:irrigation-head'], icon: { kind: 'iconify', name: 'lucide:droplets' }, title: 'Irrigation head', component: () => import('./irrigation/inspector'), primaryWhen: () => true }, retainingWallInspector, groundAreaInspector, treeInspector, plantInspector, { id: 'pascal:landscape:pond', pluginId: 'pascal:landscape', kinds: ['landscape:pond'], icon: { kind: 'iconify', name: 'lucide:waves' }, title: 'Pond', component: () => import('./pond/panel'), primaryWhen: () => true }],
   nodes: [
+    pondDefinition as unknown as AnyNodeDefinition,
     pergolaDefinition as unknown as AnyNodeDefinition,
     pathwayDefinition as unknown as AnyNodeDefinition,
     groundAreaDefinition as unknown as AnyNodeDefinition,
@@ -85,6 +91,15 @@ export const landscapePlugin: Plugin = {
     retainingWallDefinition as unknown as AnyNodeDefinition,
     treeDefinition as unknown as AnyNodeDefinition,
     plantDefinition as unknown as AnyNodeDefinition,
+    irrigationHeadDefinition as unknown as AnyNodeDefinition,
+    irrigationRunDefinition as unknown as AnyNodeDefinition,
+    irrigationValveDefinition as unknown as AnyNodeDefinition,
+    irrigationControllerDefinition as unknown as AnyNodeDefinition,
+    irrigationSourceDefinition as unknown as AnyNodeDefinition,
+    driplineDefinition as unknown as AnyNodeDefinition,
+    irrigationFittingDefinition as unknown as AnyNodeDefinition,
+    irrigationZoneDefinition as unknown as AnyNodeDefinition,
+    irrigationPreviewDefinition as unknown as AnyNodeDefinition,
   ],
 }
 
@@ -117,3 +132,6 @@ export { TreeNode, TREE_KIND } from './tree/domain/schema'
 export { treeDefinition } from './tree/definition'
 export { PlantNode, PLANT_KIND } from './plant/domain/schema'
 export { plantDefinition } from './plant/definition'
+
+export { PondNode, POND_KIND } from './pond/schema'
+export { pondDefinition } from './pond/definition'

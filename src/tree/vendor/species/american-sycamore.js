@@ -9,8 +9,8 @@ import { broadleafControls } from './broadleaf-controls.js';
 export const americanSycamore = {
   name: 'American Sycamore',
   latin: 'Platanus occidentalis',
-  bark: 'american_sycamore_albedo.png',
-  leaf: 'american_sycamore_single_albedo.png',
+  bark: 'american_sycamore_albedo.webp',
+  leaf: 'american_sycamore_single_albedo.webp',
   biome: 'temperate',
   tileWorldSize: 2.2,
   controls: broadleafControls,

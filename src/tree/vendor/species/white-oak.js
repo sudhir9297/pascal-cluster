@@ -7,8 +7,8 @@ import { CROWN_SHAPES } from '../ui/controls.js';
 export const whiteOak = {
   name: 'White Oak',
   latin: 'Quercus alba',
-  bark: 'white_oak_albedo.png',
-  leaf: 'white_oak_single_albedo.png', // single-leaf card — LOD cards bake from this
+  bark: 'white_oak_albedo.webp',
+  leaf: 'white_oak_single_albedo.webp', // single-leaf card — LOD cards bake from this
   biome: 'temperate',
   tileWorldSize: 1.55,   // bark tile size (m) — smaller = more tiling detail
   // Broadleaf control vocabulary (density/angle/gnarliness along the trunk).

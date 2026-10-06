@@ -1,4 +1,5 @@
 'use client'
+import { landscapeToolColors } from '../../shared/tool-colors'
 import { type AnyNode, type AnyNodeId, useLiveNodeOverrides, useScene } from '@pascal-app/core'
 import { boundaryReshapeScope, PolygonEditor, useEditor, useInteractionScope } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
@@ -54,7 +55,7 @@ export default function GroundAreaBoundarySystem() {
   if (node.shape === 'freehand') return <FreehandCurveEditor node={node} height={node.elevation + 0.018} />
   return <PolygonEditor
     allowEdgeMove
-    color="#d6a56a"
+    color={landscapeToolColors.spline}
     levelId={node.parentId ?? undefined}
     minVertices={3}
     polygon={node.outline}

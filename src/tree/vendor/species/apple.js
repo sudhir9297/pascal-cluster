@@ -11,8 +11,8 @@ import { broadleafControls } from './broadleaf-controls.js';
 export const apple = {
   name: 'Cultivated Apple',
   latin: 'Malus domestica',
-  bark: 'apple_bark_albedo.png',
-  leaf: 'apple_single_albedo.png',
+  bark: 'apple_bark_albedo.webp',
+  leaf: 'apple_single_albedo.webp',
   biome: 'temperate',
   tileWorldSize: 1.2,
   controls: broadleafControls,

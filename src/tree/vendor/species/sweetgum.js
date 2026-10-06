@@ -6,8 +6,8 @@ import { broadleafControls } from './broadleaf-controls.js';
 export const sweetgum = {
   name: 'Sweetgum',
   latin: 'Liquidambar styraciflua',
-  bark: 'sweetgum_albedo.png',
-  leaf: 'sweetgum_single_albedo.png',
+  bark: 'sweetgum_albedo.webp',
+  leaf: 'sweetgum_single_albedo.webp',
   biome: 'temperate',
   tileWorldSize: 1.4,
   controls: broadleafControls,

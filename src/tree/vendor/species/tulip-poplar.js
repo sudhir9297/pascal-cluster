@@ -6,8 +6,8 @@ import { broadleafControls } from './broadleaf-controls.js';
 export const tulipPoplar = {
   name: 'Tulip Poplar',
   latin: 'Liriodendron tulipifera',
-  bark: 'tulip_poplar_albedo.png',
-  leaf: 'tulip_poplar_single_albedo.png',
+  bark: 'tulip_poplar_albedo.webp',
+  leaf: 'tulip_poplar_single_albedo.webp',
   biome: 'temperate',
   tileWorldSize: 1.7,
   controls: broadleafControls,

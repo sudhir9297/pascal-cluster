@@ -1,5 +1,7 @@
 'use client'
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
+import { useScene } from '@pascal-app/core'
+import { PLANT_KIND } from '../domain/schema'
 import { useViewer } from '@pascal-app/viewer'
 import { useEffect, useMemo, useRef } from 'react'
 import { PlantInstanceBatches } from './instance-batches'
@@ -20,6 +22,11 @@ export default function PlantInstanceSystem() {
     ])
     batches.update(scenePlants(scene), promoted, state.isExporting)
   })
+  useFrame(() => {
+    const state = useScene.getState()
+    // Clear after the host's priority-1 floor elevation pass has applied the lift.
+    for (const id of state.dirtyNodes) if ((state.nodes[id]?.type as string) === PLANT_KIND) state.clearDirty(id)
+  }, 2)
   const resolve = <E extends PointerEvent | MouseEvent,>(event: ThreeEvent<E>) => {
     const slot = batches.resolve(event.object, event.instanceId)
     if (!slot) return null

@@ -1,3 +1,4 @@
+import { hardscapeSchedule } from '../../editor/schedules'
 import type { HandleDescriptor, NodeDefinition } from '@pascal-app/core'
 import { PatioNode, PATIO_KIND } from './domain/schema'
 import { buildPatioGeometry, buildPatioFloorplan } from './rendering/geometry'
@@ -19,6 +20,7 @@ const resize = (axis: 'x' | 'z', key: 'width' | 'depth'): HandleDescriptor<Patio
 export const patioDefinition: NodeDefinition<typeof PatioNode> = {
   kind: PATIO_KIND,
   schemaVersion: 1,
+  extensions: { 'pascal:editor/floorplan': { schedule: hardscapeSchedule } },
   schema: PatioNode,
   category: 'site',
   snapProfile: 'item',
@@ -48,7 +50,7 @@ export const patioDefinition: NodeDefinition<typeof PatioNode> = {
   system: { module: () => import('./editor/boundary-system') },
   floorplan: buildPatioFloorplan,
   floorplanDependencies: (node, nodes) => Object.values(nodes)
-    .filter((candidate) => candidate.parentId === node.parentId && (candidate.type as string) === 'pool:pool')
+    .filter((candidate) => candidate.parentId === node.parentId && ((candidate.type as string) === 'pool:pool' || (candidate.type as string) === 'landscape:pond'))
     .map((candidate) => candidate.id),
   floorplanAffordances: patioFloorplanAffordances,
   tool: () => import('../shared/drawing-tool'),

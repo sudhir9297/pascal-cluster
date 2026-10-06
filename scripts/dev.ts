@@ -29,8 +29,8 @@ const appPackagePath = path.join(editorApp, 'node_modules/@pascal-app/plugin-lan
 // Store and renderer singletons must be shared with the host editor. Separate
 // stores swallow tool selections; separate R3F copies lose Canvas context.
 const sharedRuntimePackages = [
-  '@pascal-app/core', '@pascal-app/editor', '@pascal-app/viewer',
-  '@react-three/fiber', '@types/react', 'react', 'three', 'zustand',
+  '@pascal-app/core', '@pascal-app/editor', '@pascal-app/viewer', '@pascal-app/nodes',
+  '@react-three/fiber', '@react-three/drei', '@types/react', '@types/react-dom', 'react', 'react-dom', 'three', 'zustand',
 ] as const
 
 function linkRuntimePackages() {

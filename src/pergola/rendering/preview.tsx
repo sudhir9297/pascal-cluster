@@ -1,12 +1,16 @@
 'use client'
+import { type AnyNodeId, useScene } from '@pascal-app/core'
 import { useEffect, useMemo } from 'react'
 import { Mesh } from 'three'
 import type { PergolaNode } from '../domain/schema'
 import { buildPergolaGeometry, disposePergolaGeometry } from './geometry'
 
 export default function PergolaPreview({ node }: { node: PergolaNode }) {
+  const parent = useScene((state) =>
+    node.supportSurfaceId ? state.nodes[node.supportSurfaceId as AnyNodeId] ?? null : null,
+  )
   const group = useMemo(() => {
-    const built = buildPergolaGeometry(node)
+    const built = buildPergolaGeometry(node, { parent } as Parameters<typeof buildPergolaGeometry>[1])
     built.traverse((object) => {
       object.raycast = () => {}
       if (object instanceof Mesh) {
@@ -21,7 +25,7 @@ export default function PergolaPreview({ node }: { node: PergolaNode }) {
       }
     })
     return built
-  }, [node])
+  }, [node, parent])
   useEffect(() => () => disposePergolaGeometry(group), [group])
   return <primitive object={group} />
 }

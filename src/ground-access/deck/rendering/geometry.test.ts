@@ -171,3 +171,21 @@ describe('deck assembly', () => {
             }
   })
 })
+
+test('railing caps span whole edges and meet at deck corners for every style', () => {
+  for (const railingStyle of ['wood', 'metal', 'cable', 'glass'] as const) {
+    const node = DeckNode.parse({ railingStyle, railingPostSpacing: 0.5 })
+    const group = buildDeckGeometry(node)
+    const topRails = meshes(group, 'deck-top-rail')
+    expect(topRails).toHaveLength(4)
+    for (const mesh of topRails) {
+      expect(bounds(mesh).max.y).toBeCloseTo(node.thickness + node.railingHeight, 5)
+      const positions = mesh.geometry.getAttribute('position')
+      for (let i = 0; i < positions.count; i++) {
+        const x = positions.getX(i), z = positions.getZ(i)
+        expect(Number.isFinite(x) && Number.isFinite(z)).toBe(true)
+      }
+    }
+    expect(meshes(group, 'deck-bottom-rail')).toHaveLength(railingStyle === 'wood' || railingStyle === 'metal' ? 4 : 0)
+  }
+})

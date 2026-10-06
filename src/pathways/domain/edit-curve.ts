@@ -1,4 +1,5 @@
 import { distance, edgeCurve, evaluate, lerp, split } from './curves'
+import { edgeElevationOffsetAt } from './grade'
 import type { PathEdge, PathGraph, PathVertex, Point } from './schema'
 
 export type CurveSide = 'from' | 'to'
@@ -79,7 +80,7 @@ export function insertPathCurvePoint(graph: PathGraph, edgeId: string, t = 0.5):
   const vertexId = crypto.randomUUID()
   const shape = isCurvedPathEdge(graph, edge) ? 'spline' : 'straight'
   return {
-    vertices: [...graph.vertices, { id: vertexId, point: evaluate(edgeCurve(graph, edge), t) }],
+    vertices: [...graph.vertices, { id: vertexId, point: evaluate(edgeCurve(graph, edge), t), elevationOffset: edgeElevationOffsetAt(graph, edge, t) }],
     edges: graph.edges.flatMap((item) => item.id !== edgeId ? [item] : [
       { ...item, to: vertexId, controls: [left[1], left[2]] as [Point, Point] },
       { ...item, id: crypto.randomUUID(), from: vertexId, controls: [right[1], right[2]] as [Point, Point], shape },

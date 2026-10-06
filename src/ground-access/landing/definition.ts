@@ -1,3 +1,4 @@
+import { hardscapeSchedule } from '../../editor/schedules'
 import type { NodeDefinition } from '@pascal-app/core'
 import { LandingNode, LANDING_KIND } from './domain/schema'
 import { buildLandingGeometry, buildLandingFloorplan } from './rendering/geometry'
@@ -10,6 +11,7 @@ import { landingPaint } from './editor/paint'
 export const landingDefinition: NodeDefinition<typeof LandingNode> = {
   kind: LANDING_KIND,
   schemaVersion: 1,
+  extensions: { 'pascal:editor/floorplan': { schedule: hardscapeSchedule } },
   schema: LandingNode,
   category: 'site',
   snapProfile: 'item',
@@ -31,7 +33,7 @@ export const landingDefinition: NodeDefinition<typeof LandingNode> = {
   system: { module: () => import('./editor/boundary-system') },
   floorplan: buildLandingFloorplan,
   floorplanDependencies: (node, nodes) => Object.values(nodes)
-    .filter((candidate) => candidate.parentId === node.parentId && (candidate.type as string) === 'pool:pool')
+    .filter((candidate) => candidate.parentId === node.parentId && ((candidate.type as string) === 'pool:pool' || (candidate.type as string) === 'landscape:pond'))
     .map((candidate) => candidate.id),
   floorplanAffordances: surfaceFloorplanAffordances(LANDING_KIND),
   tool: () => import('../shared/drawing-tool'),

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { BufferGeometry, Color, DoubleSide, Group, LOD, Mesh, MeshStandardMaterial,
   SRGBColorSpace, TextureLoader } from 'three'
 import type { PlantNode } from '../domain/schema'
-import leafAtlas from '../assets/claude/leaves.png'
+import leafAtlas from '../assets/claude/leaves.webp'
 // @ts-expect-error The reference project's JavaScript geometry generator has no declarations.
 import { buildPrototype } from '../vendor/claude/treegeo.js'
 

@@ -42,14 +42,14 @@ function texture(folder: 'bark' | 'leaves', file: string, srgb = false): Texture
 }
 
 function maps(folder: 'bark' | 'leaves', albedo: string) {
-  const base = albedo.replace(/_albedo\.png$/, '')
+  const base = albedo.replace(/_albedo\.webp$/, '')
   return {
     albedo: texture(folder, albedo, true),
-    normal: texture(folder, `${base}_normal.png`),
-    roughness: texture(folder, `${base}_roughness.png`),
-    translucency: folder === 'leaves' ? texture(folder, `${base}_translucency.png`) : null,
-    dry: folder === 'leaves' ? texture(folder, `${base}_dry_albedo.png`, true) : null,
-    dryest: folder === 'leaves' ? texture(folder, `${base}_dryest_albedo.png`, true) : null,
+    normal: texture(folder, `${base}_normal.webp`),
+    roughness: texture(folder, `${base}_roughness.webp`),
+    translucency: folder === 'leaves' ? texture(folder, `${base}_translucency.webp`) : null,
+    dry: folder === 'leaves' ? texture(folder, `${base}_dry_albedo.webp`, true) : null,
+    dryest: folder === 'leaves' ? texture(folder, `${base}_dryest_albedo.webp`, true) : null,
   }
 }
 
@@ -64,7 +64,7 @@ function makeAssets(species: string) {
     ribsPerTile: preset.params?.ribsPerTile,
   }
   if (preset.cactus) {
-    const clean = maps('bark', preset.bark.replace(/_skin_albedo\.png$/, '_skin_clean_albedo.png'))
+    const clean = maps('bark', preset.bark.replace(/_skin_albedo\.webp$/, '_skin_clean_albedo.webp'))
     assets.barkCleanAlbedo = clean.albedo
     assets.barkCleanNormal = clean.normal
     assets.barkCleanRoughness = clean.roughness

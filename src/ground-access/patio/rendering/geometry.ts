@@ -1,3 +1,4 @@
+import { landscapeToolColors } from '../../../shared/tool-colors'
 import { freehandFloorplanHandles } from '../../../ground-areas/domain/curve-edit'
 import type { FloorplanGeometry, GeometryContext } from '@pascal-app/core'
 import { BoxGeometry, Euler, Group, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial,
@@ -235,7 +236,7 @@ export function buildPatioFloorplan(raw: PatioNode, ctx: GeometryContext): Floor
     const outline: MultiPolygon = [[patioOutline(node)]]
     const border = node.borderStyle === 'contrast' ? node.borderWidth : 0
     const inset = border ? pavingPolygons.inset(outline, border) : outline
-    const stroke = ctx.viewState?.selected ? (ctx.viewState.palette?.selectedStroke ?? '#f97316') : '#746b60'
+    const stroke = ctx.viewState?.selected ? (ctx.viewState.palette?.selectedStroke ?? landscapeToolColors.selected) : '#746b60'
     const children: FloorplanGeometry[] = [{ kind: 'path', d: path(outline[0]![0]!),
       fill: border && inset.length ? node.borderColor : patioFieldColor(node), stroke,
       strokeWidth: ctx.viewState?.selected ? 0.045 : 0.018 }]
@@ -268,7 +269,7 @@ export function buildPatioFloorplan(raw: PatioNode, ctx: GeometryContext): Floor
   }
   const w = node.width / 2
   const d = node.depth / 2
-  const stroke = ctx.viewState?.selected ? (ctx.viewState.palette?.selectedStroke ?? '#f97316') : '#746b60'
+  const stroke = ctx.viewState?.selected ? (ctx.viewState.palette?.selectedStroke ?? landscapeToolColors.selected) : '#746b60'
   const border = borderSize(node)
   const children: FloorplanGeometry[] = [{ kind: 'path',
     d: `M ${-w} ${-d} H ${w} V ${d} H ${-w} Z`, fill: border ? node.borderColor : patioFieldColor(node),

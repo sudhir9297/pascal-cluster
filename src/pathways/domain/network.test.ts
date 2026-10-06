@@ -44,6 +44,18 @@ const area = (graph: PathGraph) =>
   )
 
 describe('Pathway connections', () => {
+  test('an interior branch inherits the existing route grade without flattening its split', () => {
+    const first = addCurves(empty, [line([0, 0], [10, 0])], 1)
+    first.vertices[0]!.elevationOffset = 2
+    first.vertices[1]!.elevationOffset = 4
+    const joined = addCurves(first, [line([2.5, 3], [2.5, 0])], 1)
+    const joint = joined.vertices.find((vertex) => distance(vertex.point, [2.5, 0]) < 1e-4)!
+    expect(joint.elevationOffset).toBeCloseTo(2.5, 5)
+    expect(degreeAt(joined, joint.point)).toBe(3)
+    expect(first.vertices).toHaveLength(2)
+    expect(joined.vertices.find((vertex) => vertex.id === first.vertices[1]!.id)?.elevationOffset).toBe(4)
+    expect(moveJunction(joined, joint.id, [3, 0]).vertices.find((vertex) => vertex.id === joint.id)?.elevationOffset).toBe(2.5)
+  })
   test('square corners have flush caps and a mitered outside turn', () => {
     const graph = addCurves(empty, [line([0, 0], [2, 0]), line([2, 0], [2, 2])], 1)
     const rounded = buildOutline({ ...graph, cornerStyle: 'round' })[0]![0]!

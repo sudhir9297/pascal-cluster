@@ -6,8 +6,8 @@ import { broadleafControls } from './broadleaf-controls.js';
 export const redMaple = {
   name: 'Red Maple',
   latin: 'Acer rubrum',
-  bark: 'red_maple_albedo.png',
-  leaf: 'red_maple_single_albedo.png',
+  bark: 'red_maple_albedo.webp',
+  leaf: 'red_maple_single_albedo.webp',
   biome: 'temperate',
   tileWorldSize: 1.3,
   controls: broadleafControls,

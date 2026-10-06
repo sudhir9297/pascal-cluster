@@ -439,14 +439,14 @@ export function placeholderAssets(speciesKey, { sunLight = null } = {}) {
 // wiring is faithful to the app. `loadTexture(path, { srgb }) => Promise<Texture|null>`
 // is injected by the caller (in eidoverse: read the file + globalThis.loadImageTexture).
 async function loadMaps(loadTexture, dir, sub, file, extraLinear = []) {
-  const base = file.replace(/(_albedo)?\.png$/, '');
+  const base = file.replace(/(_albedo)?\.webp$/, '');
   const path = (name) => `${dir}/${sub}/${name}`;
   const opt = (name, srgb) => loadTexture(path(name), { srgb }).catch(() => null);
   const out = {};
   out.albedo = await loadTexture(path(file), { srgb: true }).catch(() => null);
-  out.normal = await opt(`${base}_normal.png`, false);
-  out.roughness = await opt(`${base}_roughness.png`, false);
-  for (const suf of extraLinear) out[suf] = await opt(`${base}_${suf}.png`, false);
+  out.normal = await opt(`${base}_normal.webp`, false);
+  out.roughness = await opt(`${base}_roughness.webp`, false);
+  for (const suf of extraLinear) out[suf] = await opt(`${base}_${suf}.webp`, false);
   return { base, ...out };
 }
 
@@ -466,9 +466,9 @@ export async function buildAssets({ species, loadTexture, assetsDir = 'assets', 
   if (typeof loadTexture !== 'function') throw new Error('[seedthree] buildAssets needs a loadTexture(path,{srgb}) function');
   const bark = await loadMaps(loadTexture, assetsDir, 'bark', sp.bark);
   const leaf = await loadMaps(loadTexture, assetsDir, 'leaves', sp.leaf, ['translucency']);
-  const leafBase = sp.leaf.replace(/(_albedo)?\.png$/, '');
-  const leafDry = await loadTexture(`${assetsDir}/leaves/${leafBase}_dry_albedo.png`, { srgb: true }).catch(() => null);
-  const leafDryest = await loadTexture(`${assetsDir}/leaves/${leafBase}_dryest_albedo.png`, { srgb: true }).catch(() => null);
+  const leafBase = sp.leaf.replace(/(_albedo)?\.webp$/, '');
+  const leafDry = await loadTexture(`${assetsDir}/leaves/${leafBase}_dry_albedo.webp`, { srgb: true }).catch(() => null);
+  const leafDryest = await loadTexture(`${assetsDir}/leaves/${leafBase}_dryest_albedo.webp`, { srgb: true }).catch(() => null);
 
   const assets = {
     barkTexture: bark.albedo, barkNormal: bark.normal, barkRoughness: bark.roughness,
@@ -478,9 +478,9 @@ export async function buildAssets({ species, loadTexture, assetsDir = 'assets', 
 
   if (sp.cactus) {
     const cleanBase = bark.base.replace(/_skin$/, '_skin_clean');
-    assets.barkCleanAlbedo = await loadTexture(`${assetsDir}/bark/${cleanBase}_albedo.png`, { srgb: true }).catch(() => null);
-    assets.barkCleanNormal = await loadTexture(`${assetsDir}/bark/${cleanBase}_normal.png`, { srgb: false }).catch(() => null);
-    assets.barkCleanRoughness = await loadTexture(`${assetsDir}/bark/${cleanBase}_roughness.png`, { srgb: false }).catch(() => null);
+    assets.barkCleanAlbedo = await loadTexture(`${assetsDir}/bark/${cleanBase}_albedo.webp`, { srgb: true }).catch(() => null);
+    assets.barkCleanNormal = await loadTexture(`${assetsDir}/bark/${cleanBase}_normal.webp`, { srgb: false }).catch(() => null);
+    assets.barkCleanRoughness = await loadTexture(`${assetsDir}/bark/${cleanBase}_roughness.webp`, { srgb: false }).catch(() => null);
   }
   if (sp.thatchBark) {
     const th = await loadMaps(loadTexture, assetsDir, 'bark', sp.thatchBark);

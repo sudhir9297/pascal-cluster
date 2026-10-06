@@ -18,8 +18,8 @@ const willowControls = [
 export const weepingWillow = {
   name: 'Weeping Willow',
   latin: 'Salix babylonica',
-  bark: 'weeping_willow_albedo.png',
-  leaf: 'weeping_willow_spray_albedo.png',
+  bark: 'weeping_willow_albedo.webp',
+  leaf: 'weeping_willow_spray_albedo.webp',
   biome: 'temperate',
   tileWorldSize: 1.35,
   controls: willowControls,

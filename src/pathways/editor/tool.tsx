@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Group } from 'three'
 import { distance, lerp, splineCurves, type Curve } from '../domain/curves'
 import { projectToEdgeNormal, snapAlongAngle } from '../domain/drafting'
-import { addCurves, snapToNetwork } from '../domain/network'
+import { addCurves, PathwayGradeConflictError, snapToNetwork } from '../domain/network'
 import { planPathwayItems } from '../domain/items'
 import { PATHWAY_KIND, PathwayNode, type Point } from '../domain/schema'
 import { snapToHardscape } from '../../ground-access/shared/hardscape-snap'
@@ -20,7 +20,11 @@ const ALIGNMENT_ID = '__pathway_draft__'
 function straight(a: Point, b: Point): Curve {
   return [a, lerp(a, b, 1 / 3), lerp(a, b, 2 / 3), b]
 }
-export default function PathwayTool({ render3D = true }: { render3D?: boolean } = {}) {
+export default function PathwayTool() {
+  const viewMode = useEditor(state => state.viewMode)
+  return viewMode === '2d' ? null : <PathwayPlacement render3D />
+}
+export function PathwayPlacement({ render3D = true }: { render3D?: boolean } = {}) {
   const activeLevelId = useViewer((s) => s.selection.levelId)
   const [preview, setPreview] = useState<PathwayNode | null>(null)
   const [cursor, setCursor] = useState<Point | null>(null)
@@ -41,13 +45,14 @@ export default function PathwayTool({ render3D = true }: { render3D?: boolean } 
     let targetKind: 'vertex' | 'edge' | null = null
     let numericField: 'length' | 'bearing' | null = null, typed = ''
     let length: number | null = null, bearing: number | null = null
+    let commitMessage = ''
     const networks = () => Object.values(useScene.getState().nodes)
       .filter((node) => (node.type as string) === PATHWAY_KIND && node.parentId === activeLevelId)
       .map((node) => PathwayNode.parse(node))
     let width = Math.min(10, Math.max(0.3, configuredWidth))
     const status = (message = '') => setPathwayStatus({
       points: (start ? 1 : 0) + alignment.length, mode, snap: targetKind !== null,
-      message: numericField ? `${numericField === 'length' ? 'Length' : 'Bearing'}: ${typed || 'type a value'}${numericField === 'bearing' ? '°' : ' m'}` : message,
+      message: numericField ? `${numericField === 'length' ? 'Length' : 'Bearing'}: ${typed || 'type a value'}${numericField === 'bearing' ? '°' : ' m'}` : message || commitMessage,
     })
     const setCursorPoint = (point: Point, kind: 'vertex' | 'edge' | null) => {
       currentCursor = point; targetKind = kind
@@ -58,6 +63,7 @@ export default function PathwayTool({ render3D = true }: { render3D?: boolean } 
       start = null; alignment = []; currentCursor = null; targetKind = null
       activeNetworkId = null
       length = null; bearing = null; numericField = null; typed = ''
+      commitMessage = ''
       setPreview(null); setCursor(null); setSnapKind(null)
       usePlacementPreview.getState().clear(); useAlignmentGuides.getState().clear(); status()
     }
@@ -82,6 +88,8 @@ export default function PathwayTool({ render3D = true }: { render3D?: boolean } 
     }
     const commit = (curves: Curve[]) => {
       if (!curves.length) return false
+      commitMessage = ''
+      if (useScene.getState().readOnly) { commitMessage = 'This project is read-only.'; status(); return false }
       try {
         const existing = networks()
         const current = existing.find((node) => node.id === activeNetworkId)
@@ -99,7 +107,7 @@ export default function PathwayTool({ render3D = true }: { render3D?: boolean } 
         })
         activeNetworkId = changes.activeId
         return true
-      } catch { status('Could not join this walkway. Move the endpoint and try again.'); return false }
+      } catch (error) { commitMessage = error instanceof PathwayGradeConflictError ? error.message : 'Could not join this walkway. Move the endpoint and try again.'; status(); return false }
     }
     const resolve = (event: GridEvent) => {
       setLevelY(event.localPosition[1])
@@ -152,6 +160,7 @@ export default function PathwayTool({ render3D = true }: { render3D?: boolean } 
       return { point, kind: null, nodeId: null, surfaceHeight: undefined, edgeDirection: undefined }
     }
     const onMove = (event: GridEvent) => {
+      commitMessage = ''
       const { point, kind } = resolve(event)
       setCursorPoint(point, kind); renderDraft()
     }
@@ -175,8 +184,8 @@ export default function PathwayTool({ render3D = true }: { render3D?: boolean } 
       length = null; bearing = null; targetKind = null; setSnapKind(null); renderDraft()
     }
     const finish = () => {
-      if (mode === 'curve' && start && alignment.length) commit(splineCurves([start, ...alignment]))
-      else if (mode === 'straight' && start && currentCursor && distance(start, currentCursor) >= 0.05) commit([straight(start, currentCursor)])
+      if (mode === 'curve' && start && alignment.length && !commit(splineCurves([start, ...alignment])) && commitMessage) return
+      else if (mode === 'straight' && start && currentCursor && distance(start, currentCursor) >= 0.05 && !commit([straight(start, currentCursor)]) && commitMessage) return
       stop()
     }
     const command = (action: 'finish' | 'back' | 'cancel' | 'toggle') => {
@@ -184,7 +193,9 @@ export default function PathwayTool({ render3D = true }: { render3D?: boolean } 
       else if (action === 'cancel') stop()
       else if (action === 'toggle') {
         const next = mode === 'straight' ? 'curve' : 'straight'
-        clear(); useEditor.getState().setToolDefaults(PATHWAY_KIND, { ...defaults, drawMode: next })
+        clear()
+        const editor = useEditor.getState()
+        editor.setToolDefaults(PATHWAY_KIND, { ...editor.toolDefaults[PATHWAY_KIND], drawMode: next })
       } else {
         if (mode === 'curve' && alignment.length) alignment.pop()
         else start = null // Straight clicks are already in scene history.

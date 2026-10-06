@@ -147,7 +147,7 @@ export default function PatioInspector({ node: rawNode }: { node: PatioNode }) {
         </label>
       </div>}
 
-      {tab === 'notes' && <InspectorNotes item="patio" />}
+      {tab === 'notes' && <InspectorNotes item="patio" nodeId={node.id} />}
     </div>
     <div className="flex shrink-0 items-center border-t border-border/50 px-3 py-2">
       <InspectorDeleteButton item="patio" onDelete={() => {

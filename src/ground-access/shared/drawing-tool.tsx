@@ -1,4 +1,5 @@
 'use client'
+import { landscapeToolColors } from '../../shared/tool-colors'
 import {
   DEFAULT_ANGLE_STEP,
   emitter,
@@ -32,7 +33,7 @@ import { setDrawingStatus } from './drawing-session'
 import { cycleDrawingMode, drawingMode } from './drawing-mode'
 import { snapToHardscape } from './hardscape-snap'
 
-const SURFACE_DRAFT_COLOR = '#d6a56a'
+const SURFACE_DRAFT_COLOR = landscapeToolColors.draft
 
 function distance(a: Point, b: Point) {
   return Math.hypot(a[0] - b[0], a[1] - b[1])
@@ -210,7 +211,7 @@ export default function SurfaceDrawingTool() {
       setPreview(fields && !fields.error ? item.schema.parse({ ...base, ...fields }) as DrawnSurface : null)
       overlay.update(shape,
         isCurvedSurface(shape) ? outline : points, isCurvedSurface(shape) ? null : current,
-        item.color, points[0])
+        SURFACE_DRAFT_COLOR, points[0])
       const main: Point[] = isCurvedSurface(shape) ? outline.length ? [...outline, outline[0]!] : []
         : shape === 'rectangle'
         ? outline.length === 4 ? [...outline, outline[0]!] : []
@@ -221,6 +222,7 @@ export default function SurfaceDrawingTool() {
         0.09)
     }
     const commit = (rawOutline: Point[], second?: Point) => {
+      if (useScene.getState().readOnly) return false
       const outline = normalizeOutline(rawOutline)
       const fields = isCurvedSurface(shape) && points[0] && second
         ? curvedSurfaceFields(points[0], second, shape, item.label.toLowerCase())
@@ -392,7 +394,7 @@ export default function SurfaceDrawingTool() {
   if (!levelId) return null
   return (
     <group layers={EDITOR_LAYER} position={[0, levelY, 0]}>
-      {preview && item && <SurfaceDraftPreview node={preview} color={item.color} />}
+      {preview && item && <SurfaceDraftPreview node={preview} color={SURFACE_DRAFT_COLOR} />}
       <primitive object={mainStroke} />
       <primitive object={closingStroke} />
       {draftPoints.map(([x, z], index) => (index === 0 || draftPoints.length < 30) && (

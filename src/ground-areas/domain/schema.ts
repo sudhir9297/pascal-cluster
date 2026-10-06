@@ -46,6 +46,9 @@ export const GroundAreaNode = BaseNode.extend({
   shape: z.enum(['rectangle', 'custom', 'freehand', 'circle', 'oval']).default('rectangle'),
   curvePoints: curvePointsSchema,
   surface: z.enum(GROUND_SURFACES).default('grass'),
+  plantingBed: z.boolean().default(false),
+  mulchDepth: z.number().finite().min(0.01).max(0.5).default(0.075),
+  mulchBagLitres: z.number().finite().min(1).max(1000).default(50),
   grass2Settings: grass2SettingsSchema.default(() => grass2SettingsSchema.parse({})),
   elevation: z.number().finite().min(-100).max(100).default(0),
   paintedMaterials: z.record(z.string(), z.object({

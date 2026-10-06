@@ -1,4 +1,5 @@
 'use client'
+import { landscapeToolColors } from '../../../shared/tool-colors'
 import { emitter, type GridEvent, type AnyNode, type AnyNodeId, runAsSingleSceneHistoryStep, snapPointToGrid, useScene } from '@pascal-app/core'
 import { CursorSphere, EDITOR_LAYER, isGridSnapActive, useEditor } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
@@ -25,7 +26,7 @@ function openEdging(levelId: AnyNodeId) {
 function Preview({ node }: { node: Edging }) {
   const object = useMemo(() => {
     const group = buildEdgingGeometry(node)
-    const draftMaterial = new MeshStandardMaterial({ color: '#8381ed', roughness: 0.82,
+    const draftMaterial = new MeshStandardMaterial({ color: landscapeToolColors.spline, roughness: 0.82,
       emissive: '#302e63', emissiveIntensity: 0.18 })
     const originals = new Set<Mesh['material']>()
     group.traverse((child) => {
@@ -59,7 +60,7 @@ function SplinePreview({ node }: { node: Edging }) {
   const object = useMemo(() => {
     const line = new Line(new BufferGeometry().setFromPoints(edgingRenderPoints(node).map(([x, z]) =>
       new Vector3(x, 0.24, z))),
-      new LineBasicMaterial({ color: '#8381ed', depthTest: false, depthWrite: false }))
+      new LineBasicMaterial({ color: landscapeToolColors.spline, depthTest: false, depthWrite: false }))
     line.layers.set(EDITOR_LAYER)
     line.renderOrder = 1009
     line.raycast = () => {}
@@ -81,7 +82,7 @@ export default function EdgingTool() {
   useEffect(() => {
     if (!levelId) return
     let base = EdgingNode.parse({ ...useEditor.getState().toolDefaults[EDGING_KIND], parentId: levelId, name: 'Edging' })
-    const overlay = new GroundAreaDraftOverlay('#d6a56a', 'data-landscape-edging-draft')
+    const overlay = new GroundAreaDraftOverlay(landscapeToolColors.spline, 'data-landscape-edging-draft')
     const modes = ['straight', 'curve', 'freehand'] as const
     let mode: Edging['drawMode'] = base.drawMode
     let points: Point[] = []
@@ -107,7 +108,7 @@ export default function EdgingTool() {
       const draftPath = frozen.length ? visible : mode === 'curve'
         ? edgingRenderPoints({ ...base, drawMode: 'curve', points: visible, closed: closing }) : visible
       overlay.update('freehand', closing && draftPath.length > 2
-        ? [...draftPath, draftPath[0]!] : draftPath, null, '#d6a56a', undefined, mode === 'curve' ? points : undefined)
+        ? [...draftPath, draftPath[0]!] : draftPath, null, landscapeToolColors.spline, undefined, mode === 'curve' ? points : undefined)
       setNode(visible.length >= 2 ? EdgingNode.parse({ ...base, points: visible,
         drawMode: frozen.length ? 'freehand' : mode, closed: closing }) : null)
     }
@@ -311,10 +312,10 @@ export default function EdgingTool() {
     {anchors.map((point, index) => <mesh key={index} layers={EDITOR_LAYER}
       position={[point[0], 0.24, point[1]]} raycast={() => null} renderOrder={1010}>
       <sphereGeometry args={[0.07, 16, 12]} />
-      <meshBasicMaterial color="#8381ed" depthTest={false} depthWrite={false} />
+      <meshBasicMaterial color={landscapeToolColors.spline} depthTest={false} depthWrite={false} />
     </mesh>)}
     <group ref={marker} visible={Boolean(cursor)}>
-      <CursorSphere color="#8381ed" height={1.8} showTooltip={false} />
+      <CursorSphere color={landscapeToolColors.spline} height={1.8} showTooltip={false} />
     </group>
   </group>
 }

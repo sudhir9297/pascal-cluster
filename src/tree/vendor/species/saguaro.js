@@ -8,12 +8,12 @@
 export const saguaro = {
   name: 'Saguaro',
   latin: 'Carnegiea gigantea',
-  bark: 'saguaro_skin_albedo.png', // waxy green cactus bark (Codex $imagegen → derived PBR)
-  spine: 'saguaro_spines_albedo.png', // areole spine-cluster alpha card (Codex)
-  leaf: 'saguaro_spines_albedo.png',  // satisfies the asset loader; spines are placed by the cactus path, not as a rosette
+  bark: 'saguaro_skin_albedo.webp', // waxy green cactus bark (Codex $imagegen → derived PBR)
+  spine: 'saguaro_spines_albedo.webp', // areole spine-cluster alpha card (Codex)
+  leaf: 'saguaro_spines_albedo.webp',  // satisfies the asset loader; spines are placed by the cactus path, not as a rosette
   biome: 'desert',
-  groundTexture: 'desert_ground_albedo.png',
-  rockTexture: 'desert_rock_albedo.png',
+  groundTexture: 'desert_ground_albedo.webp',
+  rockTexture: 'desert_rock_albedo.webp',
   tileWorldSize: 0.9,
   plantSink: 0.1,
   foliageType: 'rosette', // uses the dichotomous path; foliage is spines, not a rosette

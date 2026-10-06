@@ -59,6 +59,7 @@ export function PathwayPanel() {
     editor.setToolDefaults(PATHWAY_KIND, { ...previous,
       defaultWidth: drawingWidth(previous), cornerStyle: 'square',
       ...(stone ? STONE_WALKWAY_PRESET : {}), drawMode: nextMode })
+    editor.setMode('build')
     editor.setTool(PATHWAY_KIND)
   }
   const updateDefaults = (patch: Partial<PathwayNode>) => {

@@ -1,3 +1,4 @@
+import { gradePathwayMesh, pathwayGradeField } from './grade-mesh'
 import { extrudePaving } from './safe-extrusion'
 import {
   Group,
@@ -9,10 +10,9 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import { STONE_LAYOUT_DEFAULTS, currentPathway, isNaturalStoneFinish, type PathwayEdgeProfile, type PathwayNode } from '../domain/schema'
 import { buildOutline } from './outline'
 import { createFinishTexture } from './finishes'
-import { laidPavingTiles } from './laid-paving'
+import { pathwayStoneFootprints } from './stone-footprints'
 import { pavingPolygons } from './paving-polygons'
 import { pavingBorder } from './paving-border'
-import { naturalStones } from './natural-stones'
 import type { GeometryContext } from '@pascal-app/core'
 import { subtractPoolCutouts } from '../../shared/pool-cutouts'
 
@@ -122,9 +122,7 @@ export function buildPathwayGeometry(node: PathwayNode, ctx?: GeometryContext, s
     borderMaterial.color.multiplyScalar(0.94)
     ownedMaterials.push(borderMaterial)
     const batches = new Map<MeshStandardMaterial, BufferGeometry[]>()
-    const tiles = natural
-      ? naturalStones(node).map((stone) => ({ ...stone, border: false }))
-      : laidPavingTiles(node)
+    const tiles = pathwayStoneFootprints(node, ctx)
     group.userData.pavingTileCount = tiles.length
     for (const tile of tiles) {
       // Extrusion bevels expand outward. Inset the source first so bevels
@@ -162,6 +160,15 @@ export function buildPathwayGeometry(node: PathwayNode, ctx?: GeometryContext, s
       mesh.receiveShadow = true
       group.add(mesh)
     }
+  }
+  if (node.vertices.some((vertex) => (vertex.elevationOffset ?? 0) !== 0)) {
+    const heightAt = pathwayGradeField(node)
+    group.traverse((object) => {
+      if (!(object instanceof Mesh)) return
+      const original = object.geometry
+      object.geometry = gradePathwayMesh(original, heightAt)
+      original.dispose()
+    })
   }
   return group
 }
