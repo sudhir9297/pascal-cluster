@@ -1,3 +1,5 @@
+
+import { basinModelRotation } from '../countertop-basin/orientation'
 import {
   type AnyNode, type AnyNodeId, type FloorplanGeometry, type FloorplanMoveTarget,
   type GeometryContext, getEffectiveNode, useLiveNodeOverrides, useScene,
@@ -14,7 +16,7 @@ export function wallBasinFloorplan(node: WallSupportedBasinNode, ctx: GeometryCo
   const wall = getEffectiveNode(parent)
   const attachment = wallBasinPlacement(node, wall, node.position[0], node.side, 0, true)
   const pose = wallBasinPlanPose(attachment ? { ...node, ...attachment } : node, wall)
-  const c = Math.cos(pose.yaw), s = Math.sin(pose.yaw)
+  const c = Math.cos(basinModelRotation(pose.yaw)), s = Math.sin(basinModelRotation(pose.yaw))
   const points = wallBasinOutline(node).map(([x, z]) =>
     [pose.x + x * c + z * s, pose.z - x * s + z * c] as [number, number])
   return {

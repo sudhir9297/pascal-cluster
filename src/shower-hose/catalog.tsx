@@ -3,6 +3,18 @@ import { useEditor } from '@pascal-app/editor'
 import ShowerPresetCatalog from '../shower-common/preset-catalog'
 import { ShowerHoseNode, SHOWER_HOSE, showerHosePresets } from './schema'
 import { setShowerHoseStyle, useShowerHoseStyle, useShowerHoseStage } from './placement-settings'
+import smoothThumbnail from './assets/smooth.webp'
+import metalThumbnail from './assets/metal.webp'
+import ribbonThumbnail from './assets/ribbon.webp'
+
+type ThumbnailAsset = string | { src: string }
+const thumbnailSrc = (asset: ThumbnailAsset | undefined) => typeof asset === 'string' ? asset : asset?.src
+
+const showerHoseThumbnails: Record<ShowerHoseNode['style'], ThumbnailAsset> = {
+  smooth: smoothThumbnail,
+  metal: metalThumbnail,
+  ribbon: ribbonThumbnail,
+}
 export function ShowerHosePreview({ style = 'smooth' }: { style?: ShowerHoseNode['style'] }) {
   return (
     <svg
@@ -38,7 +50,9 @@ export default function ShowerHoseCatalog({ query }: { query: string }) {
         setShowerHoseStyle(id as ShowerHoseNode['style'])
         useEditor.getState().setTool(SHOWER_HOSE)
       }}
-      renderPreview={(id) => <ShowerHosePreview style={id as ShowerHoseNode['style']} />}
+      renderPreview={(id) => (
+        <img src={thumbnailSrc(showerHoseThumbnails[id as ShowerHoseNode['style']])} alt="" className="h-full w-full object-contain p-1" />
+      )}
       hint={stage}
     />
   )

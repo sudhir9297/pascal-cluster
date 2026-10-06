@@ -9,16 +9,13 @@ export function catalogFamilies(
   selectedId: string,
   query: string,
 ) {
-  const search = query.trim().toLowerCase()
+  const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean)
   return families.flatMap((family) => {
     const members = items.filter((item) => family.itemIds.includes(item.id))
-    if (
-      !members.length ||
-      !`${family.label} ${members.map((item) => item.label).join(' ')}`
-        .toLowerCase()
-        .includes(search)
-    )
-      return []
+    if (!members.length || !members.some(item => {
+      const text = `${family.label} ${item.label}`.toLowerCase()
+      return words.every(word => text.includes(word))
+    })) return []
     const selected = members.find((item) => item.id === selectedId) ?? members[0]!
     return [
       {

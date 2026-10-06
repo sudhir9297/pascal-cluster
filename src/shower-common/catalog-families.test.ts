@@ -31,3 +31,11 @@ test('a family uses its own default when a different family is selected', () => 
     ['hose', true],
   ])
 })
+
+test('multiword searches combine family and one variant without merging incompatible variants', () => {
+  const items = [{ id: 'round', label: 'Round rain' }, { id: 'square', label: 'Square rain' }]
+  const families = [{ id: 'head', label: 'Overhead shower head', itemIds: ['round', 'square'] }]
+  expect(catalogFamilies(items, families, 'round', ' square   SHOWER ').map(f => f.id)).toEqual(['head'])
+  expect(catalogFamilies(items, families, 'round', 'round square')).toEqual([])
+  expect(catalogFamilies(items, families, 'round', 'square shower')[0]?.selectedId).toBe('round')
+})

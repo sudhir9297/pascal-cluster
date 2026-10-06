@@ -12,7 +12,7 @@ const server = Bun.serve({ port: 5187, async fetch(request) {
   if (request.method === 'POST' && url.pathname.startsWith('/thumbnail/')) {
     const id = url.pathname.slice('/thumbnail/'.length)
     if (!tapPresetIds.includes(id as typeof tapPresetIds[number])) return new Response('Unknown tap', { status: 400 })
-    await Bun.write(new URL(`../src/taps/assets/${id}.png`, import.meta.url), await request.arrayBuffer())
+    await Bun.write(new URL(`../src/taps/assets/${id}.webp`, import.meta.url), await request.arrayBuffer())
     return new Response('ok')
   }
   if (url.pathname === '/render.js') return new Response(renderer, { headers: { 'Content-Type': 'text/javascript' } })

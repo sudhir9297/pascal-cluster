@@ -11,4 +11,4 @@ export function sectionDetail(key: string, label: string, value: number, min: nu
 export function sectionFieldPatch(field: SectionDimension, value: number): Record<string, unknown> {
   return field.patch?.(value) ?? { [field.key]: value }
 }
-export type SectionModel = { drawing: SectionDrawing; dimensions: SectionDimension[] }
+export type SectionModel = { drawing: SectionDrawing; dimensions: SectionDimension[]; sizeOptions?: {label:string;patch:Record<string,number>;source:string}[] }

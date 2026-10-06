@@ -47,7 +47,7 @@ export const basinParameterGroups: { label: string; fields: ParamField<BasinNode
         key: 'wallThickness',
         label: 'Wall thickness',
         kind: 'number',
-        min: 0.006,
+        min: 0.005,
         max: 0.025,
         step: 0.001,
         unit: 'm',
@@ -73,6 +73,7 @@ export const basinParameterGroups: { label: string; fields: ParamField<BasinNode
 ]
 export const countertopBasinDefinition: NodeDefinition<typeof CountertopBasinNode> = {
   kind: COUNTERTOP_BASIN,
+  system: { module: () => import('./tap-target-system'), priority: 2 },
   schemaVersion: 1,
   schema: CountertopBasinNode,
   category: 'furnish',

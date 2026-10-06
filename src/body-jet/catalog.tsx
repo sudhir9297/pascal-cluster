@@ -4,6 +4,27 @@ import ShowerPresetCatalog, { type ShowerCatalogFilterProps } from '../shower-co
 import { BODY_JET, bodyJetPresets, bodyJetPresetNode } from './schema'
 import { roundBodyJet } from './targets'
 import { setBodyJetPreset, useBodyJetPreset, type BodyJetPresetId } from './placement-settings'
+import RoundFlushThumbnail from './assets/round-flush.webp'
+import SquareFlushThumbnail from './assets/square-flush.webp'
+import RoundSwivelThumbnail from './assets/round-swivel.webp'
+import SquareSwivelThumbnail from './assets/square-swivel.webp'
+import SlimThumbnail from './assets/slim.webp'
+import MassageThumbnail from './assets/massage.webp'
+import VerticalGroupThumbnail from './assets/vertical-group.webp'
+import HorizontalGroupThumbnail from './assets/horizontal-group.webp'
+
+type ThumbnailAsset = string | { src: string }
+const thumbnailSrc = (asset: ThumbnailAsset | undefined) => typeof asset === 'string' ? asset : asset?.src
+const bodyJetThumbnails: Record<string, ThumbnailAsset> = {
+  'round-flush': RoundFlushThumbnail,
+  'square-flush': SquareFlushThumbnail,
+  'round-swivel': RoundSwivelThumbnail,
+  'square-swivel': SquareSwivelThumbnail,
+  'slim': SlimThumbnail,
+  'massage': MassageThumbnail,
+  'vertical-group': VerticalGroupThumbnail,
+  'horizontal-group': HorizontalGroupThumbnail,
+}
 export function BodyJetPreview({ preset = 'round-flush' }: { preset?: BodyJetPresetId }) {
   const n = bodyJetPresetNode(bodyJetPresets.find((p) => p.id === preset)!),
     round = roundBodyJet(n),
@@ -54,7 +75,9 @@ export default function BodyJetCatalog(props: ShowerCatalogFilterProps) {
         setBodyJetPreset(id as BodyJetPresetId)
         useEditor.getState().setTool(BODY_JET)
       }}
-      renderPreview={(id) => <BodyJetPreview preset={id as BodyJetPresetId} />}
+      renderPreview={(id) => (
+        <img src={thumbnailSrc(bodyJetThumbnails[id])} alt="" className="h-full w-full object-contain p-1" />
+      )}
       hint="Click a wall to place."
     />
   )

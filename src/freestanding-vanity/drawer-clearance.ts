@@ -1,3 +1,5 @@
+
+import { basinModelRotation } from '../countertop-basin/orientation'
 import { getEffectiveNode, type AnyNode } from '@pascal-app/core'
 import { Brush, Evaluator, SUBTRACTION, ensureRenderableGeometryAttributes, applyWorldScaleBoxUVs } from '@pascal-app/viewer'
 import { Box3, BoxGeometry, BufferGeometry, Group, Matrix4, Mesh, MeshBasicMaterial, Vector3, type Object3D } from 'three'
@@ -19,7 +21,7 @@ export function basinDrawerVolumes(host: VanityNode, children: readonly AnyNode[
     if (!isInsetBasinKind(String(raw.type)) || !raw.visible) return []
     const basin = BasinNode.parse(getEffectiveNode(raw))
     if (!basin.visible || basin.parentId !== host.id || !basinRemainsOnVanity(basin, host)) return []
-    const c = Math.cos(basin.rotation), s = Math.sin(basin.rotation)
+    const c = Math.cos(basinModelRotation(basin.rotation)), s = Math.sin(basinModelRotation(basin.rotation))
     const volume = new Box3()
     for (const [x, z] of (basin.type === SEMI_RECESSED_BASIN ? semiRecessedOutline : basinOutline)(basin.shape, basin.width, basinDepth(basin))) {
       volume.expandByPoint(new Vector3(basin.position[0] + x * c + z * s, basin.position[1], basin.position[2] - x * s + z * c))

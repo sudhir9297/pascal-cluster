@@ -1,9 +1,9 @@
 'use client'
+import {BasinSliderControl as SliderControl,BasinSizingProvider} from '../countertop-basin/size-controls'
 
 import {
   PanelSection,
   PanelWrapper,
-  SliderControl,
   ToggleControl,
   PanelButton,
 } from '../inspector-controls'
@@ -44,7 +44,7 @@ export default function CountertopBasinInspector({ node: raw }: { node: BasinNod
     useScene.getState().updateNode(node.id as AnyNodeId, patch as Partial<AnyNode>)
   }
   return (
-    <PanelWrapper
+    <BasinSizingProvider node={node}><PanelWrapper
       title={
         node.type === SEMI_RECESSED_BASIN
           ? 'Semi-recessed Basin'
@@ -93,7 +93,7 @@ export default function CountertopBasinInspector({ node: raw }: { node: BasinNod
             if (field.visibleIf && !field.visibleIf(node)) return null
             if (field.kind === 'number')
               return (
-                <SliderControl
+                <SliderControl dimensionKey={field.key}
                   key={field.key}
                   label={field.label ?? field.key}
                   value={node[field.key] as number}
@@ -124,7 +124,7 @@ export default function CountertopBasinInspector({ node: raw }: { node: BasinNod
       ))}
       {node.type === SEMI_RECESSED_BASIN && (
         <PanelSection title="Recess and projection" defaultExpanded>
-          <SliderControl
+          <SliderControl dimensionKey="frontProjection"
             label="Front projection"
             value={node.frontProjection}
             min={0.04}
@@ -134,7 +134,7 @@ export default function CountertopBasinInspector({ node: raw }: { node: BasinNod
             unit="m"
             onChange={(frontProjection) => update({ frontProjection })}
           />
-          <SliderControl
+          <SliderControl dimensionKey="recessDepth"
             label="Recess depth"
             value={node.recessDepth}
             min={0.03}
@@ -148,7 +148,7 @@ export default function CountertopBasinInspector({ node: raw }: { node: BasinNod
       )}
       <PanelSection title="Placement" defaultExpanded>
         {isInsetBasinKind(node.type) && node.type !== SEMI_RECESSED_BASIN && (
-          <SliderControl
+          <SliderControl dimensionKey="flangeWidth"
             label={node.type === DROP_IN_BASIN ? 'Rim overhang' : 'Mounting flange'}
             value={node.flangeWidth}
             min={0.01}
@@ -160,7 +160,7 @@ export default function CountertopBasinInspector({ node: raw }: { node: BasinNod
           />
         )}
         {node.type === DROP_IN_BASIN && (
-          <SliderControl
+          <SliderControl dimensionKey="rimHeight"
             label="Rim height"
             value={node.rimHeight}
             min={0.004}
@@ -188,6 +188,6 @@ export default function CountertopBasinInspector({ node: raw }: { node: BasinNod
           }
         />
       </PanelSection>
-    </PanelWrapper>
+    </PanelWrapper></BasinSizingProvider>
   )
 }

@@ -93,8 +93,8 @@ describe('wall hung basins', () => {
     expect(pose.position[0]).toBeCloseTo(1 - target.position[2])
     expect(pose.position[2]).toBeCloseTo(3)
     const tap = basinTapLocalToLevel(placed, basinTapTarget(placed), nodes)
-    // Default box deck midpoint is 53.5 mm forward of the basin rear.
-    expect(Math.abs(tap.position[0] - 1)).toBeCloseTo(wall.thickness / 2 + 0.0535)
+    // The half-turn moves the deck midpoint to the opposite side of the basin center.
+    expect(Math.abs(tap.position[0] - 1)).toBeCloseTo(wall.thickness / 2 + node.depth - 0.0535)
     expect(tap.position[1]).toBeCloseTo(0.85)
     const footprint = wallBasinFloorplan(placed, { resolve: id => nodes[id] } as Parameters<typeof wallBasinFloorplan>[1])!
     const xs = footprint.points.map(point => point[0])

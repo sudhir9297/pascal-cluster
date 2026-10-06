@@ -1,9 +1,11 @@
 import { type VanityNode, CORNER_VANITY, WALL_MOUNTED_VANITY } from '../freestanding-vanity/schema'
 import { vanityBays } from '../freestanding-vanity/layout'
+import { vanitySizeOptions, vanityDimensionReferences } from '../freestanding-vanity/size-options'
 import { sectionDimension as dim, sectionDetail as detail, sectionRect as rect, type SectionModel } from './fields'
 
 export function vanitySection(node: VanityNode, maxWidth = 1.8): SectionModel {
   const corner = node.type === CORNER_VANITY, wall = node.type === WALL_MOUNTED_VANITY
+  const elevation = wall ? node.position[1] : 0
   const r = node.width / Math.SQRT2, f = r * .65, overhang = node.countertopEnabled ? node.countertopOverhang : 0
   const planWidth = (corner ? r * 2 : node.width) + overhang * 2
   const w = corner ? r * 1.35 : node.width, d = corner ? r * 1.35 : node.depth, h = node.height
@@ -30,14 +32,29 @@ export function vanitySection(node: VanityNode, maxWidth = 1.8): SectionModel {
     x += bw
   }
   if (!wall && node.lowerShelf) drawingDetail += `M${overhang + t},${splash + h - base / 2}H${overhang + w - t}`
-  const dimensions = [dim('width', corner ? 'Wall length' : 'Width', node.width, .55, corner ? 1.2 : maxWidth, corner ? .01 : .05, 'plan', 'x', corner ? r * 2 : node.width), { ...dim('height', 'Height', h, .55, 1.1, .01), start: splash }]
+  const dimensions = [dim('width', corner ? 'Wall length' : 'Width', node.width, .55, corner ? 1.2 : maxWidth, corner ? .01 : .05, 'plan', 'x', corner ? r * 2 : node.width), { ...dim('height', wall ? 'Top height from floor' : 'Height', h + elevation, .55 + elevation, 1.1 + elevation, .00001), start: splash + h + elevation, direction: -1 as const, patch: (value: number) => ({height: value - elevation}) }]
   if (!corner) dimensions.splice(1, 0, dim('depth', 'Depth', node.depth, .35, .75, .01, 'plan', 'y'))
-  dimensions.push({ ...dim(wall ? 'mountingHeight' : 'legHeight', wall ? 'Floor clearance' : 'Base height', base, wall ? .1 : .06, wall ? Math.min(.4, h - top - .2) : .3, .01), start: splash + h, direction: -1 })
+  for (const field of dimensions.filter(field => field.view === 'plan')) {
+    field.span += overhang * 2
+    field.spanOffset = overhang * 2
+  }
+  if (corner) {
+    dimensions[0]!.crossPosition = r - f + overhang
+    dimensions[0]!.crossOffset = overhang
+  }
+  dimensions.push({ ...dim(wall ? 'mountingHeight' : 'legHeight', wall ? 'Floor clearance' : 'Base height', base + elevation, (wall ? .1 : .06) + elevation, (wall ? Math.min(.4, h - top - .2) : .3) + elevation, .01), start: splash + h + elevation, direction: -1, patch: value => ({[wall ? 'mountingHeight' : 'legHeight']: value - elevation}) })
   dimensions.push(detail('panelThickness', 'Panel thickness', t, .012, .03, .001))
   if (node.countertopEnabled) dimensions.push(detail('countertopThickness', 'Countertop thickness', top, .015, .06, .005), detail('countertopOverhang', 'Countertop overhang', overhang, 0, .05, .005), detail('backsplashHeight', 'Backsplash height', splash, 0, .2, .01))
   if (!wall && node.baseStyle !== 'plinth') dimensions.push(detail('legWidth', 'Leg width', node.legWidth, .025, .075, .005), detail('legInset', 'Leg inset', node.legInset, 0, .06, .005))
   if (!corner && bays.some(bay => bay.kind === 'drawers') && !['console', 'custom'].includes(node.storageLayout)) dimensions.push(detail('drawerRows', 'Drawer rows', node.drawerRows, 1, 4, 1, ''))
   if (node.storageLayout === 'drawers') dimensions.push(detail('drawerColumns', 'Drawer columns', node.drawerColumns, 1, 3, 1, ''))
   if (bays.some(bay => bay.kind === 'doors') && node.storageLayout !== 'custom') dimensions.push(detail('interiorShelves', 'Interior shelves', node.interiorShelves, 0, 3, 1, ''))
-  return { drawing: { width: planWidth, sectionWidth, depth: d + overhang * 2, height: h + splash, plan, section, detail: drawingDetail, floor: true }, dimensions }
+  for (const field of dimensions) {
+    const references = vanityDimensionReferences(node, field.key, maxWidth).map(reference => ({...reference, value: reference.value + (field.key === 'height' ? elevation : 0), label: `${Number(((reference.value + (field.key === 'height' ? elevation : 0)) * 1000).toFixed(2))} mm`})).filter(reference => reference.value >= field.min && reference.value <= field.max)
+    if (references.length) {
+      field.presets = references
+      if (field.key !== 'height') field.snapValues = references.map(reference => reference.value)
+    }
+  }
+  return { sizeOptions: vanitySizeOptions(node, maxWidth), drawing: { width: planWidth, sectionWidth, depth: d + overhang * 2, height: h + splash + elevation, plan, section, detail: drawingDetail, floor: true }, dimensions }
 }

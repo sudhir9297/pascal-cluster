@@ -3,6 +3,26 @@ import { useEditor } from '@pascal-app/editor'
 import ShowerPresetCatalog from '../shower-common/preset-catalog'
 import { SHOWER_FLANGE, showerFlangePresets } from './schema'
 import { useShowerFlangePreset, setShowerFlangePreset } from './placement-settings'
+import roundPlateThumbnail from './assets/round-plate.webp'
+import squarePlateThumbnail from './assets/square-plate.webp'
+import softSquareThumbnail from './assets/soft-square.webp'
+import raisedRoundThumbnail from './assets/raised-round.webp'
+import steppedRoundThumbnail from './assets/stepped-round.webp'
+import deepBellThumbnail from './assets/deep-bell.webp'
+import widePlateThumbnail from './assets/wide-plate.webp'
+
+type ThumbnailAsset = string | { src: string }
+const thumbnailSrc = (asset: ThumbnailAsset | undefined) => typeof asset === 'string' ? asset : asset?.src
+
+const showerFlangeThumbnails: Record<string, ThumbnailAsset> = {
+  'round-plate': roundPlateThumbnail,
+  'square-plate': squarePlateThumbnail,
+  'soft-square': softSquareThumbnail,
+  'raised-round': raisedRoundThumbnail,
+  'stepped-round': steppedRoundThumbnail,
+  'deep-bell': deepBellThumbnail,
+  'wide-plate': widePlateThumbnail,
+}
 export default function ShowerFlangeCatalog({ query }: { query: string }) {
   const selected = useShowerFlangePreset(),
     active = useEditor((s) => s.tool === SHOWER_FLANGE)
@@ -20,24 +40,7 @@ export default function ShowerFlangeCatalog({ query }: { query: string }) {
       }}
       hint="Click a wall-mounted arm to attach or replace its cover."
       renderPreview={(id) => (
-        <svg
-          viewBox="0 0 88 64"
-          className="h-full w-full p-2"
-          aria-hidden="true"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          {id.includes('square') ? (
-            <rect x="22" y="10" width="44" height="44" rx={id === 'soft-square' ? 7 : 0} />
-          ) : (
-            <circle cx="44" cy="32" r={id === 'wide-plate' ? 26 : 22} />
-          )}
-          <circle cx="44" cy="32" r="8" />
-          {['raised-round', 'stepped-round', 'deep-bell'].includes(id) && (
-            <circle cx="44" cy="32" r="14" />
-          )}
-        </svg>
+        <img src={thumbnailSrc(showerFlangeThumbnails[id])} alt="" className="h-full w-full object-contain p-1" />
       )}
     />
   )

@@ -1,3 +1,4 @@
+import { basinSizeOptions, basinDimensionSnapValues } from '../countertop-basin/size-options'
 import { basinDepth, type BasinNode, FULL_PEDESTAL_BASIN, HALF_PEDESTAL_BASIN, WALL_HUNG_BASIN, SEMI_RECESSED_BASIN, DROP_IN_BASIN, UNDERMOUNT_BASIN, isInsetBasinKind } from '../countertop-basin/schema'
 import { wallBasinMinimumMountHeight, wallBasinOutline } from '../wall-hung-basin/profile'
 import { sectionDimension as dim, sectionDetail as detail, sectionRect as rect, sectionEllipse as ellipse, type SectionModel } from './fields'
@@ -23,8 +24,12 @@ export function basinSection(node: BasinNode, elevationOffset = 0): SectionModel
   let drawingDetail = node.drainCover ? rect(width / 2 - node.drainDiameter / 2 - .004, top + h - t - .004, node.drainDiameter + .008, .004) : ''
   const dimensions = [dim('width', round ? 'Diameter' : 'Width', w, wall ? .45 : .3, .8, .01, 'plan', 'x', w)]
   if (!round) dimensions.push(dim('depth', wall ? 'Projection' : 'Depth', d, wall ? .42 : .3, .55, .01, 'plan', 'y'))
-  dimensions.push({ ...dim('height', 'Bowl height', h, node.type === SEMI_RECESSED_BASIN ? .12 : .08, .22, .005), start: top })
-  dimensions.push(detail('wallThickness', 'Wall thickness', t, .006, .025, .001), detail('taper', 'Base taper', node.taper, 0, .4, .02, ''), detail('drainDiameter', 'Drain diameter', node.drainDiameter, .035, .05, .001))
+  for (const field of dimensions.filter(field => field.view === 'plan')) {
+    field.span += flange * 2
+    field.spanOffset = flange * 2
+  }
+  dimensions.push({ ...dim('height', 'Bowl height', h, node.type === SEMI_RECESSED_BASIN ? .12 : .08, .22, .005), start: top + h, direction: -1 })
+  dimensions.push(detail('wallThickness', 'Wall thickness', t, .005, .025, .001), detail('taper', 'Base taper', node.taper, 0, .4, .02, ''), detail('drainDiameter', 'Drain diameter', node.drainDiameter, .035, .05, .001))
   if (node.type === FULL_PEDESTAL_BASIN) {
     section += rect((width - node.pedestalWidth) / 2, top + h, node.pedestalWidth, node.totalHeight - h)
     planDetail += rect((width - node.pedestalWidth) / 2, (d - node.pedestalDepth) / 2, node.pedestalWidth, node.pedestalDepth)
@@ -48,5 +53,11 @@ export function basinSection(node: BasinNode, elevationOffset = 0): SectionModel
     planDetail += `M0,${d - node.frontProjection}H${width}`
     dimensions.push(detail('frontProjection', 'Front projection', node.frontProjection, .04, .18, .005), detail('recessDepth', 'Recess depth', node.recessDepth, .03, .1, .005))
   }
-  return { drawing: { width, depth: d + flange * 2, height: total, fixtureHeight: supportHeight + (node.type === WALL_HUNG_BASIN && node.plumbingEnabled ? node.plumbingDrop : 0), plan, planDetail, section, detail: drawingDetail, floor: true, datum: !wall ? { y: top + aboveMount - rim, label: inset ? 'Mounting plane' : 'Base' } : undefined }, dimensions }
+  const sizeOptions=basinSizeOptions(node)
+  for(const field of dimensions){
+    const values=field.key==='height'?[]:basinDimensionSnapValues(node,field.key)
+    if(values.length){field.snapValues=values;field.min=Math.min(field.min,...values);field.max=Math.max(field.max,...values)}
+  }
+  if(node.type==='bath-space:countertop-basin')dimensions.find(field=>field.key==='wallThickness')!.presets=[{value:.005,label:'5 mm',source:'https://www.duravit.com/en-us/service/features-materials/duraceram-r/'}]
+  return { sizeOptions, drawing: { width, depth: d + flange * 2, height: total, fixtureHeight: supportHeight + (node.type === WALL_HUNG_BASIN && node.plumbingEnabled ? node.plumbingDrop : 0), plan, planDetail, section, detail: drawingDetail, floor: true, datum: !wall ? { y: top + aboveMount - rim, label: inset ? 'Mounting plane' : 'Base' } : undefined }, dimensions }
 }

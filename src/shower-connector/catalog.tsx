@@ -3,6 +3,29 @@ import { useEditor } from '@pascal-app/editor'
 import ShowerPresetCatalog from '../shower-common/preset-catalog'
 import { SHOWER_CONNECTOR, showerConnectorPresets } from './schema'
 import { useShowerConnectorPreset, setShowerConnectorPreset } from './placement-settings'
+import HoseCouplingThumbnail from './assets/hose-coupling.webp'
+import HoseElbowThumbnail from './assets/hose-elbow.webp'
+import CouplingThumbnail from './assets/coupling.webp'
+import ExtensionThumbnail from './assets/extension.webp'
+import Elbow45Thumbnail from './assets/elbow-45.webp'
+import Elbow90Thumbnail from './assets/elbow-90.webp'
+import SwivelThumbnail from './assets/swivel.webp'
+import ArticulatedThumbnail from './assets/articulated.webp'
+import ReducerThumbnail from './assets/reducer.webp'
+
+type ThumbnailAsset = string | { src: string }
+const thumbnailSrc = (asset: ThumbnailAsset | undefined) => typeof asset === 'string' ? asset : asset?.src
+const connectorThumbnails: Record<string, ThumbnailAsset> = {
+  'hose-coupling': HoseCouplingThumbnail,
+  'hose-elbow': HoseElbowThumbnail,
+  'coupling': CouplingThumbnail,
+  'extension': ExtensionThumbnail,
+  'elbow-45': Elbow45Thumbnail,
+  'elbow-90': Elbow90Thumbnail,
+  'swivel': SwivelThumbnail,
+  'articulated': ArticulatedThumbnail,
+  'reducer': ReducerThumbnail,
+}
 export default function ShowerConnectorCatalog({ query }: { query: string }) {
   const selected = useShowerConnectorPreset(),
     active = useEditor((s) => s.tool === SHOWER_CONNECTOR)
@@ -32,26 +55,7 @@ export default function ShowerConnectorCatalog({ query }: { query: string }) {
       }}
       hint="Click an overhead arm or its adapter. Existing heads are retained."
       renderPreview={(id) => (
-        <svg
-          viewBox="0 0 88 64"
-          className="h-full w-full p-2"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="5"
-          aria-hidden="true"
-        >
-          <path
-            d={
-              id.startsWith('elbow')
-                ? 'M32 12V32Q32 46 48 46H62'
-                : id === 'articulated'
-                  ? 'M25 12L25 20L60 44L60 54'
-                  : 'M44 12V52'
-            }
-          />
-          <path d="M34 12H54" />
-          {id === 'swivel' && <circle cx="44" cy="32" r="8" />}
-        </svg>
+        <img src={thumbnailSrc(connectorThumbnails[id])} alt="" className="h-full w-full object-contain p-1" />
       )}
     />
   )

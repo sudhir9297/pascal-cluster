@@ -3,6 +3,24 @@ import { useEditor } from '@pascal-app/editor'
 import ShowerPresetCatalog from '../shower-common/preset-catalog'
 import { ShowerHeadNode, SHOWER_HEAD, showerHeadPresets } from './schema'
 import { setShowerHeadStyle, useShowerHeadStyle } from './placement-settings'
+import roundRainThumbnail from './assets/round-rain.webp'
+import squareRainThumbnail from './assets/square-rain.webp'
+import softSquareThumbnail from './assets/soft-square.webp'
+import rectangularThumbnail from './assets/rectangular.webp'
+import compactThumbnail from './assets/compact.webp'
+import bellThumbnail from './assets/bell.webp'
+
+type ThumbnailAsset = string | { src: string }
+const thumbnailSrc = (asset: ThumbnailAsset | undefined) => typeof asset === 'string' ? asset : asset?.src
+
+const showerHeadThumbnails: Record<ShowerHeadNode['style'], ThumbnailAsset> = {
+  'round-rain': roundRainThumbnail,
+  'square-rain': squareRainThumbnail,
+  'soft-square': softSquareThumbnail,
+  rectangular: rectangularThumbnail,
+  compact: compactThumbnail,
+  bell: bellThumbnail,
+}
 export function ShowerHeadPreview({ style = 'round-rain' }: { style?: ShowerHeadNode['style'] }) {
   const circular = ['round-rain', 'compact'].includes(style)
   const width = style === 'rectangular' ? 68 : style === 'compact' ? 36 : 54
@@ -62,7 +80,13 @@ export default function ShowerHeadCatalog({ query }: { query: string }) {
         setShowerHeadStyle(id as ShowerHeadNode['style'])
         useEditor.getState().setTool(SHOWER_HEAD)
       }}
-      renderPreview={(id) => <ShowerHeadPreview style={id as ShowerHeadNode['style']} />}
+      renderPreview={(id) => (
+        <img
+          src={thumbnailSrc(showerHeadThumbnails[id as ShowerHeadNode['style']])}
+          alt=""
+          className="h-full w-full object-contain p-1"
+        />
+      )}
       hint={'Click an arm to attach. Replaces an existing head.'}
     />
   )

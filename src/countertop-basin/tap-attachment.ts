@@ -1,3 +1,5 @@
+
+import { basinModelRotation } from './orientation'
 import { tapHost, fixtureTapSlots, fixtureTapLocalToLevel } from '../taps/fixture-host'
 import { getEffectiveNode, type AnyNode, type AnyNodeId } from '@pascal-app/core'
 import { attachmentChanges, sameSlot, type SlotRef } from '../attachments/slots'
@@ -100,17 +102,17 @@ export function syncBasinTapTarget(target: Object3D, node: BasinNode, nodes: Nod
 }
 
 export function basinTapLocalToLevel(basin: BasinNode, pose: BasinTapPose, nodes: Nodes): BasinTapPose {
-  const frame = basinLevelPose(basin, nodes), c = Math.cos(frame.rotation), s = Math.sin(frame.rotation)
+  const frame = basinLevelPose(basin, nodes), rotation = basinModelRotation(frame.rotation), c = Math.cos(rotation), s = Math.sin(rotation)
   const [x, y, z] = pose.position
   return { position: [frame.position[0] + x * c + z * s, frame.position[1] + y,
-    frame.position[2] - x * s + z * c], rotation: pose.rotation + frame.rotation }
+    frame.position[2] - x * s + z * c], rotation: pose.rotation + rotation }
 }
 
 export function basinTapLevelToLocal(basin: BasinNode, pose: BasinTapPose, nodes: Nodes): BasinTapPose {
-  const frame = basinLevelPose(basin, nodes), c = Math.cos(frame.rotation), s = Math.sin(frame.rotation)
+  const frame = basinLevelPose(basin, nodes), rotation = basinModelRotation(frame.rotation), c = Math.cos(rotation), s = Math.sin(rotation)
   const x = pose.position[0] - frame.position[0], z = pose.position[2] - frame.position[2]
   return { position: [x * c - z * s, pose.position[1] - frame.position[1], x * s + z * c],
-    rotation: pose.rotation - frame.rotation }
+    rotation: pose.rotation - rotation }
 }
 
 export function basinOwnsTapSurface(surface: Object3D | undefined, roots: ReadonlyMap<string, Object3D>, nodes: Nodes) {

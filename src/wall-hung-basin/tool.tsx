@@ -1,4 +1,6 @@
 'use client'
+
+import { basinModelRotation } from '../countertop-basin/orientation'
 import { createWallHoverHandlers } from '../attachments/wall-hover'
 
 import {
@@ -356,7 +358,7 @@ export default function WallBasinTool({
       floorNode={pedestal ? ({ ...node, ...placement } as unknown as AnyNode) : undefined}
       wall={parent}
       position={placement.position}
-      rotation={placement.rotation}
+      rotation={basinModelRotation(placement.rotation)}
     />
   ) : null
 }

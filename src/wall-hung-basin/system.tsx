@@ -1,4 +1,6 @@
 'use client'
+
+import { basinModelRotation } from '../countertop-basin/orientation'
 import { wallFloorPosition } from '../floor-support/wall-position'
 import { getEffectiveNode, sceneRegistry, type AnyNodeId, type SceneApi } from '@pascal-app/core'
 import { useFrame } from '@react-three/fiber'
@@ -32,6 +34,7 @@ export default function WallHungBasinSystem({
       const node = (
         halfPedestal ? HalfPedestalBasinNode : pedestal ? FullPedestalBasinNode : WallHungBasinNode
       ).parse(getEffectiveNode(raw))
+      root.rotation.y = basinModelRotation(node.rotation)
       const wall = nodes[(node.wallId ?? node.parentId) as AnyNodeId]
       if (wall?.type !== 'wall') continue
       const target = wallBasinPlacement(
@@ -54,7 +57,7 @@ export default function WallHungBasinSystem({
               )
             : target.position),
         )
-        root.rotation.y = target.rotation
+        root.rotation.y = basinModelRotation(target.rotation)
       }
     }
   }, 2)

@@ -13,7 +13,7 @@ export const BasinParameters = z.object({
   width: z.number().finite().max(0.8).default(0.5),
   depth: z.number().finite().max(0.55).default(0.38),
   height: z.number().min(0.08).max(0.22).default(0.14),
-  wallThickness: z.number().min(0.006).max(0.025).default(0.012),
+  wallThickness: z.number().min(0.005).max(0.025).default(0.012),
   taper: z.number().min(0).max(0.4).default(0.22),
   drainDiameter: z.number().min(0.035).max(0.05).default(0.045),
   drainCover: z.boolean().default(true),
@@ -214,7 +214,7 @@ export const fullPedestalBasinPresets = [
 export const wallHungBasinPresets = [
   {
     wallDesign: 'sculpted',
-    thumbnail: new URL('../wall-hung-basin/assets/sculpted.png', import.meta.url).href,
+    thumbnail: new URL('../wall-hung-basin/assets/sculpted.webp', import.meta.url).href,
     label: 'Sculpted shroud',
     description: 'Flared bowl, concealed waste',
     shape: 'rectangle',
@@ -227,7 +227,7 @@ export const wallHungBasinPresets = [
   },
   {
     wallDesign: 'shallow',
-    thumbnail: new URL('../wall-hung-basin/assets/shallow.png', import.meta.url).href,
+    thumbnail: new URL('../wall-hung-basin/assets/shallow.webp', import.meta.url).href,
     label: 'Slim rectangle',
     description: 'Soft rim, chrome bottle trap',
     shape: 'rectangle',
@@ -240,7 +240,7 @@ export const wallHungBasinPresets = [
   },
   {
     wallDesign: 'classic',
-    thumbnail: new URL('../wall-hung-basin/assets/classic.png', import.meta.url).href,
+    thumbnail: new URL('../wall-hung-basin/assets/classic.webp', import.meta.url).href,
     label: 'Classic curved',
     description: 'Rounded front, curved waste trap',
     shape: 'oval',
@@ -253,7 +253,7 @@ export const wallHungBasinPresets = [
   },
   {
     wallDesign: 'box',
-    thumbnail: new URL('../wall-hung-basin/assets/box.png', import.meta.url).href,
+    thumbnail: new URL('../wall-hung-basin/assets/box.webp', import.meta.url).href,
     label: 'Deep box',
     description: 'Straight apron, flexible waste',
     shape: 'rectangle',

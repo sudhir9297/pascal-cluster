@@ -2,11 +2,12 @@
 import {
   PanelSection,
   PanelWrapper,
-  SliderControl,
   ToggleControl,
   PanelSelect,
 } from '../inspector-controls'
 
+import { SectionSizingProvider } from '../section/sizing-mode'
+import { VanitySliderControl as SliderControl } from './size-controls'
 import { SectionAccordion } from '../section/section-card'
 import { vanitySection } from '../section/model'
 import { type AnyNode, type AnyNodeId, useScene } from '@pascal-app/core'
@@ -40,6 +41,8 @@ export default function CornerVanityInspector({ node: raw }: { node: CornerVanit
     step: number,
   ) => (
     <SliderControl
+      node={node}
+      dimensionKey={key}
       key={key}
       label={label}
       value={node[key]}
@@ -72,7 +75,7 @@ export default function CornerVanityInspector({ node: raw }: { node: CornerVanit
     </label>
   )
   return (
-    <PanelWrapper
+    <SectionSizingProvider key={node.id}><PanelWrapper
       title="Corner Vanity"
       width={340}
       onClose={() => useViewer.getState().setSelection({ selectedIds: [] })}
@@ -99,6 +102,6 @@ export default function CornerVanityInspector({ node: raw }: { node: CornerVanit
         />
         {node.countertopEnabled && slider('countertopThickness', 'Thickness', 0.015, 0.06, 0.005)}
       </PanelSection>
-    </PanelWrapper>
+    </PanelWrapper></SectionSizingProvider>
   )
 }

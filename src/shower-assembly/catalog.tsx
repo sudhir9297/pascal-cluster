@@ -3,6 +3,27 @@ import { useEditor } from '@pascal-app/editor'
 import ShowerPresetCatalog, { type ShowerCatalogFilterProps } from '../shower-common/preset-catalog'
 import { SHOWER_ASSEMBLY, showerAssemblyPresets } from './schema'
 import { useAssemblyPreset, setAssemblyPreset, type AssemblyPresetId } from './placement-settings'
+import RoundColumnThumbnail from './assets/round-column.webp'
+import SquareColumnThumbnail from './assets/square-column.webp'
+import CurvedColumnThumbnail from './assets/curved-column.webp'
+import ClassicColumnThumbnail from './assets/classic-column.webp'
+import FlatPanelThumbnail from './assets/flat-panel.webp'
+import RoundedPanelThumbnail from './assets/rounded-panel.webp'
+import CurvedPanelThumbnail from './assets/curved-panel.webp'
+import WaterfallPanelThumbnail from './assets/waterfall-panel.webp'
+
+type ThumbnailAsset = string | { src: string }
+const thumbnailSrc = (asset: ThumbnailAsset | undefined) => typeof asset === 'string' ? asset : asset?.src
+const assemblyThumbnails: Record<string, ThumbnailAsset> = {
+  'round-column': RoundColumnThumbnail,
+  'square-column': SquareColumnThumbnail,
+  'curved-column': CurvedColumnThumbnail,
+  'classic-column': ClassicColumnThumbnail,
+  'flat-panel': FlatPanelThumbnail,
+  'rounded-panel': RoundedPanelThumbnail,
+  'curved-panel': CurvedPanelThumbnail,
+  'waterfall-panel': WaterfallPanelThumbnail,
+}
 export function ShowerAssemblyPreview({ preset = 'round-column' }: { preset?: AssemblyPresetId }) {
   const p = showerAssemblyPresets.find((p) => p.id === preset)!,
     panel = p.family === 'panel'
@@ -60,7 +81,9 @@ export default function ShowerAssemblyCatalog({ query }: ShowerCatalogFilterProp
         setAssemblyPreset(id as AssemblyPresetId)
         useEditor.getState().setTool(SHOWER_ASSEMBLY)
       }}
-      renderPreview={(id) => <ShowerAssemblyPreview preset={id as AssemblyPresetId} />}
+      renderPreview={(id) => (
+        <img src={thumbnailSrc(assemblyThumbnails[id])} alt="" className="h-full w-full object-contain p-1" />
+      )}
       hint="Click a wall to place."
     />
   )

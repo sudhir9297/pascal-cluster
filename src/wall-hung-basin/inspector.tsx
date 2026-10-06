@@ -1,8 +1,8 @@
 'use client'
+import {BasinSliderControl as SliderControl,BasinSizingProvider} from '../countertop-basin/size-controls'
 import {
   PanelSection,
   PanelWrapper,
-  SliderControl,
   ToggleControl,
   PanelButton,
   PanelSelect,
@@ -40,7 +40,7 @@ export default function WallHungBasinInspector({ node: raw }: { node: WallHungBa
   const update = (patch: Partial<WallHungBasinNode>) =>
     useScene.getState().updateNode(node.id as AnyNodeId, prepare(patch) as Partial<AnyNode>)
   return (
-    <PanelWrapper title="Wall hung Basin" onClose={() => setSelection({ selectedIds: [] })}>
+    <BasinSizingProvider node={node}><PanelWrapper title="Wall hung Basin" onClose={() => setSelection({ selectedIds: [] })}>
       <SectionAccordion
         node={node}
         model={basinSection}
@@ -82,7 +82,7 @@ export default function WallHungBasinInspector({ node: raw }: { node: WallHungBa
         </div>
       </PanelSection>
       <PanelSection title="Dimensions" defaultExpanded>
-        <SliderControl
+        <SliderControl dimensionKey="width"
           label="Width"
           value={node.width}
           min={0.45}
@@ -92,7 +92,7 @@ export default function WallHungBasinInspector({ node: raw }: { node: WallHungBa
           unit="m"
           onChange={(width) => update({ width })}
         />
-        <SliderControl
+        <SliderControl dimensionKey="depth"
           label="Projection from wall"
           value={node.depth}
           min={0.42}
@@ -102,7 +102,7 @@ export default function WallHungBasinInspector({ node: raw }: { node: WallHungBa
           unit="m"
           onChange={(depth) => update({ depth })}
         />
-        <SliderControl
+        <SliderControl dimensionKey="height"
           label="Bowl depth"
           value={node.height}
           min={0.08}
@@ -112,7 +112,7 @@ export default function WallHungBasinInspector({ node: raw }: { node: WallHungBa
           unit="m"
           onChange={(height) => update({ height })}
         />
-        <SliderControl
+        <SliderControl dimensionKey="wallThickness"
           label="Wall thickness"
           value={node.wallThickness}
           min={0.006}
@@ -122,7 +122,7 @@ export default function WallHungBasinInspector({ node: raw }: { node: WallHungBa
           unit="m"
           onChange={(wallThickness) => update({ wallThickness })}
         />
-        <SliderControl
+        <SliderControl dimensionKey="taper"
           label="Base taper"
           value={node.taper}
           min={0}
@@ -156,7 +156,7 @@ export default function WallHungBasinInspector({ node: raw }: { node: WallHungBa
                 <option value="flexible">Flexible pipe</option>
               </PanelSelect>
             </label>
-            <SliderControl
+            <SliderControl dimensionKey="plumbingDrop"
               label="Wall outlet below basin"
               value={node.plumbingDrop}
               min={0.12}
@@ -189,7 +189,7 @@ export default function WallHungBasinInspector({ node: raw }: { node: WallHungBa
         </PanelButton>
       </PanelSection>
       <PanelSection title="Drain" defaultExpanded>
-        <SliderControl
+        <SliderControl dimensionKey="drainDiameter"
           label="Drain diameter"
           value={node.drainDiameter}
           min={0.035}
@@ -210,6 +210,6 @@ export default function WallHungBasinInspector({ node: raw }: { node: WallHungBa
           onChange={(overflowEnabled) => update({ overflowEnabled })}
         />
       </PanelSection>
-    </PanelWrapper>
+    </PanelWrapper></BasinSizingProvider>
   )
 }
