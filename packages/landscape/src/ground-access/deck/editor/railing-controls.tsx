@@ -16,7 +16,7 @@ export function DeckRailingControls({ node, selected, onUpdate }: Props) {
     if (!selected) { onUpdate({ railingStyle }); return }
     scene.updateNodes([
       { id: node.id as AnyNodeId, data: { railingStyle } as Partial<AnyNode> },
-      ...Object.values(scene.nodes).flatMap((fence) => fence.type === 'fence' && fence.supportSurfaceId === node.id
+      ...Object.values(scene.nodes).flatMap((fence) => fence.type === 'fence' && fence.supportSurfaceNodeId === node.id
         ? [{ id: fence.id as AnyNodeId, data: { visible: railingStyle === 'none' } }] : []),
     ])
   }
@@ -30,7 +30,7 @@ export function DeckRailingControls({ node, selected, onUpdate }: Props) {
     viewer.setSelection({ selectedIds: [], levelId: parent.id })
     const editor = useEditor.getState()
     editor.setToolDefaults('fence', {
-      supportSurfaceId: node.id, name: 'Deck railing', style: 'guard', height: node.railingHeight,
+      supportSurfaceNodeId: node.id, name: 'Deck railing', style: 'guard', height: node.railingHeight,
       thickness: 0.09, postSize: 0.09, postSpacing: node.railingPostSpacing,
       color: node.railingColor, baseStyle: 'raised', baseHeight: 0.0381,
       groundClearance: 0.09, topRailHeight: 0.0381, guardInfill: 'balusters',
