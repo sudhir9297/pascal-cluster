@@ -75,7 +75,13 @@ export function commitMultiNodeFields(
     if (parametrics?.derive) patch = { ...patch, ...parametrics.derive({ ...node, ...patch } as AnyNode, patch, node) } as Partial<AnyNode>
     updates.push({ id, data: patch })
     for (const key of Object.keys(patch)) keys.add(key)
-    if (parametrics?.reconcile) followUps.push(...parametrics.reconcile(node, { ...node, ...patch } as AnyNode))
+  }
+  if (parametrics?.reconcile) {
+    const pendingNodes = { ...scene.nodes }
+    for (const { id, data } of updates) pendingNodes[id] = { ...scene.nodes[id], ...data } as AnyNode
+    for (const { id } of updates) {
+      followUps.push(...parametrics.reconcile(scene.nodes[id]!, pendingNodes[id]!, pendingNodes))
+    }
   }
   const live = useLiveNodeOverrides.getState()
   for (const id of ids) {

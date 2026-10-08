@@ -11,7 +11,7 @@ function pointsAttribute(points: readonly Point[]) {
 }
 
 export class GroundAreaDraftOverlay {
-  constructor(private readonly color = GROUND_AREA_DRAFT_COLOR,
+  constructor(private readonly color: string = GROUND_AREA_DRAFT_COLOR,
     private readonly attribute = 'data-landscape-ground-draft') {}
   private root: SVGGElement | null = null
   private fill: SVGPolygonElement | null = null

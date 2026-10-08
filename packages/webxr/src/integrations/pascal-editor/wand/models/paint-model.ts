@@ -6,7 +6,7 @@ import {
   MATERIAL_CATEGORIES, subscribeLibraryMaterials, toLibraryMaterialRef, toSceneMaterialRef,
   useScene, type MaterialSource,
 } from '@pascal-app/core'
-import { getActivePaintMaterialLabel, hasActivePaintMaterial, useEditor } from '@pascal-app/editor'
+import { getActivePaintMaterialLabel, hasActivePaintMaterial, useEditor, usePaintRegionMode } from '@pascal-app/editor'
 import type { XRWandPaintModel } from '../../../../xr/wand'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { PascalXRWandBindings } from '../bindings'
@@ -113,7 +113,7 @@ export function usePascalXRWandPaintModel(bindings: PascalXRWandBindings): XRWan
       selectMaterial(toSceneMaterialRef(id))
       setShowScene(true)
     } }],
-    startPainting: () => { bindings.activatePaintMode(); useEditor.getState().setPaintEraser(false) },
-    toggleEraser: () => { bindings.activatePaintMode(); useEditor.getState().setPaintEraser(mode !== 'material-paint' || !paintEraser) },
+    startPainting: () => { bindings.activatePaintMode(); usePaintRegionMode.getState().setMode(usePaintRegionMode.getState().drawMode) },
+    toggleEraser: () => { bindings.activatePaintMode(); usePaintRegionMode.getState().setMode(mode !== 'material-paint' || !paintEraser ? 'erase' : usePaintRegionMode.getState().drawMode) },
   }
 }
