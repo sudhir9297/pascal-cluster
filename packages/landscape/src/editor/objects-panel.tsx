@@ -14,9 +14,7 @@ export function selectLandscapeObjects(nodes: AnyNode[]) {
   const editor = useEditor.getState()
   editor.setTool(null)
   editor.setMode('select')
-  const planting = nodes.every((node) => ['landscape:tree', 'landscape:plant', 'item'].includes(node.type as string))
-  editor.setPhase(planting ? 'furnish' : 'structure')
-  if (!planting) editor.setStructureLayer('elements')
+  editor.setPhase('building')
   useViewer.getState().setSelection({ selectedIds: nodes.map((node) => node.id) })
 }
 

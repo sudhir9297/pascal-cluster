@@ -80,7 +80,7 @@ export default function FixtureSchedulePanel() {
             borderColor: selectedIds.includes(row.id) ? 'var(--muted-foreground)' : 'var(--border)' }}
           onClick={() => {
             const editor = useEditor.getState()
-            editor.setTool(null); editor.setMode('select'); editor.setPhase('furnish')
+            editor.setTool(null); editor.setMode('select'); editor.setPhase('building')
             useViewer.getState().setSelection({ buildingId: row.buildingId, levelId: row.levelId, zoneId: null, selectedIds: [row.id] })
           }}>
           <span style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 }}>

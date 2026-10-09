@@ -64,7 +64,7 @@ export function PlantPlacement({ activeLevelId, selectNode, isCameraDragging = n
     }
     const finish = () => {
       const editor = useEditor.getState()
-      editor.setTool(null); editor.setMode('select'); editor.setPhase('furnish')
+      editor.setTool(null); editor.setMode('select'); editor.setPhase('building')
       editor.setActiveSidebarPanel('pascal:landscape:landscape')
     }
     const resolve = (event: PlacementEvent) => {

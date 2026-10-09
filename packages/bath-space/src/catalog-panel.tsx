@@ -173,7 +173,7 @@ function PlacedItemCard({ node, location }: { node: AnyNode; location: FixtureRo
       const editor = useEditor.getState()
       editor.setTool(null)
       editor.setMode('select')
-      editor.setPhase('furnish')
+      editor.setPhase('building')
       useViewer.getState().setSelection({ buildingId: location?.buildingId ?? null, levelId: location?.levelId ?? null, zoneId: null, selectedIds: [node.id] })
     }} label={label}>
     <PlacedPreview node={node} />
