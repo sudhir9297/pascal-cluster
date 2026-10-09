@@ -10,20 +10,20 @@ import {BATH_SHOWER} from './bath-shower/schema'
 import {BATH_SCREEN} from './bath-screen/schema'
 import ShowerKitCatalog from './shower-kit/catalog'
 import ShowerAssemblyCatalog from './shower-assembly/catalog'
-import WallSpoutCatalog, {WallSpoutPreview} from './wall-spout/catalog'
-import BodyJetCatalog, {BodyJetPreview} from './body-jet/catalog'
-import ShowerControlCatalog, {ShowerControlPreview} from './shower-control/catalog'
-import ShowerHoseCatalog, { ShowerHosePreview } from './shower-hose/catalog'
-import ShowerMountCatalog, { ShowerMountPreview } from './shower-mount/catalog'
-import HandShowerCatalog, { HandShowerPreview } from './hand-shower/catalog'
-import ShowerHeadCatalog, { ShowerHeadPreview } from './shower-head/catalog'
+import WallSpoutCatalog, {wallSpoutThumbnails} from './wall-spout/catalog'
+import BodyJetCatalog, {bodyJetThumbnails} from './body-jet/catalog'
+import ShowerControlCatalog, {showerControlThumbnails} from './shower-control/catalog'
+import ShowerHoseCatalog, { showerHoseThumbnails } from './shower-hose/catalog'
+import ShowerMountCatalog, { showerMountThumbnails } from './shower-mount/catalog'
+import HandShowerCatalog, { handShowerThumbnails } from './hand-shower/catalog'
+import ShowerHeadCatalog, { showerHeadThumbnails } from './shower-head/catalog'
 import FloorToiletCatalog, { ToiletPreview as FloorToiletPreview } from './floor-standing-toilet/catalog'
-import ShowerArmCatalog, { ShowerArmPreview } from './shower-arm/catalog'
+import ShowerArmCatalog, { showerArmThumbnails } from './shower-arm/catalog'
 
 import { useViewer } from '@pascal-app/viewer'
 import { useEditor } from '@pascal-app/editor'
 import { useScene, type AnyNode } from '@pascal-app/core'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useCatalogPreferences } from './shower-common/catalog-preferences'
 import FixtureSchedulePanel from './workspace/schedule-panel'
 import { fixtureInventory, type FixtureRow } from './workspace/inventory'
@@ -35,7 +35,13 @@ import BathCatalog, { BathPreview } from './bathtub/catalog'
 import { BATH_DECK } from './bath-deck/schema'
 import { BATHTUB } from './bathtub/schema'
 import TapCatalog from './taps/catalog'
-import { CatalogEmptyState, CatalogGrid, CatalogItemCard, CatalogScrollArea } from './catalog-ui'
+import { tapPresets } from './taps/presets'
+import { assemblyThumbnails } from './shower-assembly/catalog'
+import { showerControlPresets } from './shower-control/schema'
+import { wallSpoutPresets } from './wall-spout/schema'
+import { bodyJetPresets } from './body-jet/schema'
+import { showerAssemblyPresets } from './shower-assembly/schema'
+import { CatalogEmptyState, CatalogGrid, CatalogItemCard, CatalogScrollArea, CatalogSubmenu } from './catalog-ui'
 import { vanityPresets } from './freestanding-vanity/presets'
 import { setVanityPlacementPreset, useVanityPlacementPreset } from './freestanding-vanity/placement-settings'
 import { FREESTANDING_VANITY, WALL_MOUNTED_VANITY, CORNER_VANITY, type VanityNode } from './freestanding-vanity/schema'
@@ -103,27 +109,54 @@ function BasinPreview({ shape, wallHung = false, semiRecessed = false, pedestal 
   </svg>
 }
 
-function PlacedPreview({ node }: { node: AnyNode }) {
+type ThumbnailAsset = string | { src: string }
+function RenderedThumbnail({ assets, style, fallback }: { assets: Readonly<Record<string, ThumbnailAsset | undefined>>; style: string; fallback: string }) {
+  const asset = assets[style] ?? assets[fallback]
+  return <img src={typeof asset === 'string' ? asset : asset?.src} alt="" loading="lazy" className="h-full w-full object-contain" />
+}
+function matchingPreset(node: AnyNode, presets: readonly { id: string; label: string }[]) {
+  const raw = node as unknown as Record<string, unknown>
+  return presets.find((preset) => Object.entries(preset).every(([key, value]) => ['id', 'label'].includes(key) || raw[key] === value))?.id ?? presets[0]?.id ?? ''
+}
+
+export function PlacedPreview({ node }: { node: AnyNode }) {
   const type = String(node.type)
+  const style = 'style' in node ? String(node.style) : ''
   if (type === 'bath-space:wall-light') return <WallLightPreview />
   if (type === 'bath-space:towel-rail') return <TowelRailPreview shape={'shape' in node ? String(node.shape) : undefined} />
   if (type === 'bath-space:mirror') return <MirrorPreview shape={'shape' in node ? String(node.shape) : undefined} />
   if (type === SHOWER_DIVIDER) return <DividerPreview columns={'columns' in node ? Number(node.columns) : 1} rows={'rows' in node ? Number(node.rows) : 1} />
-  if (type.includes('wall-spout')) return <WallSpoutPreview />
-  if (type.includes('body-jet')) return <BodyJetPreview />
-  if (type.includes('shower-control')) return <ShowerControlPreview />
-  if (type.includes('shower-hose')) return <ShowerHosePreview />
-  if (type.includes('hand-shower')) return <HandShowerPreview />
-  if (type.includes('shower-mount')) return <ShowerMountPreview />
-  if (type.includes('shower-head')) return <ShowerHeadPreview />
-  if (type.includes('shower-arm')) return <ShowerArmPreview />
-  if (type === BATHTUB) return <BathPreview />
+  if (type.includes('wall-spout')) return <RenderedThumbnail assets={wallSpoutThumbnails} style={matchingPreset(node, wallSpoutPresets)} fallback="round" />
+  if (type.includes('body-jet')) return <RenderedThumbnail assets={bodyJetThumbnails} style={matchingPreset(node, bodyJetPresets)} fallback="round-flush" />
+  if (type.includes('shower-control')) return <RenderedThumbnail assets={showerControlThumbnails} style={matchingPreset(node, showerControlPresets)} fallback="round-lever" />
+  if (type.includes('shower-hose')) return <RenderedThumbnail assets={showerHoseThumbnails} style={style} fallback="smooth" />
+  if (type.includes('hand-shower')) return <RenderedThumbnail assets={handShowerThumbnails} style={style} fallback="round" />
+  if (type.includes('shower-mount')) return <RenderedThumbnail assets={showerMountThumbnails} style={style} fallback="round-holder" />
+  if (type.includes('shower-head')) return <RenderedThumbnail assets={showerHeadThumbnails} style={style} fallback="round-rain" />
+  if (type.includes('shower-arm')) return <RenderedThumbnail assets={showerArmThumbnails} style={style} fallback="round-adjustable" />
+  if (type.includes('shower-assembly')) return <RenderedThumbnail assets={assemblyThumbnails} style={matchingPreset(node, showerAssemblyPresets)} fallback="round-column" />
+  if (type === BATHTUB) return <BathPreview shape={'shape' in node ? String(node.shape) : undefined} />
   if (type.includes('toilet-paper-holder')) return <HolderPreview shape={'shape' in node && typeof node.shape === 'string' ? node.shape : undefined} />
   if (type.includes('flush-')) return <FlushPlatePreview shape={'shape' in node && typeof node.shape === 'string' ? node.shape : undefined} />
   if (type === FLOOR_STANDING_TOILET) return <FloorToiletPreview design={(node as unknown as FloorStandingToiletNode).design} />
   if (type === WALL_HUNG_TOILET) return <ToiletPreview style={(node as unknown as WallHungToiletNode).style} />
   if (type.includes('vanity')) return <PlacedVanityPreview node={node as unknown as VanityNode} />
-  if (type.includes('basin')) return <BasinPreview shape="oval" wallHung={type.includes('wall-hung')} pedestal={type.includes('full-pedestal')} halfPedestal={type.includes('half-pedestal')} />
+  if (type === 'bath-space:tap') {
+    const preset = tapPresets.find((preset) => preset.id === ('presetId' in node ? node.presetId : null))
+    if (preset) return <img src={preset.thumbnail} alt="" className="h-full w-full object-contain" />
+  }
+  if (isBasinKind(type)) {
+    const shape = 'shape' in node && ['round', 'oval', 'rectangle'].includes(String(node.shape)) ? node.shape as 'round' | 'oval' | 'rectangle' : 'oval'
+    const thumbnail = getBasinShapeThumbnail(type, shape)
+    if (thumbnail) return <img src={thumbnail} alt="" className="h-full w-full object-contain" />
+    if (type === WALL_HUNG_BASIN) {
+      const design = 'wallDesign' in node ? String(node.wallDesign) : 'sculpted'
+      const assets = { classic: new URL('./wall-hung-basin/assets/classic.webp', import.meta.url).href, box: new URL('./wall-hung-basin/assets/box.webp', import.meta.url).href, shallow: new URL('./wall-hung-basin/assets/shallow.webp', import.meta.url).href, sculpted: wallHungBasinThumbnail }
+      return <RenderedThumbnail assets={assets} style={design} fallback="sculpted" />
+    }
+    const src = type === FULL_PEDESTAL_BASIN ? fullPedestalBasinThumbnail : halfPedestalBasinThumbnail
+    return <img src={src} alt="" className="h-full w-full object-contain" />
+  }
   return <svg aria-hidden="true" viewBox="0 0 88 64" className="h-full w-full p-4 text-foreground/85" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
     <path d="M43 51V25c0-8 4-13 9-13s9 5 9 13v26M39 51h26M52 12V8m5 4V8" />
   </svg>
@@ -159,6 +192,7 @@ export default function BathSpaceCatalog({ category, basinMount }: { category?: 
   const basinShape = useBasinPlacementShape()
   const wallDesign = useWallBasinPlacementDesign()
   const placingBasin = isBasinKind(activeTool ?? "")
+  const submenuId = useId()
   const [basinKind, setBasinKind] = useState<string>(COUNTERTOP_BASIN)
   const [basinCategoryOpen, setBasinCategoryOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -284,22 +318,23 @@ export default function BathSpaceCatalog({ category, basinMount }: { category?: 
               {visibleVanityCategories.map(option => <div key={option.value} className="group relative">
                 <CatalogItemCard type="button"
                   aria-pressed={(expandedVanityKind !== null || placing) && kind === option.value}
+                  id={`${submenuId}-vanity-${option.value}`}
+                  aria-controls={`${submenuId}-vanity-styles`}
                   aria-expanded={expandedVanityKind === option.value}
                   onClick={() => { setSelectedKind(option.value); setExpandedVanityKind(expandedVanityKind === option.value ? null : option.value) }} label={option.label}>
                   <VanityPreview design="shaker" wallMounted={option.value === WALL_MOUNTED_VANITY} corner={option.value === CORNER_VANITY} />
                 </CatalogItemCard>
               </div>)}
             </CatalogGrid>
-            {expandedVanityKind !== null && <>
-              <hr style={{ width: '100%', margin: '4px 0', border: 0, borderTop: '1px solid var(--border)' }} />
-          {corner ? <CatalogGrid aria-label="Vanity style">
+            {expandedVanityKind !== null && <CatalogSubmenu id={`${submenuId}-vanity-styles`} title={`${vanityCategories.find((option) => option.value === expandedVanityKind)?.label ?? 'Vanity'} styles`} onClose={() => { setExpandedVanityKind(null); document.getElementById(`${submenuId}-vanity-${expandedVanityKind}`)?.focus() }}>
+          {corner ? <CatalogGrid columns={3} aria-label="Vanity style">
                       <CatalogItemCard type="button"
                         aria-label="Add Angled front vanity"
                         onClick={() => { preferences.remember(styleKey(CORNER_VANITY, 'angled-front')); setTool(CORNER_VANITY) }}
                         aria-pressed={placingKind} label="Angled front">
                         <VanityPreview corner />
                       </CatalogItemCard>
-          </CatalogGrid> : <CatalogGrid aria-label="Vanity style">
+          </CatalogGrid> : <CatalogGrid columns={3} aria-label="Vanity style">
             {visibleVanityPresets.map((preset) => {
               const selected = presetId === preset.id
               return <CatalogItemCard key={preset.id}
@@ -316,7 +351,7 @@ export default function BathSpaceCatalog({ category, basinMount }: { category?: 
             })}
           </CatalogGrid>}
           {( !corner && visibleVanityPresets.length === 0) && <CatalogEmptyState>{`No vanity styles match "${query.trim()}".`}</CatalogEmptyState>}
-            </>}
+            </CatalogSubmenu>}
           </div>
           {placingKind && <p role="status" className="text-xs text-muted-foreground">
             {corner ? 'Click near a 90° corner.' : wallMounted ? 'Click a wall to place.' : 'Click to place.'} Esc to cancel.
@@ -334,6 +369,8 @@ export default function BathSpaceCatalog({ category, basinMount }: { category?: 
           {visibleBasinCategories.map(option => <div key={option.value} className="group relative">
             <CatalogItemCard type="button"
               aria-pressed={(basinCategoryOpen || placingBasin) && currentBasinKind === option.value}
+              id={`${submenuId}-basin-${option.value}`}
+              aria-controls={`${submenuId}-basin-styles`}
               aria-expanded={basinCategoryOpen && basinKind === option.value}
               onClick={() => { setBasinCategoryOpen(basinCategoryOpen && basinKind === option.value ? false : true); setBasinKind(option.value) }} label={option.label}>
               {option.value === WALL_HUNG_BASIN ? <img src={wallHungBasinThumbnail} alt="" loading="lazy" className="h-full w-full object-contain" /> : option.value === FULL_PEDESTAL_BASIN ? <img src={fullPedestalBasinThumbnail} alt="" loading="lazy" className="h-full w-full object-contain" /> : option.value === HALF_PEDESTAL_BASIN ? <img src={halfPedestalBasinThumbnail} alt="" loading="lazy" className="h-full w-full object-contain" /> : getBasinShapeThumbnail(option.value, 'round') ? <img src={getBasinShapeThumbnail(option.value, 'round')!} alt="" loading="lazy" style={{ transform: 'scale(1.28)' }} className="h-full w-full object-contain" /> : <BasinPreview shape="oval" semiRecessed={option.value === SEMI_RECESSED_BASIN} />}
@@ -341,9 +378,8 @@ export default function BathSpaceCatalog({ category, basinMount }: { category?: 
 
           </div>)}
         </CatalogGrid>
-        {basinCategoryOpen && <>
-          <hr style={{ width: '100%', margin: '4px 0', border: 0, borderTop: '1px solid var(--border)' }} />
-          {wallHung ? <CatalogGrid aria-label="Wall hung basin designs">
+        {basinCategoryOpen && <CatalogSubmenu id={`${submenuId}-basin-styles`} title={`${basinCategories.find((option) => option.value === currentBasinKind)?.label ?? 'Basin'} styles`} onClose={() => { setBasinCategoryOpen(false); document.getElementById(`${submenuId}-basin-${basinKind}`)?.focus() }}>
+          {wallHung ? <CatalogGrid columns={3} aria-label="Wall hung basin designs">
             {visibleWallBasinPresets.map(preset => {
               const selected = activeTool === WALL_HUNG_BASIN && wallDesign === preset.wallDesign
               return <CatalogItemCard key={preset.wallDesign}
@@ -354,7 +390,7 @@ export default function BathSpaceCatalog({ category, basinMount }: { category?: 
                 <img src={preset.thumbnail} alt="" width={720} height={540} loading="lazy" className="h-full w-full object-cover" />
               </CatalogItemCard>
             })}
-          </CatalogGrid> : <CatalogGrid aria-label="Basin shape">
+          </CatalogGrid> : <CatalogGrid columns={3} aria-label="Basin shape">
           {visibleBasinPresets.map(preset => {
             const presetThumbnail = fullPedestal && 'pedestalDesign' in preset
               ? preset.pedestalDesign === 'classic' ? fullPedestalBasinThumbnail : preset.pedestalDesign === 'square' ? squareFullPedestalBasinThumbnail : taperedMonoblocBasinThumbnail
@@ -371,7 +407,7 @@ export default function BathSpaceCatalog({ category, basinMount }: { category?: 
           })}
           </CatalogGrid>}
           {(wallHung ? visibleWallBasinPresets.length : visibleBasinPresets.length) === 0 && <CatalogEmptyState>{`No basin styles match "${query.trim()}".`}</CatalogEmptyState>}
-        </>}
+        </CatalogSubmenu>}
         </div>
         {placingBasin && <p role="status" className="text-xs text-muted-foreground">
           {halfPedestal || fullPedestal || wallHung ? 'Click a wall to place.' : inset ? 'Click a vanity countertop to place.' : 'Click a surface to place.'} Esc to cancel.

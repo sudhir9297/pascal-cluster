@@ -1,0 +1,734 @@
+{
+  "center": {
+    "lat": 48.8392482,
+    "lon": 2.3500942
+  },
+  "radius": 30,
+  "sourceIdentity": "sha256:6ecce5b9cdc4b8b1fa23b9dab10cb38c2d7c9974df631714c4b39974fa83a6c3",
+  "segments": 10,
+  "roads": [
+    {
+      "id": 1059216050,
+      "disposition": "accepted",
+      "tags": {
+        "cycleway:left": "no",
+        "cycleway:right": "shared_lane",
+        "cycleway:right:lane": "pictogram",
+        "highway": "secondary",
+        "lanes": "2",
+        "lanes:backward": "1",
+        "lanes:forward": "1",
+        "lit": "yes",
+        "maxspeed": "30",
+        "name": "Rue Monge",
+        "name:etymology:wikidata": "Q206832",
+        "sidewalk:both": "separate",
+        "smoothness": "good",
+        "source:maxspeed": "BMO arrêté n°2015P0159",
+        "surface": "asphalt",
+        "zone:maxspeed": "FR:30"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8388718,
+            "lon": 2.3508248,
+            "nodeId": 25034117
+          },
+          {
+            "lat": 48.8388968,
+            "lon": 2.3508398,
+            "nodeId": 4827798350
+          },
+          {
+            "lat": 48.839072,
+            "lon": 2.3509397,
+            "nodeId": 4886258765
+          },
+          {
+            "lat": 48.8391479,
+            "lon": 2.3509804,
+            "nodeId": 25033996
+          }
+        ],
+        "closed": false
+      }
+    },
+    {
+      "id": 1174880993,
+      "disposition": "accepted",
+      "tags": {
+        "cycleway:both": "no",
+        "highway": "residential",
+        "junction": "circular",
+        "lit": "yes",
+        "maxspeed": "30",
+        "name": "Place Georges Moustaki",
+        "note": "not a roundabout; pas un giratoire",
+        "oneway": "yes",
+        "sidewalk": "right",
+        "sidewalk:right:surface": "sett",
+        "smoothness": "good",
+        "surface": "asphalt",
+        "zone:maxspeed": "FR:30"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8393905,
+            "lon": 2.3501553,
+            "nodeId": 25033837
+          },
+          {
+            "lat": 48.839403,
+            "lon": 2.350127,
+            "nodeId": 1984877429
+          },
+          {
+            "lat": 48.83941,
+            "lon": 2.3500946,
+            "nodeId": 1984877435
+          },
+          {
+            "lat": 48.839411,
+            "lon": 2.3500605,
+            "nodeId": 343646676
+          },
+          {
+            "lat": 48.839406,
+            "lon": 2.3500273,
+            "nodeId": 1984877437
+          },
+          {
+            "lat": 48.8393952,
+            "lon": 2.3499973,
+            "nodeId": 1984877432
+          },
+          {
+            "lat": 48.8393796,
+            "lon": 2.3499729,
+            "nodeId": 1984877427
+          },
+          {
+            "lat": 48.8393601,
+            "lon": 2.3499558,
+            "nodeId": 6170821704
+          }
+        ],
+        "closed": false
+      }
+    },
+    {
+      "id": 164010799,
+      "disposition": "accepted",
+      "tags": {
+        "cycleway:both": "no",
+        "highway": "residential",
+        "lit": "yes",
+        "maxspeed": "30",
+        "name": "Rue Pascal",
+        "name:etymology:wikidata": "Q1290",
+        "oneway": "yes",
+        "oneway:bicycle": "no",
+        "sidewalk:both": "separate",
+        "smoothness": "good",
+        "source:maxspeed": "BMO arrêté n°2015P0159",
+        "surface": "asphalt",
+        "zone:maxspeed": "FR:30"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8392596,
+            "lon": 2.3500032,
+            "nodeId": 25033828
+          },
+          {
+            "lat": 48.8391393,
+            "lon": 2.3499487,
+            "nodeId": 1756717196
+          },
+          {
+            "lat": 48.8388942,
+            "lon": 2.3498425,
+            "nodeId": 2636436920
+          },
+          {
+            "lat": 48.8388467,
+            "lon": 2.3498206,
+            "nodeId": 12993883207
+          },
+          {
+            "lat": 48.8388039,
+            "lon": 2.3498009,
+            "nodeId": 25033569
+          }
+        ],
+        "closed": false
+      }
+    },
+    {
+      "id": 2114249,
+      "disposition": "accepted",
+      "tags": {
+        "cycleway:left": "no",
+        "cycleway:right": "separate",
+        "cycleway:right:lane": "advisory",
+        "dual_carriageway": "yes",
+        "highway": "secondary",
+        "lanes": "2",
+        "lit": "yes",
+        "maxspeed": "30",
+        "name": "Rue Monge",
+        "name:etymology:wikidata": "Q206832",
+        "oneway": "yes",
+        "sidewalk:left": "no",
+        "sidewalk:right": "separate",
+        "smoothness": "good",
+        "source:maxspeed": "BMO arrêté n°2015P0159",
+        "surface": "asphalt",
+        "zone:maxspeed": "FR:30"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8385884,
+            "lon": 2.3507331,
+            "nodeId": 361041
+          },
+          {
+            "lat": 48.8386403,
+            "lon": 2.3507386,
+            "nodeId": 12993883217
+          },
+          {
+            "lat": 48.8386558,
+            "lon": 2.3507396,
+            "nodeId": 7637524095
+          },
+          {
+            "lat": 48.8387449,
+            "lon": 2.3507797,
+            "nodeId": 2458010979
+          },
+          {
+            "lat": 48.8388718,
+            "lon": 2.3508248,
+            "nodeId": 25034117
+          }
+        ],
+        "closed": false
+      }
+    },
+    {
+      "id": 237932366,
+      "disposition": "accepted",
+      "tags": {
+        "cycleway": "no",
+        "dual_carriageway": "yes",
+        "highway": "secondary",
+        "lanes": "2",
+        "lit": "yes",
+        "maxspeed": "30",
+        "name": "Rue Monge",
+        "name:etymology:wikidata": "Q206832",
+        "oneway": "yes",
+        "sidewalk": "right",
+        "smoothness": "good",
+        "source:maxspeed": "BMO arrêté n°2015P0159",
+        "surface": "asphalt",
+        "zone:maxspeed": "FR:30"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8388718,
+            "lon": 2.3508248,
+            "nodeId": 25034117
+          },
+          {
+            "lat": 48.8388313,
+            "lon": 2.3507419,
+            "nodeId": 6291069650
+          },
+          {
+            "lat": 48.8388029,
+            "lon": 2.3506832,
+            "nodeId": 6170821707
+          },
+          {
+            "lat": 48.8387769,
+            "lon": 2.3506283,
+            "nodeId": 2458010949
+          },
+          {
+            "lat": 48.838706,
+            "lon": 2.3505175,
+            "nodeId": 6262222249
+          },
+          {
+            "lat": 48.8386624,
+            "lon": 2.3504874,
+            "nodeId": 2458010977
+          }
+        ],
+        "closed": false
+      }
+    },
+    {
+      "id": 237932368,
+      "disposition": "accepted",
+      "tags": {
+        "highway": "residential",
+        "lanes": "1",
+        "lit": "yes",
+        "maxspeed": "30",
+        "name": "Rue de Bazeilles",
+        "name:etymology:wikidata": "Q383510",
+        "oneway": "yes",
+        "oneway:bicycle": "yes",
+        "sidewalk:left": "no",
+        "sidewalk:right": "separate",
+        "smoothness": "good",
+        "source:maxspeed": "BMO arrêté n°2015P0159",
+        "surface": "sett",
+        "zone:maxspeed": "FR:30"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8387769,
+            "lon": 2.3506283,
+            "nodeId": 2458010949
+          },
+          {
+            "lat": 48.8388464,
+            "lon": 2.3504887,
+            "nodeId": 2458010962
+          },
+          {
+            "lat": 48.8392067,
+            "lon": 2.3502197,
+            "nodeId": 2458010966
+          },
+          {
+            "lat": 48.8392763,
+            "lon": 2.3501689,
+            "nodeId": 25033833
+          }
+        ],
+        "closed": false
+      }
+    },
+    {
+      "id": 237932371,
+      "disposition": "accepted",
+      "tags": {
+        "cycleway": "no",
+        "highway": "residential",
+        "lanes": "1",
+        "lit": "yes",
+        "maxspeed": "30",
+        "name": "Rue de Bazeilles",
+        "name:etymology:wikidata": "Q383510",
+        "oneway": "yes",
+        "oneway:bicycle": "yes",
+        "sidewalk:left": "separate",
+        "sidewalk:right": "no",
+        "smoothness": "good",
+        "source:maxspeed": "BMO arrêté n°2015P0159",
+        "surface": "sett",
+        "zone:maxspeed": "FR:30"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8386624,
+            "lon": 2.3504874,
+            "nodeId": 2458010977
+          },
+          {
+            "lat": 48.8387039,
+            "lon": 2.3504436,
+            "nodeId": 12993883212
+          },
+          {
+            "lat": 48.8387318,
+            "lon": 2.3504142,
+            "nodeId": 6262647722
+          },
+          {
+            "lat": 48.8388217,
+            "lon": 2.3504061,
+            "nodeId": 2458010992
+          },
+          {
+            "lat": 48.8391809,
+            "lon": 2.350133,
+            "nodeId": 2458010973
+          },
+          {
+            "lat": 48.8392469,
+            "lon": 2.3500861,
+            "nodeId": 25033830
+          }
+        ],
+        "closed": false
+      }
+    },
+    {
+      "id": 30912845,
+      "disposition": "accepted",
+      "tags": {
+        "highway": "service",
+        "lit": "yes",
+        "maxspeed": "30",
+        "name": "Rue Édouard Quénu",
+        "service": "alley",
+        "surface": "sett"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8392909,
+            "lon": 2.3496518,
+            "nodeId": 343646714
+          },
+          {
+            "lat": 48.8393963,
+            "lon": 2.3498479,
+            "nodeId": 11919363227
+          },
+          {
+            "lat": 48.839421,
+            "lon": 2.3498938,
+            "nodeId": 343646715
+          }
+        ],
+        "closed": false
+      }
+    },
+    {
+      "id": 35097959,
+      "disposition": "accepted",
+      "tags": {
+        "admin_level": "10",
+        "boundary": "administrative",
+        "cycleway:both": "no",
+        "highway": "residential",
+        "lit": "yes",
+        "maxspeed": "30",
+        "name": "Rue Pascal",
+        "name:etymology:wikidata": "Q1290",
+        "oneway": "yes",
+        "oneway:bicycle": "no",
+        "sidewalk:both": "separate",
+        "source:maxspeed": "BMO arrêté n°2010-082",
+        "surface": "asphalt",
+        "zone:maxspeed": "FR:30"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8372559,
+            "lon": 2.3490664,
+            "nodeId": 411743537
+          },
+          {
+            "lat": 48.8376165,
+            "lon": 2.3492348,
+            "nodeId": 2636436893
+          },
+          {
+            "lat": 48.8376541,
+            "lon": 2.3492537,
+            "nodeId": 25033670
+          },
+          {
+            "lat": 48.8377845,
+            "lon": 2.3493198,
+            "nodeId": 21648962
+          },
+          {
+            "lat": 48.838042,
+            "lon": 2.3494411,
+            "nodeId": 6338150065
+          },
+          {
+            "lat": 48.8387111,
+            "lon": 2.3497563,
+            "nodeId": 2636436912
+          },
+          {
+            "lat": 48.8388039,
+            "lon": 2.3498009,
+            "nodeId": 25033569
+          }
+        ],
+        "closed": false
+      }
+    },
+    {
+      "id": 4217134,
+      "disposition": "accepted",
+      "tags": {
+        "cycleway:both": "no",
+        "highway": "residential",
+        "junction": "circular",
+        "lit": "yes",
+        "maxspeed": "30",
+        "name": "Place Georges Moustaki",
+        "note": "not a roundabout; pas un giratoire",
+        "oneway": "yes",
+        "sidewalk:left": "no",
+        "sidewalk:right": "separate",
+        "smoothness": "good",
+        "surface": "asphalt",
+        "zone:maxspeed": "FR:30"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8393601,
+            "lon": 2.3499558,
+            "nodeId": 6170821704
+          },
+          {
+            "lat": 48.8393381,
+            "lon": 2.3499472,
+            "nodeId": 1984877418
+          },
+          {
+            "lat": 48.8393153,
+            "lon": 2.349948,
+            "nodeId": 1984877413
+          },
+          {
+            "lat": 48.8392936,
+            "lon": 2.3499583,
+            "nodeId": 1984877398
+          },
+          {
+            "lat": 48.8392746,
+            "lon": 2.3499771,
+            "nodeId": 1984877396
+          },
+          {
+            "lat": 48.8392596,
+            "lon": 2.3500032,
+            "nodeId": 25033828
+          },
+          {
+            "lat": 48.8392508,
+            "lon": 2.3500301,
+            "nodeId": 1984877389
+          },
+          {
+            "lat": 48.8392465,
+            "lon": 2.3500593,
+            "nodeId": 6189563224
+          },
+          {
+            "lat": 48.8392469,
+            "lon": 2.3500861,
+            "nodeId": 25033830
+          },
+          {
+            "lat": 48.8392522,
+            "lon": 2.3501193,
+            "nodeId": 1984877392
+          },
+          {
+            "lat": 48.8392622,
+            "lon": 2.3501464,
+            "nodeId": 1984877394
+          },
+          {
+            "lat": 48.8392763,
+            "lon": 2.3501689,
+            "nodeId": 25033833
+          },
+          {
+            "lat": 48.839298,
+            "lon": 2.3501884,
+            "nodeId": 1984877410
+          },
+          {
+            "lat": 48.8393226,
+            "lon": 2.3501971,
+            "nodeId": 1984877421
+          },
+          {
+            "lat": 48.8393477,
+            "lon": 2.3501941,
+            "nodeId": 1984877424
+          },
+          {
+            "lat": 48.8393711,
+            "lon": 2.3501797,
+            "nodeId": 6189563225
+          },
+          {
+            "lat": 48.8393905,
+            "lon": 2.3501553,
+            "nodeId": 25033837
+          }
+        ],
+        "closed": false
+      }
+    },
+    {
+      "id": 4217137,
+      "disposition": "accepted",
+      "tags": {
+        "cycleway:both": "no",
+        "highway": "residential",
+        "lit": "yes",
+        "maxspeed": "30",
+        "name": "Rue Censier",
+        "name:etymology:wikidata": "Q12731",
+        "sidewalk:both": "separate",
+        "sidewalk:left:surface": "asphalt",
+        "sidewalk:right:surface": "sett",
+        "smoothness": "good",
+        "source:maxspeed": "BMO arrêté n°2015P0159",
+        "surface": "asphalt",
+        "zone:maxspeed": "FR:30"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8393905,
+            "lon": 2.3501553,
+            "nodeId": 25033837
+          },
+          {
+            "lat": 48.8394355,
+            "lon": 2.3502591,
+            "nodeId": 2458010936
+          },
+          {
+            "lat": 48.8396955,
+            "lon": 2.3508861,
+            "nodeId": 1144685685
+          },
+          {
+            "lat": 48.8397086,
+            "lon": 2.3509174,
+            "nodeId": 6142454050
+          },
+          {
+            "lat": 48.8397221,
+            "lon": 2.3509496,
+            "nodeId": 6147268627
+          },
+          {
+            "lat": 48.8397522,
+            "lon": 2.3510218,
+            "nodeId": 25033919
+          }
+        ],
+        "closed": false
+      }
+    },
+    {
+      "id": 686716541,
+      "disposition": "accepted",
+      "tags": {
+        "cycleway:left": "separate",
+        "cycleway:right": "no",
+        "highway": "tertiary",
+        "lanes": "2",
+        "lit": "yes",
+        "maxspeed": "30",
+        "name": "Rue Claude Bernard",
+        "name:etymology:wikidata": "Q208230",
+        "sidewalk:both": "separate",
+        "source:maxspeed": "FR:urban",
+        "surface": "asphalt"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8390159,
+            "lon": 2.3492159,
+            "nodeId": 25033566
+          },
+          {
+            "lat": 48.8389781,
+            "lon": 2.3493186,
+            "nodeId": 2636436927
+          },
+          {
+            "lat": 48.8389484,
+            "lon": 2.349395,
+            "nodeId": 6291069679
+          },
+          {
+            "lat": 48.8388039,
+            "lon": 2.3498009,
+            "nodeId": 25033569
+          }
+        ],
+        "closed": false
+      }
+    },
+    {
+      "id": 686716542,
+      "disposition": "accepted",
+      "tags": {
+        "cycleway:left": "separate",
+        "cycleway:right": "no",
+        "highway": "tertiary",
+        "lanes": "2",
+        "lit": "yes",
+        "maxspeed": "30",
+        "name": "Rue Claude Bernard",
+        "name:etymology:wikidata": "Q208230",
+        "oneway": "no",
+        "sidewalk:both": "separate",
+        "source:maxspeed": "FR:urban",
+        "surface": "asphalt"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8388039,
+            "lon": 2.3498009,
+            "nodeId": 25033569
+          },
+          {
+            "lat": 48.8387648,
+            "lon": 2.349896,
+            "nodeId": 2636436916
+          },
+          {
+            "lat": 48.83874,
+            "lon": 2.3499565,
+            "nodeId": 4886258764
+          },
+          {
+            "lat": 48.8386566,
+            "lon": 2.3501568,
+            "nodeId": 25034101
+          }
+        ],
+        "closed": false
+      }
+    }
+  ],
+  "visualVerification": "Pending; this capture records source data, not visual correctness."
+}

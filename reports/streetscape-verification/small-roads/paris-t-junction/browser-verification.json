@@ -1,0 +1,52 @@
+{
+  "sceneId": "fae054fa9bf4",
+  "sceneUrl": "http://localhost:3004/scene/fae054fa9bf4",
+  "version": 2,
+  "importedSegments": 6,
+  "sizeBytes": 1545263,
+  "correctedStyles": [
+    {
+      "lanes": 6,
+      "uses": [
+        "bus",
+        "general",
+        "general",
+        "general",
+        "general",
+        "bus"
+      ],
+      "laneWidths": [
+        3.2,
+        3.2,
+        3.2,
+        3.2,
+        3.2,
+        3.2
+      ],
+      "leftBusBand": 0,
+      "rightBusBand": 0
+    }
+  ],
+  "comparison": "Fresh UI import succeeded. Before/after 3D views show removal of duplicated bus pavement bands. T and nearby service-road junction topology agree with map. Curb return dimensions, markings and imagery detail remain to be verified.",
+  "onewayCorrection": {
+    "sceneId": "a326b1cd2f04",
+    "styles": [
+      {
+        "name": "Rue d'Argentine",
+        "laneCount": 1,
+        "dimensionSource": {
+          "kind": "default"
+        }
+      },
+      {
+        "name": "Rue d'Argentine",
+        "laneCount": 1,
+        "dimensionSource": {
+          "kind": "default"
+        }
+      }
+    ],
+    "screenshot": "browser-3d-after-oneway-estimate.png",
+    "remaining": "20 m scope includes adjacent four-way connection; isolate T at a smaller radius before evaluating clipped boundary geometry."
+  }
+}

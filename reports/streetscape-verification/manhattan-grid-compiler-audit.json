@@ -1,0 +1,73 @@
+{
+  "capturedAt": "2026-10-09T11:13:39.575Z",
+  "location": {
+    "id": "manhattan-grid",
+    "lat": 40.7411,
+    "lon": -73.9897,
+    "radius": 150,
+    "driving": "right-driving"
+  },
+  "terrain": "Not acquired in this compiler audit; browser elevation verification remains required.",
+  "visualVerification": "Pending external browser comparison; compiler success does not prove visual accuracy.",
+  "sourceIdentity": "sha256:50d6193810ab4880317baeacb82f7cc50272bb56a8b37e0b73cdac76bb365b21",
+  "preview": {
+    "ways": 68,
+    "segments": 34,
+    "assets": {
+      "roadSigns": 0,
+      "streetLamps": 0,
+      "trafficSignals": 14
+    }
+  },
+  "normalization": {
+    "dispositions": {
+      "rejected": 1633,
+      "accepted": 4367
+    },
+    "kinds": {
+      "unsupported": 1632,
+      "support": 3671,
+      "crossing": 269,
+      "point-asset": 54,
+      "restriction": 16,
+      "connectivity": 27,
+      "road": 68,
+      "mapped-surface": 263
+    },
+    "diagnostics": {
+      "unsupported-feature": 1632,
+      "unsupported-value": 34,
+      "geometry-invalid": 1
+    }
+  },
+  "inventory": {
+    "resolved": 61,
+    "pending": 169,
+    "unmatched": 77
+  },
+  "projectBytes": 18155118,
+  "compile": [
+    {
+      "bounds": {
+        "min": [
+          -146.5084032449722,
+          -151.31404136076534
+        ],
+        "max": [
+          154.72928932916926,
+          150.04461403216257
+        ]
+      },
+      "paths": 34,
+      "polygons": 1277,
+      "bridges": 0,
+      "mappedSurfaces": 2,
+      "diagnostics": {
+        "junction-width-review": 4,
+        "junction-short-approach": 2
+      },
+      "finite": true
+    }
+  ],
+  "elapsedMs": 11597
+}

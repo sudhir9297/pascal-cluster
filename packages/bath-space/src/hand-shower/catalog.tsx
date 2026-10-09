@@ -13,7 +13,7 @@ import squareWandThumbnail from './assets/square-wand.webp'
 type ThumbnailAsset = string | { src: string }
 const thumbnailSrc = (asset: ThumbnailAsset | undefined) => typeof asset === 'string' ? asset : asset?.src
 
-const handShowerThumbnails: Record<HandShowerNode['style'], ThumbnailAsset> = {
+export const handShowerThumbnails: Record<HandShowerNode['style'], ThumbnailAsset> = {
   round: roundThumbnail,
   square: squareThumbnail,
   'soft-square': softSquareThumbnail,

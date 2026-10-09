@@ -1,0 +1,252 @@
+{
+  "center": {
+    "lat": 48.8549,
+    "lon": 2.3355
+  },
+  "radius": 30,
+  "sourceIdentity": "sha256:884f9f85dffd7e5e74ccd139d3d5a8573875d214267abbfa4b95357a32d12b2d",
+  "segments": 1,
+  "roads": [
+    {
+      "id": 4227124,
+      "disposition": "accepted",
+      "tags": {
+        "cycleway:left": "lane",
+        "cycleway:left:lane": "exclusive",
+        "cycleway:left:oneway": "-1",
+        "cycleway:right": "no",
+        "highway": "residential",
+        "maxspeed": "30",
+        "name": "Rue Jacob",
+        "name:etymology:wikidata": "Q289957",
+        "oneway": "yes",
+        "oneway:bicycle": "no",
+        "sidewalk:both": "separate",
+        "surface": "asphalt",
+        "zone:maxspeed": "FR:30"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8545063,
+            "lon": 2.3368794,
+            "nodeId": 25186689
+          },
+          {
+            "lat": 48.8545316,
+            "lon": 2.3368045,
+            "nodeId": 6178786869
+          },
+          {
+            "lat": 48.8546289,
+            "lon": 2.3365165,
+            "nodeId": 25186796
+          },
+          {
+            "lat": 48.8547693,
+            "lon": 2.336101,
+            "nodeId": 25186813
+          }
+        ],
+        "closed": false
+      }
+    },
+    {
+      "id": 4227136,
+      "disposition": "accepted",
+      "tags": {
+        "alt_name": "Rue de Furstenberg",
+        "bicycle": "yes",
+        "cycleway:both": "no",
+        "highway": "residential",
+        "lit": "yes",
+        "maxspeed": "30",
+        "name": "Rue de Furstemberg",
+        "name:etymology:wikidata": "Q70876",
+        "oneway": "yes",
+        "oneway:bicycle": "no",
+        "sidewalk:both": "separate",
+        "smoothness": "good",
+        "source:maxspeed": "BMO arrêté n°2014P0193",
+        "surface": "asphalt",
+        "zone:maxspeed": "FR:30"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8543784,
+            "lon": 2.335787,
+            "nodeId": 25187844
+          },
+          {
+            "lat": 48.8544841,
+            "lon": 2.3358743,
+            "nodeId": 25186841
+          },
+          {
+            "lat": 48.854732,
+            "lon": 2.3360713,
+            "nodeId": 6286404821
+          },
+          {
+            "lat": 48.8547693,
+            "lon": 2.336101,
+            "nodeId": 25186813
+          }
+        ],
+        "closed": false
+      }
+    },
+    {
+      "id": 4227150,
+      "disposition": "accepted",
+      "tags": {
+        "bicycle": "yes",
+        "cycleway:both": "no",
+        "highway": "residential",
+        "maxspeed": "30",
+        "name": "Rue Cardinale",
+        "name:etymology:wikidata": "Q45722",
+        "oneway": "yes",
+        "oneway:bicycle": "no",
+        "sidewalk:both": "separate",
+        "source:maxspeed": "BMO arrêté n°2014P0193",
+        "surface": "asphalt",
+        "zone:maxspeed": "FR:30"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8544841,
+            "lon": 2.3358743,
+            "nodeId": 25186841
+          },
+          {
+            "lat": 48.8543903,
+            "lon": 2.3361137,
+            "nodeId": 25187796
+          },
+          {
+            "lat": 48.8542497,
+            "lon": 2.3361219,
+            "nodeId": 25187817
+          },
+          {
+            "lat": 48.8539972,
+            "lon": 2.3359268,
+            "nodeId": 25187828
+          }
+        ],
+        "closed": false
+      }
+    },
+    {
+      "id": 66486068,
+      "disposition": "accepted",
+      "tags": {
+        "bicycle": "yes",
+        "cycleway:both": "no",
+        "highway": "residential",
+        "lanes": "1",
+        "lit": "yes",
+        "maxspeed": "30",
+        "name": "Rue Jacob",
+        "name:etymology:wikidata": "Q289957",
+        "name:ru": "улица Жакоб",
+        "oneway": "yes",
+        "oneway:bicycle": "no",
+        "sidewalk:both": "separate",
+        "source:maxspeed": "BMO arrêté n°2014P0193",
+        "surface": "asphalt",
+        "wikidata": "Q3448385",
+        "wikipedia": "fr:Rue Jacob",
+        "zone:maxspeed": "FR:30"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8547693,
+            "lon": 2.336101,
+            "nodeId": 25186813
+          },
+          {
+            "lat": 48.8554601,
+            "lon": 2.3340709,
+            "nodeId": 12046529095
+          },
+          {
+            "lat": 48.8554689,
+            "lon": 2.3340451,
+            "nodeId": 12046529093
+          },
+          {
+            "lat": 48.8554798,
+            "lon": 2.3340132,
+            "nodeId": 11022117215
+          },
+          {
+            "lat": 48.8555049,
+            "lon": 2.3339395,
+            "nodeId": 12046529092
+          },
+          {
+            "lat": 48.8555227,
+            "lon": 2.3338897,
+            "nodeId": 11022117217
+          },
+          {
+            "lat": 48.8556295,
+            "lon": 2.3335906,
+            "nodeId": 2734064505
+          },
+          {
+            "lat": 48.8556589,
+            "lon": 2.3335083,
+            "nodeId": 25191080
+          },
+          {
+            "lat": 48.8556844,
+            "lon": 2.3334371,
+            "nodeId": 2734064507
+          },
+          {
+            "lat": 48.8560282,
+            "lon": 2.3324748,
+            "nodeId": 12716977068
+          },
+          {
+            "lat": 48.8561629,
+            "lon": 2.3320977,
+            "nodeId": 12716977073
+          },
+          {
+            "lat": 48.8561678,
+            "lon": 2.332084,
+            "nodeId": 12716977066
+          },
+          {
+            "lat": 48.856268,
+            "lon": 2.3318035,
+            "nodeId": 11981132089
+          },
+          {
+            "lat": 48.8562848,
+            "lon": 2.3317568,
+            "nodeId": 11022195841
+          },
+          {
+            "lat": 48.8563151,
+            "lon": 2.3316717,
+            "nodeId": 25190293
+          }
+        ],
+        "closed": false
+      }
+    }
+  ],
+  "visualVerification": "Pending; this capture records source data, not visual correctness."
+}

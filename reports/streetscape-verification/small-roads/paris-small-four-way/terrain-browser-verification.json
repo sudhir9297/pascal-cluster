@@ -1,0 +1,52 @@
+{
+  "sceneId": "80461196e967",
+  "version": 3,
+  "terrain": {
+    "type": "heightfield",
+    "origin": [
+      -33.52325419290678,
+      -33.63236749324358
+    ],
+    "spacing": 0.2621887693459857,
+    "cols": 257,
+    "rows": 257,
+    "step": 0.01
+  },
+  "provenance": {
+    "basis": "estimated-road-grade-v1",
+    "spacingMeters": 0.2621887693459857,
+    "roadNodeIds": [
+      "road-network_whncw0btslrr2ojq"
+    ],
+    "acceptedAt": "2026-10-09T17:41:00.181Z"
+  },
+  "roadPositions": {
+    "b~osm~8413426~0~0": [
+      6.25767980395098,
+      0.0030299275311222174,
+      -13.632367493243578
+    ],
+    "n299015572": [
+      0,
+      0.1,
+      0
+    ],
+    "b~osm~27245428~2~0": [
+      -13.523254192906784,
+      -0.7642556536514548,
+      -6.490115255842284
+    ],
+    "b~osm~933782684~1~0": [
+      -6.563155001295307,
+      0.41759960461063483,
+      13.487957459328754
+    ],
+    "b~osm~933782685~0~0": [
+      13.504910776012279,
+      0.9152707765024871,
+      6.52819921065344
+    ]
+  },
+  "screenshot": "browser-3d-after-terrain.png",
+  "verification": "Four asphalt approaches visible; unchanged source-derived heights. Native estimated terrain created by fresh UI import, then regenerated through the same helper and version-guarded API update for the junction correction. 216 asphalt vertices/centroids clear ground. Mapped crossing/sidewalk ramps still require correction. Widths, corner radii and terrain are estimates."
+}

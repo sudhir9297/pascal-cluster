@@ -1,0 +1,16 @@
+{
+  "sceneId": "76c2d44b6c71",
+  "center": {
+    "lat": 48.8392482,
+    "lon": 2.3500942
+  },
+  "radiusMeters": 30,
+  "segments": 10,
+  "ringSegments": 5,
+  "connectingSegments": 4,
+  "detachedBoundarySegments": 1,
+  "mappedObjects": 8,
+  "screenshot": "browser-3d-after-curve.png",
+  "verification": "Curved connected ring and open center visible in 3D. Exact width, interpolated curvature and corner radii are estimates. Central plaza/fountain and surrounding pavement remain incomplete.",
+  "tests": 821
+}

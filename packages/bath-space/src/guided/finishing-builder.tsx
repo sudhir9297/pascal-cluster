@@ -1,4 +1,6 @@
 'use client'
+import BathroomReviewPanel from './review-panel'
+import AreaSummary from './area-summary'
 import { useEffect } from 'react'
 import {
   useScene,
@@ -12,12 +14,13 @@ import MirrorCatalog from '../mirror/catalog'
 import LightCatalog from '../wall-light/catalog'
 import TowelCatalog from '../towel-rail/catalog'
 import HolderCatalog from '../toilet-paper-holder/catalog'
+import type { BathroomStage } from './workflow'
+import { includedBathroomAreas } from './setup'
 import { CatalogScrollArea } from '../catalog-ui'
 import {
   accessoryChoices,
   areaAnchors,
   areas,
-  bathroomIssues,
   levelFixtures,
   matchedAccessories,
   type Area,
@@ -38,7 +41,7 @@ export default function FinishingBuilder({
 }: {
   levelId: LevelNode['id']
   review: boolean
-  onStage: (stage: Area | 'accessories' | 'review') => void
+  onStage: (stage: BathroomStage) => void
   onFix: (issue: ReviewIssue) => void
 }) {
   const nodes = useScene((s) => s.nodes),
@@ -46,19 +49,13 @@ export default function FinishingBuilder({
   const saved = level?.metadata?.bathSpaceAccessories as
     | { area?: Area; choice?: string; skipped?: string[] }
     | undefined
-  const area = areas.some((a) => a.id === saved?.area)
-    ? saved!.area!
-    : 'wash-area'
+  const included = includedBathroomAreas(levelId, nodes)
+  const activeAreas = areas.filter((a) => included.includes(a.id))
+  const area = activeAreas.some((a) => a.id === saved?.area) ? saved!.area! : activeAreas[0]?.id ?? 'wash-area'
   const choices = accessoryChoices[area],
     choice = choices.find((c) => c.kind === saved?.choice) ?? choices[0]
   const skipped = Array.isArray(saved?.skipped) ? saved.skipped : []
-  const excludedRaw = level?.metadata?.bathSpaceExcludedAreas
-  const excluded = Array.isArray(excludedRaw)
-    ? excludedRaw.filter((v): v is string => typeof v === 'string')
-    : []
-  const fixtures = levelFixtures(levelId, nodes),
-    issues = bathroomIssues(levelId, nodes, excluded)
-  const finished = level?.metadata?.bathSpaceReviewed === true
+  const fixtures = levelFixtures(levelId, nodes)
   const save = (patch: Record<string, unknown>) => {
     stopFinishingPlacement()
     const state = useScene.getState(),
@@ -87,7 +84,7 @@ export default function FinishingBuilder({
       .setSelection({ levelId, selectedIds: [id as AnyNodeId] })
   }
   useEffect(() => {
-    if (review) return
+    if (review || !activeAreas.length) return
     let previous = useScene.getState().nodes
     return useScene.subscribe((state) => {
       const before = previous
@@ -129,11 +126,13 @@ export default function FinishingBuilder({
     const index = choices.findIndex((c) => c.kind === choice.kind)
     if (index + 1 < choices.length) change(area, choices[index + 1]!.kind)
     else {
-      const i = areas.findIndex((a) => a.id === area)
-      if (i < areas.length - 1) change(areas[i + 1]!.id)
+      const i = activeAreas.findIndex((a) => a.id === area)
+      if (i < activeAreas.length - 1) change(activeAreas[i + 1]!.id)
       else onStage('review')
     }
   }
+  if (review) return <BathroomReviewPanel levelId={levelId} onStage={onStage} onFix={onFix} onAccessory={(area, kind) => { change(area, kind); onStage('accessories') }} />
+  if (!review && !activeAreas.length) return <div className="space-y-3 p-4"><p className="text-xs text-muted-foreground">No areas need accessories.</p><button type="button" className={primary} onClick={() => onStage('review')}>Review bathroom</button></div>
   const matches = matchedAccessories(area, choice.kind, fixtures)
   const unassigned = fixtures.filter(
     (n) =>
@@ -145,21 +144,15 @@ export default function FinishingBuilder({
     <div className="flex h-full min-h-0 flex-col">
       <header className="space-y-3 p-4">
         <h1 className="text-sm font-semibold">
-          {review ? 'Review bathroom' : 'Add accessories'}
+          Add accessories
         </h1>
         <p className="text-xs text-muted-foreground" role="status">
-          {review
-            ? issues.length
-              ? `${issues.length} basic ${issues.length === 1 ? 'item needs' : 'items need'} attention. Accessories are optional.`
-              : finished
-                ? 'Bathroom reviewed.'
-                : 'Basics ready. Check the room before finishing.'
-            : 'Accessories are optional.'}
+          Accessories are optional.
         </p>
         {!review && (
           <>
             <nav aria-label="Accessory areas" className="flex gap-1">
-              {areas.map((a) => (
+              {activeAreas.map((a) => (
                 <button
                   key={a.id}
                   className={button}
@@ -218,15 +211,7 @@ export default function FinishingBuilder({
                 Highlight {n.name || 'area fixture'}
               </button>
             ))}
-            {matches.map((n) => (
-              <button
-                key={n.id}
-                className={`${button} w-full`}
-                onClick={() => select(n.id)}
-              >
-                {n.name || choice.label} · Edit
-              </button>
-            ))}
+            {matches.length > 0 && <AreaSummary title="Added accessories" levelId={levelId} nodes={matches} />}
           </>
         )}
       </header>
@@ -235,94 +220,7 @@ export default function FinishingBuilder({
         className="min-h-0 flex-1 overflow-y-auto"
       >
         <div className="space-y-4 px-4 pb-4">
-          {review ? (
-            <>
-              {issues.map((issue) => (
-                <div
-                  key={issue.id}
-                  className="space-y-2 rounded-md border border-border p-3"
-                >
-                  <p className="text-xs">{issue.message}</p>
-                  <button className={button} onClick={() => onFix(issue)}>
-                    Fix{' '}
-                    {areas
-                      .find((a) => a.id === issue.area)
-                      ?.label.toLowerCase()}
-                  </button>
-                  {!issue.hostId && (
-                    <button
-                      className={`${button} ml-1`}
-                      onClick={() =>
-                        save({
-                          bathSpaceExcludedAreas: [...excluded, issue.area],
-                        })
-                      }
-                    >
-                      Not included
-                    </button>
-                  )}
-                </div>
-              ))}
-              {areas.map((a) => (
-                <section key={a.id} className="space-y-2">
-                  <h2 className="text-sm font-semibold">{a.label}</h2>
-                  {excluded.includes(a.id) &&
-                    !areaAnchors(a.id, fixtures).length && (
-                      <button
-                        className={button}
-                        onClick={() =>
-                          save({
-                            bathSpaceExcludedAreas: excluded.filter(
-                              (id) => id !== a.id,
-                            ),
-                          })
-                        }
-                      >
-                        Not included · Include this area
-                      </button>
-                    )}
-                  {areaAnchors(a.id, fixtures).map((n) => (
-                    <button
-                      key={n.id}
-                      className={`${button} w-full text-left`}
-                      onClick={() => select(n.id)}
-                    >
-                      {n.name || String(n.type).replace('bath-space:', '')} ·
-                      Edit
-                    </button>
-                  ))}
-                  {accessoryChoices[a.id].map((c) => {
-                    const count = matchedAccessories(
-                        a.id,
-                        c.kind,
-                        fixtures,
-                      ).length,
-                      skip = skipped.includes(`${a.id}:${c.kind}`)
-                    return (
-                      <button
-                        key={c.kind}
-                        className={`${button} w-full text-left`}
-                        onClick={() => {
-                          change(a.id, c.kind)
-                          onStage('accessories')
-                        }}
-                      >
-                        {c.label}:{' '}
-                        {count
-                          ? `${count} added`
-                          : skip
-                            ? 'skipped'
-                            : 'Optional'}
-                      </button>
-                    )
-                  })}
-                </section>
-              ))}
-              <p className="text-xs text-muted-foreground">
-                Check spacing in the scene. This review checks fixtures only.
-              </p>
-            </>
-          ) : choice.kind === 'mirror' ? (
+          {choice.kind === 'mirror' ? (
             <MirrorCatalog query="" />
           ) : choice.kind === 'wall-light' ? (
             <LightCatalog query="" />
@@ -334,26 +232,7 @@ export default function FinishingBuilder({
         </div>
       </CatalogScrollArea>
       <footer className="space-y-2 border-t border-border p-4">
-        {review ? (
-          <>
-            <button
-              className={`${primary} w-full`}
-              disabled={issues.length > 0}
-              onClick={() => {
-                stopFinishingPlacement()
-                save({ bathSpaceReviewed: true })
-              }}
-            >
-              Finish bathroom
-            </button>
-            <button
-              className={`${button} w-full`}
-              onClick={() => onStage('accessories')}
-            >
-              Back to accessories
-            </button>
-          </>
-        ) : (
+        {(
           <>
             <button className={`${primary} w-full`} onClick={next}>
               Next
@@ -384,9 +263,9 @@ export default function FinishingBuilder({
             </button>
             <button
               className={`${button} w-full`}
-              onClick={() => onStage('bathing')}
+              onClick={() => onStage(activeAreas.at(-1)?.id ?? 'review')}
             >
-              Back to bath or shower
+              Back to bathroom areas
             </button>
           </>
         )}

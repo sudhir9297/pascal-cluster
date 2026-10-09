@@ -1,4 +1,6 @@
 'use client'
+import AreaSummary from './area-summary'
+import AreaHeading from './area-heading'
 import { useEffect } from 'react'
 import {
   useScene,
@@ -133,35 +135,13 @@ export default function ToiletBuilder({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <header className="shrink-0 px-4 pb-3 pt-4">
-        <div className="flex justify-between gap-2">
-          <h1 className="text-sm font-semibold">Build your toilet area</h1>
-          <button
-            type="button"
-            className="text-xs underline"
-            onClick={() => {
-              stop()
-              onBrowse()
-            }}
-          >
-            Browse all
-          </button>
-        </div>
-        <button
-          type="button"
-          className="mt-2 text-xs text-muted-foreground underline"
-          onClick={() => {
-            stop()
-            onWashArea()
-          }}
-        >
-          Back to wash area
-        </button>
+        <AreaHeading title="Toilet area" onBrowse={onBrowse} />
         <nav aria-label="Toilet area steps" className="mt-4 flex gap-2">
-          {steps.map((step, index) => (
+          {steps.map((step) => (
             <button
               type="button"
               key={step.id}
-              className={`${button} flex-1 px-1 ${flow.step === step.id ? 'border-primary bg-primary/10' : ''}`}
+              className={`min-h-8 flex-1 rounded-md border-0 px-2 py-1.5 text-xs disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-ring motion-safe:[&:active:not(:focus-visible)]:scale-[0.98] ${flow.step === step.id ? 'bg-secondary font-medium text-foreground' : 'bg-transparent text-muted-foreground hover:bg-accent/40 hover:text-foreground'}`}
               aria-current={flow.step === step.id ? 'step' : undefined}
               disabled={
                 step.id !== 'toilet' &&
@@ -169,7 +149,7 @@ export default function ToiletBuilder({
               }
               onClick={() => go({ ...flow, step: step.id })}
             >
-              {index + 1}. {step.label}
+              {step.label}
             </button>
           ))}
         </nav>
@@ -249,20 +229,7 @@ export default function ToiletBuilder({
           </>
         )}
         {flow.step === 'complete' && (
-          <div className="space-y-2">
-            {[toilet, control, holder]
-              .filter((node): node is AnyNode => Boolean(node))
-              .map((node) => (
-                <button
-                  type="button"
-                  key={node.id}
-                  className={`${button} w-full text-left`}
-                  onClick={() => select(node.id)}
-                >
-                  {node.name || 'Bathroom item'} · Edit
-                </button>
-              ))}
-          </div>
+          <AreaSummary title="Toilet area fixtures" levelId={levelId} nodes={[toilet, control, holder].filter((node): node is AnyNode => Boolean(node))} />
         )}
       </CatalogScrollArea>
       <footer className="shrink-0 space-y-2 border-t border-border p-4">
@@ -283,7 +250,7 @@ export default function ToiletBuilder({
                 onBathing()
               }}
             >
-              Next: Shower or bath
+              Continue to next area
             </button>
           </>
         ) : (

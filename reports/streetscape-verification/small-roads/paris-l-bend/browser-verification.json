@@ -1,0 +1,9 @@
+{
+  "sceneId": "df1e5283f093",
+  "sceneUrl": "http://localhost:3004/scene/df1e5283f093",
+  "version": 2,
+  "nodeCount": 4,
+  "sizeBytes": 1345202,
+  "importedSegments": 1,
+  "comparison": "Rendered road follows the two straight source spans meeting at the mapped bend. Map screenshot confirms location and topology. Width and elevation remain estimates; aerial detail verification remains pending."
+}

@@ -12,7 +12,7 @@ import roundGooseneckThumbnail from './assets/round-gooseneck.webp'
 type ThumbnailAsset = string | { src: string }
 const thumbnailSrc = (asset: ThumbnailAsset | undefined) => typeof asset === 'string' ? asset : asset?.src
 
-const showerArmThumbnails: Partial<Record<ShowerArmNode['style'], ThumbnailAsset>> = {
+export const showerArmThumbnails: Partial<Record<ShowerArmNode['style'], ThumbnailAsset>> = {
   'round-adjustable': roundAdjustableThumbnail,
   'square-adjustable': squareAdjustableThumbnail,
   'round-curved': roundCurvedThumbnail,

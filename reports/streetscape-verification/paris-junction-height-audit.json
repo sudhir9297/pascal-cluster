@@ -1,0 +1,11 @@
+{
+  "capturedAt": "2026-10-09T16:45:35.753Z",
+  "scene": "21ffeff88e16",
+  "junctions": 55,
+  "triangles": 3799,
+  "slopedJunctions": 42,
+  "centerTriangles": 0,
+  "finite": true,
+  "compileMs": 112,
+  "visualVerification": "Pending; this is compiler evidence only."
+}

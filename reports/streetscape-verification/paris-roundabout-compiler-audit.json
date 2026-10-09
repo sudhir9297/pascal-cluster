@@ -1,0 +1,72 @@
+{
+  "capturedAt": "2026-10-09T11:45:25.849Z",
+  "location": {
+    "id": "paris-roundabout",
+    "lat": 48.8738,
+    "lon": 2.295,
+    "radius": 250,
+    "driving": "right-driving"
+  },
+  "terrain": "Not acquired in this compiler audit; browser elevation verification remains required.",
+  "visualVerification": "Pending external browser comparison; compiler success does not prove visual accuracy.",
+  "sourceIdentity": "sha256:813f9d331060a4fb7f7c93736d9532675a22dedc365d2fd1bceac8a1d4f51e83",
+  "preview": {
+    "ways": 167,
+    "segments": 127,
+    "assets": {
+      "roadSigns": 4,
+      "streetLamps": 172,
+      "trafficSignals": 94
+    }
+  },
+  "normalization": {
+    "dispositions": {
+      "rejected": 4371,
+      "accepted": 13858
+    },
+    "kinds": {
+      "unsupported": 4370,
+      "support": 12062,
+      "crossing": 559,
+      "point-asset": 356,
+      "restriction": 19,
+      "mapped-surface": 696,
+      "road": 167
+    },
+    "diagnostics": {
+      "unsupported-feature": 4370,
+      "unsupported-value": 192,
+      "geometry-invalid": 1
+    }
+  },
+  "inventory": {
+    "resolved": 451,
+    "pending": 281,
+    "unmatched": 151
+  },
+  "projectBytes": 41593044,
+  "compile": [
+    {
+      "bounds": {
+        "min": [
+          -251.13732387937063,
+          -250.87246632687416
+        ],
+        "max": [
+          252.24531411549432,
+          251.26764948425543
+        ]
+      },
+      "paths": 127,
+      "polygons": 6445,
+      "bridges": 0,
+      "mappedSurfaces": 16,
+      "diagnostics": {
+        "junction-width-review": 30,
+        "junction-short-approach": 13
+      },
+      "finite": true
+    }
+  ],
+  "elapsedMs": 13275
+}

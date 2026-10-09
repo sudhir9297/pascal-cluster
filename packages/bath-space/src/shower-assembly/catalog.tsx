@@ -14,7 +14,7 @@ import WaterfallPanelThumbnail from './assets/waterfall-panel.webp'
 
 type ThumbnailAsset = string | { src: string }
 const thumbnailSrc = (asset: ThumbnailAsset | undefined) => typeof asset === 'string' ? asset : asset?.src
-const assemblyThumbnails: Record<string, ThumbnailAsset> = {
+export const assemblyThumbnails: Record<string, ThumbnailAsset> = {
   'round-column': RoundColumnThumbnail,
   'square-column': SquareColumnThumbnail,
   'curved-column': CurvedColumnThumbnail,

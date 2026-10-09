@@ -1,4 +1,7 @@
 'use client'
+import { showerRepairChanges } from './shower-repair'
+import AreaSummary from './area-summary'
+import AreaHeading from './area-heading'
 import { useEffect, useState } from 'react'
 import {
   useScene,
@@ -51,6 +54,7 @@ export default function BathingBuilder({
 }) {
   const [showShowerOptions, setShowShowerOptions] = useState(false)
   const [showParts, setShowParts] = useState(false)
+  const [repairError, setRepairError] = useState('')
   const nodes = useScene((state) => state.nodes)
   const flow = reconcileBathingArea(
     readBathingArea(nodes[levelId]?.metadata?.[bathingMetadataKey]),
@@ -264,29 +268,7 @@ export default function BathingBuilder({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <header className="shrink-0 px-4 pb-3 pt-4">
-        <div className="flex justify-between gap-2">
-          <h1 className="text-sm font-semibold">Build your bathing area</h1>
-          <button
-            type="button"
-            className="text-xs underline"
-            onClick={() => {
-              stop()
-              onBrowse()
-            }}
-          >
-            Browse all
-          </button>
-        </div>
-        <button
-          type="button"
-          className="mt-2 text-xs text-muted-foreground underline"
-          onClick={() => {
-            stop()
-            onToilet()
-          }}
-        >
-          Back to toilet area
-        </button>
+        <AreaHeading title="Bath or shower" onBrowse={onBrowse} />
         <h2 className="mt-3 text-sm font-semibold">{title[flow.step]}</h2>
         {description[flow.step] && (
           <p
@@ -390,7 +372,17 @@ export default function BathingBuilder({
                 </div>
               )}
             </div>
-            {flow.system === 'kit' ? (
+            {flow.showerId && !showerReady && flow.system !== 'custom' ? (
+              <div className="space-y-3"><p className="text-xs text-muted-foreground">This shower is missing included parts. Restore them while keeping its existing fittings.</p><button type="button" className={primary} onClick={() => {
+                stop()
+                const state = useScene.getState()
+                if (state.readOnly || !flow.showerId) return
+                const changes = showerRepairChanges(flow.showerId, state.nodes)
+                setRepairError('')
+                if (changes) state.applyNodeChanges(changes)
+                else setRepairError('Missing parts could not be restored here. Select the shower to check its wall placement.')
+              }}>Restore missing shower parts</button>{repairError && <p role="status" className="text-xs text-muted-foreground">{repairError}</p>}<AreaSummary title="Existing shower" levelId={levelId} nodes={fixtures} /></div>
+            ) : flow.system === 'kit' ? (
               <ShowerKitCatalog query="" />
             ) : flow.system === 'assembly' ? (
               <ShowerAssemblyCatalog query="" />
@@ -423,15 +415,7 @@ export default function BathingBuilder({
         )}
         {['review', 'complete'].includes(flow.step) && (
           <div className="space-y-2">
-            {flow.showerId && (
-              <button
-                type="button"
-                className={`${button} w-full text-left`}
-                onClick={() => select(flow.showerId)}
-              >
-                My shower · Edit
-              </button>
-            )}
+            <AreaSummary title="Bathing area fixtures" levelId={levelId} nodes={fixtures.filter((node) => node.id === flow.showerId || node.id === flow.bathId || flow.dividerIds.includes(node.id))} />
             {flow.showerId &&
               fixtures.some(
                 (n) =>
@@ -448,28 +432,7 @@ export default function BathingBuilder({
                   {showParts ? 'Hide shower parts' : 'Adjust shower parts'}
                 </button>
               )}
-            {fixtures
-              .filter(
-                (node) =>
-                  node.id !== flow.showerId &&
-                  (showParts ||
-                    node.id === flow.bathId ||
-                    flow.dividerIds.includes(node.id)),
-              )
-              .map((node) => (
-                <button
-                  type="button"
-                  key={node.id}
-                  className={`${button} w-full text-left`}
-                  onClick={() => select(node.id)}
-                >
-                  {node.name ||
-                    String(node.type)
-                      .replace('bath-space:', '')
-                      .replaceAll('-', ' ')}{' '}
-                  · Edit
-                </button>
-              ))}
+            {showParts && <AreaSummary title="Shower fittings" levelId={levelId} nodes={fixtures.filter((node) => node.id !== flow.showerId && node.id !== flow.bathId && !flow.dividerIds.includes(node.id))} />}
           </div>
         )}
       </CatalogScrollArea>

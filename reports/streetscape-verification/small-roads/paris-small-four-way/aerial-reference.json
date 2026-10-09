@@ -1,0 +1,16 @@
+{
+  "url": "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/19/180328/265479",
+  "provider": "Esri World Imagery",
+  "tile": {
+    "z": 19,
+    "x": 265479,
+    "y": 180328
+  },
+  "junctionPixel": [
+    188.58763149380684,
+    183.74591965973377
+  ],
+  "note": "Capture date and surveyed dimensions not established.",
+  "contextUrl": "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/18/90164/132739",
+  "comparison": "T-junction and nearby service road agree in orientation and connectivity. Trees obscure curb returns. Road width is not established by this imagery comparison."
+}

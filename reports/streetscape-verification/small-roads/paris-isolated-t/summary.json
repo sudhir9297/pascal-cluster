@@ -1,0 +1,483 @@
+{
+  "center": {
+    "lat": 48.8752303,
+    "lon": 2.2904686
+  },
+  "radius": 15,
+  "sourceIdentity": "sha256:ba9dcaf0179517a01b077bbd92343aa9770d6e789eb27c50820c9b0fc18994a3",
+  "segments": 3,
+  "roads": [
+    {
+      "id": 27245083,
+      "disposition": "accepted",
+      "tags": {
+        "enforcement:operator": "Police nationale",
+        "highway": "service",
+        "lit": "yes",
+        "maxspeed": "30",
+        "name": "Avenue de la Grande Armée",
+        "name:etymology:wikidata": "Q504721",
+        "name:zh": "大军团大街",
+        "name:zh-Hans": "大军团大街",
+        "name:zh-Hant": "大軍團大街",
+        "note": "contre-allée=voie ouverte à la circulation publique non distincte de la voie principale (cass. Ci. 11 juin 1975)",
+        "oneway": "yes",
+        "operator": "Ville de Paris",
+        "operator:authority": "Maire de Paris dans le respect des prescriptions prises par le préfet de police",
+        "operator:authority:related_law": "III de l'article L. 2512-14 du code général des collectivités territoriales",
+        "service": "alley",
+        "source:operator:authority": "https://www.legifrance.gouv.fr/loda/id/LEGIARTI000035244298/#LEGIARTI000035244298",
+        "surface": "asphalt",
+        "zone:traffic": "FR:urban"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8744338,
+            "lon": 2.2929668,
+            "nodeId": 21660038
+          },
+          {
+            "lat": 48.8745374,
+            "lon": 2.2930318,
+            "nodeId": 9471837453
+          },
+          {
+            "lat": 48.8746005,
+            "lon": 2.2930714,
+            "nodeId": 6139260129
+          },
+          {
+            "lat": 48.8746562,
+            "lon": 2.2930428,
+            "nodeId": 6170799815
+          },
+          {
+            "lat": 48.8746932,
+            "lon": 2.2930239,
+            "nodeId": 299014093
+          },
+          {
+            "lat": 48.8752059,
+            "lon": 2.2914994,
+            "nodeId": 11015526659
+          },
+          {
+            "lat": 48.8752473,
+            "lon": 2.2913762,
+            "nodeId": 299014098
+          },
+          {
+            "lat": 48.8753825,
+            "lon": 2.2909395,
+            "nodeId": 299014095
+          },
+          {
+            "lat": 48.8753361,
+            "lon": 2.2908055,
+            "nodeId": 299014147
+          }
+        ],
+        "closed": false
+      }
+    },
+    {
+      "id": 27245090,
+      "disposition": "accepted",
+      "tags": {
+        "enforcement:operator": "Police nationale",
+        "highway": "service",
+        "lit": "yes",
+        "maxspeed": "30",
+        "name": "Avenue de la Grande Armée",
+        "name:etymology:wikidata": "Q504721",
+        "name:zh": "大军团大街",
+        "name:zh-Hans": "大军团大街",
+        "name:zh-Hant": "大軍團大街",
+        "note": "contre-allée=voie ouverte à la circulation publique non distincte de la voie principale (cass. Ci. 11 juin 1975)",
+        "oneway": "yes",
+        "operator": "Ville de Paris",
+        "operator:authority": "Maire de Paris dans le respect des prescriptions prises par le préfet de police",
+        "operator:authority:related_law": "III de l'article L. 2512-14 du code général des collectivités territoriales",
+        "smoothness": "excellent",
+        "source:operator:authority": "https://www.legifrance.gouv.fr/loda/id/LEGIARTI000035244298/#LEGIARTI000035244298",
+        "surface": "asphalt",
+        "zone:traffic": "FR:urban"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8751094,
+            "lon": 2.2908412,
+            "nodeId": 299014121
+          },
+          {
+            "lat": 48.8752147,
+            "lon": 2.2909164,
+            "nodeId": 9471815116
+          },
+          {
+            "lat": 48.8753128,
+            "lon": 2.2908626,
+            "nodeId": 6012712825
+          },
+          {
+            "lat": 48.8753361,
+            "lon": 2.2908055,
+            "nodeId": 299014147
+          },
+          {
+            "lat": 48.8754421,
+            "lon": 2.2904679,
+            "nodeId": 931762280
+          },
+          {
+            "lat": 48.8756799,
+            "lon": 2.28971,
+            "nodeId": 299014153
+          },
+          {
+            "lat": 48.8756755,
+            "lon": 2.2896577,
+            "nodeId": 11333186718
+          },
+          {
+            "lat": 48.8756404,
+            "lon": 2.2895589,
+            "nodeId": 9471815115
+          },
+          {
+            "lat": 48.8755778,
+            "lon": 2.2893771,
+            "nodeId": 27415728
+          }
+        ],
+        "closed": false
+      }
+    },
+    {
+      "id": 27245428,
+      "disposition": "accepted",
+      "tags": {
+        "enforcement:operator": "Police nationale",
+        "highway": "service",
+        "lit": "yes",
+        "maxspeed": "30",
+        "name": "Avenue de la Grande Armée",
+        "name:etymology:wikidata": "Q504721",
+        "name:zh": "大军团大街",
+        "name:zh-Hans": "大军团大街",
+        "name:zh-Hant": "大軍團大街",
+        "note": "contre-allée=voie ouverte à la circulation publique non distincte de la voie principale (cass. Ci. 11 juin 1975)",
+        "oneway": "yes",
+        "operator": "Ville de Paris",
+        "operator:authority": "Maire de Paris dans le respect des prescriptions prises par le préfet de police",
+        "operator:authority:related_law": "III de l'article L. 2512-14 du code général des collectivités territoriales",
+        "source:operator:authority": "https://www.legifrance.gouv.fr/loda/id/LEGIARTI000035244298/#LEGIARTI000035244298",
+        "surface": "asphalt",
+        "zone:traffic": "FR:urban"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8755567,
+            "lon": 2.2894434,
+            "nodeId": 299018440
+          },
+          {
+            "lat": 48.8754303,
+            "lon": 2.2894569,
+            "nodeId": 9471837436
+          },
+          {
+            "lat": 48.8753509,
+            "lon": 2.289465,
+            "nodeId": 299016131
+          },
+          {
+            "lat": 48.8751102,
+            "lon": 2.2902279,
+            "nodeId": 6170781443
+          },
+          {
+            "lat": 48.8750696,
+            "lon": 2.2903565,
+            "nodeId": 299015572
+          }
+        ],
+        "closed": false
+      }
+    },
+    {
+      "id": 470987535,
+      "disposition": "accepted",
+      "tags": {
+        "busway:both": "lane",
+        "cycleway:both": "separate",
+        "enforcement:operator": "Police nationale",
+        "highway": "primary",
+        "lanes": "6",
+        "lanes:backward": "3",
+        "lanes:forward": "3",
+        "lit": "yes",
+        "maxspeed": "50",
+        "name": "Avenue de la Grande Armée",
+        "name:etymology:wikidata": "Q504721",
+        "name:zh": "大军团大街",
+        "name:zh-Hans": "大军团大街",
+        "name:zh-Hant": "大軍團大街",
+        "operator": "Ville de Paris",
+        "operator:authority": "Maire de Paris dans le respect des prescriptions prises par le préfet de police",
+        "operator:authority:related_law": "III de l'article L. 2512-14 du code général des collectivités territoriales",
+        "psv:lanes:backward": "yes|yes|designated",
+        "sidewalk": "both",
+        "source:operator:authority": "https://www.legifrance.gouv.fr/loda/id/LEGIARTI000035244298/#LEGIARTI000035244298",
+        "surface": "sett",
+        "zone:traffic": "FR:urban"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.875698,
+            "lon": 2.288992,
+            "nodeId": 27286674
+          },
+          {
+            "lat": 48.8756304,
+            "lon": 2.2892112,
+            "nodeId": 6170776900
+          },
+          {
+            "lat": 48.8756147,
+            "lon": 2.2892607,
+            "nodeId": 13363644422
+          },
+          {
+            "lat": 48.8755778,
+            "lon": 2.2893771,
+            "nodeId": 27415728
+          },
+          {
+            "lat": 48.8755567,
+            "lon": 2.2894434,
+            "nodeId": 299018440
+          },
+          {
+            "lat": 48.8752693,
+            "lon": 2.2903463,
+            "nodeId": 931762294
+          },
+          {
+            "lat": 48.8752303,
+            "lon": 2.2904686,
+            "nodeId": 299018405
+          }
+        ],
+        "closed": false
+      }
+    },
+    {
+      "id": 8413426,
+      "disposition": "accepted",
+      "tags": {
+        "highway": "residential",
+        "lit": "yes",
+        "maxspeed": "30",
+        "name": "Rue d'Argentine",
+        "name:etymology:wikidata": "Q414",
+        "oneway": "yes",
+        "sidewalk": "no",
+        "surface": "asphalt"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8752303,
+            "lon": 2.2904686,
+            "nodeId": 299018405
+          },
+          {
+            "lat": 48.8751295,
+            "lon": 2.2903984,
+            "nodeId": 9471837437
+          },
+          {
+            "lat": 48.8750696,
+            "lon": 2.2903565,
+            "nodeId": 299015572
+          }
+        ],
+        "closed": false
+      }
+    },
+    {
+      "id": 933782683,
+      "disposition": "accepted",
+      "tags": {
+        "busway:both": "lane",
+        "cycleway:both": "separate",
+        "enforcement:operator": "Police nationale",
+        "highway": "primary",
+        "lanes": "6",
+        "lanes:backward": "3",
+        "lanes:forward": "3",
+        "lit": "yes",
+        "maxspeed": "50",
+        "name": "Avenue de la Grande Armée",
+        "name:etymology:wikidata": "Q504721",
+        "name:zh": "大军团大街",
+        "name:zh-Hans": "大军团大街",
+        "name:zh-Hant": "大軍團大街",
+        "operator": "Ville de Paris",
+        "operator:authority": "Maire de Paris dans le respect des prescriptions prises par le préfet de police",
+        "operator:authority:related_law": "III de l'article L. 2512-14 du code général des collectivités territoriales",
+        "psv:lanes:backward": "yes|yes|designated",
+        "sidewalk": "both",
+        "source:operator:authority": "https://www.legifrance.gouv.fr/loda/id/LEGIARTI000035244298/#LEGIARTI000035244298",
+        "surface": "sett",
+        "zone:traffic": "FR:urban"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8752303,
+            "lon": 2.2904686,
+            "nodeId": 299018405
+          },
+          {
+            "lat": 48.8751094,
+            "lon": 2.2908412,
+            "nodeId": 299014121
+          },
+          {
+            "lat": 48.8750111,
+            "lon": 2.2911575,
+            "nodeId": 27286709
+          },
+          {
+            "lat": 48.8749765,
+            "lon": 2.2912652,
+            "nodeId": 5263805755
+          }
+        ],
+        "closed": false
+      }
+    },
+    {
+      "id": 933782684,
+      "disposition": "accepted",
+      "tags": {
+        "highway": "residential",
+        "lit": "yes",
+        "maxspeed": "30",
+        "name": "Rue d'Argentine",
+        "name:etymology:wikidata": "Q414",
+        "oneway": "yes",
+        "sidewalk:both": "separate",
+        "surface": "asphalt"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8750696,
+            "lon": 2.2903565,
+            "nodeId": 299015572
+          },
+          {
+            "lat": 48.875002,
+            "lon": 2.2903065,
+            "nodeId": 6170783727
+          },
+          {
+            "lat": 48.8745357,
+            "lon": 2.2899614,
+            "nodeId": 176932687
+          }
+        ],
+        "closed": false
+      }
+    },
+    {
+      "id": 933782685,
+      "disposition": "accepted",
+      "tags": {
+        "enforcement:operator": "Police nationale",
+        "highway": "service",
+        "lit": "yes",
+        "maxspeed": "30",
+        "name": "Avenue de la Grande Armée",
+        "name:etymology:wikidata": "Q504721",
+        "name:zh": "大军团大街",
+        "name:zh-Hans": "大军团大街",
+        "name:zh-Hant": "大軍團大街",
+        "note": "contre-allée=voie ouverte à la circulation publique non distincte de la voie principale (cass. Ci. 11 juin 1975)",
+        "oneway": "yes",
+        "operator": "Ville de Paris",
+        "operator:authority": "Maire de Paris dans le respect des prescriptions prises par le préfet de police",
+        "operator:authority:related_law": "III de l'article L. 2512-14 du code général des collectivités territoriales",
+        "source:operator:authority": "https://www.legifrance.gouv.fr/loda/id/LEGIARTI000035244298/#LEGIARTI000035244298",
+        "surface": "asphalt",
+        "zone:traffic": "FR:urban"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8750696,
+            "lon": 2.2903565,
+            "nodeId": 299015572
+          },
+          {
+            "lat": 48.8748515,
+            "lon": 2.2910425,
+            "nodeId": 5263805754
+          },
+          {
+            "lat": 48.8748011,
+            "lon": 2.291201,
+            "nodeId": 11015526661
+          },
+          {
+            "lat": 48.8746655,
+            "lon": 2.2916273,
+            "nodeId": 299016987
+          },
+          {
+            "lat": 48.8745131,
+            "lon": 2.2920954,
+            "nodeId": 11527326289
+          },
+          {
+            "lat": 48.8743707,
+            "lon": 2.2925328,
+            "nodeId": 299016497
+          },
+          {
+            "lat": 48.8743945,
+            "lon": 2.2926356,
+            "nodeId": 6139260130
+          },
+          {
+            "lat": 48.8744156,
+            "lon": 2.292694,
+            "nodeId": 11333186734
+          },
+          {
+            "lat": 48.8744909,
+            "lon": 2.2927912,
+            "nodeId": 6170787036
+          }
+        ],
+        "closed": false
+      }
+    }
+  ],
+  "visualVerification": "Pending; this capture records source data, not visual correctness."
+}

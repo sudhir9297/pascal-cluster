@@ -1,0 +1,216 @@
+{
+  "capturedAt": "2026-10-09T11:19:02.485Z",
+  "location": {
+    "id": "london-tower-bridge",
+    "lat": 51.5055,
+    "lon": -0.0754,
+    "radius": 200,
+    "driving": "left-driving"
+  },
+  "terrain": "Not acquired in this compiler audit; browser elevation verification remains required.",
+  "visualVerification": "Pending external browser comparison; compiler success does not prove visual accuracy.",
+  "sourceIdentity": "sha256:640fd6016a572cf16f5a5db7d85a9f621fe69480ad0b26677734772b25ec8c22",
+  "preview": {
+    "ways": 104,
+    "segments": 29,
+    "assets": {
+      "roadSigns": 0,
+      "streetLamps": 9,
+      "trafficSignals": 2
+    }
+  },
+  "normalization": {
+    "dispositions": {
+      "accepted": 6689,
+      "rejected": 1633
+    },
+    "kinds": {
+      "support": 6370,
+      "unsupported": 1587,
+      "crossing": 76,
+      "point-asset": 61,
+      "restriction": 3,
+      "mapped-surface": 121,
+      "road": 104
+    },
+    "diagnostics": {
+      "unsupported-feature": 1587,
+      "unsupported-value": 36,
+      "geometry-invalid": 46,
+      "invalid-unit": 2
+    }
+  },
+  "inventory": {
+    "resolved": 19,
+    "unmatched": 18,
+    "pending": 15
+  },
+  "projectBytes": 20312840,
+  "compile": [
+    {
+      "bounds": {
+        "min": [
+          71.38075429746279,
+          -179.23990517805072
+        ],
+        "max": [
+          179.3398665960026,
+          -87.07253097825946
+        ]
+      },
+      "paths": 13,
+      "polygons": 297,
+      "bridges": 0,
+      "mappedSurfaces": 0,
+      "diagnostics": {},
+      "finite": true
+    },
+    {
+      "bounds": {
+        "min": [
+          17.055437072704127,
+          -186.55417200004553
+        ],
+        "max": [
+          80.77274080227488,
+          -43.27417254111936
+        ]
+      },
+      "paths": 4,
+      "polygons": 44,
+      "bridges": 0,
+      "mappedSurfaces": 2,
+      "diagnostics": {
+        "junction-short-approach": 3
+      },
+      "finite": true
+    },
+    {
+      "bounds": {
+        "min": [
+          -40.96621534466692,
+          156.7984365759152
+        ],
+        "max": [
+          -8.241572190609338,
+          199.2920293093752
+        ]
+      },
+      "paths": 2,
+      "polygons": 12,
+      "bridges": 0,
+      "mappedSurfaces": 0,
+      "diagnostics": {},
+      "finite": true
+    },
+    {
+      "bounds": {
+        "min": [
+          -14.942179224308802,
+          -36.54804698046259
+        ],
+        "max": [
+          19.883098175247845,
+          33.0316280052407
+        ]
+      },
+      "paths": 2,
+      "polygons": 4,
+      "bridges": 2,
+      "mappedSurfaces": 0,
+      "diagnostics": {},
+      "finite": true
+    },
+    {
+      "bounds": {
+        "min": [
+          -78.89779590372282,
+          39.90308299425954
+        ],
+        "max": [
+          -12.160287840572803,
+          186.57864579174426
+        ]
+      },
+      "paths": 2,
+      "polygons": 4,
+      "bridges": 0,
+      "mappedSurfaces": 0,
+      "diagnostics": {},
+      "finite": true
+    },
+    {
+      "bounds": {
+        "min": [
+          -2.484922688696292,
+          -188.60399696699488
+        ],
+        "max": [
+          3.5468954899501655,
+          -167.39670350092882
+        ]
+      },
+      "paths": 2,
+      "polygons": 2,
+      "bridges": 0,
+      "mappedSurfaces": 0,
+      "diagnostics": {},
+      "finite": true
+    },
+    {
+      "bounds": {
+        "min": [
+          -1.5767889071160717,
+          -200.9800786593194
+        ],
+        "max": [
+          3.566684765927004,
+          -188.45105128113448
+        ]
+      },
+      "paths": 2,
+      "polygons": 12,
+      "bridges": 0,
+      "mappedSurfaces": 0,
+      "diagnostics": {},
+      "finite": true
+    },
+    {
+      "bounds": {
+        "min": [
+          13.137722946110344,
+          -46.08135937831452
+        ],
+        "max": [
+          23.79382899443426,
+          -33.75734462212745
+        ]
+      },
+      "paths": 1,
+      "polygons": 2,
+      "bridges": 0,
+      "mappedSurfaces": 0,
+      "diagnostics": {},
+      "finite": true
+    },
+    {
+      "bounds": {
+        "min": [
+          -18.90820158702428,
+          30.237950506744177
+        ],
+        "max": [
+          -8.198033061901544,
+          42.68778125668094
+        ]
+      },
+      "paths": 1,
+      "polygons": 2,
+      "bridges": 0,
+      "mappedSurfaces": 0,
+      "diagnostics": {},
+      "finite": true
+    }
+  ],
+  "elapsedMs": 17105
+}

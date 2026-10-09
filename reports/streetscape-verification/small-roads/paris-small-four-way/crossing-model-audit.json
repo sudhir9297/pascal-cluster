@@ -1,0 +1,26 @@
+{
+  "sceneId": "80461196e967",
+  "markedCrossings": [
+    6170781443,
+    6170783727
+  ],
+  "unmarkedCrossings": [
+    9471837437
+  ],
+  "paintPolygons": 8,
+  "crossingRamps": [
+    {
+      "id": 6170781443,
+      "triangles": 4
+    },
+    {
+      "id": 6170783727,
+      "triangles": 4
+    },
+    {
+      "id": 9471837437,
+      "triangles": 0
+    }
+  ],
+  "dimensionalBasis": "Crossing span, stripe spacing, ramps and tactile-pad dimensions are estimates; source positions and tags retained."
+}

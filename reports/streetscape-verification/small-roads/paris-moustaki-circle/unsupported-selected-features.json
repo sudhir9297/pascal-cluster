@@ -1,0 +1,1138 @@
+[
+  {
+    "featureId": "osm~node~1144591712",
+    "tags": {
+      "addr:city": "Paris",
+      "addr:housenumber": "53",
+      "addr:postcode": "75005",
+      "addr:street": "Rue Censier",
+      "amenity": "cafe",
+      "cuisine": "french",
+      "delivery": "no",
+      "diet:vegetarian": "yes",
+      "level": "1",
+      "name": "Le Café Saint-Médard",
+      "name:fr": "Le Café Saint-Médard",
+      "opening_hours": "Mo-Th 07:00-23:30; Fr 07:00-00:00; Sa 08:00-00:00; Su 08:00-23:30",
+      "outdoor_seating": "yes",
+      "phone": "+33 1 43 31 32 99",
+      "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2011;survey",
+      "website": "https://www.cafesaintmedard.com/"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.8393158,
+        "lon": 2.3503572
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~1144591712",
+        "field": "tags",
+        "raw": {
+          "addr:city": "Paris",
+          "addr:housenumber": "53",
+          "addr:postcode": "75005",
+          "addr:street": "Rue Censier",
+          "amenity": "cafe",
+          "cuisine": "french",
+          "delivery": "no",
+          "diet:vegetarian": "yes",
+          "level": "1",
+          "name": "Le Café Saint-Médard",
+          "name:fr": "Le Café Saint-Médard",
+          "opening_hours": "Mo-Th 07:00-23:30; Fr 07:00-00:00; Sa 08:00-00:00; Su 08:00-23:30",
+          "outdoor_seating": "yes",
+          "phone": "+33 1 43 31 32 99",
+          "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre. Mise à jour : 2011;survey",
+          "website": "https://www.cafesaintmedard.com/"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~246512365",
+    "tags": {
+      "amenity": "fountain",
+      "check_date": "2026-02-24",
+      "fountain:type": "isolated",
+      "mapillary": "456928435406801",
+      "name": "Fontaine Guy Lartigue",
+      "survey:date": "2017-05-05"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.8393301,
+        "lon": 2.3500747
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~246512365",
+        "field": "tags",
+        "raw": {
+          "amenity": "fountain",
+          "check_date": "2026-02-24",
+          "fountain:type": "isolated",
+          "mapillary": "456928435406801",
+          "name": "Fontaine Guy Lartigue",
+          "survey:date": "2017-05-05"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~2494110187",
+    "tags": {
+      "amenity": "restaurant",
+      "contact:city": "Paris",
+      "contact:housenumber": "144",
+      "contact:postcode": "75005",
+      "contact:street": "Rue Mouffetard",
+      "cuisine": "french;bistro",
+      "diet:vegetarian": "yes",
+      "indoor_seating": "yes",
+      "name": "Cave la Bourgogne",
+      "opening_hours": "Mo-Su 07:00-02:05",
+      "outdoor_seating": "yes",
+      "source": "survey"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.8391975,
+        "lon": 2.3497289
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~2494110187",
+        "field": "tags",
+        "raw": {
+          "amenity": "restaurant",
+          "contact:city": "Paris",
+          "contact:housenumber": "144",
+          "contact:postcode": "75005",
+          "contact:street": "Rue Mouffetard",
+          "cuisine": "french;bistro",
+          "diet:vegetarian": "yes",
+          "indoor_seating": "yes",
+          "name": "Cave la Bourgogne",
+          "opening_hours": "Mo-Su 07:00-02:05",
+          "outdoor_seating": "yes",
+          "source": "survey"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~2850728260",
+    "tags": {
+      "genus": "Pyrus",
+      "leaf_type": "broadleaved",
+      "natural": "tree",
+      "source": "opendata.paris.fr"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.839101,
+        "lon": 2.350224
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~2850728260",
+        "field": "tags",
+        "raw": {
+          "genus": "Pyrus",
+          "leaf_type": "broadleaved",
+          "natural": "tree",
+          "source": "opendata.paris.fr"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~2850728281",
+    "tags": {
+      "genus": "Pyrus",
+      "leaf_type": "broadleaved",
+      "natural": "tree",
+      "source": "opendata.paris.fr"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.839166,
+        "lon": 2.350177
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~2850728281",
+        "field": "tags",
+        "raw": {
+          "genus": "Pyrus",
+          "leaf_type": "broadleaved",
+          "natural": "tree",
+          "source": "opendata.paris.fr"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~2850731126",
+    "tags": {
+      "genus": "Pyrus",
+      "leaf_type": "broadleaved",
+      "natural": "tree",
+      "source": "opendata.paris.fr"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.839045,
+        "lon": 2.350267
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~2850731126",
+        "field": "tags",
+        "raw": {
+          "genus": "Pyrus",
+          "leaf_type": "broadleaved",
+          "natural": "tree",
+          "source": "opendata.paris.fr"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~2850731642",
+    "tags": {
+      "genus": "Carpinus",
+      "leaf_type": "broadleaved",
+      "natural": "tree",
+      "source": "opendata.paris.fr"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.839414,
+        "lon": 2.350369
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~2850731642",
+        "field": "tags",
+        "raw": {
+          "genus": "Carpinus",
+          "leaf_type": "broadleaved",
+          "natural": "tree",
+          "source": "opendata.paris.fr"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~2850731647",
+    "tags": {
+      "genus": "Paulownia",
+      "leaf_type": "broadleaved",
+      "natural": "tree",
+      "source": "opendata.paris.fr"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.839433,
+        "lon": 2.349964
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~2850731647",
+        "field": "tags",
+        "raw": {
+          "genus": "Paulownia",
+          "leaf_type": "broadleaved",
+          "natural": "tree",
+          "source": "opendata.paris.fr"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~2850731658",
+    "tags": {
+      "genus": "Paulownia",
+      "leaf_type": "broadleaved",
+      "natural": "tree",
+      "source": "opendata.paris.fr"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.839495,
+        "lon": 2.349932
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~2850731658",
+        "field": "tags",
+        "raw": {
+          "genus": "Paulownia",
+          "leaf_type": "broadleaved",
+          "natural": "tree",
+          "source": "opendata.paris.fr"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~3267837786",
+    "tags": {
+      "addr:city": "Paris",
+      "addr:housenumber": "146",
+      "addr:postcode": "75005",
+      "addr:street": "Rue Mouffetard",
+      "amenity": "pharmacy",
+      "check_date:opening_hours": "2025-06-24",
+      "dispensing": "yes",
+      "email": "pharmacieherboriste.stmedard@gmail.com",
+      "healthcare": "pharmacy",
+      "name": "Saint-Médard",
+      "name:fr": "Saint-Médard",
+      "opening_hours": "Mo-Fr 09:00-20:00; Sa 09:00-13:30,14:30-20:00",
+      "phone": "+33 1 43 31 28 84",
+      "ref:FR:FINESS": "750011553"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.8391333,
+        "lon": 2.3498059
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~3267837786",
+        "field": "tags",
+        "raw": {
+          "addr:city": "Paris",
+          "addr:housenumber": "146",
+          "addr:postcode": "75005",
+          "addr:street": "Rue Mouffetard",
+          "amenity": "pharmacy",
+          "check_date:opening_hours": "2025-06-24",
+          "dispensing": "yes",
+          "email": "pharmacieherboriste.stmedard@gmail.com",
+          "healthcare": "pharmacy",
+          "name": "Saint-Médard",
+          "name:fr": "Saint-Médard",
+          "opening_hours": "Mo-Fr 09:00-20:00; Sa 09:00-13:30,14:30-20:00",
+          "phone": "+33 1 43 31 28 84",
+          "ref:FR:FINESS": "750011553"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~3623282842",
+    "tags": {
+      "addr:city": "Paris",
+      "addr:housenumber": "2",
+      "addr:postcode": "75005",
+      "addr:street": "Rue de Bazeilles",
+      "indoor_seating": "yes",
+      "level": "0",
+      "name": "Saines Saveurs",
+      "opening_hours": "Mo,Tu,Th-Su 07:00-20:00",
+      "outdoor_seating": "yes",
+      "phone": "+33 1 47 07 35 40",
+      "shop": "bakery",
+      "smoking": "outside",
+      "toilets": "no",
+      "website": "https://www.parisv2.saines-saveurs.fr/fr,1,11872.html",
+      "wheelchair": "limited"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.8390673,
+        "lon": 2.3500499
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~3623282842",
+        "field": "tags",
+        "raw": {
+          "addr:city": "Paris",
+          "addr:housenumber": "2",
+          "addr:postcode": "75005",
+          "addr:street": "Rue de Bazeilles",
+          "indoor_seating": "yes",
+          "level": "0",
+          "name": "Saines Saveurs",
+          "opening_hours": "Mo,Tu,Th-Su 07:00-20:00",
+          "outdoor_seating": "yes",
+          "phone": "+33 1 47 07 35 40",
+          "shop": "bakery",
+          "smoking": "outside",
+          "toilets": "no",
+          "website": "https://www.parisv2.saines-saveurs.fr/fr,1,11872.html",
+          "wheelchair": "limited"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~4142917417",
+    "tags": {
+      "amenity": "motorcycle_parking",
+      "capacity": "15",
+      "covered": "no"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.8394862,
+        "lon": 2.3502583
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~4142917417",
+        "field": "tags",
+        "raw": {
+          "amenity": "motorcycle_parking",
+          "capacity": "15",
+          "covered": "no"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~4557384889",
+    "tags": {
+      "addr:city": "Paris",
+      "addr:housenumber": "1",
+      "addr:postcode": "75005",
+      "addr:street": "Rue de Bazeilles",
+      "amenity": "cafe",
+      "cuisine": "coffee_shop",
+      "indoor_seating": "yes",
+      "internet_access": "wlan",
+      "internet_access:fee": "no",
+      "level": "0",
+      "name": "Loutsa",
+      "name:fr": "Loutsa",
+      "opening_hours": "Tu-Fr 09:00-19:00; Sa 10:00-19:00; Su,PH 10:00-18:00; Mo off",
+      "outdoor_seating": "yes",
+      "shop": "coffee",
+      "smoking": "outside",
+      "takeaway": "yes",
+      "toilets": "yes",
+      "toilets:access": "customers",
+      "toilets:disposal": "flush",
+      "toilets:handwashing": "yes",
+      "toilets:paper_supplied": "yes",
+      "toilets:position": "seated",
+      "toilets:wheelchair": "yes",
+      "website": "https://www.loutsa.fr/",
+      "wheelchair": "yes"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.839236,
+        "lon": 2.3503653
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~4557384889",
+        "field": "tags",
+        "raw": {
+          "addr:city": "Paris",
+          "addr:housenumber": "1",
+          "addr:postcode": "75005",
+          "addr:street": "Rue de Bazeilles",
+          "amenity": "cafe",
+          "cuisine": "coffee_shop",
+          "indoor_seating": "yes",
+          "internet_access": "wlan",
+          "internet_access:fee": "no",
+          "level": "0",
+          "name": "Loutsa",
+          "name:fr": "Loutsa",
+          "opening_hours": "Tu-Fr 09:00-19:00; Sa 10:00-19:00; Su,PH 10:00-18:00; Mo off",
+          "outdoor_seating": "yes",
+          "shop": "coffee",
+          "smoking": "outside",
+          "takeaway": "yes",
+          "toilets": "yes",
+          "toilets:access": "customers",
+          "toilets:disposal": "flush",
+          "toilets:handwashing": "yes",
+          "toilets:paper_supplied": "yes",
+          "toilets:position": "seated",
+          "toilets:wheelchair": "yes",
+          "website": "https://www.loutsa.fr/",
+          "wheelchair": "yes"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~4557384989",
+    "tags": {
+      "contact:city": "Paris",
+      "contact:housenumber": "3",
+      "contact:postcode": "75005",
+      "contact:street": "Rue de Bazeilles",
+      "name": "Marc & Ju'",
+      "opening_hours": "Tu-Sa 10:00-19:00",
+      "shop": "optician",
+      "website": "https://marcandju.com"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.8391148,
+        "lon": 2.3504481
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~4557384989",
+        "field": "tags",
+        "raw": {
+          "contact:city": "Paris",
+          "contact:housenumber": "3",
+          "contact:postcode": "75005",
+          "contact:street": "Rue de Bazeilles",
+          "name": "Marc & Ju'",
+          "opening_hours": "Tu-Sa 10:00-19:00",
+          "shop": "optician",
+          "website": "https://marcandju.com"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~4557385089",
+    "tags": {
+      "alt_name": "Muriel Le Couls",
+      "check_date:opening_hours": "2025-12-13",
+      "contact:city": "Paris",
+      "contact:housenumber": "51",
+      "contact:postcode": "75005",
+      "contact:street": "Rue Censier",
+      "name": "Fibre Végétale",
+      "opening_hours": "Tu-Sa 09:00-20:00; Su 09:00-13:30; Mo off",
+      "shop": "florist"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.8393634,
+        "lon": 2.3503982
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~4557385089",
+        "field": "tags",
+        "raw": {
+          "alt_name": "Muriel Le Couls",
+          "check_date:opening_hours": "2025-12-13",
+          "contact:city": "Paris",
+          "contact:housenumber": "51",
+          "contact:postcode": "75005",
+          "contact:street": "Rue Censier",
+          "name": "Fibre Végétale",
+          "opening_hours": "Tu-Sa 09:00-20:00; Su 09:00-13:30; Mo off",
+          "shop": "florist"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~5628655350",
+    "tags": {
+      "amenity": "bicycle_parking",
+      "bicycle_parking": "stands",
+      "capacity": "8",
+      "covered": "no",
+      "fee": "no",
+      "owner": "Mairie de Paris"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.8394659,
+        "lon": 2.3502252
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~5628655350",
+        "field": "tags",
+        "raw": {
+          "amenity": "bicycle_parking",
+          "bicycle_parking": "stands",
+          "capacity": "8",
+          "covered": "no",
+          "fee": "no",
+          "owner": "Mairie de Paris"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~6439760287",
+    "tags": {
+      "amenity": "bicycle_rental",
+      "bicycle_rental": "docking_station",
+      "brand": "Vélib' Métropole",
+      "brand:wikidata": "Q1120762",
+      "brand:wikipedia": "fr:Vélib' Métropole",
+      "capacity": "49",
+      "name": "Pascal - Claude Bernard",
+      "network": "Vélib' Métropole",
+      "network:wikidata": "Q1120762",
+      "network:wikipedia": "fr:Vélib' Métropole",
+      "operator": "Smovengo",
+      "operator:type": "private",
+      "operator:wikidata": "Q47008427",
+      "operator:wikipedia": "fr:Smovengo",
+      "ref": "5026",
+      "source": "Autolib Velib Métropole - 2022-08",
+      "unsigned_ref": "82334007",
+      "wikidata": "Q86255441"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.8390017,
+        "lon": 2.3499383
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~6439760287",
+        "field": "tags",
+        "raw": {
+          "amenity": "bicycle_rental",
+          "bicycle_rental": "docking_station",
+          "brand": "Vélib' Métropole",
+          "brand:wikidata": "Q1120762",
+          "brand:wikipedia": "fr:Vélib' Métropole",
+          "capacity": "49",
+          "name": "Pascal - Claude Bernard",
+          "network": "Vélib' Métropole",
+          "network:wikidata": "Q1120762",
+          "network:wikipedia": "fr:Vélib' Métropole",
+          "operator": "Smovengo",
+          "operator:type": "private",
+          "operator:wikidata": "Q47008427",
+          "operator:wikipedia": "fr:Smovengo",
+          "ref": "5026",
+          "source": "Autolib Velib Métropole - 2022-08",
+          "unsigned_ref": "82334007",
+          "wikidata": "Q86255441"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~707512182",
+    "tags": {
+      "addr:housenumber": "146",
+      "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre ; mise à jour : 2010"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.8391534,
+        "lon": 2.3498297
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~707512182",
+        "field": "tags",
+        "raw": {
+          "addr:housenumber": "146",
+          "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre ; mise à jour : 2010"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~707512251",
+    "tags": {
+      "addr:housenumber": "2",
+      "entrance": "yes",
+      "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre;mise à jour : 2010"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.8390172,
+        "lon": 2.350129
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~707512251",
+        "field": "tags",
+        "raw": {
+          "addr:housenumber": "2",
+          "entrance": "yes",
+          "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre;mise à jour : 2010"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~707512258",
+    "tags": {
+      "addr:housenumber": "144",
+      "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre ; mise à jour : 2010"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.8392174,
+        "lon": 2.3497663
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~707512258",
+        "field": "tags",
+        "raw": {
+          "addr:housenumber": "144",
+          "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre ; mise à jour : 2010"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~707512283",
+    "tags": {
+      "addr:housenumber": "1",
+      "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre ; mise à jour : 2010"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.8390042,
+        "lon": 2.3499865
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~707512283",
+        "field": "tags",
+        "raw": {
+          "addr:housenumber": "1",
+          "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre ; mise à jour : 2010"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~707567188",
+    "tags": {
+      "addr:housenumber": "53",
+      "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre ; mise à jour : 2010"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.8393497,
+        "lon": 2.3503243
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~707567188",
+        "field": "tags",
+        "raw": {
+          "addr:housenumber": "53",
+          "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre ; mise à jour : 2010"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~707567199",
+    "tags": {
+      "addr:housenumber": "51",
+      "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre ; mise à jour : 2010"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.8393942,
+        "lon": 2.3504293
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~707567199",
+        "field": "tags",
+        "raw": {
+          "addr:housenumber": "51",
+          "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre ; mise à jour : 2010"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~707567294",
+    "tags": {
+      "addr:housenumber": "3",
+      "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre ; mise à jour : 2010"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.8391354,
+        "lon": 2.3503996
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~707567294",
+        "field": "tags",
+        "raw": {
+          "addr:housenumber": "3",
+          "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre ; mise à jour : 2010"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~707567329",
+    "tags": {
+      "addr:housenumber": "1",
+      "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre ; mise à jour : 2010"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.8392564,
+        "lon": 2.3503161
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~707567329",
+        "field": "tags",
+        "raw": {
+          "addr:housenumber": "1",
+          "source": "cadastre-dgi-fr source : Direction Générale des Impôts - Cadastre ; mise à jour : 2010"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~7904632752",
+    "tags": {
+      "barrier": "bollard",
+      "bollard": "fixed"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.8393746,
+        "lon": 2.3498961
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~7904632752",
+        "field": "tags",
+        "raw": {
+          "barrier": "bollard",
+          "bollard": "fixed"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~7995581381",
+    "tags": {
+      "name": "Potager City",
+      "opening_hours": "08:00-20:00; Su 08:00-12:00",
+      "ref:FR:SIREN": "938282258",
+      "ref:FR:SIRET": "83828225800012",
+      "ref:vatin": "FR03938282258",
+      "shop": "greengrocer"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.8391762,
+        "lon": 2.3504044
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~7995581381",
+        "field": "tags",
+        "raw": {
+          "name": "Potager City",
+          "opening_hours": "08:00-20:00; Su 08:00-12:00",
+          "ref:FR:SIREN": "938282258",
+          "ref:FR:SIRET": "83828225800012",
+          "ref:vatin": "FR03938282258",
+          "shop": "greengrocer"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~8426735144",
+    "tags": {
+      "amenity": "waste_basket",
+      "waste": "trash"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.8392016,
+        "lon": 2.3502777
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~8426735144",
+        "field": "tags",
+        "raw": {
+          "amenity": "waste_basket",
+          "waste": "trash"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~8515978523",
+    "tags": {
+      "name": "Censier Immobilier",
+      "office": "estate_agent"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.8389886,
+        "lon": 2.3501295
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~8515978523",
+        "field": "tags",
+        "raw": {
+          "name": "Censier Immobilier",
+          "office": "estate_agent"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~8674961593",
+    "tags": {
+      "access": "yes",
+      "amenity": "bicycle_parking",
+      "bicycle_parking": "stands",
+      "capacity": "16",
+      "covered": "no",
+      "fee": "no",
+      "indoor": "no",
+      "level": "0",
+      "lit": "no"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.839034,
+        "lon": 2.3501305
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~8674961593",
+        "field": "tags",
+        "raw": {
+          "access": "yes",
+          "amenity": "bicycle_parking",
+          "bicycle_parking": "stands",
+          "capacity": "16",
+          "covered": "no",
+          "fee": "no",
+          "indoor": "no",
+          "level": "0",
+          "lit": "no"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  },
+  {
+    "featureId": "osm~node~9788371483",
+    "tags": {
+      "amenity": "waste_basket"
+    },
+    "geometry": {
+      "kind": "point",
+      "point": {
+        "lat": 48.8391341,
+        "lon": 2.3501117
+      }
+    },
+    "handling": "Retained as raw source with diagnostics; no model generated.",
+    "diagnostics": [
+      {
+        "code": "unsupported-feature",
+        "severity": "warning",
+        "featureId": "osm~node~9788371483",
+        "field": "tags",
+        "raw": {
+          "amenity": "waste_basket"
+        },
+        "message": "Source feature has no supported importer representation and remains inspectable."
+      }
+    ]
+  }
+]

@@ -1,0 +1,70 @@
+{
+  "capturedAt": "2026-10-09T11:13:46.729Z",
+  "location": {
+    "id": "san-francisco-curves",
+    "lat": 37.8021,
+    "lon": -122.4187,
+    "radius": 150,
+    "driving": "right-driving"
+  },
+  "terrain": "Not acquired in this compiler audit; browser elevation verification remains required.",
+  "visualVerification": "Pending external browser comparison; compiler success does not prove visual accuracy.",
+  "sourceIdentity": "sha256:a75ea5e3fd2c7b182b68044d3a195cc2376e3a9131ff2fcefa3cf30c01b46c80",
+  "preview": {
+    "ways": 60,
+    "segments": 45,
+    "assets": {
+      "roadSigns": 26,
+      "streetLamps": 0,
+      "trafficSignals": 0
+    }
+  },
+  "normalization": {
+    "dispositions": {
+      "rejected": 939,
+      "accepted": 6923
+    },
+    "kinds": {
+      "unsupported": 939,
+      "support": 6440,
+      "crossing": 116,
+      "point-asset": 146,
+      "restriction": 10,
+      "road": 60,
+      "mapped-surface": 151
+    },
+    "diagnostics": {
+      "unsupported-feature": 939,
+      "unsupported-value": 70
+    }
+  },
+  "inventory": {
+    "resolved": 55,
+    "pending": 44,
+    "unmatched": 15
+  },
+  "projectBytes": 13385999,
+  "compile": [
+    {
+      "bounds": {
+        "min": [
+          -149.33705028530133,
+          -156.0014394416275
+        ],
+        "max": [
+          148.91588424009294,
+          137.17374009451345
+        ]
+      },
+      "paths": 45,
+      "polygons": 2150,
+      "bridges": 0,
+      "mappedSurfaces": 0,
+      "diagnostics": {
+        "junction-short-approach": 15
+      },
+      "finite": true
+    }
+  ],
+  "elapsedMs": 7062
+}

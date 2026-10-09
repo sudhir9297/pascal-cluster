@@ -24,12 +24,12 @@ describe('guided wash area', () => {
     expect(guidedBasinHostAllowed(null)).toBe(true)
     expect(guidedTapHostAllowed('other-basin')).toBe(true)
   })
-  test('waits for a placed vanity and only completes its own basin and tap', () => {
+  test('advances from vanity to basin to tap and only accepts its own fittings', () => {
     const vanity = FreestandingVanityNode.parse({})
     const placedVanity = acceptWashAreaPlacement(emptyWashArea, asNode(vanity))!
-    expect(placedVanity.step).toBe('vanity')
+    expect(placedVanity.step).toBe('basin')
     expect(placedVanity.vanityId).toBe(vanity.id)
-    const basinStep = { ...placedVanity, step: 'basin' as const }
+    const basinStep = placedVanity
     expect(acceptWashAreaPlacement(basinStep, asNode(CountertopBasinNode.parse({})))).toBeNull()
     const basin = CountertopBasinNode.parse({ parentId: vanity.id })
     const tapStep = acceptWashAreaPlacement(basinStep, asNode(basin))!

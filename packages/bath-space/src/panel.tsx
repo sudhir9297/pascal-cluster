@@ -1,6 +1,8 @@
 'use client'
+import AreaSummary from './guided/area-summary'
+import AreaHeading from './guided/area-heading'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import {
   useScene,
   type AnyNode,
@@ -10,10 +12,14 @@ import {
 import { useEditor } from '@pascal-app/editor'
 import { useViewer } from '@pascal-app/viewer'
 import BathSpaceCatalog from './catalog-panel'
+import LayoutBuilder from './guided/layout-builder'
+import { bathroomReviewFix } from './guided/review-state'
+import { bathroomWashAreaFlow, bathroomLayoutPatch } from './guided/layout'
+import { adjacentBathroomStage, includedBathroomAreas } from './guided/setup'
+import WorkflowOverview from './guided/workflow-overview'
+import type { BathroomStage } from './guided/workflow'
 import FinishingBuilder from './guided/finishing-builder'
 import { type ReviewIssue } from './guided/bathroom-review'
-import { emptyToilet, toiletMetadataKey } from './guided/toilet'
-import { emptyBathingArea, bathingMetadataKey } from './guided/bathing-area'
 import ToiletBuilder from './guided/toilet-builder'
 import BathingBuilder from './guided/bathing-builder'
 import { vanityLevelId } from './freestanding-vanity/wall-placement'
@@ -157,21 +163,9 @@ function WashAreaBuilder({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <header className="shrink-0 px-4 pb-3 pt-4">
-        <div className="flex items-center justify-between gap-2">
-          <h1 className="text-sm font-semibold">Build your wash area</h1>
-          <button
-            type="button"
-            className="text-xs text-muted-foreground underline"
-            onClick={() => {
-              stopPlacement()
-              onBrowse()
-            }}
-          >
-            Browse all
-          </button>
-        </div>
+        <AreaHeading title="Wash area" onBrowse={onBrowse} />
         <nav aria-label="Wash area steps" className="mt-4 flex gap-2">
-          {steps.map((step, index) => (
+          {steps.map((step) => (
             <button
               type="button"
               key={step.id}
@@ -183,10 +177,10 @@ function WashAreaBuilder({
                     ? !basin
                     : false
               }
-              className={`${button} flex-1 px-1 ${flow.step === step.id ? 'border-primary bg-primary/10 text-primary' : ''}`}
+              className={`min-h-8 flex-1 rounded-md border-0 px-2 py-1.5 text-xs disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-2 focus-visible:outline-ring motion-safe:[&:active:not(:focus-visible)]:scale-[0.98] ${flow.step === step.id ? 'bg-secondary font-medium text-foreground' : 'bg-transparent text-muted-foreground hover:bg-accent/40 hover:text-foreground'}`}
               onClick={() => go({ ...flow, step: step.id })}
             >
-              {index + 1}. {step.label}
+              {step.label}
             </button>
           ))}
         </nav>
@@ -237,23 +231,8 @@ function WashAreaBuilder({
       </header>
       <div className="min-h-0 flex-1">
         {flow.step === 'complete' ? (
-          <div className="space-y-2 px-4">
-            {[vanity, basin, tap]
-              .filter((node): node is AnyNode => Boolean(node))
-              .map((node) => (
-                <button
-                  type="button"
-                  key={node.id}
-                  className={`${button} w-full text-left`}
-                  onClick={() => select(node.id)}
-                >
-                  {node.name ||
-                    String(node.type)
-                      .replace('bath-space:', '')
-                      .replaceAll('-', ' ')}{' '}
-                  · Edit
-                </button>
-              ))}
+          <div className="h-full space-y-2 overflow-y-auto px-4 pb-4">
+            <AreaSummary visual title="Wash area fixtures" levelId={levelId} nodes={[vanity, basin, tap].filter((node): node is AnyNode => Boolean(node))} />
           </div>
         ) : (
           <BathSpaceCatalog
@@ -274,7 +253,7 @@ function WashAreaBuilder({
                 onToilet()
               }}
             >
-              Next: Choose toilet
+              Continue to next area
             </button>
             <button
               type="button"
@@ -341,14 +320,60 @@ function WashAreaBuilder({
 
 export default function BathSpacePanel() {
   const [browse, setBrowse] = useState(false)
+  const modeId = useId()
+  const readOnly = useScene((state) => state.readOnly)
+  const catalog = browse || readOnly
+
+  const switchTab = (next: boolean) => {
+    stopPlacement()
+    setGuidedPlacementContext(null)
+    setBrowse(next)
+  }
+
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <nav aria-label="Bath Space mode" role="tablist" className="mx-4 mt-4 flex shrink-0 gap-1 rounded-lg bg-secondary/60 p-1">
+        {[{ label: 'Guided', catalog: false }, { label: 'Catalog', catalog: true }].map((tab) => (
+          <button
+            key={tab.label}
+            id={`${modeId}-${tab.label}`}
+            type="button"
+            role="tab"
+            aria-controls={`${modeId}-content`}
+            aria-selected={catalog === tab.catalog}
+            tabIndex={catalog === tab.catalog ? 0 : -1}
+            disabled={readOnly && !tab.catalog}
+            onClick={() => switchTab(tab.catalog)}
+            onKeyDown={(event) => {
+              if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+              event.preventDefault()
+              const buttons = Array.from(event.currentTarget.parentElement!.querySelectorAll<HTMLButtonElement>('[role="tab"]:not(:disabled)'))
+              const index = buttons.indexOf(event.currentTarget)
+              const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (index + (event.key === 'ArrowLeft' ? -1 : 1) + buttons.length) % buttons.length
+              buttons[next]?.focus()
+              buttons[next]?.click()
+            }}
+            className={`min-h-9 flex-1 rounded-md border-0 px-3 py-2 text-xs font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-40 motion-safe:[&:active:not(:focus-visible)]:scale-[0.98] ${catalog === tab.catalog ? 'bg-background text-foreground shadow-sm' : 'bg-transparent text-muted-foreground hover:text-foreground'}`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </nav>
+      <div id={`${modeId}-content`} role="tabpanel" aria-labelledby={`${modeId}-${catalog ? 'Catalog' : 'Guided'}`} className="min-h-0 flex-1">
+        <BathSpaceContent browse={catalog} onBrowse={() => switchTab(true)} />
+      </div>
+    </div>
+  )
+}
+
+function BathSpaceContent({ browse, onBrowse }: { browse: boolean; onBrowse: () => void }) {
+  const nodes = useScene((state) => state.nodes)
   const levelId = useViewer((state) => state.selection.levelId)
   const readOnly = useScene((state) => state.readOnly)
   const stage = useScene((state) =>
     levelId ? state.nodes[levelId]?.metadata?.bathSpaceStage : undefined,
   )
-  const setStage = (
-    next: 'wash-area' | 'toilet' | 'bathing' | 'accessories' | 'review',
-  ) => {
+  const setStage = (next: BathroomStage) => {
     stopPlacement()
     const state = useScene.getState(),
       level = levelId ? state.nodes[levelId] : undefined
@@ -356,151 +381,73 @@ export default function BathSpacePanel() {
       state.updateNode(
         level.id as AnyNodeId,
         {
-          metadata: { ...level.metadata, bathSpaceStage: next },
+          metadata: {
+            ...level.metadata,
+            bathSpaceStage: next,
+            ...(next === 'wash-area' && stage === 'layout' && bathroomWashAreaFlow(levelId!, state.nodes) ? { [washAreaMetadataKey]: bathroomWashAreaFlow(levelId!, state.nodes) } : {}),
+            ...(['wash-area', 'toilet', 'bathing'].includes(next) && Array.isArray(level.metadata?.bathSpaceExcludedAreas) && level.metadata.bathSpaceExcludedAreas.includes(next)
+              ? { bathSpaceExcludedAreas: level.metadata.bathSpaceExcludedAreas.filter((area) => area !== next), bathSpaceReviewed: false }
+              : {}),
+          },
         } as Partial<AnyNode>,
       )
   }
-  if (browse || readOnly)
-    return (
-      <div className="flex h-full min-h-0 flex-col">
-        {!readOnly && (
-          <button
-            type="button"
-            className={`${button} mx-4 mt-4`}
-            onClick={() => {
-              stopPlacement()
-              setBrowse(false)
-            }}
-          >
-            Return to guided bathroom
-          </button>
-        )}
-        <div className="min-h-0 flex-1">
-          <BathSpaceCatalog />
-        </div>
-      </div>
-    )
+  if (browse || readOnly) return <BathSpaceCatalog />
   if (!levelId)
     return (
       <div className="p-4 text-xs text-muted-foreground">
         Select a floor to begin.
       </div>
     )
+  const included = includedBathroomAreas(levelId, nodes)
   const fix = (issue: ReviewIssue) => {
     stopPlacement()
     const state = useScene.getState(),
-      level = state.nodes[levelId],
-      host = issue.hostId ? state.nodes[issue.hostId as AnyNodeId] : undefined
+      level = state.nodes[levelId]
     if (!level) return
-    let patch: Record<string, unknown> = {}
-    if (issue.area === 'wash-area')
-      patch = {
-        [washAreaMetadataKey]: {
-          ...emptyWashArea,
-          step: issue.step,
-          vanityId:
-            issue.step === 'basin'
-              ? issue.hostId
-              : host?.parentId &&
-                  /vanity$/.test(
-                    String(state.nodes[host.parentId as AnyNodeId]?.type),
-                  )
-                ? host.parentId
-                : null,
-          basinId: issue.step === 'tap' ? issue.hostId : null,
-          withoutVanity:
-            issue.step === 'tap' &&
-            !/vanity$/.test(
-              String(
-                host?.parentId
-                  ? state.nodes[host.parentId as AnyNodeId]?.type
-                  : '',
-              ),
-            ),
-        },
-      }
-    if (issue.area === 'toilet')
-      patch = {
-        [toiletMetadataKey]: {
-          ...emptyToilet,
-          step: issue.step,
-          toiletId: issue.hostId,
-          mounting: String(host?.type).includes('wall-hung') ? 'wall' : 'floor',
-        },
-      }
-    if (issue.area === 'bathing')
-      patch = {
-        [bathingMetadataKey]: {
-          ...emptyBathingArea,
-          step: issue.step,
-          kind: issue.hostId
-            ? String(host?.type) === 'bath-space:bathtub'
-              ? 'bath'
-              : 'shower'
-            : null,
-          system: issue.system ?? 'kit',
-          bathId:
-            String(host?.type) === 'bath-space:bathtub' ? issue.hostId : null,
-          showerId:
-            String(host?.type) === 'bath-space:bathtub' ? null : issue.hostId,
-        },
-      }
-    state.updateNode(levelId, {
-      metadata: {
-        ...level.metadata,
-        ...patch,
-        bathSpaceStage: issue.area,
-        bathSpaceReviewed: false,
-      },
-    } as Partial<AnyNode>)
-    if (host)
-      useViewer
-        .getState()
-        .setSelection({ levelId, selectedIds: [host.id as AnyNodeId] })
+    const repair = bathroomReviewFix(levelId, issue.id, state.nodes)
+    if (!repair || state.readOnly) return
+    state.updateNode(levelId, { metadata: repair.metadata } as Partial<AnyNode>)
+    useViewer.getState().setSelection({ levelId, selectedIds: repair.focusId ? [repair.focusId as AnyNodeId] : [] })
   }
-  if (stage === 'accessories' || stage === 'review')
-    return (
-      <FinishingBuilder
-        key={levelId}
-        levelId={levelId}
-        review={stage === 'review'}
-        onStage={setStage}
-        onFix={fix}
-      />
-    )
   const content =
-    stage === 'bathing' ? (
+    stage === 'layout' ? (
+      <LayoutBuilder key={levelId} levelId={levelId} onWashArea={() => setStage('wash-area')} onFinish={() => {
+        stopPlacement()
+        const state = useScene.getState()
+        const level = state.nodes[levelId]
+        const patch = bathroomLayoutPatch(levelId, state.nodes)
+        if (level && patch && !state.readOnly) state.updateNode(levelId, { metadata: { ...level.metadata, ...patch } } as Partial<AnyNode>)
+      }} />
+    ) : stage === 'accessories' || stage === 'review' ? (
+      <FinishingBuilder key={levelId} levelId={levelId} review={stage === 'review'} onStage={setStage} onFix={fix} />
+    ) : stage === 'bathing' ? (
       <BathingBuilder
         key={levelId}
         levelId={levelId}
-        onToilet={() => setStage('toilet')}
+        onToilet={() => setStage(adjacentBathroomStage('bathing', 'back', included))}
         onAccessories={() => setStage('accessories')}
-        onBrowse={() => setBrowse(true)}
+        onBrowse={onBrowse}
       />
     ) : stage === 'toilet' ? (
       <ToiletBuilder
         key={levelId}
         levelId={levelId}
-        onWashArea={() => setStage('wash-area')}
-        onBathing={() => setStage('bathing')}
-        onBrowse={() => setBrowse(true)}
+        onWashArea={() => setStage(adjacentBathroomStage('toilet', 'back', included))}
+        onBathing={() => setStage(adjacentBathroomStage('toilet', 'next', included))}
+        onBrowse={onBrowse}
       />
     ) : (
       <WashAreaBuilder
         key={levelId}
         levelId={levelId}
-        onBrowse={() => setBrowse(true)}
-        onToilet={() => setStage('toilet')}
+        onBrowse={onBrowse}
+        onToilet={() => setStage(adjacentBathroomStage('wash-area', 'next', included))}
       />
     )
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <button
-        className={`${button} mx-4 mt-3`}
-        onClick={() => setStage('review')}
-      >
-        Review bathroom
-      </button>
+      <WorkflowOverview levelId={levelId} stage={['layout', 'toilet', 'bathing', 'accessories', 'review'].includes(String(stage)) ? stage as BathroomStage : 'wash-area'} onStage={setStage} />
       <div className="min-h-0 flex-1">{content}</div>
     </div>
   )

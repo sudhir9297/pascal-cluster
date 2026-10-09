@@ -1,0 +1,29 @@
+{
+  "sceneId": "192d3c4f7b6b",
+  "sceneUrl": "http://localhost:3004/scene/192d3c4f7b6b",
+  "version": 2,
+  "sizeBytes": 1480423,
+  "segments": 3,
+  "junctions": [
+    {
+      "nodeId": "n299018405",
+      "kind": "tee",
+      "treatment": "auto",
+      "primaryMode": "auto",
+      "primaryEdgeIds": [
+        "osm~way~470987535~299018440.931762294.299018405~0.9312538720347376~2~b~osm~470987535~4~0~n299018405",
+        "osm~way~933782683~299018405.299014121~0~0.493108335319646~n299018405~b~osm~933782683~0~0"
+      ],
+      "approachControls": {},
+      "cornerRadii": {
+        "osm~way~470987535~299018440.931762294.299018405~0.9312538720347376~2~b~osm~470987535~4~0~n299018405::osm~way~933782683~299018405.299014121~0~0.493108335319646~n299018405~b~osm~933782683~0~0": 2.535,
+        "osm~way~8413426~299018405.9471837437.299015572~0~1.3621101853589026~n299018405~b~osm~8413426~1~0::osm~way~933782683~299018405.299014121~0~0.493108335319646~n299018405~b~osm~933782683~0~0": 2.535,
+        "osm~way~470987535~299018440.931762294.299018405~0.9312538720347376~2~b~osm~470987535~4~0~n299018405::osm~way~8413426~299018405.9471837437.299015572~0~1.3621101853589026~n299018405~b~osm~8413426~1~0": 2.535
+      },
+      "manualBoundaryEnabled": false,
+      "manualBoundaryPoints": [],
+      "solverStatus": "auto"
+    }
+  ],
+  "comparison": "Isolated source T matches road topology and orientation. Rendered returns are continuous and rounded; nearby four-way junction is absent. Radius 2.535 m is an estimate constrained by approach lengths, not an imagery measurement. Trees obscure the exact real curb outline."
+}

@@ -10,7 +10,7 @@ import ribbonThumbnail from './assets/ribbon.webp'
 type ThumbnailAsset = string | { src: string }
 const thumbnailSrc = (asset: ThumbnailAsset | undefined) => typeof asset === 'string' ? asset : asset?.src
 
-const showerHoseThumbnails: Record<ShowerHoseNode['style'], ThumbnailAsset> = {
+export const showerHoseThumbnails: Record<ShowerHoseNode['style'], ThumbnailAsset> = {
   smooth: smoothThumbnail,
   metal: metalThumbnail,
   ribbon: ribbonThumbnail,

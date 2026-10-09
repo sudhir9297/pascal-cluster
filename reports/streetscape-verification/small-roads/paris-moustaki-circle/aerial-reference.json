@@ -1,0 +1,14 @@
+{
+  "url": "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/19/180408/265566",
+  "provider": "Esri World Imagery",
+  "tile": {
+    "z": 19,
+    "x": 265566,
+    "y": 180408
+  },
+  "centerPixel": [
+    146.622527718544,
+    93.37385622411966
+  ],
+  "note": "Imagery capture date and surveyed dimensions not established."
+}

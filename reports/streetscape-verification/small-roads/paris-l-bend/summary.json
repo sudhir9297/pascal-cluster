@@ -1,0 +1,59 @@
+{
+  "center": {
+    "lat": 48.8758739,
+    "lon": 2.2906664
+  },
+  "radius": 20,
+  "sourceIdentity": "sha256:e8afce202a83282e3d7c8b3d4c7aa1a3998f686d374c08fa4d3f6acd17a6f23a",
+  "segments": 1,
+  "roads": [
+    {
+      "id": 51556901,
+      "disposition": "accepted",
+      "tags": {
+        "access": "private",
+        "highway": "service",
+        "name": "Villa de la Grande Armée",
+        "name:etymology:wikidata": "Q504721",
+        "service": "alley"
+      },
+      "geometry": {
+        "kind": "way",
+        "points": [
+          {
+            "lat": 48.8762237,
+            "lon": 2.2899898,
+            "nodeId": 659283858
+          },
+          {
+            "lat": 48.876202,
+            "lon": 2.2900239,
+            "nodeId": 13352881484
+          },
+          {
+            "lat": 48.8761781,
+            "lon": 2.2900614,
+            "nodeId": 659285048
+          },
+          {
+            "lat": 48.8759804,
+            "lon": 2.2903606,
+            "nodeId": 659284020
+          },
+          {
+            "lat": 48.8758739,
+            "lon": 2.2906664,
+            "nodeId": 1986828644
+          },
+          {
+            "lat": 48.8760254,
+            "lon": 2.2910164,
+            "nodeId": 659284021
+          }
+        ],
+        "closed": false
+      }
+    }
+  ],
+  "visualVerification": "Pending; this capture records source data, not visual correctness."
+}
