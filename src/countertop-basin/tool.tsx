@@ -12,6 +12,7 @@ import { BasinNode, CountertopBasinNode, UndermountBasinNode, DropInBasinNode, S
 import { buildCountertopBasinGeometry } from './geometry'
 import { basinPlacement } from './placement'
 import { basinPlacementCandidate, type BasinPlacementCandidate } from './placement-pose'
+import { guidedBasinHostAllowed } from '../guided/placement-context'
 import { basinMoveCandidate, basinMoveSurface } from './move-placement'
 import { vanityLevelId } from '../freestanding-vanity/wall-placement'
 import { useBasinPlacementShape } from './placement-settings'
@@ -67,7 +68,8 @@ export default function CountertopBasinTool({ undermount = false, dropIn = false
         ? basinMoveSurface(ray, scene, levelMatrix(), node, sceneRegistry.nodes, useScene.getState().nodes, excluded, isGridSnapActive() ? gridStep : 0, groundPoint)
         : basinPlacement(ray, scene, levelMatrix(), node.rotation, isGridSnapActive() ? gridStep : 0, excluded, groundPoint)
       if (!hit) return null
-      return existing ? basinMoveCandidate(node, hit, levelId, sceneRegistry.nodes, useScene.getState().nodes) : basinPlacementCandidate(node, hit, levelId, sceneRegistry.nodes, useScene.getState().nodes)
+      const candidate = existing ? basinMoveCandidate(node, hit, levelId, sceneRegistry.nodes, useScene.getState().nodes) : basinPlacementCandidate(node, hit, levelId, sceneRegistry.nodes, useScene.getState().nodes)
+      return !existing && candidate && !guidedBasinHostAllowed(candidate.placed.parentId) ? null : candidate
     }
     const show = (next: BasinPlacementCandidate | null) => {
       setCandidate(next)

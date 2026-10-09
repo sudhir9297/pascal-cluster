@@ -15,6 +15,7 @@ import { useTapPlacementPreset } from './placement-settings'
 import { getTapPreset, tapMountingLayout } from './presets'
 import WallTapTool from './wall-tool'
 import { TapNode } from './schema'
+import { guidedTapHostAllowed } from '../guided/placement-context'
 
 export default function TapTool({ node: source }: { node?: TapNode }) {
   const presetId = useTapPlacementPreset()
@@ -51,6 +52,7 @@ function BasinTapTool({ source }: { source?: TapNode }) {
       if (!level) return null
       level.updateWorldMatrix(true, true)
       const candidate = tapPlacementCandidate(ray, level, level.matrixWorld, levelId, sceneRegistry.nodes, useScene.getState().nodes, original ? [preview, original] : [preview])
+      if (!source && candidate && !guidedTapHostAllowed(candidate.parentId)) return null
       const host = candidate ? tapHost(useScene.getState().nodes[candidate.parentId as AnyNodeId]) : null
       return host && 'tapMount' in host && tapMountingLayout(node) !== 'single-hole' ? null : candidate
     }

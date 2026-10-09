@@ -41,6 +41,7 @@ import {
 
 import { attachedTapPose } from './attachment'
 import { resolveWallTapTarget, wallTapAttachmentChanges } from './binding'
+import { guidedTapHostAllowed } from '../guided/placement-context'
 
 const placementFields = [
   'parentId',
@@ -159,6 +160,12 @@ export default function WallTapTool({ node: source }: { node?: TapNode }) {
         return
       }
       const bound = resolveWallTapTarget(node, next, useScene.getState().nodes)
+      if (!source && !guidedTapHostAllowed(bound.servesBasinId)) {
+        latest.current = null
+        setPlacement(null)
+        usePlacementPreview.getState().clear()
+        return
+      }
       const parent = useScene.getState().nodes[next.wallId as AnyNodeId]
       usePlacementPreview
         .getState()
@@ -178,6 +185,7 @@ export default function WallTapTool({ node: source }: { node?: TapNode }) {
       const wall = state.nodes[target.wallId as AnyNodeId]
       if (wall?.type !== 'wall') return
       const bound = resolveWallTapTarget(node, target, state.nodes)
+      if (!source && !guidedTapHostAllowed(bound.servesBasinId)) return
       const placed = createWallTap(
         { ...bound, metadata: stripTransient(node.metadata) },
         target,

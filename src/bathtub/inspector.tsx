@@ -161,7 +161,7 @@ export default function BathInspector({ node: raw }: { node: BathtubNode }) {
                 ? 'Wall mounted'
                 : tapMount === 'rim'
                   ? 'On the rim'
-                  : 'No target'}
+                  : 'No tap'}
             </PanelButton>
           ))}
         </div>

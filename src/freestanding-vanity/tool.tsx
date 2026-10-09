@@ -18,10 +18,12 @@ import {
 } from '@pascal-app/editor'
 import { floorPlacementPose, type FloorPlacementPose } from '../floor-support/placement'
 import { floorPointerEvent } from '../floor-support/pointer'
-import { createPortal, useThree } from '@react-three/fiber'
+import { useThree } from '@react-three/fiber'
 import { useViewer } from '@pascal-app/viewer'
 import { useEffect, useMemo, useState } from 'react'
-import { Vector3, type Group, type Material, type Mesh } from 'three'
+import { Vector2, Vector3, type Material, type Mesh } from 'three'
+import { WallPlacementGhost } from '../attachments/wall-placement-ghost'
+import { vanityPointerPreviewEvent } from './pointer-preview'
 import { buildFreestandingVanityGeometry } from './geometry'
 import { freestandingVanityDefinition } from './definition'
 import {
@@ -58,7 +60,7 @@ export default function VanityTool() {
 }
 
 function FreestandingVanityTool() {
-  const camera = useThree((state) => state.camera)
+  const { camera, gl, pointer } = useThree()
   const activeLevelId = useViewer((state) => state.selection.levelId)
   const gridStep = useEditor((state) => state.gridSnapStep)
   const presetId = useVanityPlacementPreset()
@@ -95,6 +97,7 @@ function FreestandingVanityTool() {
 
   useEffect(() => {
     if (!activeLevelId) return
+    const canvas = gl.domElement
 
     const placementPose = (event: GridEvent): FloorPlacementPose => {
       const pointed = floorPointerEvent(camera, event)
@@ -129,6 +132,23 @@ function FreestandingVanityTool() {
           useScene.getState().nodes[activeLevelId as AnyNodeId] ?? null,
         )
     }
+    const onCanvasLeave = () => {
+      setPose(null)
+      usePlacementPreview.getState().clear()
+    }
+    const onCanvasMove = (event: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect()
+      const cursor = new Vector2(
+        (event.clientX - rect.left) / rect.width * 2 - 1,
+        -(event.clientY - rect.top) / rect.height * 2 + 1,
+      )
+      const next = vanityPointerPreviewEvent(camera, sceneRegistry.nodes.get(activeLevelId), cursor)
+      if (next) onMove(next)
+      else onCanvasLeave()
+    }
+    const onGridMove = (event: GridEvent) => {
+      if (event.nativeEvent.target !== canvas) onMove(event)
+    }
     const onClick = (event: GridEvent) => {
       const node = schema.parse({
         ...previewNode,
@@ -146,16 +166,22 @@ function FreestandingVanityTool() {
       }
     }
 
-    emitter.on('grid:move', onMove)
+    const initial = vanityPointerPreviewEvent(camera, sceneRegistry.nodes.get(activeLevelId), pointer)
+    if (initial) onMove(initial)
+    canvas.addEventListener('pointermove', onCanvasMove)
+    canvas.addEventListener('pointerleave', onCanvasLeave)
+    emitter.on('grid:move', onGridMove)
     emitter.on('grid:click', onClick)
     window.addEventListener('keydown', onKeyDown, true)
     return () => {
-      emitter.off('grid:move', onMove)
+      canvas.removeEventListener('pointermove', onCanvasMove)
+      canvas.removeEventListener('pointerleave', onCanvasLeave)
+      emitter.off('grid:move', onGridMove)
       emitter.off('grid:click', onClick)
       window.removeEventListener('keydown', onKeyDown, true)
       usePlacementPreview.getState().clear()
     }
-  }, [activeLevelId, gridStep, presetId, previewNode, corner, camera])
+  }, [activeLevelId, gridStep, presetId, previewNode, corner, camera, gl, pointer])
 
   useEffect(
     () => () => {
@@ -174,13 +200,11 @@ function FreestandingVanityTool() {
   if (!activeLevelId || !pose) return null
   const level = sceneRegistry.nodes.get(activeLevelId)
   return level
-    ? createPortal(
-        <primitive
-          object={preview as Group}
-          position={pose.previewPosition}
-          rotation={[0, pose.rotation ?? 0, 0]}
-        />,
-        level,
-      )
+    ? <WallPlacementGhost
+        object={preview}
+        wall={level}
+        position={pose.previewPosition}
+        rotation={pose.rotation ?? 0}
+      />
     : null
 }

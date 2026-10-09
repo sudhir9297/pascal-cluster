@@ -110,6 +110,7 @@ export default function MirrorReflections() {
 			() => revision.current,
 			capturing,
 			invalidate,
+			gl as unknown as { getRenderObjectFunction?: () => unknown },
 		);
 		return () => {
 			releaseSnapshotHook();
