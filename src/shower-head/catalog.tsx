@@ -13,7 +13,7 @@ import bellThumbnail from './assets/bell.webp'
 type ThumbnailAsset = string | { src: string }
 const thumbnailSrc = (asset: ThumbnailAsset | undefined) => typeof asset === 'string' ? asset : asset?.src
 
-const showerHeadThumbnails: Record<ShowerHeadNode['style'], ThumbnailAsset> = {
+export const showerHeadThumbnails: Record<ShowerHeadNode['style'], ThumbnailAsset> = {
   'round-rain': roundRainThumbnail,
   'square-rain': squareRainThumbnail,
   'soft-square': softSquareThumbnail,

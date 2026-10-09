@@ -15,7 +15,7 @@ import HorizontalGroupThumbnail from './assets/horizontal-group.webp'
 
 type ThumbnailAsset = string | { src: string }
 const thumbnailSrc = (asset: ThumbnailAsset | undefined) => typeof asset === 'string' ? asset : asset?.src
-const bodyJetThumbnails: Record<string, ThumbnailAsset> = {
+export const bodyJetThumbnails: Record<string, ThumbnailAsset> = {
   'round-flush': RoundFlushThumbnail,
   'square-flush': SquareFlushThumbnail,
   'round-swivel': RoundSwivelThumbnail,

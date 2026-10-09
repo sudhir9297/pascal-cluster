@@ -7,6 +7,7 @@ import {
   bathingHead,
   bathingShowerReady,
   emptyBathingArea,
+  readBathingArea,
 } from './bathing-area'
 export type Area = 'wash-area' | 'toilet' | 'bathing'
 export const areas: { id: Area; label: string }[] = [
@@ -104,6 +105,13 @@ export function bathroomIssues(
               ? 'toilet'
               : 'choice',
       })
+  const bathing = readBathingArea(nodes[levelId]?.metadata?.bathSpaceBathingArea)
+  if (areaAnchors('bathing', fixtures).length) {
+    if (bathing.kind && bathing.kind !== 'shower' && !fixtures.some((node) => String(node.type) === 'bath-space:bathtub'))
+      issues.push({ id: 'bathing:required-bath', area: 'bathing', message: 'Add the bath selected in your bathroom setup.', hostId: null, step: 'bath' })
+    if (bathing.kind && bathing.kind !== 'bath' && !fixtures.some((node) => /(?:shower-arm|shower-assembly)$/.test(String(node.type))))
+      issues.push({ id: 'bathing:required-shower', area: 'bathing', message: 'Add the shower selected in your bathroom setup.', hostId: null, step: 'shower', system: bathing.system })
+  }
   for (const n of fixtures) {
     const type = String(n.type),
       name = n.name || type.replace('bath-space:', '').replaceAll('-', ' ')

@@ -157,11 +157,12 @@ export function reconcileBathingArea(
 ): BathingFlow {
   if (!flow.kind) return { ...flow, step: 'choice' }
   if (flow.step === 'choice') return flow
-  if (flow.kind !== 'shower' && !isType(nodes, flow.bathId, BATHTUB))
+  if (flow.kind !== 'shower' && !isType(nodes, flow.bathId, BATHTUB) && !['shower', 'head', 'control'].includes(flow.step))
     return { ...flow, step: 'bath', bathId: null }
   if (
     flow.kind !== 'bath' &&
     !['bath', 'shower'].includes(flow.step) &&
+    !(flow.step === 'review' && isType(nodes, flow.bathId, BATHTUB)) &&
     !bathingShowerReady(flow, nodes)
   ) {
     if (flow.system !== 'custom' || !isType(nodes, flow.showerId, SHOWER_ARM))

@@ -29,18 +29,18 @@ export function CatalogScrollArea({ children, resetKey, ...props }: HTMLAttribut
   </div>
 }
 
-const gridStyle = { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', columnGap: 8, alignItems: 'start' } as const
+const gridStyle = (columns: number) => ({ display: 'grid', gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, columnGap: 8, alignItems: 'start' } as const)
 
-export function CatalogGrid({ children, ...props }: Omit<HTMLAttributes<HTMLDivElement>, 'className' | 'style'>) {
+export function CatalogGrid({ children, columns = 3, ...props }: Omit<HTMLAttributes<HTMLDivElement>, 'className' | 'style'> & { columns?: 1 | 2 | 3 }) {
   const viewport = useContext(CatalogViewport)
   // Catalog previews outside this panel retain the ordinary grid layout.
   return viewport.element
-    ? <VirtualCatalogGrid {...props} viewport={viewport}>{children}</VirtualCatalogGrid>
-    : <div {...props} style={{ ...gridStyle, rowGap: 12 }}>{children}</div>
+    ? <VirtualCatalogGrid {...props} viewport={viewport} columns={columns}>{children}</VirtualCatalogGrid>
+    : <div {...props} style={{ ...gridStyle(columns), rowGap: 12 }}>{children}</div>
 }
 
-function VirtualCatalogGrid({ children, viewport, ...props }: Omit<HTMLAttributes<HTMLDivElement>, 'className' | 'style'> & {
-  viewport: { element: HTMLDivElement | null; layout: number; activeGrid: Element | null }
+function VirtualCatalogGrid({ children, viewport, columns, ...props }: Omit<HTMLAttributes<HTMLDivElement>, 'className' | 'style'> & {
+  viewport: { element: HTMLDivElement | null; layout: number; activeGrid: Element | null }; columns: number
 }) {
   const items = useMemo(() => Children.toArray(children), [children])
   const grid = useRef<HTMLDivElement>(null)
@@ -59,7 +59,7 @@ function VirtualCatalogGrid({ children, viewport, ...props }: Omit<HTMLAttribute
     observer.observe(element)
     return () => observer.disconnect()
   }, [viewport.element, viewport.layout, children])
-  const count = Math.ceil(items.length / 3)
+  const count = Math.ceil(items.length / columns)
   const grids = viewport.element ? [...viewport.element.querySelectorAll('[data-catalog-items]')].filter((grid) => Number(grid.getAttribute('data-catalog-items')) > 0) : []
   const activeIndex = viewport.activeGrid ? grids.indexOf(viewport.activeGrid) : -1
   const gridIndex = grid.current ? grids.indexOf(grid.current) : -1
@@ -67,10 +67,10 @@ function VirtualCatalogGrid({ children, viewport, ...props }: Omit<HTMLAttribute
   // sections, including their native details/summary controls.
   const boundaryRow = activeIndex >= 0 && gridIndex === activeIndex + 1 ? 0
     : activeIndex >= 0 && gridIndex === activeIndex - 1 ? count - 1 : null
-  // Thumbnail aspect ratio + label (32 px) + label spacing (6 px).
-  const rowHeight = Math.max(0, (geometry.width - 16) / 3) * 4 / 7 + 38
-  const getItemKey = useCallback((index: number) => items.slice(index * 3, index * 3 + 3).map((item, slot) =>
-    isValidElement(item) ? item.key ?? slot : slot).join('|'), [items])
+  // Preview height plus two label lines and their spacing.
+  const rowHeight = Math.max(0, (geometry.width - 8 * (columns - 1)) / columns) * 4 / 7 + 38
+  const getItemKey = useCallback((index: number) => items.slice(index * columns, index * columns + columns).map((item, slot) =>
+    isValidElement(item) ? item.key ?? slot : slot).join('|'), [items, columns])
   const virtualizer = useVirtualizer({
     count, getScrollElement: () => viewport.element, estimateSize: () => rowHeight,
     getItemKey, scrollMargin: geometry.offset, gap: 12, overscan: 2,
@@ -95,26 +95,38 @@ function VirtualCatalogGrid({ children, viewport, ...props }: Omit<HTMLAttribute
     style={{ position: 'relative', height: virtualizer.getTotalSize() }}>
     {rows.map((row) => <div key={row.key} data-catalog-row={row.index}
       onFocusCapture={() => setFocusedRow(row.index)}
-      style={{ ...gridStyle, position: 'absolute', top: 0, left: 0, width: '100%', transform: `translateY(${row.start - geometry.offset}px)` }}>
-      {items.slice(row.index * 3, row.index * 3 + 3)}
+      style={{ ...gridStyle(columns), position: 'absolute', top: 0, left: 0, width: '100%', transform: `translateY(${row.start - geometry.offset}px)` }}>
+      {items.slice(row.index * columns, row.index * columns + columns)}
     </div>)}
   </div>
 }
 
 export function CatalogItemCard({ label, children, ...props }: Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className' | 'style'> & { label: string }) {
   const selected = props['aria-pressed'] === true || props['aria-pressed'] === 'true'
-  const selectionColor = 'color-mix(in srgb, var(--foreground) 65%, var(--background))'
+  const expandable = props['aria-expanded'] !== undefined
+  const expanded = props['aria-expanded'] === true || props['aria-expanded'] === 'true'
   return <button {...props} type="button" title={props.title ?? label}
-    className="focus-visible:outline-2 focus-visible:outline-ring"
-    style={{ display: 'block', width: '100%', minWidth: 0, padding: 0, border: 0, background: 'transparent', textAlign: 'left' }}>
-    <span aria-hidden="true" className="bg-background/40 hover:bg-accent/30"
-      style={{ display: 'block', position: 'relative', width: '100%', aspectRatio: '7 / 4', overflow: 'hidden', boxSizing: 'border-box', border: `${selected ? 2 : 1}px solid ${selected ? selectionColor : 'var(--border)'}`, background: selected ? 'color-mix(in srgb, var(--foreground) 10%, var(--background))' : undefined, borderRadius: 8 }}>
+    className="group focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+    style={{ display: 'block', width: '100%', minWidth: 0, padding: 0, border: 0, background: 'transparent', textAlign: 'center', position: 'relative' }}>
+    <span aria-hidden="true" className={selected ? 'bg-accent/40' : 'group-hover:bg-accent/20'}
+      style={{ display: 'block', position: 'relative', width: '100%', aspectRatio: '7 / 4', overflow: 'hidden', borderRadius: 4 }}>
       <span style={{ display: 'flex', position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center' }}>{children}</span>
     </span>
-    <span style={{ display: 'block', paddingTop: 6 }}>
-      <span className="text-foreground" style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, height: 32, overflow: 'hidden', overflowWrap: 'anywhere', fontSize: 11, fontWeight: selected ? 600 : 500, lineHeight: '16px' }}>{label}</span>
+    <span style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: 4, paddingTop: 6, height: 38, boxSizing: 'border-box' }}>
+      <span className={selected ? 'text-foreground' : 'text-muted-foreground group-hover:text-foreground'} style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden', overflowWrap: 'anywhere', fontSize: 11, fontWeight: selected ? 600 : 500, lineHeight: '16px' }}>{label}</span>
+      {expandable && <svg aria-hidden="true" viewBox="0 0 16 16" width="12" height="12" style={{ position: 'absolute', right: 0, top: 0, transform: expanded ? 'rotate(180deg)' : undefined }} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m4 6 4 4 4-4" /></svg>}
     </span>
   </button>
+}
+
+export function CatalogSubmenu({ id, title, onClose, children }: { id: string; title: string; onClose: () => void; children: ReactNode }) {
+  return <section id={id} aria-labelledby={`${id}-heading`} className="mt-3 space-y-2 border-t border-border/60 pt-2">
+    <div className="flex items-center justify-between gap-2">
+      <h3 id={`${id}-heading`} className="text-[11px] font-medium text-muted-foreground">{title}</h3>
+      <button type="button" onClick={onClose} aria-label={`Close ${title}`} className="min-h-8 rounded-md border-0 bg-transparent px-2 py-1 text-xs text-muted-foreground hover:bg-accent/40 hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring">Close</button>
+    </div>
+    {children}
+  </section>
 }
 
 export function CatalogEmptyState({ children }: { children: ReactNode }) {

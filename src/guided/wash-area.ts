@@ -33,7 +33,7 @@ export function reconcileWashArea(flow: WashAreaFlow, nodes: Readonly<Record<str
 }
 
 export function acceptWashAreaPlacement(flow: WashAreaFlow, node: AnyNode): WashAreaFlow | null {
-  if (flow.step === 'vanity' && [FREESTANDING_VANITY, WALL_MOUNTED_VANITY, CORNER_VANITY].includes(String(node.type))) return { ...flow, vanityId: node.id, basinId: null }
+  if (flow.step === 'vanity' && [FREESTANDING_VANITY, WALL_MOUNTED_VANITY, CORNER_VANITY].includes(String(node.type))) return { ...flow, vanityId: node.id, basinId: null, step: 'basin' }
   if (flow.step === 'basin' && isBasinKind(String(node.type))) {
     const wallBasin = [WALL_HUNG_BASIN, FULL_PEDESTAL_BASIN, HALF_PEDESTAL_BASIN].includes(String(node.type))
     if (flow.withoutVanity ? !wallBasin : node.parentId !== flow.vanityId) return null

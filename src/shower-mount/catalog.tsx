@@ -16,7 +16,7 @@ import squareRailThumbnail from './assets/square-rail.webp'
 type ThumbnailAsset = string | { src: string }
 const thumbnailSrc = (asset: ThumbnailAsset | undefined) => typeof asset === 'string' ? asset : asset?.src
 
-const showerMountThumbnails: Record<ShowerMountNode['style'], ThumbnailAsset> = {
+export const showerMountThumbnails: Record<ShowerMountNode['style'], ThumbnailAsset> = {
   'round-holder': roundHolderThumbnail,
   'square-holder': squareHolderThumbnail,
   'adjustable-holder': adjustableHolderThumbnail,

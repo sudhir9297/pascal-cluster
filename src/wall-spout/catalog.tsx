@@ -24,7 +24,7 @@ import BibCrossThumbnail from './assets/bib-cross.webp'
 
 type ThumbnailAsset = string | { src: string }
 const thumbnailSrc = (asset: ThumbnailAsset | undefined) => typeof asset === 'string' ? asset : asset?.src
-const wallSpoutThumbnails: Record<string, ThumbnailAsset> = {
+export const wallSpoutThumbnails: Record<string, ThumbnailAsset> = {
   'round': RoundThumbnail,
   'curve': CurveThumbnail,
   'arch': ArchThumbnail,

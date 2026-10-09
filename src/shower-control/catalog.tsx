@@ -35,7 +35,7 @@ import BathWaterfallThumbnail from './assets/bath-waterfall.webp'
 type ThumbnailAsset = string | { src: string }
 const thumbnailSrc = (asset: ThumbnailAsset | undefined) => typeof asset === 'string' ? asset : asset?.src
 
-const showerControlThumbnails: Record<ControlPresetId, ThumbnailAsset> = {
+export const showerControlThumbnails: Record<ControlPresetId, ThumbnailAsset> = {
   'round-lever': RoundLeverThumbnail,
   'square-lever': SquareLeverThumbnail,
   'dual-round': DualRoundThumbnail,
