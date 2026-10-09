@@ -1,4 +1,6 @@
 'use client'
+import { useScene } from '@pascal-app/core'
+import { guidedShowerControlWallAllowed } from '../guided/placement-context'
 import { useMemo } from 'react'
 import WallFixtureTool from '../shower-common/wall-tool'
 import {
@@ -22,6 +24,7 @@ export default function ShowerControlTool({ node }: { node?: ShowerControlNode }
       schema={ShowerControlNode}
       defaults={defaults}
       buildGeometry={buildShowerControlGeometry}
+      filterPlacement={node ? undefined : (_node, pose) => guidedShowerControlWallAllowed(pose.wallId, useScene.getState().nodes) ? pose : null}
     />
   )
 }

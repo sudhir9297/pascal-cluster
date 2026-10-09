@@ -162,7 +162,8 @@ export function createKitChanges(
     hose,
     control,
   ]
-  const included = parts.map((n) => ({ id: n.id, type: n.type, name: n.name }))
+  // Refer to real nodes by ID; their kinds already live on the nodes themselves.
+  const included = parts.map((n) => ({ id: n.id, name: n.name }))
   return {
     create: parts.map((n) => ({
       node: {

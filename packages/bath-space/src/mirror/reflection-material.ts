@@ -1,3 +1,4 @@
+import { getSceneTheme, useViewer } from "@pascal-app/viewer";
 import { Color, Matrix4, Mesh, ShapeGeometry } from "three";
 import { MeshBasicNodeMaterial, NodeUpdateType } from "three/webgpu";
 import {
@@ -69,6 +70,32 @@ export function captureReflection(
 		: entry.mesh;
 	const visible = owner.visible;
 	owner.visible = false;
+	// The editor composites its backdrop after the scene pass. A raw reflection
+	// needs an opaque backdrop of its own instead of sampling transparent black.
+	const background = scene.background;
+	if (!background && !scene.backgroundNode)
+		scene.background = new Color(
+			getSceneTheme(useViewer.getState().sceneTheme).background,
+		);
+	// Transmission shares a framebuffer across cameras. Resizing it for a mirror
+	// destroys a texture still bound by the main WebGPU pass. Skip refractive
+	// panes in captures; their frames and main-view materials remain unchanged.
+	const panes: Mesh[] = [];
+	scene.traverse((object) => {
+		if (!(object instanceof Mesh) || !object.visible) return;
+		const materials = Array.isArray(object.material)
+			? object.material
+			: [object.material];
+		if (materials.some((material) => {
+			const physical = material as import("three").MeshPhysicalMaterial & {
+				transmissionNode?: unknown;
+			};
+			return physical.transmission > 0 || Boolean(physical.transmissionNode);
+		})) {
+			panes.push(object);
+			object.visible = false;
+		}
+	});
 	try {
 		entry.reflection.reflector.updateBefore({
 			scene,
@@ -78,6 +105,8 @@ export function captureReflection(
 		} as never);
 		entry.textureCamera = camera;
 	} finally {
+		scene.background = background;
+		for (const pane of panes) pane.visible = true;
 		owner.visible = visible;
 	}
 }
@@ -90,8 +119,10 @@ export function installReflectionSnapshotCapture(
 	revision: () => number,
 	capturing: { current: boolean },
 	invalidate: () => void,
+	viewportRenderer?: { getRenderObjectFunction?: () => unknown },
 ) {
 	const previousBeforeRender = scene.onBeforeRender;
+	const colorRenderObjectFunction = viewportRenderer?.getRenderObjectFunction?.();
 	const snapshots = new WeakMap<
 		import("three").Camera,
 		{ world: Matrix4; projection: Matrix4; revision: number }
@@ -99,6 +130,13 @@ export function installReflectionSnapshotCapture(
 	const beforeRender: typeof scene.onBeforeRender = (...args) => {
 		previousBeforeRender.apply(scene, args);
 		const [renderer, , camera] = args;
+		// Outline/depth passes substitute black mask materials at submission. They
+		// must never replace a camera's previously captured, lit reflection.
+		if (
+			scene.overrideMaterial ||
+			(viewportRenderer?.getRenderObjectFunction &&
+				viewportRenderer.getRenderObjectFunction() !== colorRenderObjectFunction)
+		) return;
 		// Nested reflection renders and the live viewport already have their capture.
 		if (
 			capturing.current ||

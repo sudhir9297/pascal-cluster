@@ -1,4 +1,5 @@
 'use client'
+import { guidedShowerHeadHostAllowed } from '../guided/placement-context'
 import {
   emitter,
   sceneRegistry,
@@ -75,9 +76,10 @@ export default function ShowerHeadTool({ node: source }: { node?: ShowerHeadNode
         0,
         original ? [ghost, original] : [ghost],
       )
-      return hit?.surface
+      const id = hit?.surface
         ? showerArmFromHit(hit.surface, sceneRegistry.nodes, useScene.getState().nodes)
         : null
+      return source || guidedShowerHeadHostAllowed(id, useScene.getState().nodes) ? id : null
     }
     const show = (id: string | null) => {
       restore()
@@ -121,7 +123,7 @@ export default function ShowerHeadTool({ node: source }: { node?: ShowerHeadNode
     }
     const place = (id: string | null) => {
       const state = useScene.getState()
-      if (!id || state.readOnly) return
+      if (!id || state.readOnly || (!source && !guidedShowerHeadHostAllowed(id, state.nodes))) return
       const { placed, changes } = attachShowerHead(node, id, state.nodes, source?.id)
       show(null)
       state.applyNodeChanges(changes)
