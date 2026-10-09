@@ -269,7 +269,7 @@ export default function LandscapePanel() {
       if (!editor.toolDefaults[kind]?.shape) editor.setToolDefaults(kind, { ...editor.toolDefaults[kind], shape: 'oval' })
       editor.setMode('build'); editor.setTool(kind)
     } else if (target === 'retaining-wall') {
-      editor.setPhase('structure'); editor.setStructureLayer('elements')
+      editor.setPhase('building')
       const metadata = editor.toolDefaults.wall?.metadata
       editor.setToolDefaults('wall', { ...editor.toolDefaults.wall,
         metadata: { ...(metadata && typeof metadata === 'object' ? metadata : {}), landscapeRetainingWall: true, roomBoundary: false },
@@ -286,10 +286,10 @@ export default function LandscapePanel() {
       editor.setToolDefaults(kind, { ...editor.toolDefaults[kind], roofForm: editor.toolDefaults[kind]?.roofForm ?? 'flat' })
       editor.setMode('build'); editor.setTool(kind)
     } else if (target === 'tree') {
-      editor.setPhase('furnish')
+      editor.setPhase('building')
       editor.setMode('build'); editor.setTool('landscape:tree')
     } else if (target === 'plant') {
-      editor.setPhase('furnish')
+      editor.setPhase('building')
       editor.setMode('build'); editor.setTool('landscape:plant')
     }
   }

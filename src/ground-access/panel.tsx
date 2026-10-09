@@ -153,8 +153,7 @@ function RetainingWallDefaults() {
         roomBoundary: false,
       },
     })
-    editor.setPhase('structure')
-    editor.setStructureLayer('elements')
+    editor.setPhase('building')
     editor.armToolMode({ mode: 'build', tool: 'wall' })
   }
   return <div aria-label="Retaining wall settings" className="flex flex-col gap-1.5">
