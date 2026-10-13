@@ -22,7 +22,7 @@ export default function BathroomDesignReviewPanel() {
       <ul className="space-y-2">{issues.map(issue => <li key={issue.id} className="rounded-lg border border-border/50 p-2">
         <ActionButton type="button" label={`Review ${issue.fixture.label}`} className="justify-start" onClick={() => {
           const editor = useEditor.getState()
-          editor.setTool(null); editor.setMode('select'); editor.setPhase('furnish')
+          editor.setTool(null); editor.setMode('select'); editor.setPhase('building')
           useViewer.getState().setSelection({ buildingId: issue.fixture.buildingId, levelId: issue.fixture.levelId, zoneId: null, selectedIds: [issue.fixture.id] })
         }} />
         <p className="mt-1 text-[11px] text-muted-foreground">{issue.fixture.level}{issue.fixture.hidden ? ' · Hidden' : ''}</p>
