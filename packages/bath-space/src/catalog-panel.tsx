@@ -1,111 +1,109 @@
 "use client";
-import WallLightCatalog, { WallLightPreview } from "./wall-light/catalog";
-import TowelRailCatalog, { TowelRailPreview } from "./towel-rail/catalog";
-import MirrorCatalog, { MirrorPreview } from "./mirror/catalog";
-import HolderCatalog, { HolderPreview } from "./toilet-paper-holder/catalog";
-import {
-	VanityPreview,
-	PlacedVanityPreview,
-} from "./freestanding-vanity/preview";
-import DividerCatalog, { DividerPreview } from "./shower-divider/catalog";
-import { SHOWER_DIVIDER } from "./shower-divider/schema";
-import { BATH_SHOWER } from "./bath-shower/schema";
+import { type AnyNode, useScene } from "@pascal-app/core";
+import { useEditor } from "@pascal-app/editor";
+import { useViewer } from "@pascal-app/viewer";
+import { type ReactNode, useEffect, useId, useState } from "react";
+import { BATH_DECK } from "./bath-deck/schema";
 import { BATH_SCREEN } from "./bath-screen/schema";
-import ShowerKitCatalog from "./shower-kit/catalog";
-import ShowerAssemblyCatalog from "./shower-assembly/catalog";
-import WallSpoutCatalog, { wallSpoutThumbnails } from "./wall-spout/catalog";
+import { BATH_SHOWER } from "./bath-shower/schema";
+import BathCatalog, { BathPreview } from "./bathtub/catalog";
+import { BATHTUB } from "./bathtub/schema";
 import BodyJetCatalog, { bodyJetThumbnails } from "./body-jet/catalog";
-import ShowerControlCatalog, {
-	showerControlThumbnails,
-} from "./shower-control/catalog";
-import ShowerHoseCatalog, { showerHoseThumbnails } from "./shower-hose/catalog";
-import ShowerMountCatalog, {
-	showerMountThumbnails,
-} from "./shower-mount/catalog";
-import HandShowerCatalog, { handShowerThumbnails } from "./hand-shower/catalog";
-import ShowerHeadCatalog, { showerHeadThumbnails } from "./shower-head/catalog";
+import { bodyJetPresets } from "./body-jet/schema";
+import {
+	CatalogPlacementProvider,
+	useCatalogPlacement,
+} from "./catalog-placement";
+import {
+	CatalogChoiceGroup,
+	CatalogDimensions,
+	CatalogEmptyState,
+	CatalogGrid,
+	CatalogHeading,
+	CatalogItemCard,
+	CatalogResults,
+	CatalogScrollArea,
+	CatalogSection,
+} from "./catalog-ui";
+import {
+	setBasinPlacementShape,
+	setWallBasinPlacementDesign,
+	useBasinPlacementShape,
+	useWallBasinPlacementDesign,
+} from "./countertop-basin/placement-settings";
+import {
+	basinPresets,
+	COUNTERTOP_BASIN,
+	DROP_IN_BASIN,
+	FULL_PEDESTAL_BASIN,
+	fullPedestalBasinPresets,
+	HALF_PEDESTAL_BASIN,
+	halfPedestalBasinPresets,
+	isBasinKind,
+	isInsetBasinKind,
+	SEMI_RECESSED_BASIN,
+	semiRecessedBasinPresets,
+	UNDERMOUNT_BASIN,
+	WALL_HUNG_BASIN,
+	wallHungBasinPresets,
+} from "./countertop-basin/schema";
 import FloorToiletCatalog, {
 	ToiletPreview as FloorToiletPreview,
 } from "./floor-standing-toilet/catalog";
-import ShowerArmCatalog, { showerArmThumbnails } from "./shower-arm/catalog";
-
-import { useViewer } from "@pascal-app/viewer";
-import { useEditor } from "@pascal-app/editor";
-import { useScene, type AnyNode } from "@pascal-app/core";
-import { type ReactNode, useEffect, useId, useState } from "react";
-import { useCatalogPreferences } from "./shower-common/catalog-preferences";
-import FixtureScheduleDialog from "./workspace/schedule-dialog";
-import { fixtureInventory, type FixtureRow } from "./workspace/inventory";
+import {
+	FLOOR_STANDING_TOILET,
+	type FloorStandingToiletNode,
+} from "./floor-standing-toilet/schema";
 import FlushPlateCatalog, { FlushPlatePreview } from "./flush-control/catalog";
+import {
+	setVanityPlacementPreset,
+	useVanityPlacementPreset,
+} from "./freestanding-vanity/placement-settings";
+import { vanityPresets } from "./freestanding-vanity/presets";
+import {
+	PlacedVanityPreview,
+	VanityPreview,
+} from "./freestanding-vanity/preview";
+import {
+	CORNER_VANITY,
+	FREESTANDING_VANITY,
+	type VanityNode,
+	WALL_MOUNTED_VANITY,
+} from "./freestanding-vanity/schema";
+import HandShowerCatalog, { handShowerThumbnails } from "./hand-shower/catalog";
+import MirrorCatalog, { MirrorPreview } from "./mirror/catalog";
+import ShowerArmCatalog, { showerArmThumbnails } from "./shower-arm/catalog";
+import ShowerAssemblyCatalog, {
+	assemblyThumbnails,
+} from "./shower-assembly/catalog";
+import { showerAssemblyPresets } from "./shower-assembly/schema";
+import { useCatalogPreferences } from "./shower-common/catalog-preferences";
+import ShowerControlCatalog, {
+	showerControlThumbnails,
+} from "./shower-control/catalog";
+import { showerControlPresets } from "./shower-control/schema";
+import DividerCatalog, { DividerPreview } from "./shower-divider/catalog";
+import { SHOWER_DIVIDER } from "./shower-divider/schema";
+import ShowerHeadCatalog, { showerHeadThumbnails } from "./shower-head/catalog";
+import ShowerHoseCatalog, { showerHoseThumbnails } from "./shower-hose/catalog";
+import ShowerKitCatalog from "./shower-kit/catalog";
+import ShowerMountCatalog, {
+	showerMountThumbnails,
+} from "./shower-mount/catalog";
+import TapCatalog from "./taps/catalog";
+import { tapPresets } from "./taps/presets";
+import HolderCatalog, { HolderPreview } from "./toilet-paper-holder/catalog";
+import TowelRailCatalog, { TowelRailPreview } from "./towel-rail/catalog";
 import ToiletCatalog, { ToiletPreview } from "./wall-hung-toilet/catalog";
 import {
 	WALL_HUNG_TOILET,
 	type WallHungToiletNode,
 } from "./wall-hung-toilet/schema";
-import {
-	FLOOR_STANDING_TOILET,
-	type FloorStandingToiletNode,
-} from "./floor-standing-toilet/schema";
-import BathCatalog, { BathPreview } from "./bathtub/catalog";
-import { BATH_DECK } from "./bath-deck/schema";
-import { BATHTUB } from "./bathtub/schema";
-import TapCatalog from "./taps/catalog";
-import { tapPresets } from "./taps/presets";
-import { assemblyThumbnails } from "./shower-assembly/catalog";
-import { showerControlPresets } from "./shower-control/schema";
+import WallLightCatalog, { WallLightPreview } from "./wall-light/catalog";
+import WallSpoutCatalog, { wallSpoutThumbnails } from "./wall-spout/catalog";
 import { wallSpoutPresets } from "./wall-spout/schema";
-import { bodyJetPresets } from "./body-jet/schema";
-import { showerAssemblyPresets } from "./shower-assembly/schema";
-import {
-	CatalogEmptyState,
-	CatalogGrid,
-	CatalogItemCard,
-	CatalogScrollArea,
-	CatalogHeading,
-	CatalogDimensions,
-	CatalogResults,
-	CatalogSection,
-} from "./catalog-ui";
-import {
-	CatalogPlacementProvider,
-	useCatalogPlacement,
-} from "./catalog-placement";
-import { vanityPresets } from "./freestanding-vanity/presets";
-import {
-	setVanityPlacementPreset,
-	useVanityPlacementPreset,
-} from "./freestanding-vanity/placement-settings";
-import {
-	FREESTANDING_VANITY,
-	WALL_MOUNTED_VANITY,
-	CORNER_VANITY,
-	type VanityNode,
-} from "./freestanding-vanity/schema";
-
-import {
-	COUNTERTOP_BASIN,
-	UNDERMOUNT_BASIN,
-	DROP_IN_BASIN,
-	SEMI_RECESSED_BASIN,
-	HALF_PEDESTAL_BASIN,
-	FULL_PEDESTAL_BASIN,
-	WALL_HUNG_BASIN,
-	isBasinKind,
-	isInsetBasinKind,
-	basinPresets,
-	halfPedestalBasinPresets,
-	fullPedestalBasinPresets,
-	semiRecessedBasinPresets,
-	wallHungBasinPresets,
-} from "./countertop-basin/schema";
-import {
-	setBasinPlacementShape,
-	useBasinPlacementShape,
-	setWallBasinPlacementDesign,
-	useWallBasinPlacementDesign,
-} from "./countertop-basin/placement-settings";
-
-import { WallBasinPreview } from "./wall-hung-basin/preview";
+import { type FixtureRow, fixtureInventory } from "./workspace/inventory";
+import FixtureScheduleDialog from "./workspace/schedule-dialog";
 
 const countertopBasinThumbnail = new URL(
 	"./countertop-basin/assets/countertop-basin.webp",
@@ -630,11 +628,18 @@ function BathSpaceCatalogContent({
 	const basinShape = useBasinPlacementShape();
 	const wallDesign = useWallBasinPlacementDesign();
 	const placingBasin = isBasinKind(activeTool ?? "");
-	const [basinKind, setBasinKind] = useState<string>(
-		basinMount === "wall" ? WALL_HUNG_BASIN : COUNTERTOP_BASIN,
-	);
+	const basinKind =
+		placement.category?.group === "basin"
+			? placement.category.value
+			: placement.category?.group === "catalog" &&
+					placement.category.value === "Basin"
+				? basinMount === "wall"
+					? WALL_HUNG_BASIN
+					: COUNTERTOP_BASIN
+				: null;
 	const [query, setQuery] = useState("");
 	const [browseCategory, setActiveCategory] = useState("Vanity");
+	const [categoryRevision, setCategoryRevision] = useState(0);
 	const [scheduleOpen, setScheduleOpen] = useState(false);
 	const tabsId = useId();
 	useEffect(() => {
@@ -659,7 +664,8 @@ function BathSpaceCatalogContent({
 	}, [category]);
 	const chooseCategory = (next: string) => {
 		setActiveCategory(next);
-		placement.clear();
+		setCategoryRevision((revision) => revision + 1);
+		placement.selectCategory("catalog", next);
 		if (!category)
 			try {
 				localStorage.setItem("bath-space-catalog-category", next);
@@ -667,8 +673,13 @@ function BathSpaceCatalogContent({
 	};
 	const activeCategory = category ?? browseCategory;
 	const [activeTab, setActiveTab] = useState<"All" | "Placed">("All");
-	const [selectedKind, setSelectedKind] =
-		useState<VanityKind>(FREESTANDING_VANITY);
+	const selectedKind =
+		placement.category?.group === "vanity"
+			? placement.category.value
+			: placement.category?.group === "catalog" &&
+					placement.category.value === "Vanity"
+				? FREESTANDING_VANITY
+				: null;
 	const placing =
 		activeTool === FREESTANDING_VANITY ||
 		activeTool === WALL_MOUNTED_VANITY ||
@@ -779,7 +790,7 @@ function BathSpaceCatalogContent({
 				.includes(word),
 		),
 	);
-	const vanityText = (value: string) => {
+	const vanityText = (value: string | null) => {
 		const category = vanityCategories.find((option) => option.value === value);
 		return `vanity ${category?.label ?? ""} ${category?.description ?? ""}`;
 	};
@@ -833,8 +844,9 @@ function BathSpaceCatalogContent({
 	const kind = visibleVanityCategories.some(
 		(option) => option.value === selectedKind,
 	)
-		? selectedKind
-		: (visibleVanityCategories[0]?.value ?? selectedKind);
+		? (visibleVanityCategories.find((option) => option.value === selectedKind)
+				?.value ?? FREESTANDING_VANITY)
+		: (visibleVanityCategories[0]?.value ?? FREESTANDING_VANITY);
 	const wallMounted = kind === WALL_MOUNTED_VANITY;
 	const corner = kind === CORNER_VANITY;
 	const placingKind = placing && activeTool === kind;
@@ -844,8 +856,8 @@ function BathSpaceCatalogContent({
 	const currentBasinKind = visibleBasinCategories.some(
 		(option) => option.value === basinKind,
 	)
-		? basinKind
-		: (visibleBasinCategories[0]?.value ?? basinKind);
+		? (basinKind ?? COUNTERTOP_BASIN)
+		: (visibleBasinCategories[0]?.value ?? COUNTERTOP_BASIN);
 	const halfPedestal = currentBasinKind === HALF_PEDESTAL_BASIN;
 	const fullPedestal = currentBasinKind === FULL_PEDESTAL_BASIN;
 	const wallHung = currentBasinKind === WALL_HUNG_BASIN;
@@ -866,6 +878,26 @@ function BathSpaceCatalogContent({
 	).filter((preset) =>
 		matches(`${basinText(currentBasinKind)} ${preset.label}`),
 	);
+
+	const vanityStyleId = placement.selection?.key.startsWith(`${kind}:`)
+		? placement.selection.key.slice(kind.length + 1)
+		: presetId;
+	const vanityStyleLabel = corner
+		? "Angled front"
+		: vanityPresets.find((preset) => preset.id === vanityStyleId)?.label;
+	const basinStyleId = placement.selection?.key.startsWith(
+		`${currentBasinKind}:`,
+	)
+		? placement.selection.key.slice(currentBasinKind.length + 1)
+		: wallHung
+			? wallDesign
+			: basinShape;
+	const basinStyleLabel = wallHung
+		? visibleWallBasinPresets.find(
+				(preset) => preset.wallDesign === basinStyleId,
+			)?.label
+		: visibleBasinPresets.find((preset) => preset.shape === basinStyleId)
+				?.label;
 
 	return (
 		<div className="flex h-full min-h-0 flex-col">
@@ -996,7 +1028,7 @@ function BathSpaceCatalogContent({
 				</header>
 			)}
 			<CatalogScrollArea
-				resetKey={`${activeTab}:${activeCategory}:${query}`}
+				resetKey={`${activeTab}:${activeCategory}:${categoryRevision}:${query}`}
 				role={!category ? "tabpanel" : undefined}
 				id={`${tabsId}-content`}
 				aria-labelledby={!category ? `${tabsId}-${activeTab}` : undefined}
@@ -1057,110 +1089,119 @@ function BathSpaceCatalogContent({
 						)}
 					</div>
 				) : (
-					<CatalogResults query={query}>
+					<CatalogResults
+						key={`${activeCategory}:${categoryRevision}`}
+						query={query}
+					>
 						{showCategory("Vanity") && visibleVanityCategories.length > 0 && (
 							<CatalogSection>
 								<div className="space-y-3">
-									<CatalogHeading>Vanity</CatalogHeading>
-									<div className="space-y-3">
-										<CatalogHeading>Mounting</CatalogHeading>
-										<CatalogGrid aria-label="Vanity mounting type">
-											{visibleVanityCategories.map((option) => (
-												<div key={option.value} className="group relative">
-													<CatalogItemCard
-														type="button"
-														aria-pressed={kind === option.value}
-														onClick={() => {
-															setSelectedKind(option.value);
-															placement.clear();
-														}}
-														label={option.label}
-													>
-														<VanityPreview
-															design="shaker"
-															wallMounted={option.value === WALL_MOUNTED_VANITY}
-															corner={option.value === CORNER_VANITY}
-														/>
-													</CatalogItemCard>
-												</div>
-											))}
-										</CatalogGrid>
-										<CatalogSection>
-											<CatalogHeading>Styles</CatalogHeading>
-											{corner ? (
-												<CatalogGrid columns={3} aria-label="Vanity style">
-													<CatalogItemCard
-														type="button"
-														aria-label="Choose Angled front vanity"
-														placementKey={styleKey(
-															CORNER_VANITY,
-															"angled-front",
-														)}
-														placementHint={
-															corner
-																? "Click near a 90° corner."
-																: wallMounted
-																	? "Click a wall to attach."
-																	: "Click the floor to place."
-														}
-														placementNoun="vanity"
-														placementLabel="Corner vanity · Angled front"
-														onPlace={() => {
-															preferences.remember(
-																styleKey(CORNER_VANITY, "angled-front"),
-															);
-															setTool(CORNER_VANITY);
-														}}
-														aria-pressed={placingKind}
-														label="Angled front"
-													>
-														<VanityPreview corner />
-													</CatalogItemCard>
-												</CatalogGrid>
-											) : (
-												<CatalogGrid columns={3} aria-label="Vanity style">
-													{visibleVanityPresets.map((preset) => {
-														const selected = presetId === preset.id;
-														return (
-															<CatalogItemCard
-																key={preset.id}
-																type="button"
-																aria-pressed={selected && placingKind}
-																aria-label={`Choose ${preset.label} vanity`}
-																placementKey={styleKey(kind, preset.id)}
-																placementHint={
-																	corner
-																		? "Click near a 90° corner."
-																		: wallMounted
-																			? "Click a wall to attach."
-																			: "Click the floor to place."
-																}
-																placementNoun="vanity"
-																placementLabel={`${vanityCategories.find((option) => option.value === kind)?.label} vanity · ${preset.label}`}
-																placementDescription={preset.description}
-																onPlace={() => {
-																	preferences.remember(
-																		styleKey(kind, preset.id),
-																	);
-																	setVanityPlacementPreset(preset.id);
-																	setTool(kind);
-																}}
-																label={preset.label}
-															>
-																<VanityPreview
-																	design={preset.id}
-																	wallMounted={wallMounted}
-																/>
-															</CatalogItemCard>
+									<CatalogHeading
+										selection={
+											selectedKind
+												? `${vanityCategories.find((option) => option.value === kind)?.label} · ${vanityStyleLabel ?? ""}`
+												: undefined
+										}
+									>
+										Vanity
+									</CatalogHeading>
+									<CatalogChoiceGroup
+										value={selectedKind}
+										onChange={(value) => {
+											placement.selectCategory("vanity", value);
+										}}
+										options={visibleVanityCategories.map((option) => ({
+											id: option.value,
+											label: option.label,
+											count:
+												option.value === CORNER_VANITY
+													? 1
+													: vanityPresets.filter((preset) =>
+															matches(
+																`${vanityText(option.value)} ${preset.label} ${preset.description}`,
+															),
+														).length,
+											selectedStyle:
+												option.value === kind ? vanityStyleLabel : undefined,
+											preview: (
+												<VanityPreview
+													design={
+														option.value === kind ? vanityStyleId : "modern"
+													}
+													wallMounted={option.value === WALL_MOUNTED_VANITY}
+													corner={option.value === CORNER_VANITY}
+												/>
+											),
+										}))}
+									>
+										{corner ? (
+											<CatalogGrid columns={4} aria-label="Vanity style">
+												<CatalogItemCard
+													type="button"
+													aria-label="Choose Angled front vanity"
+													placementKey={styleKey(CORNER_VANITY, "angled-front")}
+													placementHint={
+														corner
+															? "Click near a 90° corner."
+															: wallMounted
+																? "Click a wall to attach."
+																: "Click the floor to place."
+													}
+													placementNoun="vanity"
+													placementLabel="Corner vanity · Angled front"
+													onPlace={() => {
+														preferences.remember(
+															styleKey(CORNER_VANITY, "angled-front"),
 														);
-													})}
-												</CatalogGrid>
-											)}
-											{!corner && visibleVanityPresets.length === 0 && (
-												<CatalogEmptyState>{`No vanity styles match "${query.trim()}".`}</CatalogEmptyState>
-											)}
-										</CatalogSection>
-									</div>
+														setTool(CORNER_VANITY);
+													}}
+													aria-pressed={true}
+													label="Angled front"
+												>
+													<VanityPreview corner />
+												</CatalogItemCard>
+											</CatalogGrid>
+										) : (
+											<CatalogGrid columns={4} aria-label="Vanity style">
+												{visibleVanityPresets.map((preset) => {
+													const selected = vanityStyleId === preset.id;
+													return (
+														<CatalogItemCard
+															key={preset.id}
+															type="button"
+															aria-pressed={selected}
+															aria-label={`Choose ${preset.label} vanity`}
+															placementKey={styleKey(kind, preset.id)}
+															placementHint={
+																corner
+																	? "Click near a 90° corner."
+																	: wallMounted
+																		? "Click a wall to attach."
+																		: "Click the floor to place."
+															}
+															placementNoun="vanity"
+															placementLabel={`${vanityCategories.find((option) => option.value === kind)?.label} vanity · ${preset.label}`}
+															placementDescription={preset.description}
+															onPlace={() => {
+																preferences.remember(styleKey(kind, preset.id));
+																setVanityPlacementPreset(preset.id);
+																setTool(kind);
+															}}
+															label={preset.label}
+														>
+															<VanityPreview
+																design={preset.id}
+																wallMounted={wallMounted}
+															/>
+														</CatalogItemCard>
+													);
+												})}
+											</CatalogGrid>
+										)}
+										{!corner && visibleVanityPresets.length === 0 && (
+											<CatalogEmptyState>{`No vanity styles match "${query.trim()}".`}</CatalogEmptyState>
+										)}
+									</CatalogChoiceGroup>
 									{placingKind && (
 										<p role="status" className="text-xs text-muted-foreground">
 											{corner
@@ -1177,217 +1218,206 @@ function BathSpaceCatalogContent({
 						{showCategory("Basin") && visibleBasinCategories.length > 0 && (
 							<CatalogSection>
 								<div className="space-y-3">
-									<CatalogHeading>Basin</CatalogHeading>
-									<div className="space-y-3">
-										<CatalogHeading>Mounting</CatalogHeading>
-										<CatalogGrid aria-label="Basin mounting type">
-											{visibleBasinCategories.map((option) => (
-												<div key={option.value} className="group relative">
-													<CatalogItemCard
-														type="button"
-														aria-pressed={currentBasinKind === option.value}
-														onClick={() => {
-															setBasinKind(option.value);
-															placement.clear();
-														}}
-														label={option.label}
-													>
-														{option.value === WALL_HUNG_BASIN ? (
-															<img
-																src={wallHungBasinThumbnail}
-																alt=""
-																loading="lazy"
-																className="h-full w-full object-contain"
-															/>
-														) : option.value === FULL_PEDESTAL_BASIN ? (
-															<img
-																src={fullPedestalBasinThumbnail}
-																alt=""
-																loading="lazy"
-																className="h-full w-full object-contain"
-															/>
-														) : option.value === HALF_PEDESTAL_BASIN ? (
-															<img
-																src={halfPedestalBasinThumbnail}
-																alt=""
-																loading="lazy"
-																className="h-full w-full object-contain"
-															/>
-														) : getBasinShapeThumbnail(
-																option.value,
-																"round",
-															) ? (
-															<img
-																src={
-																	getBasinShapeThumbnail(option.value, "round")!
-																}
-																alt=""
-																loading="lazy"
-																style={{ transform: "scale(1.28)" }}
-																className="h-full w-full object-contain"
-															/>
-														) : (
-															<BasinPreview
-																shape="oval"
-																semiRecessed={
-																	option.value === SEMI_RECESSED_BASIN
-																}
-															/>
-														)}
-													</CatalogItemCard>
-												</div>
-											))}
-										</CatalogGrid>
-										<CatalogSection>
-											<CatalogHeading>Styles</CatalogHeading>
-											{wallHung ? (
-												<CatalogGrid
-													columns={3}
-													aria-label="Wall hung basin designs"
-												>
-													{visibleWallBasinPresets.map((preset) => {
-														const selected =
-															activeTool === WALL_HUNG_BASIN &&
-															wallDesign === preset.wallDesign;
-														return (
-															<CatalogItemCard
-																key={preset.wallDesign}
-																type="button"
-																aria-pressed={selected}
-																aria-label={`Choose ${preset.label} basin`}
-																placementKey={styleKey(
-																	currentBasinKind,
-																	preset.wallDesign,
-																)}
-																placementHint={
-																	halfPedestal || fullPedestal || wallHung
-																		? "Click a wall to attach."
-																		: inset
-																			? "Click a vanity countertop to place."
-																			: "Click a countertop or top surface to place."
-																}
-																placementNoun="basin"
-																placementLabel={`Wall hung basin · ${preset.label}`}
-																placementDescription={
-																	<CatalogDimensions
-																		width={preset.width}
-																		depth={preset.depth}
-																	/>
-																}
-																onPlace={() => {
-																	preferences.remember(
-																		styleKey(
-																			currentBasinKind,
-																			preset.wallDesign,
-																		),
-																	);
-																	setWallBasinPlacementDesign(
-																		preset.wallDesign,
-																	);
-																	setTool(WALL_HUNG_BASIN);
-																}}
-																label={preset.label}
-															>
-																<img
-																	src={preset.thumbnail}
-																	alt=""
-																	width={720}
-																	height={540}
-																	loading="lazy"
-																	className="h-full w-full object-cover"
+									<CatalogHeading
+										selection={
+											basinKind
+												? `${basinCategories.find((option) => option.value === currentBasinKind)?.label} · ${basinStyleLabel ?? ""}`
+												: undefined
+										}
+									>
+										Basin
+									</CatalogHeading>
+									<CatalogChoiceGroup
+										value={basinKind}
+										onChange={(value) => {
+											placement.selectCategory("basin", value);
+										}}
+										options={visibleBasinCategories.map((option) => ({
+											id: option.value,
+											label: option.label,
+											count: presetsForBasin(option.value).filter((preset) =>
+												matches(
+													`${basinText(option.value)} ${preset.label} ${"description" in preset ? preset.description : ""}`,
+												),
+											).length,
+											selectedStyle:
+												option.value === currentBasinKind
+													? basinStyleLabel
+													: undefined,
+											preview:
+												option.value === WALL_HUNG_BASIN ? (
+													<img
+														src={wallHungBasinThumbnail}
+														alt=""
+														loading="lazy"
+														className="h-full w-full object-contain"
+													/>
+												) : option.value === FULL_PEDESTAL_BASIN ? (
+													<img
+														src={fullPedestalBasinThumbnail}
+														alt=""
+														loading="lazy"
+														className="h-full w-full object-contain"
+													/>
+												) : option.value === HALF_PEDESTAL_BASIN ? (
+													<img
+														src={halfPedestalBasinThumbnail}
+														alt=""
+														loading="lazy"
+														className="h-full w-full object-contain"
+													/>
+												) : getBasinShapeThumbnail(option.value, "round") ? (
+													<img
+														src={getBasinShapeThumbnail(option.value, "round")!}
+														alt=""
+														loading="lazy"
+														style={{ transform: "scale(1.28)" }}
+														className="h-full w-full object-contain"
+													/>
+												) : (
+													<BasinPreview
+														shape="oval"
+														semiRecessed={option.value === SEMI_RECESSED_BASIN}
+													/>
+												),
+										}))}
+									>
+										{wallHung ? (
+											<CatalogGrid
+												columns={4}
+												aria-label="Wall hung basin designs"
+											>
+												{visibleWallBasinPresets.map((preset) => {
+													const selected = basinStyleId === preset.wallDesign;
+													return (
+														<CatalogItemCard
+															key={preset.wallDesign}
+															type="button"
+															aria-pressed={selected}
+															aria-label={`Choose ${preset.label} basin`}
+															placementKey={styleKey(
+																currentBasinKind,
+																preset.wallDesign,
+															)}
+															placementHint={
+																halfPedestal || fullPedestal || wallHung
+																	? "Click a wall to attach."
+																	: inset
+																		? "Click a vanity countertop to place."
+																		: "Click a countertop or top surface to place."
+															}
+															placementNoun="basin"
+															placementLabel={`Wall hung basin · ${preset.label}`}
+															placementDescription={
+																<CatalogDimensions
+																	width={preset.width}
+																	depth={preset.depth}
 																/>
-															</CatalogItemCard>
-														);
-													})}
-												</CatalogGrid>
-											) : (
-												<CatalogGrid columns={3} aria-label="Basin shape">
-													{visibleBasinPresets.map((preset) => {
-														const presetThumbnail =
-															fullPedestal && "pedestalDesign" in preset
-																? preset.pedestalDesign === "classic"
-																	? fullPedestalBasinThumbnail
-																	: preset.pedestalDesign === "square"
-																		? squareFullPedestalBasinThumbnail
-																		: taperedMonoblocBasinThumbnail
-																: halfPedestal && "shroudDesign" in preset
-																	? preset.shroudDesign === "curved"
-																		? halfPedestalBasinThumbnail
-																		: preset.shroudDesign === "square"
-																			? squareHalfPedestalBasinThumbnail
-																			: integratedHalfPedestalBasinThumbnail
-																	: getBasinShapeThumbnail(
-																			currentBasinKind ?? COUNTERTOP_BASIN,
-																			preset.shape,
-																		);
-														return (
-															<CatalogItemCard
-																key={preset.shape}
-																type="button"
-																aria-pressed={
-																	placingBasin &&
-																	basinShape === preset.shape &&
-																	currentBasinKind === activeTool
-																}
-																aria-label={`Choose ${preset.label} basin`}
-																placementKey={styleKey(
-																	currentBasinKind,
-																	preset.shape,
-																)}
-																placementHint={
-																	halfPedestal || fullPedestal || wallHung
-																		? "Click a wall to attach."
-																		: inset
-																			? "Click a vanity countertop to place."
-																			: "Click a countertop or top surface to place."
-																}
-																placementNoun="basin"
-																placementLabel={`${basinCategories.find((option) => option.value === currentBasinKind)?.label} basin · ${preset.label}`}
-																placementDescription={
-																	<CatalogDimensions
-																		width={preset.width}
-																		depth={preset.depth}
-																	/>
-																}
-																onPlace={() => {
-																	preferences.remember(
-																		styleKey(currentBasinKind, preset.shape),
+															}
+															onPlace={() => {
+																preferences.remember(
+																	styleKey(currentBasinKind, preset.wallDesign),
+																);
+																setWallBasinPlacementDesign(preset.wallDesign);
+																setTool(WALL_HUNG_BASIN);
+															}}
+															label={preset.label}
+														>
+															<img
+																src={preset.thumbnail}
+																alt=""
+																width={720}
+																height={540}
+																loading="lazy"
+																className="h-full w-full object-cover"
+															/>
+														</CatalogItemCard>
+													);
+												})}
+											</CatalogGrid>
+										) : (
+											<CatalogGrid columns={4} aria-label="Basin shape">
+												{visibleBasinPresets.map((preset) => {
+													const presetThumbnail =
+														fullPedestal && "pedestalDesign" in preset
+															? preset.pedestalDesign === "classic"
+																? fullPedestalBasinThumbnail
+																: preset.pedestalDesign === "square"
+																	? squareFullPedestalBasinThumbnail
+																	: taperedMonoblocBasinThumbnail
+															: halfPedestal && "shroudDesign" in preset
+																? preset.shroudDesign === "curved"
+																	? halfPedestalBasinThumbnail
+																	: preset.shroudDesign === "square"
+																		? squareHalfPedestalBasinThumbnail
+																		: integratedHalfPedestalBasinThumbnail
+																: getBasinShapeThumbnail(
+																		currentBasinKind ?? COUNTERTOP_BASIN,
+																		preset.shape,
 																	);
-																	setBasinPlacementShape(preset.shape);
-																	setTool(currentBasinKind);
-																}}
-																label={preset.label}
-															>
-																{presetThumbnail ? (
-																	<img
-																		src={presetThumbnail}
-																		alt=""
-																		loading="lazy"
-																		style={{ transform: "scale(1.28)" }}
-																		className="h-full w-full object-contain"
-																	/>
-																) : (
-																	<BasinPreview
-																		shape={preset.shape}
-																		pedestal={fullPedestal}
-																		halfPedestal={halfPedestal}
-																		semiRecessed={
-																			currentBasinKind === SEMI_RECESSED_BASIN
-																		}
-																	/>
-																)}
-															</CatalogItemCard>
-														);
-													})}
-												</CatalogGrid>
-											)}
-											{(wallHung
-												? visibleWallBasinPresets.length
-												: visibleBasinPresets.length) === 0 && (
-												<CatalogEmptyState>{`No basin styles match "${query.trim()}".`}</CatalogEmptyState>
-											)}
-										</CatalogSection>
-									</div>
+													return (
+														<CatalogItemCard
+															key={preset.shape}
+															type="button"
+															aria-pressed={basinStyleId === preset.shape}
+															aria-label={`Choose ${preset.label} basin`}
+															placementKey={styleKey(
+																currentBasinKind,
+																preset.shape,
+															)}
+															placementHint={
+																halfPedestal || fullPedestal || wallHung
+																	? "Click a wall to attach."
+																	: inset
+																		? "Click a vanity countertop to place."
+																		: "Click a countertop or top surface to place."
+															}
+															placementNoun="basin"
+															placementLabel={`${basinCategories.find((option) => option.value === currentBasinKind)?.label} basin · ${preset.label}`}
+															placementDescription={
+																<CatalogDimensions
+																	width={preset.width}
+																	depth={preset.depth}
+																/>
+															}
+															onPlace={() => {
+																preferences.remember(
+																	styleKey(currentBasinKind, preset.shape),
+																);
+																setBasinPlacementShape(preset.shape);
+																setTool(currentBasinKind);
+															}}
+															label={preset.label}
+														>
+															{presetThumbnail ? (
+																<img
+																	src={presetThumbnail}
+																	alt=""
+																	loading="lazy"
+																	style={{ transform: "scale(1.28)" }}
+																	className="h-full w-full object-contain"
+																/>
+															) : (
+																<BasinPreview
+																	shape={preset.shape}
+																	pedestal={fullPedestal}
+																	halfPedestal={halfPedestal}
+																	semiRecessed={
+																		currentBasinKind === SEMI_RECESSED_BASIN
+																	}
+																/>
+															)}
+														</CatalogItemCard>
+													);
+												})}
+											</CatalogGrid>
+										)}
+										{(wallHung
+											? visibleWallBasinPresets.length
+											: visibleBasinPresets.length) === 0 && (
+											<CatalogEmptyState>{`No basin styles match "${query.trim()}".`}</CatalogEmptyState>
+										)}
+									</CatalogChoiceGroup>
 									{placingBasin && activeTool === currentBasinKind && (
 										<p role="status" className="text-xs text-muted-foreground">
 											{halfPedestal || fullPedestal || wallHung

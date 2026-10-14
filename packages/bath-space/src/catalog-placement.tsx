@@ -22,7 +22,9 @@ type CatalogSelection = {
 };
 const CatalogPlacement = createContext<{
 	selection: CatalogSelection | null;
-	select: (selection: CatalogSelection) => void;
+	category: { group: string; value: string } | null;
+	selectCategory: (group: string, value: string) => void;
+	select: (selection: CatalogSelection, preserveCategory?: boolean) => void;
 	clear: () => void;
 } | null>(null);
 
@@ -46,27 +48,42 @@ export function CatalogPlacementProvider({
 	completed?: boolean;
 }) {
 	const [selection, setSelection] = useState<CatalogSelection | null>(null);
+	const [category, setCategory] = useState<{
+		group: string;
+		value: string;
+	} | null>(null);
 	const [armedTool, setArmedTool] = useState<string | null>(null);
 	const tool = useEditor((state) => state.tool);
 	const readOnly = useScene((state) => state.readOnly);
-	const select = useCallback((next: CatalogSelection) => {
+	const select = useCallback(
+		(next: CatalogSelection, preserveCategory = false) => {
+			stopPlacement();
+			setArmedTool(null);
+			setSelection(next);
+			if (!preserveCategory) setCategory(null);
+		},
+		[],
+	);
+	const selectCategory = useCallback((group: string, value: string) => {
 		stopPlacement();
 		setArmedTool(null);
-		setSelection(next);
+		setSelection(null);
+		setCategory({ group, value });
 	}, []);
 	const clear = useCallback(() => {
 		stopPlacement();
 		setArmedTool(null);
 		setSelection(null);
+		setCategory(null);
 	}, []);
 	const value = useMemo(
-		() => ({ selection, select, clear }),
-		[selection, select, clear],
+		() => ({ selection, category, selectCategory, select, clear }),
+		[selection, category, selectCategory, select, clear],
 	);
 	const placing = !readOnly && armedTool !== null && tool === armedTool;
 	return (
 		<CatalogPlacement.Provider value={value}>
-			<div className="flex h-full min-h-0 flex-col">
+			<div className="flex h-full min-h-0 flex-col" data-catalog-placement="">
 				<div className="flex min-h-0 flex-1 flex-col">{children}</div>
 				{(selection || footer) && (
 					<footer className="shrink-0 space-y-2 border-t border-border bg-background px-4 py-3">
