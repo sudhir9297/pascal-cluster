@@ -1,22 +1,24 @@
 "use client";
+import { formatLinearMeasurement } from "@pascal-app/editor";
+import { useViewer } from "@pascal-app/viewer";
+import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
 import {
+	type ButtonHTMLAttributes,
 	Children,
 	createContext,
+	Fragment,
+	type HTMLAttributes,
 	isValidElement,
+	type ReactNode,
 	useCallback,
 	useContext,
+	useId,
 	useLayoutEffect,
 	useMemo,
 	useRef,
 	useState,
-	type ButtonHTMLAttributes,
-	type HTMLAttributes,
-	type ReactNode,
 } from "react";
-import { formatLinearMeasurement } from "@pascal-app/editor";
-import { useViewer } from "@pascal-app/viewer";
 import { useCatalogPlacement } from "./catalog-placement";
-import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
 
 const CatalogViewport = createContext<{
 	element: HTMLDivElement | null;
@@ -70,6 +72,8 @@ export function CatalogScrollArea({
 	);
 }
 
+const StyleCards = createContext(false);
+
 const gridStyle = (columns: number) =>
 	({
 		display: "grid",
@@ -80,19 +84,33 @@ const gridStyle = (columns: number) =>
 
 export function CatalogGrid({
 	children,
-	columns = 3,
+	columns,
 	...props
 }: Omit<HTMLAttributes<HTMLDivElement>, "className" | "style"> & {
-	columns?: 1 | 2 | 3;
+	columns?: 1 | 2 | 3 | 4;
 }) {
 	const viewport = useContext(CatalogViewport);
+	const styles = useContext(StyleCards);
+	const columnCount = columns ?? (styles ? 4 : 3);
 	// Catalog previews outside this panel retain the ordinary grid layout.
-	return viewport.element ? (
-		<VirtualCatalogGrid {...props} viewport={viewport} columns={columns}>
+	return viewport.element && !styles ? (
+		<VirtualCatalogGrid {...props} viewport={viewport} columns={columnCount}>
 			{children}
 		</VirtualCatalogGrid>
 	) : (
-		<div {...props} style={{ ...gridStyle(columns), rowGap: 12 }}>
+		<div
+			{...props}
+			style={{
+				...gridStyle(columnCount),
+				...(styles
+					? {
+							gridTemplateColumns:
+								"repeat(auto-fill, minmax(max(62px, calc((100% - 24px) / 4)), 1fr))",
+						}
+					: {}),
+				rowGap: 12,
+			}}
+		>
 			{children}
 		</div>
 	);
@@ -157,7 +175,7 @@ function VirtualCatalogGrid({
 				: null;
 	// Preview height plus two label lines and their spacing.
 	const rowHeight =
-		(Math.max(0, (geometry.width - 8 * (columns - 1)) / columns) * 4) / 7 + 38;
+		(Math.max(0, (geometry.width - 8 * (columns - 1)) / columns) * 5) / 7 + 46;
 	const getItemKey = useCallback(
 		(index: number) =>
 			items
@@ -233,6 +251,7 @@ function VirtualCatalogGrid({
 
 export function CatalogItemCard({
 	label,
+	subtitle,
 	children,
 	onPlace,
 	placementKey,
@@ -243,6 +262,7 @@ export function CatalogItemCard({
 	...props
 }: Omit<ButtonHTMLAttributes<HTMLButtonElement>, "className" | "style"> & {
 	label: string;
+	subtitle?: string;
 	onPlace?: () => void;
 	placementKey?: string;
 	placementLabel?: string;
@@ -250,14 +270,60 @@ export function CatalogItemCard({
 	placementNoun?: string;
 	placementHint?: string;
 }) {
+	const styles = useContext(StyleCards);
 	const placement = useCatalogPlacement();
 	const key = placementKey ?? label;
 	const selected =
 		onPlace && placement
 			? placement.selection?.key === key
 			: props["aria-pressed"] === true || props["aria-pressed"] === "true";
+	const selectForPlacement = useCallback(() => {
+		if (!onPlace) return;
+		if (placement)
+			placement.select(
+				{
+					key,
+					label: placementLabel ?? label,
+					description: placementDescription,
+					noun: placementNoun,
+					hint: placementHint,
+					preview: children,
+					place: onPlace,
+				},
+				styles,
+			);
+		else onPlace();
+	}, [
+		onPlace,
+		styles,
+		placement,
+		key,
+		placementLabel,
+		label,
+		placementDescription,
+		placementNoun,
+		placementHint,
+		children,
+	]);
 	const cardRef = useRef<HTMLButtonElement>(null);
-	const placementSelected = Boolean(onPlace && placement && selected);
+	useLayoutEffect(() => {
+		if (
+			styles ||
+			!onPlace ||
+			!placement ||
+			placement.selection ||
+			placement.category?.group !== "catalog" ||
+			placement.category.value === "Everything"
+		)
+			return;
+		const first = cardRef.current
+			?.closest("[data-catalog-placement]")
+			?.querySelector("[data-catalog-placement-option]:not(:disabled)");
+		if (first === cardRef.current) selectForPlacement();
+	}, [styles, onPlace, placement, selectForPlacement]);
+	const placementSelected = Boolean(
+		onPlace && placement?.selection?.key === key,
+	);
 	useLayoutEffect(() => {
 		if (placementSelected)
 			cardRef.current?.scrollIntoView({ block: "nearest" });
@@ -269,40 +335,159 @@ export function CatalogItemCard({
 			type="button"
 			title={props.title ?? label}
 			aria-pressed={selected}
-			onClick={
-				onPlace
-					? () => {
-							if (placement)
-								placement.select({
-									key,
-									label: placementLabel ?? label,
-									description: placementDescription,
-									noun: placementNoun,
-									hint: placementHint,
-									preview: children,
-									place: onPlace,
-								});
-							else onPlace();
-						}
-					: props.onClick
-			}
-			className={`group flex w-full min-w-0 flex-col items-center rounded-xl border p-1.5 text-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${selected ? "border-primary/60 bg-primary/10 ring-1 ring-primary/30" : "border-transparent bg-secondary/40 hover:bg-accent/40"}`}
+			data-catalog-placement-option={onPlace ? "" : undefined}
+			onClick={onPlace ? selectForPlacement : props.onClick}
+			className={`group relative flex h-full w-full min-w-0 flex-col items-center rounded-xl border-2 px-1.5 pb-2.5 pt-2 text-center transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${selected ? `border-foreground/90 ${styles ? "bg-background/30" : "bg-muted"}` : `border-transparent ${styles ? "bg-background/45 hover:bg-background/65" : "bg-secondary/60 hover:bg-accent/60"}`}`}
 		>
 			<span
 				aria-hidden="true"
 				className="relative block w-full overflow-hidden rounded-lg"
-				style={{ aspectRatio: "7 / 4" }}
+				style={{ aspectRatio: styles ? "1 / 1" : "7 / 5" }}
 			>
 				<span className="absolute inset-0 flex items-center justify-center p-1 [&_img]:h-full [&_img]:w-full [&_img]:object-contain [&_img]:!transform-none">
 					{children}
 				</span>
 			</span>
 			<span
-				className={`line-clamp-2 flex min-h-8 items-center justify-center pt-1 text-xs font-medium leading-4 ${selected ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"}`}
+				className={`line-clamp-2 min-h-8 w-full break-words pt-1 text-xs font-medium leading-4 ${selected ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"}`}
 			>
 				{label}
 			</span>
+			{subtitle && (
+				<span
+					title={subtitle}
+					className="mt-0.5 line-clamp-2 w-full text-[11px] leading-4 text-muted-foreground"
+				>
+					{subtitle}
+				</span>
+			)}
+			{(styles || onPlace) && selected && (
+				<span
+					aria-hidden="true"
+					className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-background"
+				>
+					<svg
+						aria-hidden="true"
+						focusable="false"
+						viewBox="0 0 16 16"
+						className="h-3 w-3"
+						fill="none"
+						stroke="currentColor"
+						strokeWidth="2"
+					>
+						<path d="m3 8 3 3 7-7" />
+					</svg>
+				</span>
+			)}
 		</button>
+	);
+}
+
+export function CatalogChoiceGroup({
+	label = "Mounting",
+	options,
+	value,
+	onChange,
+	children,
+}: {
+	label?: string;
+	options: readonly {
+		id: string;
+		label: string;
+		count: number;
+		preview: ReactNode;
+		selectedStyle?: string;
+	}[];
+	value: string | null;
+	onChange: (id: string) => void;
+	children: ReactNode;
+}) {
+	const id = useId();
+	const selected = options.find((option) => option.id === value);
+	const [choiceRevision, setChoiceRevision] = useState(0);
+	const panel = useRef<HTMLElement>(null);
+	const previousValue = useRef(value);
+	useLayoutEffect(() => {
+		if (previousValue.current !== value)
+			panel.current?.scrollIntoView({ block: "nearest" });
+		previousValue.current = value;
+	}, [value]);
+	useLayoutEffect(() => {
+		if (value === null) return;
+		panel.current
+			?.querySelector<HTMLButtonElement>(
+				"[data-catalog-placement-option]:not(:disabled)",
+			)
+			?.click();
+	}, [value, choiceRevision]);
+	if (!options.length) return null;
+	return (
+		<div className="space-y-3" data-catalog-choice-group="">
+			<CatalogHeading>{label}</CatalogHeading>
+			<fieldset
+				className="m-0 grid min-w-0 grid-cols-3 items-stretch gap-x-2 gap-y-3 border-0 p-0"
+				data-catalog-choices=""
+				aria-label={label}
+			>
+				{options.map((option, index) => (
+					<Fragment key={option.id}>
+						<CatalogItemCard
+							label={option.label}
+							subtitle={
+								value === option.id && option.selectedStyle
+									? option.selectedStyle
+									: `${option.count} ${option.count === 1 ? "style" : "styles"}`
+							}
+							aria-pressed={value === option.id}
+							aria-expanded={value === option.id}
+							aria-controls={value === option.id ? id : undefined}
+							onClick={() => {
+								onChange(option.id);
+								setChoiceRevision((revision) => revision + 1);
+							}}
+						>
+							{option.preview}
+						</CatalogItemCard>
+						{selected &&
+							(index % 3 === 2 || index === options.length - 1) &&
+							Math.floor(index / 3) ===
+								Math.floor(options.indexOf(selected) / 3) && (
+								<section
+									ref={panel}
+									id={id}
+									aria-label={`Styles for ${selected.label.toLowerCase()}`}
+									className="relative col-span-3 mt-0.5 rounded-xl bg-muted p-2"
+									data-catalog-style-panel=""
+									style={{ scrollMarginBlock: 8 }}
+								>
+									<span
+										aria-hidden="true"
+										className="absolute -top-1.5 h-3 w-3 rotate-45 bg-muted"
+										style={{
+											left: `calc(${(((options.indexOf(selected) % 3) + 0.5) * 100) / 3}% - 6px)`,
+										}}
+									/>
+									<div className="mb-2 flex items-center justify-between gap-2 px-1 pt-1">
+										<h4 className="text-xs font-semibold">
+											Style{" "}
+											<span className="font-normal text-muted-foreground">
+												for {selected.label.toLowerCase()}
+											</span>
+										</h4>
+										<span className="text-[11px] text-muted-foreground">
+											{selected.count}{" "}
+											{selected.count === 1 ? "style" : "styles"}
+										</span>
+									</div>
+									<StyleCards.Provider value={true}>
+										{children}
+									</StyleCards.Provider>
+								</section>
+							)}
+					</Fragment>
+				))}
+			</fieldset>
+		</div>
 	);
 }
 
@@ -331,13 +516,23 @@ export function CatalogSection({ children }: { children: ReactNode }) {
 export function CatalogHeading({
 	children,
 	count,
+	selection,
 }: {
 	children: ReactNode;
 	count?: number;
+	selection?: string;
 }) {
 	return (
 		<div className="flex min-h-6 items-center justify-between gap-2">
 			<h3 className="text-xs font-semibold text-foreground">{children}</h3>
+			{selection && (
+				<span
+					className="min-w-0 truncate text-right text-[11px] text-muted-foreground"
+					title={selection}
+				>
+					{selection}
+				</span>
+			)}
 			{count !== undefined && (
 				<span className="text-[11px] tabular-nums text-muted-foreground">
 					{count} {count === 1 ? "style" : "styles"}
