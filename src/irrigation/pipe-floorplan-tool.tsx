@@ -2,7 +2,7 @@
 import { irrigationPlanPreview } from './preview'
 import { emitter, type GridEvent, type AnyNodeId, useScene } from '@pascal-app/core'
 import { type FloorplanToolContext, getGridEventScreenProjection, isGridSnapActive, isAngleSnapActive, isMagneticSnapActive, useEditor, useInteractionScope, usePlacementPreview } from '@pascal-app/editor'
-import { findScreenPort, projectRunToAngleLock, snapRunLength, type RunConnection } from '@pascal-app/nodes/distribution'
+import { findScreenPort, projectRunToAngleLock, snapRunLength, type RunConnection } from '@pascal-app/editor/distribution'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { commitDrawing, planDrawing } from './drawing'

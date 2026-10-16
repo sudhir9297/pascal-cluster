@@ -1,5 +1,5 @@
 import { type AnyNodeId } from '@pascal-app/core'
-import type { RunConnection } from '@pascal-app/nodes/distribution'
+import type { RunConnection } from '@pascal-app/editor/distribution'
 import { IrrigationRunNode } from './run'
 import { applyIrrigationPlan, planBranch, planConnection, type IrrigationPlan } from './network'
 import { irrigationPorts, unit, type IrrigationPort, type Point } from './ports'

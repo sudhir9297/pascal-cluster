@@ -2,7 +2,7 @@
 import { landscapeToolColors } from '../shared/tool-colors'
 import { type AnyNodeId, nodeRegistry, sceneRegistry, useScene } from '@pascal-app/core'
 import { useEditor, useRegistryToolContext } from '@pascal-app/editor'
-import { useDistributionRunTool, DistributionRunCursor, findNearestRunBody3D } from '@pascal-app/nodes/distribution'
+import { useDistributionRunTool, DistributionRunCursor, findNearestRunBody3D } from '@pascal-app/editor/distribution'
 import { useEffect, useMemo, useState } from 'react'
 import { Group, Vector3, CylinderGeometry, Mesh, MeshBasicMaterial, Quaternion } from 'three'
 import { irrigationPorts, portIsOccupied, type IrrigationPort } from './ports'

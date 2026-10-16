@@ -10,11 +10,11 @@ type Surface = AnyNode & {
   position: [number, number, number]
   rotation: [number, number, number]
 }
-type Stair = AnyNode & Pose & { landscapeSurfaceId?: string; stairType: string;
+type Stair = AnyNode & Pose & { destinationSurfaceId?: string; stairType: string;
   children: string[]; totalRise?: number; stepCount: number }
 type Flight = AnyNode & { segmentType: string; length: number; height: number; stepCount: number }
 type AttachmentPatch = Partial<Pose> & { parentId?: string | null;
-  landscapeSurfaceId?: string; totalRise?: number; stepCount?: number; height?: number }
+  destinationSurfaceId?: string; totalRise?: number; stepCount?: number; height?: number }
 
 function isSurface(node: AnyNode | undefined): node is Surface {
   return !!node && SURFACE_KINDS.has(node.type as string) &&
@@ -92,7 +92,7 @@ export function stairAttachmentUpdates(nodes: Readonly<Record<string, AnyNode>>,
     const stair = raw as Stair
     const currentSurface = isSurface(nodes[stair.parentId ?? ''])
       ? nodes[stair.parentId!] as Surface : null
-    const target = nodes[stair.id === movingStairId ? '' : stair.landscapeSurfaceId ?? '']
+    const target = nodes[stair.id === movingStairId ? '' : stair.destinationSurfaceId ?? '']
     const targetSurface = isSurface(target) && target.parentId ===
       (currentSurface?.parentId ?? stair.parentId) ? target : null
     const targetParentId = targetSurface?.id ?? currentSurface?.parentId
@@ -102,8 +102,8 @@ export function stairAttachmentUpdates(nodes: Readonly<Record<string, AnyNode>>,
     const pose = changingParent
       ? targetSurface ? fromLevel(levelPose, targetSurface) : levelPose : stair
     const stairPatch: AttachmentPatch = changingParent ? { parentId: targetParentId, ...pose,
-      ...(!targetSurface && stair.landscapeSurfaceId && stair.id !== movingStairId
-        ? { landscapeSurfaceId: undefined } : {}) } : {}
+      ...(!targetSurface && stair.destinationSurfaceId && stair.id !== movingStairId
+        ? { destinationSurfaceId: undefined } : {}) } : {}
     if (targetSurface && stair.id !== movingStairId && stair.stairType === 'straight') {
       const previousSurface = previousNodes?.[targetSurface.id]
       const sameAttachedStair = previousNodes?.[stair.id]?.parentId === targetSurface.id

@@ -31,7 +31,7 @@ function syncPreviews() {
     if (previewSurfaces.size) {
       for (const { id, data } of stairAttachmentUpdates(effective, undefined, base)) {
         // Preview only changes to an already attached stair and its flight.
-        if (data.parentId !== undefined || data.landscapeSurfaceId !== undefined) continue
+        if (data.parentId !== undefined || data.destinationSurfaceId !== undefined) continue
         const node = base[id]
         const stair = node?.type === 'stair' ? node : base[node?.parentId ?? '']
         if (!stair || !previewSurfaces.has(stair.parentId ?? '')) continue

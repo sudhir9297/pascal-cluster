@@ -1,6 +1,5 @@
 import { expect, test } from 'bun:test'
 import { resolveTreeLod } from './domain/schema'
-// @ts-expect-error Vendored JavaScript has no TypeScript declarations.
 import { generate, getSchema } from './vendor/api/seedthree.js'
 
 test('older desktop settings resolve to the mobile tree defaults', () => {
