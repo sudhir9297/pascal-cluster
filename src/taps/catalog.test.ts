@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import sharp from 'sharp'
 import { Box3, Mesh, Vector3 } from 'three'
 import { tapPresets } from './presets'
 import { TapNode } from './schema'
@@ -24,7 +25,7 @@ function inspect(node: TapNode) {
 }
 
 describe('procedural tap models', () => {
-  test('all tap designs build finite geometry at defaults and dimension limits', () => {
+  test('all tap designs build finite geometry at defaults and dimension limits', async () => {
     expect(tapPresets.filter(preset => preset.mount === 'countertop')).toHaveLength(15)
     expect(tapPresets.filter(preset => preset.mount === 'wall')).toHaveLength(2)
     for (const preset of tapPresets) {
@@ -33,8 +34,9 @@ describe('procedural tap models', () => {
         if (preset.mount === 'countertop') expect(bounds.min.y).toBeCloseTo(0, 5)
         else expect(bounds.max.z).toBeLessThanOrEqual(.001)
       }
-      const png = readFileSync(new URL(preset.thumbnail))
-      expect(png.toString('hex',0,8)).toBe('89504e470d0a1a0a')
+      const thumbnail = await sharp(fileURLToPath(new URL(preset.thumbnail))).metadata()
+      expect(thumbnail.width).toBeGreaterThan(0)
+      expect(thumbnail.height).toBeGreaterThan(0)
       expect('model' in preset).toBe(false)
     }
   })
