@@ -2,6 +2,7 @@
 // The adapter supplies pond colours, restrained surface detail and its CPU wave
 // field. Pool reflection/refraction equations remain the foundation.
 import { Color, Vector2, Vector3, FrontSide, MeshBasicNodeMaterial } from 'three/webgpu'
+import type { TextureNode } from 'three/webgpu'
 import {
   cameraFar,
   cameraNear,
@@ -42,7 +43,7 @@ export class PondPoolSurface {
   absorption: any
   atmosphere: SceneAtmosphereSource | null
   deepColor: any
-  distortionTextureNode: ReturnType<typeof texture>
+  distortionTextureNode: TextureNode<'vec4'>
   intersectionColor: any
   intersectionStrength: any
   intersectionWidth: any
@@ -52,7 +53,7 @@ export class PondPoolSurface {
   normalScale: any
   normalSpeed: any
   normalStrength: any
-  normalTextureNode: ReturnType<typeof texture>
+  normalTextureNode: TextureNode<'vec4'>
   poolSize: any
   reflectionDistortion: any
   reflectionFresnel: any
@@ -62,7 +63,7 @@ export class PondPoolSurface {
   shallowColor: any
   shorelineSpeed: any
   shorelineStrength: any
-  shorelineTextureNode: ReturnType<typeof texture>
+  shorelineTextureNode: TextureNode<'vec4'>
   shorelineWidth: any
   simulationDetail: any
   specularHardness: any
