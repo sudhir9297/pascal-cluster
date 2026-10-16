@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test'
-import { type AnyNode, StairNode, StairSegmentNode } from '@pascal-app/core'
+import { type AnyNode, type AnyNodeDefinition, StairNode, StairSegmentNode, LevelNode, SlabNode, spatialGridManager, nodeRegistry, registerNode, getFloorStackedPosition } from '@pascal-app/core'
 import { DeckNode } from '../deck/domain/schema'
 import { PatioNode } from '../patio/domain/schema'
 import { stairAttachmentUpdates } from './stair-attachment'
@@ -85,4 +85,31 @@ test('resizing an attached deck carries the stair along its side edge', () => {
   const attached = { ...stair, position: [0.75, 0, -4.5] as [number, number, number] }
   expect(stairAttachmentUpdates(scene(moved, attached), undefined, scene(resized, attached))
     .find((update) => update.id === stair.id)?.data.position).toBeUndefined()
+})
+
+test('reparenting a snapped stair preserves its raised source floor in both directions', () => {
+  const restore = nodeRegistry._snapshot()
+  registerNode({ kind: 'stair', schemaVersion: 1, schema: StairNode, category: 'structure', defaults: () => ({}),
+    capabilities: { floorPlaced: { footprint: () => ({ dimensions: [1, 1, 1], rotation: [0, 0, 0] }) } }
+  } as AnyNodeDefinition)
+  try {
+    const level = LevelNode.parse({ id: 'level_raised', level: 0, baseElevation: 0.2 })
+    const slab = SlabNode.parse({ id: 'slab_raised', parentId: level.id, elevation: 0.2, polygon: [[-10, -10], [10, -10], [10, 10], [-10, 10]] })
+    spatialGridManager.clear()
+    spatialGridManager.handleNodeCreated(slab, level.id)
+    const deck = DeckNode.parse({ id: 'deck_raised', parentId: level.id, thickness: 1.2 })
+    const stair = StairNode.parse({ id: 'stair_raised', parentId: level.id, destinationSurfaceId: deck.id, position: [0, 0, -3] })
+    const nodes: Record<string, AnyNode> = { [slab.id]: slab, [level.id]: level, [deck.id]: deck as unknown as AnyNode, [stair.id]: stair }
+    const base = getFloorStackedPosition({ node: stair, nodes, position: stair.position })[1]
+    expect(base).toBeCloseTo(0.2)
+    const patch = stairAttachmentUpdates(nodes).find(update => update.id === stair.id)!.data
+    expect(patch.position?.[1]).toBeCloseTo(base)
+    const attached = { ...stair, ...patch } as AnyNode
+    const detach = stairAttachmentUpdates({ ...nodes, [stair.id]: attached }, stair.id).find(update => update.id === stair.id)!.data
+    const detached = { ...stair, ...detach } as typeof stair
+    expect(getFloorStackedPosition({ node: detached, nodes, position: detached.position })[1]).toBeCloseTo(base)
+  } finally {
+    spatialGridManager.clear()
+    restore()
+  }
 })

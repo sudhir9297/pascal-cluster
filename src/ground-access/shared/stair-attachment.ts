@@ -1,4 +1,4 @@
-import type { AnyNode } from '@pascal-app/core'
+import { type AnyNode, getFloorStackedPosition, nodeRegistry, resolveFrozenFloorPlacementPatch } from '@pascal-app/core'
 import { surfaceOutline, type DrawnSurface } from './outline'
 
 const SURFACE_KINDS = new Set([
@@ -14,7 +14,7 @@ type Stair = AnyNode & Pose & { destinationSurfaceId?: string; stairType: string
   children: string[]; totalRise?: number; stepCount: number }
 type Flight = AnyNode & { segmentType: string; length: number; height: number; stepCount: number }
 type AttachmentPatch = Partial<Pose> & { parentId?: string | null;
-  destinationSurfaceId?: string; totalRise?: number; stepCount?: number; height?: number }
+  destinationSurfaceId?: string; totalRise?: number; stepCount?: number; height?: number; supportSlabId?: string }
 
 function isSurface(node: AnyNode | undefined): node is Surface {
   return !!node && SURFACE_KINDS.has(node.type as string) &&
@@ -98,10 +98,23 @@ export function stairAttachmentUpdates(nodes: Readonly<Record<string, AnyNode>>,
     const targetParentId = targetSurface?.id ?? currentSurface?.parentId
     if (!targetParentId) continue
     const changingParent = targetParentId !== stair.parentId
-    const levelPose = currentSurface ? toLevel(stair, currentSurface) : stair
-    const pose = changingParent
+    const levelPose = currentSurface ? toLevel(stair, currentSurface) : {
+      ...stair,
+      position: getFloorStackedPosition({ node: stair, nodes, position: stair.position, rotation: stair.rotation }),
+    }
+    let pose = changingParent
       ? targetSurface ? fromLevel(levelPose, targetSurface) : levelPose : stair
-    const stairPatch: AttachmentPatch = changingParent ? { parentId: targetParentId, ...pose,
+    let supportPatch: { supportSlabId?: string } = {}
+    if (changingParent && !targetSurface && nodeRegistry.get(stair.type)?.capabilities.floorPlaced) {
+      const detached = { ...stair, parentId: targetParentId }
+      const frozen = resolveFrozenFloorPlacementPatch(detached, { ...nodes, [stair.id]: detached }, {
+        position: [levelPose.position[0], 0, levelPose.position[2]],
+        rotation: levelPose.rotation, elevation: levelPose.position[1],
+      })
+      pose = { ...pose, position: frozen.position }
+      supportPatch = { supportSlabId: frozen.supportSlabId }
+    }
+    const stairPatch: AttachmentPatch = changingParent ? { parentId: targetParentId, ...pose, ...supportPatch,
       ...(!targetSurface && stair.destinationSurfaceId && stair.id !== movingStairId
         ? { destinationSurfaceId: undefined } : {}) } : {}
     if (targetSurface && stair.id !== movingStairId && stair.stairType === 'straight') {
@@ -137,8 +150,8 @@ export function stairAttachmentUpdates(nodes: Readonly<Record<string, AnyNode>>,
         const highX = position[0] + Math.sin(pose.rotation) * flight.length
         const highZ = position[2] + Math.cos(pose.rotation) * flight.length
         const rise = surfaceTop(targetSurface as Surface & { thickness: number }, highX, highZ) - baseY
-        if (rise > 0.01 && rise <= 5) {
-          const steps = Math.max(1, Math.min(24, Math.round(rise / 0.16)))
+        if (rise > 0.01) {
+          const steps = Math.max(1, Math.round(rise / 0.16))
           if (Math.abs((stair.totalRise ?? 0) - rise) > 1e-6) stairPatch.totalRise = rise
           if (stair.stepCount !== steps) stairPatch.stepCount = steps
           const flightPatch: AttachmentPatch = {}
